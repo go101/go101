@@ -1,0 +1,390 @@
+﻿
+
+<div>
+Go types can be classified into two categories:
+<ol>
+<li>types each of whose values always has only one direct transparent part.
+</li>
+<li>types each of whose values may be composed of more than one parts,
+	one direct part and one or several indirect underlying parts.
+</li>
+</ol>
+</div>
+
+<p>
+For the offcial Go compiler,
+the first category includes boolean, numeric, pointer, array and custom struct types,
+and the second category includes map, slice, channel, function, string and interface types.
+</p>
+
+<p>
+This article will introduce the internal definitions of types in the second category.
+Knowing these structures is helpful not only in understanding
+the functionalities of these types better,
+but also in understanding some other concepts in Go programming.
+</p>
+
+<p>
+The detailed implementations of these types will not be explained in this article.
+</p>
+
+<p>
+Before we get to the main point, let's clear up what are pointers and pointer wrappers.
+</p>
+
+
+<!---
+
+* when we say the address of a value, we mean the address of .. is the address of the direct part.
+* the indirect parts of map/chanel/functin may reference other more indirect parts.
+* only bool, numeric, pointer, array and struct types are essential types for a languages.
+  other types (whose values many have underlying values) are just to make
+  programming enjoyable and unique,
+
+-->
+
+<p class="anchor" id="pointer-and-wrapper"></p>
+<h3>Pointers And Pointer Wrappers</h3>
+
+<p>
+As a C-family language, pointer types play important role in Go.
+A pointer value stores a memory address of another value,
+unless the pointer value is a <code>nil</code> pointer.
+We can say the other value is referenced (or pointed) by the pointer value.
+</p>
+
+<p>
+For a pointer value, <code>p</code>, <code>*p</code> is called dereference of <cpde>p</cpde>.
+The result of the dereference of <code>p</code> is the value referenced by <code>p</code>.
+</p>
+
+<p>
+For a pointer type <code>*T</code>,
+its non-nil values can only reference values of type <code>T</code>.
+In other words, its non-nil values can only store the addresses of values of type <code>T</code>.
+</p>
+
+<p>
+<code>unsafe.Pointer</code> type is a special pointer type in Go.
+It is like <code>void*</code> in C language.
+As its package name implies, it is dangerous and
+not recommended to be used in general Go programming.
+It is mainly used in Go runtime internal.
+</p>
+
+<p>
+A struct type with pointer fields can be called a pointer wrapper type.
+If the struct type has no other non-pointer fields,
+it is called a pure pointer wrapper type,
+otherwise, it is called a hybrid pointer wrapper type.
+If any pointer field of a pointer wrapper value references another value,
+then we can also say the pointer wrapper value references the other value.
+</p>
+
+<p>
+A struct type with pointer wrapper fields is
+also viewed as a pointer wrapper type.
+</p>
+
+<p><i>
+(BTW, the definition of the word <b>reference</b> is shown at the end of this article.
+We can think it means "point to" temporarily.)
+</i></p>
+
+<h3>Types Whose Values May Have Indirect Underlying Parts</h3>
+
+<div>
+As above has mentioned, values of following types (type families) in Go
+may be composed of more than one parts:
+<ul>
+<li>map types.</li>
+<li>channel types.</li>
+<li>function types.</li>
+<li>slice types.</li>
+<li>interface types.</li>
+<li>string types.</li>
+</ul>
+<p>
+These built-in types bring much convenience to Go programming
+and make Go programming productive and enjoyable,
+by encapsulating some common or unique functionalities.
+On the other hand, these encapsulations hide the internal definitions of these types,
+which prevents Go programmers from viewing the whole pictures of these types.
+So here will list the internal definitions of such types,
+to make Go programmers understand these types better.
+</p>
+</div>
+
+<p><i>
+(The explanations in this article are based on, but not exactly same as,
+the implementations by the official Go compiler.)
+</i></p>
+
+<h4>Internal Definitions Of Map, Channel And Function Types</h4>
+
+<div>
+The internal definitions of map, channel and function types are similar:
+<pre class="line-numbers"><code class="language-go">// map
+type _map *hashtable // currently, for the official Go compiler,
+                     // Go maps are hashtables actually.
+
+// channel
+type _channel *channelImpl
+
+// function
+type _function *functionImpl
+</code></pre>
+<p>
+So, internally, types of the three families are just pointer types.
+The zero values of these types are all represented by <code>nil</code> identifier literally.
+For any non-nil value of these types,
+its direct part (a pointer) points its indirect underlying implementation part.
+</p>
+
+<p>
+In fact, the indirect underlying part of a value of any channel or function type
+may also reference deeper indirect underlying parts.
+But this article views the deeper ones and first level indirect one
+as one whole indirect part.
+</p>
+
+<p><i>
+(Although these types are represented by pointer types internally,
+Go runtimes will never think they are pointer types in user programs.)
+</i></p>
+</div>
+
+<h4>Internal Definition Of Slice Types</h4>
+
+<div>
+The internal definition of slice types is like:
+<pre class="line-numbers"><code class="language-go">// slice
+struct {
+	elements unsafe.Pointer
+	len      int // number of elements
+	cap      int // capacity
+}
+</code></pre>
+<p>
+So, internally, slice types are hybrid pointer wrapper types.
+The zero values of slice types are also represented by <code>nil</code> identifier literally.
+Each non-nil slice value has an indirect underlying part which stores element values
+of the slice value. The <code>elements</code> field of the direct part
+stores the starting address of the indirect underlying part of the slice value.
+</p>
+</div>
+
+<p><i>
+(The indirect part of a slice value may be an array created explicitly.
+Viewing the indirect part as underlying may be not very suitable.
+But for wording consistency, this article will still view
+such indirect parts as underlying parts below.)
+</i></p>
+
+<h4>Internal Definition Of String Types</h4>
+
+<div>
+Below is the internal definition for string types:
+<pre class="line-numbers"><code class="language-go">// string
+struct {
+	elements *byte // strings can be viewed as byte containers.
+	len      int   // number of bytes
+}
+</code></pre>
+<p>
+So string types are also hybrid pointer wrapper types internally.
+The zero values of string types are blank strings, which are represented by
+<code>""</code> or <code>``</code> literals.
+Each string value has an indirect underlying part storing
+the bytes of the string value, the indirect part is referenced
+by <code>elements</code> field of that string value.
+</p>
+</div>
+
+<p><i>
+(For the official Go runtime,
+<a href="golang-unofficial-faq#zero-values-zero-bytes">a blank string may have
+an underlying part, or not</a>.)
+</i></p>
+
+<p class="anchor" id="interface-structure"></p>
+<h4>Internal Definition Of Interface Types</h4>
+
+<div>
+Below is the internal definition for interface types:
+<pre class="line-numbers"><code class="language-go">// interface
+struct {
+	dynamicTypeInfo *struct {
+		itype   *_type   // the interface type.
+		dtype   *_type   // the dynamic type, which implements itype.
+		methods []*_func // implemented methods of dtype for itype.
+	}
+	dynamicValuePtr unsafe.Pointer // points to the dynamic value
+}
+</code></pre>
+<p>
+It looks the internal definition of interface types are a little more complex.
+It has two pointer fields.
+The zero values of slice types are also represented by <code>nil</code> identifier literally.
+Each non-nil interface value has an indirect underlying part which stores the dynamic value
+of that interface value. The indirect part is referenced by the <code>dynamicValuePtr</code>
+field of that interface value.
+</p>
+
+<p>
+Each non-nil interface value also has an indirect underlying part which stores the dynamic type
+information of that interface value. This indirect part is referenced by the
+<code>dynamicTypeInfo</code> field of that interface value.
+The dynamic type information is stored in a runtime global region.
+Go runtime will create most one dynamic type information struct for each (itype, dtype) pair.
+A dynamic type information struct will be never garbaged collected once it is created.
+For this specialty, it will not be viewed as an underlying part of the interface value
+any more in below part of this article.
+In other words, following of this article will think each interface value
+has most one underlying part, so that, any value of above shown internal definitions
+in this article has most one underlying part.
+</p>
+</div>
+
+<div>
+As the blank interface type <code>interface{}</code> is used popular in Go programming,
+the official Go compiler uses a different and more efficient underlying definition for
+blank interface types than non-blank interface types:
+<pre class="line-numbers"><code class="language-go">// blank interface
+struct {
+	dynamicType     *_type         // the dynamic type
+	dynamicValuePtr unsafe.Pointer // points to the dynamic value
+}
+</code></pre>
+</div>
+
+<p><i>
+(If the dynamic value of an interface value is pointer, then the official Go compiler
+will make an optimization here, by storing the pointer value in the
+<Code>dynamicValuePtr</Code> field of the interface value directly.)
+</i></p>
+
+<h3>Underlying Parts Are Not Copied In Value Assignments</h3>
+
+<p>
+In Go, each assignment (including parameter passing, etc) is a shallow value copying
+if the involved destination and source values have the same type
+(if their types are different, the source value will be converted to the destination
+type before making that assignment).
+This means in a pointer or pointer wrapper value assignment,
+only the memory address(es) of the referenced value(s) are copied,
+the indirect referenced value(s) will not be copied.
+In other words, the destination pointer or pointer wrapper value will reference
+the same indirect values referenced by the source pointer or pointer wrapper value
+after the assignment.
+</p>
+
+<p>
+In fact, the above statement is not 100% correct in theory.
+The <a href="https://golang.org/doc/faq#pass_by_value">official Go FAQ</a> says 
+copying an interface value will copy its underlying dynamic value part.
+However, as the dynamic value of an interface value is read only,
+the official Go compiler/runtime doesn't copy the underlying dynamic value part in the copying.
+This can be viewed as a compiler optimization.
+The same situation is for string values and the same optimization is made for
+copying string values, by the official Go compiler/runtime.
+In other words, for the official Go compiler/runtime,
+the indirect underlying parts will never be copied for any value copying.
+</p>
+
+<p>
+Since an indirect underlying part may not belong to any value exclusively,
+it doesn't contribute to the size returned by the <code>unsafe.Sizeof</code> function.
+</p>
+
+<p class="anchor" id="reference-definition"></p>
+<h3>About The Word "Reference"</h3>
+
+<p>
+The word <b><i>reference</i></b> in Go world is a big mess.
+It brings many confusions to Go community.
+Here this article tries to clarify the definition of this word.
+</p>
+
+<p>
+In Go specification, the word <b><i>reference</i></b> indicates a relation.
+It is either a verb or an action noun, instead of a qualifier.
+For example, if a pointer value stores the address of another value,
+then we can say the pointer value references the other value,
+and the other value has at least one reference.
+If a struct/container value has a pointer field/element which references another value,
+then we can also say the struct/container value references the other value.
+</p>
+
+<div>
+Some articles, including some <a href="https://golang.org/doc/faq#references">official ones</a>,
+use <b><i>reference</i></b> as qualifiers of types and values, or treat <b><i>reference</i></b>
+as the opposite of <b><i>value</i></b>. This is strongly not recommended.
+I really don't want to dispute on this point.
+Here I just list some absolutely misuses of <b><i>reference</i></b>:
+<ul>
+<li>only slice, map, channel and function types are reference types in Go.
+	(If we do need the <b><i>reference type</i></b> terminology in Go,
+	then we shouldn't exclude any custom pointer and pointer wrapper types
+	from reference types).
+</li>
+<li>references as opposites of values.
+	(If we do need the <b><i>reference value</i></b> terminology in Go,
+	then please view reference values as special values, instead of
+	opposites of values.)
+</li>
+<li>some parameters are passed by reference.
+	(Sorry, all parameters are passed by copy in Go.)
+</li>
+</ul>
+<!---
+dont't use the phase "pass by value" either.
+-->
+
+<p>
+I don't mean the <b><i>reference type</i></b> or <b><i>reference value</i></b>
+terminologies are totally useless for Go,
+I just think they are not very essential.
+If we do need these terminologies, I prefer to define them as
+pointers and pointer wrappers.
+However, my personal opinion is to limit the <b><i>reference</i></b>
+word to representing relations, and never use it as qualifiers.
+This will avoid many confusions in leaning, teaching and using Go.
+</p>
+</div>
+
+<!---
+
+referenece
+* not only pointer and pointer wrapper, is [5]*int referecne type?
+so give a clear reference definition is hard.
+and the benefit is not large, the effect is even negative.
+So it is not essential.
+
+<hr>
+
+<p>
+Some documentations and articles use the<b><i>reference type</i></b>
+and <code>reference value</code> terminologies and think
+map, slice, function and channel types are the only four kinds of reference types in Go.
+This is strongly 
+</p>
+
+<h3>Reference Types And Reference Values</h3>
+
+<p>
+In the Go 101 article series, the definition of reference type is very clear.
+<b>Reference types are just pointer types,
+and only pointer types can be called reference types</b>.
+</p>
+
+<p>
+Go 101 doesn't attempt to make a definition for <b>reference values</b>.
+For I think it is not essential to make such a definition,
+and making a precise definition for <b>reference values</b> is hard,
+and even a prefise <b>reference value</b> definition amy still cause confusions.
+An imperfect definition will bring many confusions to the Go community.
+Knowing about all aspects of Go pointers is enough ...
+</p>
+
+-->

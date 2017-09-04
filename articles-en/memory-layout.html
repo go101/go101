@@ -1,0 +1,421 @@
+﻿
+<!---
+https://groups.google.com/forum/#!topic/golang-nuts/XDfQUn4U_g8
+https://groups.google.com/forum/#!topic/golang-nuts/YSxEBt9kzuc
+https://groups.google.com/forum/#!topic/golang-nuts/HaxJMtSngOo
+-->
+
+<p><i>
+(This article is a complementary of <a href="golang-memory-management">memory blocks in Go</a>.)
+</i></p>
+
+<p>
+This articles will introduce type alignment guarantees in Go.
+It is essential to know the guarantees to 
+properly use the 64-bit functions in <code>sync/atomic</code> standard package.
+</p>
+
+<p>
+Go is a C family language,
+so you will find many concepts talked in this article are shared with C.
+</p>
+
+<h3>Type Alignment Guarantees In Go</h3>
+
+<p>
+Type alignment (or value address alignment) guarantees are the requirements
+for Go compilers made by Go specification.
+If the alignment guarantee of a type <code>T</code> is <code>N</code>,
+then the address of every value of type <code>T</code> must be a multiple of <code>N</code> at run time.
+We can also say the addresses of values of type <code>T</code> are promised to be N-aligned.
+</p>
+
+<p>
+In fact, each type has two alignment guarantees, one is for when it is used fields of other (struct) types,
+the other is for other cases (when it is used for a variable declaration, array element type, etc).
+We call the former one the field alignment guarantee of that type,
+and call the latter one the general alignment guarantee of that type.
+</p>
+
+<p>
+At compile time, for a type <code>T</code>, we can call <code>unsafe.Alignof(t)</code> to
+get its general alignment guarantee, where <code>t</code> is a non-field value of type <code>T</code>,
+and call <code>unsafe.Alignof(x.t)</code> to
+get its field alignment guarantee, where <code>x.t</code> is a field value of type <code>T</code>.
+</p>
+
+<p>
+At run time, for a value <code>t</code> of type <code>T</code>,
+we can call <code>reflect.ValueOf(t).Type().Align()</code> to get the general alignment guarantee
+of type <code>T</code>, and call <code>reflect.ValueOf(t).Type().FieldAlign()</code> to get
+the field alignment guarantee of type <code>T</code>.
+</p>
+
+<p>
+For the current official Go compiler, the field alignment guarantee and the general alignment guarantee
+of a type are always equal. For gccgo compiler, the statement is false.
+</p>
+
+<p>
+Following of the article will use alignment guarantee to refer to either guarantee.
+</p>
+
+<div>
+Go specification only mentions <a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">a little
+on type alignment guarantees</a>:
+<blockquote>
+<small>
+The following minimal alignment properties are guaranteed:
+<ol>
+<li>For a variable <code>x</code> of any type: <code>unsafe.Alignof(x)</code> is at least <code>1</code>.</li>
+<li>For a variable <code>x</code> of struct type: <code>unsafe.Alignof(x)</code> is the largest of all the values <code>unsafe.Alignof(x.f)</code> for each field <code>f</code> of <code>x</code>, but at least <code>1</code>.</li>
+<li>For a variable <code>x</code> of array type: <code>unsafe.Alignof(x)</code> is the same as the alignment of a variable of the array's element type..</li>
+</ol>
+</small>
+</blockquote>
+
+<p>
+The guarantees don't specify the exact alignment guarantees for any types.
+It just specifies some minimal requirements.
+For the same compiler, the exact type alignment guarantees may be different
+between different architectures and between different compiler versions.
+</p>
+</div>
+
+<div>
+For the current version (v1.9) of the official Go compiler,
+the alignment guarantees are listed here:
+<pre>
+type                               alignment guarantee
+------                             ------ 
+bool, byte, uint8, int8            1
+uint16, int16                      2
+uint32, int32, float32, complex64  4
+other types                        size of a native word
+</pre>
+<p>
+Here, a native word (or machine word) is 4-byte sized
+on 32-bit architectures and 8-byte sized on 64-bit architectures.
+</p>
+
+<!---
+todo: above assertion may be not correct for any architectures?
+-->
+</div>
+
+<p>
+This means, for the current version of the official Go compiler,
+the alignment guarantees of other types may be either <code>4</code> or <code>8</code>,
+depends on the build target.
+</p>
+
+<p>
+Generally, we don't need to care about the value address alignments in Go programming,
+except that we want to write portable programs and
+use the 64-bit functions from <code>sync/atomic</code> package.
+</p>
+
+<h3>64-bit Word Atomic Assessment Guarantees</h3>
+
+<p><i>
+(In this article, <b><i>64-bit words</i></b> mean values of types
+whose underlying types are <code>int64</code> or <code>uint64</code>.)
+</i></p>
+
+<div>
+At the end of the <a href="https://golang.org/pkg/sync/atomic/#pkg-note-BUG">sync/atomic documentation</a>,
+it mentions:
+<blockquote>
+<small>
+<br/>
+On x86-32, the 64-bit functions use instructions unavailable before the Pentium MMX.
+<br/><br/>
+On non-Linux ARM, the 64-bit functions use instructions unavailable before the ARMv6k core.
+<br/><br/>
+On both ARM and x86-32, it is the caller's responsibility to
+arrange for 64-bit alignment of 64-bit words accessed atomically.
+The first (64-bit) word in a global variable or in an allocated struct
+or slice can be relied upon to be 8-byte aligned.
+</small>
+</blockquote>
+
+<p><i>
+(Here, <Code>(64-bit)</Code> in the last sentence is appended by context.
+Although the above quoted texts shown in the bug zone of that documentation,
+what they describe are not bugs.)
+</i></p>
+</div>
+
+<p>
+So, on very old CPU architectures, 64-bit atomic functions are not supported.
+Programs will panic when 64-bit atomic functions are called on such platforms.
+If a program is expected to support these architectures,
+<code>sync.Mutex</code> should be used instead to synchronize 64-bit words.
+However, <code>sync.Mutex</code> is less efficient than atomic functions.
+</p>
+
+<p>
+On 64-bit CPU architectures, 64-bit word values are always 8-byte aligned,
+so we can call the 64-bit atomic functions safely.
+</p>
+
+<p>
+What we do need to pay attention to is 64-bit word atomic assessments
+on some not-very-old 32-bit architectures.
+64-bit atomic functions are supported on these architectures,
+but the addresses of 64-bit word values are not guaranteed to
+be 8-byte aligned on these architectures.
+Calls of 64-bit atomic functions for 64-bit words which addresses
+are not 8-byte aligned may panic at run time.
+</p>
+
+<p>
+However, on the not-very-old 32-bit architectures,
+the documentation guarantees that
+<b><i>the first 64-bit word in a global variable or in an allocated struct
+or slice can be relied upon to be 8-byte aligned</i></b>.
+</p>
+
+<p>
+In my honest opinion, the wording is very vague. Here is a better one:
+<b><i>the first 64-bit word in a global variable or in an allocated struct
+or <u>array</u> can be relied upon to be 8-byte aligned.
+<u>The underlying element sequence of a slice can be viewed as an array
+which shares the same element type with the slice.</u></i></b>
+</p>
+
+<p>
+What does the word <b><i>allocated</i></b> mean?
+To make it clear, an allocated value mentioned above means the address of the value is
+the start address of the <a href="golang-memory-management#memory-block">memory block</a>
+the value is located at. 
+In other words, the value is placed at the beginning of the memory block it is located at.
+Declared variables are all allocated values.
+<a href="golang-memory-management#when-to-allocate">More memory block allocation occasions are listed here</a>.
+</p>
+
+<p>
+And <b><i>be relied upon to be 8-byte aligned</i></b> doesn't mean the address of
+the first 64-bit word in a global variable or in an allocated struct or array
+is always 8-byte aligned on 32-bit architectures.
+It just means if the first 64-bit word is ever accessed atomically,
+then compilers must guarantee its address is 8-byte aligned at run time.
+If it is never accessed atomically, its address may be not 8-byte aligned.
+</p>
+
+<p>
+The above 64-bit word assessment guarantees are really some conservative.
+In fact, local declared 64-bit word variables can also be accessed atomically.
+So the above guarantees can be improved again as: <b><i>if a 64-bit word
+is located at the beginning of the memory block hosting the word, then
+the word can be relied upon to be accessed atomically</i></b>.
+</p>
+
+<p>
+The final improved 64-bit word assessment guarantees are still conservative.
+By common sense, a qualified compiler should promise that
+all elements in an array/slice can also be accessed atomically
+if one element in the array/slice can be accessed atomically
+and the element type is a 64-bit word type.
+</p>
+
+<p>
+There are more other 64-bit words can also be accessed atomically.
+It is just some subtle and verbose to make a simple clear explanation in wording.
+So the documentation makes conservative guarantees.
+</p>
+
+<div>
+Here is an example which lists some 64-bit words
+which are safe or unsafe to be accessed atomically:
+<pre class="line-numbers"><code class="language-go">type (
+	T1 struct {
+		v uint64
+	}
+
+	T2 struct {
+		_ int16
+		x T1
+		y *T1
+	}
+
+	T3 struct {
+		_ int16
+		x [6]int64
+		y *[6]int64
+	}
+)
+
+// below, the "safe"s in comments mean "safe to be accessed atomically
+// on both 64-bit and 32-bit architectures".
+
+var a int64    // a is safe
+var b T1       // b.v is safe
+var c [6]int64 // c[0] is safe
+
+var d T2 // d.x.v is unsafe
+var e T3 // e.x.v[0] is unsafe
+
+func f() {
+	var f int64           // f is safe
+	var g = []int64{5: 0} // g[0] is safe
+	
+	var h = e.x[:] // h[0] is unsafe
+	
+	// here, d.y and e.y are safe, for they are ensured to be 
+	// located at the beginning of the memory blocks hosting them.
+	d.y = new(T1)
+	e.y = &[6]int64{}
+	
+	_, _, _ = f, g, h
+}
+
+// In fact, all elements in c, g and e.y.v are safe to be accessed
+// atomically, though the official documentation doesn't make the
+// guarantees.
+</code></pre>
+
+<p>
+Package maintainers should beware of exposing types
+with 64-bit fields accessed atomically.
+For example, it is unsafe to embed the <code>Int</code> and
+<code>Float</code> types from the
+<a href="https://golang.org/pkg/expvar/">expvar standard package</a>
+in user code which would run on 32-bit architectures.
+</p>
+</div>
+
+<div>
+If you can't make sure whether or not a 64-bit word can be accessed atomically,
+you can use a value of type <code>[15]byte</code> to determine
+the address for the 64-bit word at run time:
+<pre class="line-numbers"><code class="language-go">package mylib
+
+import (
+	"unsafe"
+	"sync/atomic"
+)
+
+type Counter struct {
+	x [15]byte // instead of "x uint64"
+}
+
+func (c *Counter) xAddr() *uint64 {
+	// the return must be 8-byte aligned.
+	return (*uint64)(unsafe.Pointer(
+		uintptr(unsafe.Pointer(&c.x)) + 8 -
+		uintptr(unsafe.Pointer(&c.x))%8))
+}
+
+func (c *Counter) Add(delta uint64) {
+	p := c.xAddr()
+	*p = atomic.AddUint64(p, delta)
+}
+
+func (c *Counter) Value() uint64 {
+	return atomic.LoadUint64(c.xAddr())
+}
+</code></pre>
+
+<p>
+By using this solution, the <code>Counter</code> type can be embedded in other user types safely,
+even on 32-bit architectures.
+The drawback of this solution is there are seven bytes being wasted for every value of <code>Counter</code> type.
+For the official compiler, <a href="https://github.com/golang/go/blob/master/src/sync/waitgroup.go#L23">a <code>[12]byte</code> value can used instead</a>,
+which only waste four bytes.
+</p>
+
+<p><i>
+(BTW, the solution in the just mentioned standard package assumes that any Go compiler
+should make sure the alignment guarantees of 64-bit words must be 4N on any architectures.
+However, I can't find the guarantee written in any official Go documentation.)
+</i></p>
+</div>
+
+<h3>Future Possible Change</h3>
+
+<p>
+Russ Cox, one core Go team member, <a href="https://github.com/golang/go/issues/599">has proposed that the addresses of 64-bit words
+should always be 8-byte aligned</a>, either on 64-bit or 32-bit architectures, to make Go programming simpler.
+Currently (Go 1.8), this proposal hasn't been adopted yet.
+</p>
+
+<p class="anchor" id="size-and-padding"></p>
+<h3>Type Value Sizes And Structure Padding</h3>
+
+<div>
+Go specification only makes following <a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">type size guarantees</a>:
+<pre>
+type                               size in bytes
+------                             ------ 
+byte, uint8, int8                   1
+uint16, int16                       2
+uint32, int32, float32              4
+uint64, int64, float64, complex64   8
+complex128                         16
+</pre>
+<p>
+Go specification doesn't make value size guarantees for other types.
+For the current version (v1.8) of the official Go compiler,
+<code>bool</code> values are one-byte sized and
+<code>int</code>/<code>uint</code>/<code>uintptr</code>/pointer values
+are one-native-word sized.
+The full list of value sizes of different types settled by the official Go compiler are listed in
+<a href="golang-summaries#cost-of-value-copy">this article</a>.
+</p>
+</div>
+
+<p>
+The official Go compiler will assure the size of values of a type
+is a multiple of the alignment guarantee of the type.
+</p>
+
+<p>
+To satisfy type alignment guarantees mentioned in previous sections,
+Go compiler and runtime may pad some bytes between fields of struct values.
+This makes the value size of a struct type may be not a simple
+sum of the sizes of all fields of the type.
+</p>
+
+<div>
+Here is an example showing how bytes are padded between struct fields:
+<pre class="line-numbers"><code class="language-go">// The alignments of type T1 and T2 are the same as
+// the largest alignment of their field types (int64),
+// 8 on AMD64 OS and 4 on i386 OS.
+
+type T1 struct {
+	a int8
+	// To make b 8-aligned on AMD64 OS and 4-aligned on i386 OS,
+	// 7 bytes padded on AMD64 OS and pad 3 bytes padded on i386 OS here.
+	b int64
+	c int16
+	// To make the size of T1 values is a multiple of the alignment of T1,
+	// 6 bytes padded on AMD64 OS and pad 2 bytes padded on i386 OS here.
+}
+// the sizes of T1 values are 24 on AMD64 OS and 16 on i386 OS.
+
+type T2 struct {
+	a int8
+	// To make c 2-aligned,
+	// 1 byte padded on both AMD64 and i386 OS here.
+	c int16
+	// To make b 8-aligned on AMD64 OS and 4-aligned on i386 OS,
+	// 4 bytes padded on AMD64 OS here. No padding on i386 OS.
+	b int64
+}
+// the sizes of T2 values are 16 on AMD64 OS and 12 on i386 OS.
+</code></pre>
+
+<p>
+Although <code>T1</code> and <code>T2</code> have the same field set,
+their value sizes are different.
+</p>
+</div>
+
+<div>
+One interesting fact for the official Go compiler
+is that sometimes zero sized fields may affect structure padding.
+Please read <a href="http://www.tapirgames.com/blog/golang-unofficial-faq#final-zero-size-field">this question in the unoffcial Go FAQ</a>
+for details.
+</div>
+

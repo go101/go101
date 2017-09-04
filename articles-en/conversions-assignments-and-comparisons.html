@@ -1,0 +1,636 @@
+﻿
+<p>
+This article will list all the the value assignment, 
+conversion and comparison rules in Go.
+</p>
+
+<p>
+<i>(It is recommended to read <a href="golang-type-system">Go Type System</a> before reading this article.)</i>
+</p>
+
+<p>
+NOTE: the definition of conversion in this article is not exactly the same as Go spec. 
+The conversion in Go spec means explicit conversion.
+The conversions in this article include both explicit and implicit conversions.
+</p>
+
+<h3>Assignment Rules</h3>
+
+<p class="well">
+In a constant declaration, which is also an assignment, 
+if the target constant value is not given a 
+type in code, then the constant can be viewed as an alias of the source value, 
+which must be also a constant value. 
+This means the target constant and the source constant have the same default type.
+</p>
+
+<p>
+Except the above case, assignments can be viewed as implicit conversions.
+</p> 
+
+<div class="well">
+In an assignment, if the target value is a new declared variable without given a 
+type in code, then the type of the new variable is
+<ul>
+<li>the type of the source value, if the the source value is a typed value;</li>
+<li>the default type of the source value, if the source value is an untyped constant.</li>
+</ul>
+</div>
+
+<p>
+Implicit conversion rules are listed among the conversion rules in the next section.
+</p>
+
+<p>
+NOTE: in Go, all value assignments, including parameter passings etc, 
+are shallow value copyings (the values referenced by pointers will not be copied).
+</p>
+
+<p class="anchor" id="conversion"></p>
+<h3>Conversion Rules</h3>
+
+<p>
+In this section, when it says a value <code>x</code> can be implicitly converted to a type <code>T</code>, 
+then it means <code>x</code> can also be explicitly converted to type <code>T</code>.
+</p>
+
+<p>
+In Go, if a value <code>v</code> can be explicitly converted to type <Code>T</Code>,
+the conversion can be achieveed with the form <code>(T)(v)</code>.
+Sometimes, in particular <code>T</code> is a named type or a type alias,
+the form can be simplified to <code>T(v)</code>.
+</p>
+
+<h4>0. The Apparent Conversion Rule</h4>
+
+<div class="well">
+Values of any type <code>T</code>, including aliases of <code>T</code>,
+can be <b>implicitly</b> converted to <code>T</code>, including aliases of <code>T</code>.
+</div>
+
+<p>
+Nothing to say about this rule, whether you think this case involves conversions or not.
+</p>
+
+<p>
+Please note, <code>byte</code> and <code>uint8</code> are the same identical type in Go.
+The same relation is for <code>rune</code> and <code>int32</code>.
+</p>
+
+<h4>1. Underlying Type Related Conversion Rules</h4>
+
+<div class="well">
+Given a non-interface value <code>x</code> and a non-interface type <code>T</code>, assume the type of <code>x</code> is <code>Tx</code>, 
+<ul>
+<li>
+	if <code>Tx</code> and <code>T</code> share the same underlying type (ignoring struct tags),
+	then <code>x</code> can be explicitly converted to <code>T</code>,
+	in particular if either <code>Tx</code> or <code>T</code> is an unnamed type
+	and they underlying types are identical (considering struct tags),
+	then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
+</li>
+<li>
+	if <code>Tx</code> and <code>T</code> have different underlying types,
+	but <code>Tx</code> and <code>T</code> are both unnamed pointer types
+	and their base types share the same underlying type (ignoring struct tags),
+	then <code>x</code> can (and must) be explicitly converted to <code>T</code>.
+</li>
+</ul>
+</div>
+
+<div>
+General example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	// []int, IntSlice and MySlice share 
+	// the same underlying type: []int
+	type IntSlice []int
+	type MySlice  []int
+	
+	var s  = []int{}
+	var is = IntSlice{}
+	var ms = MySlice{}
+	var x struct{n int `foo`}
+	var y struct{n int `bar`}
+	
+	// The two lines both fail to compile.
+	/*
+	is = ms
+	ms = is
+	*/
+	
+	// Must use explicit conversions here.
+	is = IntSlice(ms)
+	ms = MySlice(is)
+	x = struct{n int `foo`}(y)
+	y = struct{n int `bar`}(x)
+	
+	// Implicit conversions are okay here.
+	s = is
+	is = s
+	s = ms
+	ms = s
+}
+</code></pre>
+</div>
+
+<div>
+Pointer example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	type MyInt int
+	type IntPtr *int
+	type MyIntPtr *MyInt
+
+	var pi = new(int) // type is *int
+	var ip IntPtr = pi // ok, same underlying type
+
+	// var _ *MyInt = pi // can't convert implicitly
+	var _ = (*MyInt)(pi) // ok, must explicitly
+	
+	// var _ MyIntPtr = pi  // can't convert implicitly
+	// var _ = MyIntPtr(pi) // can't convert explicitly
+	var _ MyIntPtr = (*MyInt)(pi)  // ok
+	var _ = MyIntPtr((*MyInt)(pi)) // ok
+
+	// var _ MyIntPtr = ip  // can't convert implicitly
+	// var _ = MyIntPtr(ip) // can't convert explicitly
+	var _ MyIntPtr = (*MyInt)((*int)(ip))  // ok
+	var _ = MyIntPtr((*MyInt)((*int)(ip))) // ok
+}
+</code></pre>
+</div>
+
+<h4>2. Channel Specified Conversion Rule</h4>
+
+<div class="well">
+If <code>Tx</code> is a bidirectional channel type, <code>T</code> is a channel type,
+	<code>Tx</code> and <code>T</code> have the identical element type,
+	and either <code>Tx</code> or <code>T</code> is an unnamed type,
+	then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
+</div>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	type C chan string
+	type C1 chan<- string
+	type C2 <-chan string
+
+	var ca C
+	var cb chan string
+
+	cb = ca // ok, same underlying type
+	ca = cb // ok, same underlying type
+
+	var _, _ chan<- string = ca, cb // ok
+	var _, _ <-chan string = ca, cb // ok
+	var _ C1 = cb // ok
+	var _ C2 = cb // ok
+
+	// var _ = C1(ca) // compile error
+	// var _ = C2(ca) // compile error
+	var _ = C1((chan<- string)(ca)) // ok
+	var _ = C2((<-chan string)(ca)) // ok
+}
+</code></pre>
+</div>
+
+<p class="anchor" id="conversion-rule-implementation"></p>
+<h4>3. Implementation Related Conversion Rules</h4>
+
+<div class="well">
+Given a value <code>x</code> and an interface type <code>I</code>, assume the type of <code>x</code> is <code>Tx</code>, 
+if <code>Tx</code> implements <code>I</code>, then <code>x</code> can be <b>implicitly</b> converted to type <code>I</code>.
+The conversion result is an interface value (of type <code>I</code>), which stores
+<ul>
+<li>a copy of <code>x</code>, if <code>Tx</code> is a non-interface type;</li>
+<li>a copy of the dynamic value of <code>x</code>, if <code>Tx</code> is an interface type.</li>
+</ul>
+</div>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+type Filter interface {
+	Filte(n int) bool
+}
+
+type MultipleFilter struct {
+	Divisor int
+}
+
+func (mf MultipleFilter) Filte(n int) bool {
+	return n % mf.Divisor == 0
+}
+
+func main() {
+	var mf = MultipleFilter{11}
+	// mf's type MultipleFilter implements Filter,
+	// so here implicit conversion is okay.
+	var filter = mf
+	
+	// all types implement interface{} type, so any
+	// value can be converted to interface{} implicitly.
+	
+	var n int = 123
+	var b bool = true
+	var s string = "abc"
+	
+	var _ interface{} = n
+	var _ interface{} = b
+	var _ interface{} = s
+	var _ interface{} = mf
+	
+	// interface type Filter also implements interface{}
+	var _ interface{} = filter
+}
+</code></pre>
+<p>
+Many parameters of the functions in standard packages are
+of type <code>interface{}</code>.
+As all types implement <code>interface{}</code>, so any value
+can be passed for such parameters without explict conversion.
+</p>
+</div>
+
+<!---
+<p><i>
+BTW, the blank interface type <code>interface{}</code> is popular used
+in Go programming. It plays important roles of
+<a href="golang-reflection">reflection</a> and
+<a href="golang-genric-alternatives">generic</a> in Go programming.
+</i></p>
+-->
+
+<h4>4. Type Assertion Conversion Rules</h4>
+
+<p>
+(Type switch can be viewed as a special form of type assertion.)
+</p>
+
+<div class="well">
+Given an interface value <code>x</code> and a non-interface type <code>T</code>,
+assume the interface type of <code>x</code> is <code>Ix</code>, 
+if <code>T</code> implements <code>Ix</code>, then <code>x</code>
+can be converted to <code>T</code> with type assertion syntax: 
+<ul>
+<li>if the dynamic type of <code>x</code> and <code>T</code> are exactly the same type, 
+	then the conversion result is the dynamic value of <code>x</code>.
+	If the ok result value is present, its value is <code>true</code>.
+</li>
+<li>otherwise, the conversion result is the zero value of <code>T</code>
+	if the ok result value is present (the returned ok value is <code>false</code>).
+	The conversion will panic if the ok result value is not present.
+</li>
+</ul>
+</div>
+
+<div class="well">
+Given an interface value <code>x</code> and an interface type <code>I</code>,
+assume the interface type of <code>x</code> is <code>Ix</code>, 
+then <code>x</code> can be converted to <code>I</code> with type assertion syntax,
+whether <code>I</code> implements <code>Ix</code> or not:
+<ul>
+<li>if <code>x</code> is not a <code>nil</code> interface and
+	the dynamic type of <code>x</code> implements <code>I</code>, 
+	then the conversion result (a value of <code>I</code>)
+	stores (a copy of) the dynamic value of <code>x</code>.
+	If the ok result value is present, its value is <code>true</code>.
+</li>
+<li>otherwise, the conversion result is the <code>nil</code> interface
+	if the ok result value is present (the returned ok value is <code>false</code>).
+	The conversion will panic if the ok result value is not present.
+</li>
+</ul>
+</div>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type I interface {
+	f()
+}
+
+type T string
+func (T) f(){}
+
+func main() {
+	var it interface{} = T("abc")
+	var is interface{} = "abc"
+
+	// the two are both okay, for T  
+	// implements both I and interface{}
+	var _ T = it.(T) 
+	var _ I = it.(I)
+
+	// this one is also okay, for 
+	// string implements interface{}
+	var _ string = is.(string)
+
+	// following 3 compile okay but will 
+	// all panic at run time.
+	// _ = is.(I)
+	// _ = is.(T)
+	// _ = it.(string)
+}
+</code></pre>
+
+<h4>5. Untyped Value Conversion Rule</h4>
+
+<div class="well">
+An untyped value can be <b>implicitly</b> converted to any of its potential types.
+</div>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var _ []int = nil
+	var _ map[string]int = nil
+	var _ chan string = nil
+	var _ func()() = nil
+	var _ *bool = nil
+	var _ interface{} = nil
+
+	var _ int = 123
+	var _ float64 = 123
+	var _ int32 = 123
+}
+</code></pre>
+</div>
+
+<h4>6. Constant Number Conversion Rule</h4>
+
+<p><i>
+(This rule is some overlapped with the last one.)
+</i></p>
+
+<p>
+Converting a constant yields a typed constant as result.
+</p> 
+
+<div class="well">
+Given a constant value <code>x</code> and a type <code>T</code>, if <code>x</code> is representable by a value of type <code>T</code>, 
+then <code>x</code> can be explicitly converted to <code>T</code>, in particular if <code>x</code> is an untyped 
+or its type is also <code>T</code>, then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>. 
+</div>
+
+<p>
+NOTE: in case of <code>x</code> is a floating-point constant and <code>T</code> is a floating-point type, 
+the conversion result <code>T(x)</code> is the rounded value of <code>x</code> by using IEEE 754 round-to-even rules, 
+but with an IEEE <code>-0.0</code> further rounded to an unsigned <code>0.0</code>. 
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	const I = 123
+	const I1, I2 int8 = 0x7F, -0x80
+	const I3, I4 int8 = I, 0.0
+	
+	const F = 0.123456789
+	const F32 float32 = F
+	const F32b float32 = I
+	const F64 float64 = F
+	const F64b = float64(I3)
+	
+	const C1, C2 complex64 = F, I
+	const I5 = int(C2)
+}
+</code></pre>
+</div>
+
+<h4>7. Non-Constant Number Conversion Rules</h4>
+
+<div class="well">
+Non-constant floating-point and integer values can be explicitly 
+converted to any floating-point and integer types.
+</div>
+
+<div class="well">
+Complex non-constant values can be explicitly converted to any complex types.
+</div>
+
+<div>
+NOTE:
+<ul>
+<li>Complex non-constant values can't be converted to floating-point and integer types.</li>
+<li>Floating-point and integer non-constant values can't be converted to complex types.</li>
+<li>Data overflow and rounding are allowed in non-constant number conversions.
+	When converting a floating-point non-constant number to an integer, the fraction is discarded (truncation towards zero).
+</li> 
+</ul>
+</div>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var a, b = 1.6, -1.6 // both are float64
+	fmt.Println(int(a), int(b)) // 1 -1
+
+	var i, j int16 = 0x7FFF, -0x8000
+	fmt.Println(int8(i), uint16(j)) // -1 32768
+
+	var c1 complex64 = 1 + 2i
+	var _ = complex128(c1)
+}
+</code></pre>
+
+<h4>8. String Related Conversion Rules</h4>
+
+<p>
+Below, string types means the types whose underlying types are the built-in string type, 
+and integer types means the types whose underlying types are the built-in integer types, 
+</p>
+
+<div class="well">
+Values of integer types can be explicitly converted to string types.
+</div>
+
+<div class="well">
+Values of string types can be explicitly converted to 
+types whose underlying types are <code>[]byte</code>, and vice versa.
+</div>
+
+<div class="well">
+Values of string types can be explicitly converted to 
+types whose underlying types are <code>[]rune</code>, and vice versa.
+</div>
+
+<div>
+Please read <a href="golang-string">Strings in Go</a> for details and examples.
+</div>
+
+<h4>9. unsafe.Pointer Related Conversion Rules</h4>
+
+<p>
+Above conversion rules can be broken by unsafe.Pointer related conversion rules.
+</p>
+
+<div class="well">
+A pointer value of any type can be converted to an unsafe.Pointer, and vice versa.
+</div>
+
+<div class="well">
+An <code>uintptr</code> value can be converted to a unsafe.Pointer, and vice versa.
+</div>
+
+<div>
+Please read <a href="golang-unsafe">The unsafe Package in Go</a> for details and examples.
+</div>
+
+<p class="anchor" id="comparison-rules"></p>
+<h3>Comparison Rules</h3>
+
+<!---
+The equalities of channel values are simple defined as
+the equalities of their direct part values.
+
+The equality of two string values
+is defined as two string values 
+
+The equality of two values of the same interface type
+one interface
+
+Go specification doesn't specify the equalities of map, slice and function values,
+for there is no universal accpeted equality definitions for these values.
+-->
+
+<div>
+The go language specification 
+<a href="https://golang.org/ref/spec#Comparison_operators">states</a>
+<div class="well">
+in any comparison, the first operand must be assignable to 
+the type of the second operand, or vice versa. 
+</div>
+<p>
+So, the comparison rule is much like the assignment rule.
+In other words, two values are comparable 
+if one can be implicitly converted to the type of the other.
+</p>
+</div>
+
+<div>
+What about if both of the two operands in a comparison are untyped constant values?
+The rules are simple:
+<ul>
+<li>
+untyped bool values can be compared with untyped bool values;
+</li>
+<li>
+untyped numeric values can be compared with untyped numeric values;
+</li>
+<li>
+untyped string values can be compared with untyped string values,
+</li>
+</ul>
+<p>
+The result of comparing two untyped constant values obeys intuition.
+</p>
+</div>
+
+<p>
+Any comparison in Go results an untyped bool value.
+</p>
+
+<p class="anchor" id="comparisons-restrictions"></p>
+<div>
+Besides the above rules, currently (Go 1.9), there are some restrictions for comparisons:
+<ul>
+<li>
+map, slice and function types don't support comparison
+(but values of these types can be compared to the bare <code>nil</code> identifier).
+</li>
+<li>
+any struct type with a field whose type is incomparable
+and any array type which element type is incomparable also doesn't support comparison.
+</li>
+<li>
+bare <code>nil</code> identifiers can't be compared with each other. 
+</li>
+<li>
+if the dynamic types of the two interface values
+are the same type, and the same dynamic type is incomparable,
+then comparing the two interface values will panic at run time.
+</li>
+</ul>
+</div>
+
+<p></p>
+
+<div>
+Comparison restriction examples:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var s []int
+	var m map[int]int
+	var f func()()
+
+	// The following 4 don't compile.
+	// _ = s == s
+	// _ = m == m
+	// _ = f == f
+	// _ = nil == nil
+
+	// The following 3 compile okay.
+	_ = s == nil
+	_ = m == nil
+	_ = f == nil
+
+	// Type T also doesn't support comparison,
+	// for it contains one incomparable field.
+	type T struct {
+		s []int
+		n int
+	}
+
+	var t T
+	var a [5]map[int]int
+
+	// The following 2 don't compile.
+	// _ = t == t
+	// _ = a == a
+
+	// The following comparisons compile okay,
+	// but will panic at run time.
+	var i interface{} = t
+	_ = i == i
+
+	// ...
+	_, _, _, _ = s, m, f, a
+}
+</code></pre>
+<p></p>
+</div>
+
+<h4>How Are Two Values Compared</h4>
+
+<p>
+Assume two values are comparable, and they have the same type <code>T</code>.
+(if they have different types, one of them must be implicitly convertible to the type of the other).
+If <code>T</code> is neither string nor interface type, then the comparing result is the result
+of comparing the bytes they occupy in memory one by one.
+</p>
+
+<p>
+For the case both compared values are string values,
+please read <a href="golang-string#comparison">how two string values are compared</a>.
+</p>
+
+<p>
+For the case of either compared value is an interface value,
+please read <a href="golang-interface#comparison">how two interface values are compared</a>.
+</p>
+
+

@@ -1,0 +1,659 @@
+﻿
+
+<p>
+From <a href="#">this article</a>, we know that a struct type can have many fields.
+Each of the fields is composed of one field name and one field type.
+In fact, sometimes, a struct field can only be composed of one field type.
+Such fields are called anonymous fields in Go.
+An anonymous field is also called a type embedding.
+</p>
+
+<p>
+This article will explain the intention of type embedding and all kinds of details in type embeddding.
+</p>
+
+<h3>What Does Type Embedding Look Like?</h3>
+
+<div>
+Here is an example of type embedding:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var x struct {
+		string // a named non-pointer non-interface type
+		*int   // an unnamed pointer type
+		error  // an interface type
+	}
+	x.string = "Go"
+	x.int = new(int)
+	x.error = nil
+}
+</code></pre>
+
+<p>
+In the above example, three types are embedded in the struct type.
+Each type embedding forms an anonymous field.
+</p>
+
+In fact, each anonymous field has an implicit name.
+The names of the three anonymous fields are
+<code>string</code>, <code>int</code> and <code>error</code>, correspondingly.
+</div>
+
+<h3>Which Types Can be Embedded?</h3>
+
+<div>
+Following types can be embedded in struct types.
+<ul>
+<li>
+	Any named type which is not a pointer type. The named types can be interface types.
+</li>
+<li>
+	Any unamed pointer type which base type must be a named type,
+	and the named base type must be neither a pointer type nor an interface type.
+</li>
+</ul>
+
+Following lists some types can and can't be embedded:
+<pre class="line-numbers"><code class="language-go">type IntPtr *int
+type Encoder interface {Encode([]byte) []byte}
+
+// These types can be embedded in a struct type.
+int
+*int
+Encoder
+string
+bool
+
+// These types can't be embedded.
+IntPtr
+*Encoder
+map[string]int
+[]int64
+func()
+struct {
+	x int
+}
+</code></pre>
+
+As the last section mentioned, each anonymous field has an implicit name.
+Here are the the implicitly naming rules:
+<ul>
+<li>
+	the name of the field type, which is embedded, if the field type is a named type.
+</li>
+<li>
+	the base name of the field type if the field type is a pointer type.
+</li>
+</ul>
+
+<p>
+No two fields are allowed to have the same name in a struct,
+there are not exceptions for annonymous struct fields.
+By the anonymous field implicitly naming rules,
+an unnamed pointer type can't be embedded along with its base type
+in the same struct type.
+For example, <code>int</code> and <code>*int</code> can't be embedded
+in a struct type at the same time.
+</p>
+</div>
+
+<p>
+Generally, it is only meaningful to embed types who have fields or methods.
+The following section will explain why.
+</p>
+
+<h3>What Is The Meaningfulness Of Type Embedding?</h3>
+
+<p>
+The main purpose of type embedding is to extend the functionalities of the embedded types
+into the embedding type, so that we don't need to reimplement
+the functionalities of the embeded types for the embedding type.
+</p>
+
+<div>
+Many other object-oriented programming languages use inheritance
+to achieve the same goal of type embedding.
+Both mechanisms have their own
+<a href="https://en.wikipedia.org/wiki/Composition_over_inheritance">benefits and drawbacks</a>.
+Here, this article will not discuss which one is better.
+We should just know Go chose the type embedding mechanism,
+and there is a big difference between the two:
+<ul>
+<li>
+	If a type <code>T</code> inherits another type,
+	then type <code>T</code> obtains the abilities of the other type.
+	At the same time, each value of type <code>T</code> can also be
+	viewed as a value of the other type.
+</li>
+<li>
+	If a type <code>T</code> embeds another type,
+	then type other type becomes a part of type <code>T</code>,
+	and type <code>T</code> obtains the abilities of the other type,
+	but none values of type <code>T</code> can be viewed as values of the other type.
+</li>
+</ul>
+
+Here is an example to show how an embedding type extends the functionalities of the embedded types.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "strings"
+
+type Person struct {
+	name string
+	age  int
+}
+
+func (p Person) PrintInfo() {
+	fmt.Println("Name:", p.name)
+	fmt.Println("Age:", p.age)
+}
+
+func (p *Person) UpdateInfo(name string, age int) {
+	p.name = name
+	p.age = age
+}
+
+type Singer struct {
+	Person // extends Person by embedding it
+	works []string
+}
+
+func (s Singer) ListWorks() {
+	fmt.Println("Works:", strings.Join(s.works, ", "))
+}
+
+func main() {
+	var gaga Singer
+	gaga.works = []string{"The Fame", "Poker Face"}
+	gaga.ListWorks()
+
+	// A Singer value acts as a Person value.
+	gaga.name = "Lady Gaga"
+	gaga.age = 30
+	gaga.PrintInfo()
+	
+	// But a Singer value is not a Person value.
+	// The following two lines don't compile.
+	/*
+	var person Person
+	person = gaga
+	*/
+	
+	// A *Singer value acts as both a Person and a *Person value.
+	gagaPointer := &gaga
+	gagaPointer.UpdateInfo("Gaga", 31)
+	gagaPointer.PrintInfo()
+}
+</code></pre>
+
+The output:
+<pre class="output">
+Works: The Fame, Poker Face
+Name: Lady Gaga
+Age: 31
+</pre>
+</div>
+
+<p>
+From the above example, it looks that after embedding type <code>Person</code>,
+the type <code>Singer</code> owns all methods and fields that type <code>Person</code> has,
+and type <code>*Singer</code> owns all methods that either type <code>Person</code> or
+type <code>*Person</code> has.
+</p>
+
+<p>
+Are the conclusions right? The following sections will answer this question.
+</p>
+
+<h3>Does The Embedding Type Obtain The Fields Of The Embedded Types?</h3>
+
+<div>
+Let's list all the fields of type <code>Singer</code> in the last example by using reflection
+functionalities provided by the <code>reflect</code> standard package:
+<pre class="line-numbers"><code class="language-go">	t := reflect.TypeOf(Singer{})
+	fmt.Println(t, "has", t.NumField(), "fields:")
+	for i := 0; i < t.NumField(); i++ {
+		fmt.Print("   filed#", i, ": ", t.Field(i).Name, "\n")
+	}
+</code></pre>
+
+The result:
+<pre class="output">
+main.Singer has 2 fields:
+   filed#0: Person
+   filed#1: songs
+</pre>
+</div>
+
+<p>
+From the result, we know that the type <code>Singer</code> owns neither
+a <code>name</code> field nor a <code>age</code> field.
+Then why are the expressions <code>gaga.name</code> and <code>gaga.age</code>
+legal for a <code>Singer</code> value <code>gaga</code>?
+Please read the next section to get the reason.
+</p>
+
+<h3>Shorthands Of Selectors</h3>
+
+<p>
+In Go, for a value <code>x</code>, <code>x.y</code> is called a selector of <code>x</code>,
+where <code>y</code> is either a field or a method.
+If <code>y</code> is a field, then <code>x</code> must be a stuct value or a struct pointer value.
+A selector is an expresssion, which represents a value.
+The value <code>x.y</code> may also has its own selectors.
+So a selector may contain more than two tokens, such as <code>x.y.z</code>.
+</p>
+
+<p>
+There is a syntax sugar in Go, <b><i>if a middle token in a seletor
+corresponds an anonymous field, then that token can be omitted from the selector</i></b>,
+except that the selector collides or is shadowed by other selectors
+(please read the following sections for what are selector colliding and shadowing).
+</p>
+
+<div>
+For example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type A struct {
+	x int
+}
+func (a A) MethodA() {}
+
+type B struct {
+	A
+}
+
+type C struct {
+	B
+}
+
+func main() {
+	var c C
+	
+	// The following 4 lines are equivalent.
+	fmt.Println(c.B.A.x)
+	fmt.Println(c.B.x)
+	fmt.Println(c.A.x)
+	fmt.Println(c.x)
+	
+	// The following 4 lines are equivalent.
+	c.B.A.MethodA()
+	c.B.MethodA()
+	c.A.MethodA()
+	c.MethodA()
+}
+</code></pre>
+
+<p>
+This is why the expressions <code>gaga.name</code> and <code>gaga.age</code> are legal.
+They are just the shorthands of <code>gaga.Person.name</code> and <code>gaga.Person.age</code>.
+</p>
+
+As any embedding type must be a struct type,
+the article <a href="golang-struct">Structs In Go</a>
+has mentioned that the field of an addressable struct value
+can be accessed through the pointers of the struct value.
+So the following code is also legal in Go.
+<pre class="line-numbers"><code class="language-go">func main() {
+	var c C
+	pc = &c
+	
+	// The following 4 lines are equivalent.
+	fmt.Println(pc.B.A.x)
+	fmt.Println(pc.B.x)
+	fmt.Println(pc.A.x)
+	fmt.Println(pc.x)
+	
+	// The following 4 lines are equivalent.
+	pc.B.A.MethodA()
+	pc.B.MethodA()
+	pc.A.MethodA()
+	pc.MethodA()
+}
+</code></pre>
+
+<p>
+</p>
+
+Similiarly, 
+<ul>
+<li>
+	method <code>gaga.PrintInfo</code> can be viewed as
+	a shorthand of <code>gaga.Person.PrintInfo</code>.
+</li>
+<li>
+	method <code>gagaPointer.UpdateInfo</code> can be viewed as
+	a shorthand of <code>(&gaga.Person).UpdateInfo</code>.
+</li>
+</ul>
+
+<p>
+However, it is also okay if we think they aren't shorthands.
+Please read the next section for detail.
+</p>
+</div>
+
+<h3>Does The Embedding Type Obtain The Methods Of The Embedded Types?</h3>
+
+<div>
+Again, let's list all the methods of type <code>Singer</code> by using reflection:
+<pre class="line-numbers"><code class="language-go">func PrintTypeMethods(t reflect.Type) {
+	fmt.Println(t, "has", t.NumMethod(), "methods:")
+	for i := 0; i < t.NumMethod(); i++ {
+		fmt.Print("   method#", i, ": ", t.Method(i).Name, "\n")
+	}
+}
+
+func main() {
+	PrintTypeMethods(reflect.TypeOf(Singer{}))
+	fmt.Println()
+	PrintTypeMethods(reflect.TypeOf(&Singer{}))
+}
+</code></pre>
+
+The result:
+<pre class="output">
+main.Singer has 2 methods:
+   method#0: ListWorks
+   method#1: PrintInfo
+
+*main.Singer has 3 methods:
+   method#0: ListWorks
+   method#1: PrintInfo
+   method#2: UpdateInfo
+</pre>
+
+<p>
+From the result, we can find that the type <code>Singer</code> really
+has a <code>PrintInfo</code> method,
+and the type <code>*Singer</code> really
+has a <code>PrintInfo</code> and an <code>UpdateInfo</code> method.
+This is why we can think expression <code>gaga.PrintInfo</code> is not
+a shorthand of <code>gaga.Person.PrintInfo</code>
+and expression <code>gagaPointer.UpdateInfo</code> is not
+a shorthand of <code>(&gaga.Person).UpdateInfo</code>.
+</p>
+
+<p>
+In fact, for each method of an embedded type, if it neither collides nor is shadowed
+by other methods and fields (please read the following sections for detail),
+then compiler will implicitly declare a correspoding method for the embedding struct type,
+and consequently, compiler will also <a href="golang-method#implicit-pointer-methods">implicitly declare
+a correspoding method</a> for the unnamed pointer type whose base type is the embedding struct type.
+</p>
+
+Here are the implicitly declared methods for type <code>Singer</code> and <code>*Singer</code>
+and their corresponding implicitly declared functions:
+<pre class="line-numbers"><code class="language-go">func (s Singer) PrintInfo() {
+	s.Person.PrintInfo()
+}
+
+func (s *Singer) PrintInfo() {
+	(*s).Person.PrintInfo()
+}
+</code></pre>
+
+
+Beside above mentioned implicitly declared methods and functions,
+for each method of the pointer type whose base type is an embedded type,
+if it neither collides nor is shadowed by other methods and fields,
+then compiler will implicitly declare a correspoding method for
+the unnamed pointer type whose base type is the embedding struct type.
+So here is the other implicitly declared method for type <code>*Singer</code>:
+<pre class="line-numbers"><code class="language-go">func (s *Singer) UpdateInfo(name string, age int) {
+	(&s.Person).UpdateInfo(name, age)
+	// <=> (&(*s).Person).UpdateInfo(name, age)
+	// <=> s.Person.UpdateInfo(name, age)
+}
+</code></pre>
+
+<p>
+So for the three methods of type <code>*Singer</code>, two of them
+(<code>PrintInfo</code> and <code>UpdateInfo</code>) are obtained through type embedding.
+The third one <code>ListWorks</code> is a <a href="golang-method#implicit-pointer-methods">consequence</a>
+of that type <code>Singer</code> has a corresponding method.
+</p>
+
+Simply speaking, 
+<ul>
+<li>
+	both type <code>struct{T}</code> and <code>*struct{T}</code>
+	will obtain (inherit) all the methods of type <code>T</code>.
+</li>
+<li>
+	type <code>*struct{T}</code> will obtain (inherit)
+	all the methods of type <code>*T</code> as well.
+</li>
+<li>
+	both type <code>struct{*T}</code> and <code>*struct{*T}</code>
+	will obtain (inherit) all the methods of type <code>*T</code>.
+	As the method set of type <code>T</code> is a subset of type <code>*T</code>,
+	we can also say both type <code>struct{*T}</code> and <code>*struct{*T}</code>
+	will obtain (inherit) all the methods of type <code>T</code>.
+</li>
+</ul>
+
+<p>
+For a type embedding,
+if the embedded type implements some interface types,
+then the embedding type will also implement these inrerface types
+if the embedding types obtains all the methods specified in the interface types
+from the embedding type.
+</p>
+
+<p>
+From the article <a href="golang-method">Methods In Go</a>,
+we know that we can't explicitly declare methods for unnamed struct types
+and unnamed pointer types whose base types are unnamed struct types.
+But through type embedding, such types can also own methods.
+</p>
+
+Here is another example to show which implicit methods are declared.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "reflect"
+
+type F func(int) bool
+func (f F) Validate(n int) bool {
+	return f(n)
+}
+func (f *F) Modify(f2 F) {
+	*f = f2
+}
+
+type B bool
+func (b B) IsTrue() bool {
+	return bool(b)
+}
+func (pb *B) Invert() {
+	*pb = !*pb
+}
+
+type I interface {
+	Load()
+	Save()
+}
+
+func main() {
+	PrintTypeMethods := func(t reflect.Type) {
+		fmt.Println(t, "has", t.NumMethod(), "methods:")
+		for i := 0; i < t.NumMethod(); i++ {
+			fmt.Print("   method#", i, ": ", t.Method(i).Name, "\n")
+		}
+	}
+	
+	var s struct {
+		F
+		*B
+		I
+	}
+	
+	PrintTypeMethods(reflect.TypeOf(s))
+	fmt.Println()
+	PrintTypeMethods(reflect.TypeOf(&s))
+}
+</code></pre>
+
+The result:
+<pre class="output">
+struct { main.F; *main.B; main.I } has 5 methods:
+   method#0: Invert
+   method#1: IsTrue
+   method#2: Load
+   method#3: Save
+   method#4: Validate
+
+*struct { main.F; *main.B; main.I } has 6 methods:
+   method#0: Invert
+   method#1: IsTrue
+   method#2: Load
+   method#3: Modify
+   method#4: Save
+   method#5: Validate
+</pre>
+</div>
+
+<h3>Selector Shadowing And Colliding</h3>
+
+<p>
+The number of dots in the full form of a selector can be called the depth of the selector.
+For example, if <code>x.y.z</code> is a full form selector, then its depth is 2.
+</p>
+
+<div>
+Sometimes, for a value <code>x</code>, there may be multiple selectors whose last tokens are identical. 
+Assume the last tokens are <code>y</code>, among these selectors,
+<ul>
+<li>
+	if only one selector has the smallest depth, then the only one selector can be
+	shortened to <code>x.y</code> (or one-dot selector), whereas the others can't.
+	We can say the others are shadowed by the one with the smallest depth.
+</li>
+<li>
+	if more than one selectors have the smallest depth, then none of them can be
+	shortened to <code>x.y</code>.
+	We can say the selectors with with the smallest depth are collided.
+</li>
+</ul>
+
+<p>
+If a method selector with depth larger than one can't be shortened to an one-dot selector,
+then there will not be implicit methods declared for the corresponding method.
+</p>
+
+For example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type A struct {
+	x string
+}
+func (A) y(int) bool {
+	return false
+}
+
+type B struct {
+	y bool
+}
+func (B) x(string) {}
+
+type C struct {
+	B
+}
+
+// v1.A.x and v1.B.x are collided,
+// so both of them can't be shortened to v1.x.
+// v1.A.y and v1.B.y are also collided.
+// so both of them can't be shortened to v1.y.
+// No implicit methods are declared for the type of v1.
+var v1 struct {
+	A
+	B
+}
+
+// v2.C.x is shadowed by v2.A.x, so v2.x <=> v2.A.x.
+// v2.C.y is shadowed by v2.A.y, so v2.y <=> v2.A.y.
+// Only one implicit method is declared for the type of v2,
+// the method name is y.
+var v2 struct {
+	A
+	C
+}
+
+func main() {
+	fmt.Printf("%T \n", v2.x) // string
+	fmt.Printf("%T \n", v2.y) // func(int) bool
+
+	// The following two lines don't compile.
+	/*
+	_ = v1.x
+	_ = v1.y
+	*/
+}
+</code></pre>
+
+</div>
+
+<h3>Interface Types Embed Interface Types</h3>
+
+<p>
+Not only can struct types embed other types, but also interface types can.
+But interface types can only embed named interface types.
+Please read <a href="golang-interface#embedding">Interfaces In Go</a> for detail.
+</p>
+
+<h3>A Defined Type Will Only Obtain Methods Which Are Obtained Through Embedding From The Source Type</h3>
+
+<p>
+In a type definition, if the new defined type is neither an interface type nor a pointer type,
+then for each method, which is obtained through type embedding, of the source type,
+a corresponding method with the same name will be implictly declared by compiler for the new defined type.
+The methods which are not obtained (by the the source type) through type embedding
+will not be obtained by the new defined type.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type MyInt int
+func (mi MyInt) IsOdd() bool {
+	return mi%2 == 1
+}
+
+// Type S has two methods, IsOdd and Scale.
+// IsOdd is obtained through embedding MyInt.
+type S struct {
+	MyInt
+}
+func (s S) Scale(n int) int {
+	return int(s.MyInt) * n
+}
+
+// Type T only obtains the IsOdd method from S.
+// It doesn't obtain the Scale method from S.
+type T S
+
+func main() {
+	var t T = T{5}
+	
+	// This line compiles okay.
+	fmt.Println(t.IsOdd()) // true
+	
+	// This line doesn't compile.
+	/*
+	fmt.Println(t.Scale(12))
+	*/
+}
+</code></pre>
+
+</div>

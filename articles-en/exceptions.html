@@ -1,0 +1,706 @@
+﻿
+
+<!--
+possible titles:
+* Go doesn't support exception, in syntax. Go has many exceptions, in syntax.
+* Rules and Sugars in Go
+* Go: rule or sugar?
+-->
+
+<p>
+This article will list the syntax/semantics sugars and exceptions in Go.
+Sugars are special syntax/semantics exceptions to make programming convenient.
+</p>
+
+<h3>Nested Function Callings</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+If the return results of a function call exactly match the input parameters
+of another function call and the number of the return result is not zero,
+then the first call can be nested in the second one.
+When nested in the second call, the first call can't mix up with
+other parameters of the second call.
+</div>
+
+Sugar:
+<div class="alert alert-success">
+If the number of the return results of a function call is exactly one,
+then the function call can be nested in another function call, even if the other
+function call need more than one parameters, and the single-return
+function call can mix up with other parameters of the other function call.
+</div>
+
+Exception:
+<div class="alert alert-success">
+The basic rule doesn't apply to the built-in <code>copy</code>,
+<code>print</code> and <code>println</code> functions.
+</div>
+
+<p><i>
+(The basic rule may <a href="https://github.com/golang/go/issues/15992">apply to</a>
+<code>copy</code> functions later,
+but will <a href="https://github.com/golang/go/issues/20656">never apply to</a>
+<code>print</code> and <code>println</code> functions.)
+</i></p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+)
+
+func f1() int {
+	return 1
+}
+
+func f2(x int) (int, int, int) {
+	return x*x, x+x, x-1
+}
+
+func f3(a, b, c int) int {
+	return a+b+c
+}
+
+func f4() (int, int) {
+	return 2, 3
+}
+
+func main() {
+	// returns match inputs
+	f3( f2(3) ) // compile okay
+	fmt.Println( f2(3) ) // 9 6 2
+	
+	// can't mix multiple returns with other parameters
+	// fmt.Println( "output:", f2(3) ) // error
+	// f3(1, f4()) // error
+	
+	// sugar: single return can be mixed with other parameters
+	f3( f1(), 2, 3 ) // compile okay
+	fmt.Println( "output:", f1() ) // output: 1
+	
+	// error: multiple-value f2() in single-value context
+	// println(f2(3))
+}
+</code></pre>
+</div>
+
+<h3>Unused Variables</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Local variables can't be declared but not used.
+</div>
+
+<div>
+Exception:
+<div class="alert alert-success">
+Function parameter and result variables, which can also be viewed as local variables, can be not used.
+</div>
+</div>
+
+<h3>Access Struct Fields</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Pointer values have no fields.
+</div>
+
+Sugar:
+<div class="alert alert-success">
+Pointers of a struct value can access the fields of the struct value.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+type T struct {
+	x int
+}
+
+func main() {
+	var t T
+	var p = &t
+	
+	p.x *= 2
+	// above line is a sugar for
+	(*p).x *= 2
+}
+</code></pre>
+</div>
+
+<h3>Method Receivers</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+The methods explicitly defined on type <code>*T</code> are not methods of type <code>T</code>.
+</div>
+
+Sugar:
+<div class="alert alert-success">
+Although the methods explicitly defined on type <code>*T</code> are not methods of type <code>T</code>,
+addressable values of type <code>T</code> can call these methods.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+type T struct {
+	x int
+}
+
+func (pt *T) Double() {
+	pt.x *= 2
+}
+
+func main() {
+	var t = T{3}
+	
+	t.Double() // t.x == 6 now
+	// above line is a sugar for
+	(&t).Double()
+}
+</code></pre>
+</div>
+
+<h3>Take Addresses Of Composite Literal Values</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Literal values are not addressable and can't be taken addresses.
+</div>
+
+Sugar:
+<div class="alert alert-success">
+Although composite literal values are not addressable, they can be taken addresses explicitly.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+type T struct {
+	x int
+}
+
+func (pt *T) Double() {
+	pt.x *= 2
+}
+
+func main() {
+	// T{3}.Double() // error: T{3} is not addressable
+                   // The last sugar doesn't work here.
+	
+	var pt = &T{3} // sugar: explicitly take address of 
+	               // unaddressable composite literal.
+	pt.Double()
+}
+</code></pre>
+</div>
+
+<h3>Precedences Of Unary Operators</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+For any operand, its post operator has a higher precedence than its pre operator if the post operator
+is not a <a href="https://golang.org/ref/spec#Operators">binary operator</a>.
+</div>
+
+Sugar:
+<div class="alert alert-success">
+Assume operand <code>ptr</code> is a pointer value, in <code>*ptr++</code>, operator <code>*</code> has
+a higher precedence than operator <code>++</code>, a.k.a., <code>*ptr++</code> is equivalent to
+<code>(*ptr)++</code>, for pointer arithmetic is not supported in Go.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+)
+
+type T struct{}
+
+func (t T) M() *int {
+	var v = 123
+	return &v
+}
+
+func main() {
+	var t = &T{}
+	var a = *t.M()
+	var b = *(t.M())
+	// the above two lines are equivalent.
+	var c = (*t).M()
+	fmt.Printf("%T %T %T\n", a, b, c) // int int *int
+	
+	var s = [...]int{0, 1, 2}
+	var u = &s[0]
+	var v = &(s[0])
+	// the above two lines are equivalent.
+	var w = (&s)[0]
+	fmt.Printf("%T %T %T\n", u, v, w) // *int *int int
+	
+	// sugar
+	
+	var x = new(int)
+	*x++ // *x == 1 now
+	// above line is a sugar for
+	(*x)++
+}
+</code></pre>
+</div>
+
+<h3>The Addressability Of Container Elements</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Container elements are addressable if their values can be overwritten.
+</div>
+
+Exception:
+<div class="alert alert-success">
+Map elements are not addressable, even if they can be overwritten.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var s = []int{123, 789}
+	var p = &s[0] // ok
+	_ = p
+	
+	var m = map[string]int{"abc": 123}
+	_ = m
+	
+	// p = &m["abc"] // error: cannot take addresses of map elements
+}
+</code></pre>
+</div>
+
+<h3>Modify Unaddressable Values</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Unaddressable values can't be modified.
+</div>
+
+Exception:
+<div class="alert alert-success">
+Although map element values are unaddressable, but their value can be modified if their types are numeric or string types.
+</div>
+
+<p>
+Maybe this is not an exception, for although map elements values can't be partially modified,
+they can be wholly overwritten (replaced).
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	type T struct {
+		x int
+	}
+	
+	var mt = map[string]T{"abc": {123}}
+	_ = mt
+	// mt["abc"].x *= 2 // error: mt["abc"].x is not changeable
+	mt["abc"] = T{mt["abc"].x * 2} // map elements are unaddressable
+	                               // but replaceable
+	
+	var mi = map[string]int{"abc": 123}
+	mi["abc"] *= 2
+	// above line is a sugar for
+	mi["abc"] = mi["abc"] * 2
+	
+	var ms =  map[int]string{123: "abc"}
+	ms[123] += "xyz"
+	// above line is a sugar for
+	ms[123] = ms[123] + "xyz"
+}
+</code></pre>
+</div>
+
+<h3>Generic</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Go doesn't support generic.
+</div>
+
+Exception:
+<div class="alert alert-success">
+Most <code>builtin</code> and <code>unsafe</code> functions support generic.
+</div>
+
+<p>
+</p>
+</div>
+
+<div>
+In fact, in Go specification,
+functions in <code>unsafe</code> packages are also viewed as built-in functions.
+There are more differences between built-in functions and other general functions:
+<ul>
+<li>general functions can be used as values, but built-in and unsafe functions can't.</li>
+<li>the return results of a general function call can be ignored all together
+	(if the called function has return results),
+	but this is not true for built-in and unsafe functions.
+	So if the number of results of a built-in or unsafe function is not zero,
+	then the calls to it can't be deferred.
+</li>
+</ul>
+</div>
+
+<h3>Declared Varialbes</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Declared variables are always addressable.
+</div>
+
+Exception:
+<div class="alert alert-success">
+The <a href="https://golang.org/pkg/builtin/#pkg-variables">predeclared <code>nil</code></a> variable is not addressable.
+</div>
+
+So, <code>nil</code> is an immutable varialbe.
+</div>
+
+<h3>Argument Consistency Of The Built-in <code>copy</code> and <code>append</code> Functions</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+The type of the second slice argument of a <code>copy</code> or <code>append</code> function call
+must be consistent with the first slice argument.
+(For <code>append</code> call, assume the second argument is passed with the form <code>aSlice...</code>.)
+</div>
+
+Sugar:
+<div class="alert alert-success">
+If the type of the first slice argument of a <code>copy</code> and <code>append</code> function call
+is <code>[]byte</code>, then the second argument type can be <code>string</code>.
+(For <code>append</code> call, assume the second argument is passed with the form <code>aSlice...</code>.)
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var bs = []byte{1, 2, 3}
+	var s = "xyz"
+	
+	copy(bs, s)
+	// above line is a sugar (and an optimization) for
+	copy(bs, []byte(s))
+	
+	bs = append(bs, s...)
+	// above line is a sugar (and an optimization) for
+	bs = append(bs, []byte(s)...)
+}
+</code></pre>
+</div>
+
+<h3>Comparison</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Most types in Go support comparison.
+</div>
+
+<div>
+Exception:
+<div class="alert alert-success">
+Map, slice and function types don't support comparison.
+</div>
+
+Exception in exception:
+<div class="alert alert-success">
+Map, slice and function values can be compared to the <code>nil</code> identifier.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var s1 = []int{1, 2, 3}
+	var s2 = []int{7, 8, 9}
+	//_ = s1 == s2 // error: slice values can't be compared
+	_ = s1 == nil // ok
+	_ = s2 == nil // ok
+	
+	var m1 = map[string]int{}
+	var m2 = m1
+	// _ = m1 == m2 // error: map values can't be compared
+	_ = m1 == nil
+	_ = m2 == nil
+	
+	var f1 = func(){}
+	var f2 = f1
+	// _ = f1 == f2 // error: function values can't be compared
+	_ = f1 == nil
+	_ = f2 == nil
+}
+</code></pre>
+</div>
+
+<h3>Comparing Interface Values</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Comparing interface values with incomparable dynamic values will panic.
+</div>
+
+Exception:
+<div class="alert alert-success">
+If the dynamic types of two interface values are not the same one,
+then comparing them will never panic,
+even if either of the two dynamic values are incomparable.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var s = []int{1, 2, 3}
+	var m = map[string]int{}
+	var x interface{} = s
+	var y interface{} = m
+	var z interface{} = nil
+	// The dynamic values of x and y are both incomparable.
+	//_ = x == x // will panic
+	//_ = y == y // will panic
+	_ = x == z // false, will not panic
+	_ = x == y   // false, will not panic
+}
+</code></pre>
+</div>
+
+<h3>The Blank Composite Literals</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+If a type <code>T</code> support composite literal values, then <code>T{}</code> is its zero value.
+</div>
+
+Exception:
+<div class="alert alert-success">
+For a map or a slice type <code>T</code>, <code>T{}</code> isn't its zero value.
+Its zero value is represented with <code>nil</code>.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	// new(T) will return the address of a zero value of type T
+	
+	type T0 struct {
+		x int
+	}
+	fmt.Println( T0{} == *new(T0) ) // true
+	type T1 [5]int
+	fmt.Println( T1{} == *new(T1) ) // true
+	
+	type T2 []int
+	fmt.Println( T2{} == nil ) // false
+	type T3 map[int]int
+	fmt.Println( T3{} == nil ) // false
+}
+</code></pre>
+</div>
+
+<h3>Container Element Iterations</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Only container values can be ranged, the iterated values are container elements.
+The element key/index will also be returned alongside of each iterated element.
+</div>
+
+Exception 1:
+<div class="alert alert-success">
+The iterated values are runes if the ranged containers are strings, instead of the byte elements of strings.
+</div>
+
+Exception 2:
+<div class="alert alert-success">
+The element index (order) will not be returned alongside of each iterated element when iterating channels.
+</div>
+
+Sugar:
+<div class="alert alert-success">
+Array pointers can also be ranged to iterate array elements.
+</div>
+
+BTW, accessing array elements on array pointers (<code>pArray[index]</code>)
+and deriving slices from array pointers (<code>pArray[start : end]</code>)
+are also legal.
+</div>
+
+<!--
+<h3>Identical Types</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Any two named types with different names are different types.
+</div>
+
+Exceptions:
+<div class="alert alert-success">
+<code>byte</code> and <code>uint8</code> are the same identical type.
+<br/>
+<code>rune</code> and <code>int32</code> are the same identical type.
+</div>
+</div>
+-->
+
+<h3>Built-in Types</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Generally, built-in types have no methods.
+</div>
+
+Exception:
+<div class="alert alert-success">
+The built-in <code>error</code> type has a <code>Error() string</code> method.
+</div>
+</div>
+
+<h3>Exported Identifiers</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+The identifiers not starting with Unicode upper case letters can't be exported.
+</div>
+
+Exception:
+<div class="alert alert-success">
+Identifiers starting with Unicode lower case letter in the <code>builtin</code> package
+can be exported.
+</div>
+</div>
+
+<h3>Types Of Values</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Values should have either a type or a default type.
+</div>
+
+Exception:
+<div class="alert alert-success">
+Untyped <code>nil</code> has neither a type nor a default type.
+</div>
+
+For the reason of this exception, untyped <code>nil</code> can't be
+assigned to a new declared variable which type is not specified.
+And although untyped <code>nil</code> can be used as dynamic values
+of interface values, it doesn't implement any interface type.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	const x = 123 // for untyped constant x, its default type
+	              // is int, and it has many potential types.
+	
+	fmt.Printf("type of %v is %T \n", x, x) // type of 123 is int
+	
+	var y = x // compile okay, the type of y is int
+	_ = y
+	var _ float64 = x    // compile okay
+	var _ int32 = x      // compile okay
+	var _ complex128 = x // compile okay
+	
+	// var _ = nil // compile error: use of untyped nil
+	
+	var v interface{} 
+	fmt.Printf("type of %v is %T \n", v, v) // type of &lt;nil&gt; is &lt;nil&gt;
+	var _ interface{} = v.(interface{}) // will panic
+}
+</code></pre>
+</div>
+
+<h3>Constant Values</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Constant values never change.
+</div>
+
+Exception:
+<div class="alert alert-success">
+<code>iota</code> is a predeclared constant, its value will start from <code>0</code>
+and increase one line by line in a constant declaration group.
+</div>
+
+And <code>iota</code> can only be used in constant declarations.
+It can't be used in variable declarations and many other places where
+general constants can show up.
+</div>
+
+<h3>Behavior Of Missing The OK Optional Return Value</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Whether or not the ok return value is present will not affect program behavior.
+</div>
+
+Exception:
+<div class="alert alert-success">
+Missing the ok optional return value will make current goroutine panic if a type assertion fails.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var ok bool
+	
+	var m = map[int]int{}
+	_, ok = m[123] // will not panic
+	_ = m[123]     // will not panic
+	
+	var c = make(chan int, 2)
+	c <- 123
+	close(c)
+	_, ok = <-c // will not panic
+	_ = <-c     // will not panic
+	
+	
+	var v interface{} = "abc"
+	_, ok = v.(int) // will not panic
+	_ = v.(int)     // will panic!
+}
+</code></pre>
+</div>
+
+</div>

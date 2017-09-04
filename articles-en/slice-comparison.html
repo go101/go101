@@ -1,0 +1,164 @@
+﻿
+<p>
+Assume two slice values have the same type 
+and each element values in the two slices are comparable, 
+how to efficiently compare them to judge if they are equal?
+</p>
+
+<div>
+We all know that slice types don't support comparison in Go 
+(slice/map/function values are only allowed to compare with nil identifier).
+But there is a <code>reflect.DeepEqual</code> function for comparing any two values 
+(this article will use <code>[]int</code> type in examples.):
+<pre class="line-numbers"><code class="language-go">func CompareSlices_Reflect(a, b []int) bool {
+	return reflect.DeepEqual(a, b)
+}
+</code></pre>
+The function <code>reflect.DeepEqual</code> is never expected to be efficient.
+So we will implement a better one from scratch:
+<pre class="line-numbers"><code class="language-go">func CompareSlices_General(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	if (a == nil) != (b == nil) {
+		return false
+	}
+	
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	
+	return true
+}
+</code></pre>
+Benchmarking the two function will get the result:
+<pre>
+Benchmark_Reflect-4         	  200000	     42962 ns/op
+Benchmark_General-4         	20000000	       471 ns/op	
+</pre>
+<p>
+Wow! I know <code>reflect.DeepEqual</code> is slow, but I didn't expect it is so slow!
+</p>
+</div>
+
+<p>
+Can the one implemented from scratch be improved?
+</p>
+
+<div>
+There are two optimization directions:
+<ul>
+<li>to make use of <a href="golang-1.7-bce">the BCE feature added in Go 1.7</a>.</li>
+<li>if the two input slices share the same underlying array and have the same length, then they must be equal.</li>
+</ul>
+Three more implementations:
+<pre class="line-numbers"><code class="language-go">func CompareSlices_BCE(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	if (a == nil) != (b == nil) {
+		return false
+	}
+	
+	b = b[:len(a)] // this line is the key
+	for i, v := range a {
+		if v != b[i] { // here is no bounds checking for b[i]
+			return false
+		}
+	}
+
+	return true
+}
+
+func CompareSlices_Pointer(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	if (a == nil) != (b == nil) {
+		return false
+	}
+
+	if len(a) == 0 {
+		return true
+	}
+	
+	if &a[0] == &b[0] {
+		return true // early exit
+	}
+	
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func CompareSlices_PointerAndBCE(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	if (a == nil) != (b == nil) {
+		return false
+	}
+
+	if len(a) == 0 {
+		return true
+	}
+	
+	b = b[:len(a)]
+	if &a[0] == &b[0] {
+		return true
+	}
+	
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+</code></pre>
+
+The full benchmark result:
+<pre>
+$ go test -bench=. -run=slicecompare_test.go -benchtime=5s
+Benchmark_Reflect-4         	  200000	     42724 ns/op
+Benchmark_General-4         	20000000	       494 ns/op
+Benchmark_BCE-4             	20000000	       449 ns/op
+Benchmark_Pointer-4         	20000000	       467 ns/op
+Benchmark_PointerAndBCE-4   	20000000	       456 ns/op
+</pre>
+</div>
+
+<p>
+The new optimizations are about 5%-9% better.
+I think the pure BCE version is the preferred implementation,
+for it is rare that two input slices share the same underlying array in practice.
+</p>
+
+<div>
+There is an argument: should <code>[]int{}</code> and <code>[]int(nil)</code> be equal or not?
+In this article, we think they are not equal, which is consistent with <code>reflect.DeepEqual</code>.
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	a, b := []int{}, []int(nil)
+	fmt.Println(a, b, reflect.DeepEqual(a, b)) // [] [] false
+	fmt.Println(a == nil, b == nil)            // false true
+}
+</code></pre>
+</div>

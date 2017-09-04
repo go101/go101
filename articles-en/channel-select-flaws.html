@@ -1,0 +1,202 @@
+﻿
+<p>
+Go is known and praised for its built-in concurrent programming support.
+Goroutine and channel make concurrent programming easy and fun.
+However, goroutine and channel are not unique features for Go.
+What goroutine and channel (operations not in <code>select</code> blocks)
+can achieve can also be achieve in other languages
+with similar of alternated implementations (though not simple as Go).
+</p>
+
+<p>
+What is unique in Go is its select mechanism.
+The select mechanism creates many interesting concurrent design patterns with a few lines of code.
+</p>
+
+<p>
+However, there are some flawes in the current select mechanism
+implementation of the official Go compiler/runtime.
+</p>
+
+<h3>Flaw 1: Select Is Slow</h3>
+
+<p>
+Each case in a <code>select</code> block consumes about 2x time of executing a single channel operation.
+Executing a two-case <code>select</code> block spends about 4x time of executing a single channel operation.
+Executing a five-case <code>select</code> block spends about 10x time of executing a single channel operation.
+Although often it is worth consuming more time by using the select mechanism,
+more than 5 cases in a <code>select</code> block is not recommended.
+</p>
+
+<h3>Flaw 2: It Is Not Always Good To Select Unblocked Cases Randomly</h3>
+
+<div>
+Here is a common example by using a closed channel to notify goroutines to exit:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"log"
+	"time"
+	"runtime"
+)
+
+func main() {
+	runtime.GOMAXPROCS(1)
+	log.SetFlags(0)
+	
+	data := make(chan int, 10000)
+	data <- -1; data <- -1; data <- -1
+	stop := make(chan struct{})
+	done1 := make(chan struct{})
+	done2 := make(chan struct{})
+	
+	for i := range [100]struct{}{} {
+		data <- i
+	}
+	
+	// sender
+	go func() {
+		defer close(done1)
+		
+		var v = 0
+		for {
+			time.Sleep(time.Second / 2)
+			
+			select {
+			case <- stop:
+				return
+			case data <- v:
+				log.Println("sent", v)
+				v++
+			}
+		}
+	}()
+	
+	// receiver
+	go func() {
+		defer close(done2)
+		
+		for {
+			time.Sleep(time.Second / 2)
+			
+			select {
+			case <- stop:
+				return
+			case v := <-data:
+				log.Println("received", v)
+			}
+		}
+		close(done2)
+	}()
+	
+	// ...
+	time.Sleep(time.Second)
+	close(stop)
+	log.Println("stopped")
+	
+	<- done1
+	<- done2
+}
+</code></pre>
+
+<p>
+The logic is simple, once the <code>stop</code> is closed,
+the sender and receiver goroutines should exit as early as possible.
+The above program may run without any problems, but not theory correct.
+If there are multiple unblocked cases when executing a <code>select</code> block,
+a random of them will be selected to run,
+so even if the <code>stop</code> channel is closed, its corresponding cases
+may still be not selected for several loops, and in theory, they may be
+never selected, so the program will never exit.
+</p>
+</div>
+
+<div>
+A theory correct version is made by adding an extra <code>select</code> block in each loop:
+<pre class="line-numbers"><code class="language-go">// sender
+	go func() {
+		defer close(done1)
+		
+		var v = 0
+		for {
+			time.Sleep(time.Second / 2)
+
+			select { // avoid looping for ever
+			case <- stop:
+				return
+			default:
+			}
+			
+			select {
+			case <- stop:
+				return
+			case data <- v:
+				log.Println("sent", v)
+				v++
+			}
+		}
+	}()
+	
+	// receiver
+	go func() {
+		defer close(done2)
+		
+		for {
+			time.Sleep(time.Second / 2)
+
+			select { // avoid looping for ever
+			case <- stop:
+				return
+			default:
+			}
+			
+			select {
+			case <- stop:
+				return
+			case v := <-data:
+				log.Println("received", v)
+			}
+		}
+		close(done2)
+	}()
+</code></pre>
+
+<p>
+The one-case-plus-defalut <code>select</code> block will be specially optimized by the official Go compiler.
+The <code>case</code> channel operation will be translated to a try-send or try-receive operation.
+Although the above one-case-plus-defalut <code>select</code> block is optimized,
+the theory correct version is still more CPU consuming (about more 5% CPU usage) than the first one.
+</p>
+
+<p>
+Howerver, if the unblocked cases are selected by their appearance orders
+(as another option alongside with randomized orders),
+then the first version is already theory correct and is more effocient (and cleaner) than the above theory correct one.
+In fact, it would be more theory correct than the second one.
+</p>
+</div>
+
+<h3>Flaw 3: Behavior Inconsistency</h3>
+
+<div>
+A <code>select</code> block with a send-to-closed-channel case may panic the current goroutine, or not.
+Here is a simple example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	c := make(chan int)
+	close(c)
+	select {
+	case c<-123:
+	case <-c:
+	}
+}
+</code></pre>
+
+<p>
+This program may panic or not, by luck.
+This is really a bad design, which is not good to find bugs in time and verify tests.
+A good design should always panic the above program.
+</p>
+</div>
+

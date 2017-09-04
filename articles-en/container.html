@@ -1,0 +1,1426 @@
+﻿
+<p>
+Strictly speaking, there are three kinds of built-in container types in Go,
+arrays, slices and maps.
+Sometimes, strings and channels can also be viewed as container types,
+but this article will not touch the two kinds of types.
+</p>
+
+<p>
+There are many container types related details in Go.
+This article will list them one by one.
+</p>
+
+<h3>Key Types And Element Types Of Built-in Container Types</h3>
+
+<p>
+Each container type is composed of a key type and an element type.
+</p>
+
+<p>
+Both of the key type and the element type of a map type must be user specified.
+The key type of any array and slice type is always <code>int</code>,
+but the element type of an array or slice type must be user specified.
+The keys of arrays and slices are often called indexes.
+</p>
+
+<h3>Literal Representations Of Built-in Container Types</h3>
+
+<div>
+The literal representations of the three kinds of built-in container types:
+<ul>
+<li>array types: <code>[N]T</code></li>
+<li>slice types: <code>[]T</code></li>
+<li>map types: <code>map[K]T</code></li>
+</ul>
+
+where
+<ul>
+<li>
+	<code>T</code> is an arbitrary type.
+	It specifies the element type of a container type.
+	Only values of the specified element type can be stored
+	in an value of the container type.
+</li>
+<li>
+	<code>N</code> must be a non-negative integer constant.
+	It specifies the number of elements stored in any value of an array type,
+	and it can be called the length of the array type.
+</li>
+<li>
+	<code>K</code> is an arbitrary comparable type.
+	It specifies the key type of a map type.
+	Most types in Go are comparable, incomparable types are
+	<a href="#">listed here</a>.
+</li>
+</ul>
+
+Here are some container type literal representation examples:
+<pre class="line-numbers"><code class="language-go">const Size = 32
+
+// Array types.
+[5]string
+[Size]int
+[16][]byte // element type is a slice type: []byte
+
+// Slice types.
+[]bool
+[]int64
+[]map[int]bool // element type is a map type: map[int]bool
+
+// Map types.
+map[string]int
+map[int]bool
+map[int16][6]string // element type is an array type: [6]string
+</code></pre>
+</div>
+
+<h3>Underlying Structures Of Map And Slice Types</h3>
+
+<!---
+array types are elementary types, slice and map types are extended types,
+to make Go programming more efficient and enjoyable.
+-->
+
+ToDo: This section is important. It is best to list the underlying struct here,
+and define the underlying array and underlying hashtable for later uses.
+
+The fact that each value of map and slice types may have an underlying part
+is the root reason of many behaviour differences between array and slice/map values.
+* copy array is clone array, but copy map/slice is not clone ...
+* iteration
+* array dynamic value element can't be modified, slice dyanmic value element can.
+
+<p>
+<a href="golang-underlying-values">This article</a> shows the underlying structures
+of map and slice types for the official Go compiler.
+Knowing the underlying structures is helpful to understand map and slice
+types better.
+</p>
+
+<div>
+Here will not repeat the content in the just mentioned article.
+We just should know that
+<ul>
+<li>
+	each slice value has an underlying array.
+</li>
+<li>
+	each map value is a pointer to a hastable internally.
+</li>
+</ul>
+<p>
+So, when a slice (map) value is assigned (copied) to anther slice (map)
+value, the elements are not copied.
+</p>
+</div>
+
+<h3>Differences And Similarities Between Arrays And Slices</h3>
+
+<p>
+The length of an array type is the part of the array type.
+For example. <code>[5]int</code> and <code>[8]int</code> are two distinct array types.
+All values of a specified array type contain the same number of elements,
+whereas two values of a specified slice type may contain different numbers of elements.
+Slices can be viewed as dynamic arrays and are much more flexiable than arrays,
+thus slices are used more popular than arrays in practice.
+</p>
+
+<p>
+All elements of an array or a slice are stored continuously in memory.
+There mustn't be gaps between any two adjacent elements of an array or a slice.
+</p>
+
+<p>
+Two array values will never share element values.
+But a slice may share (overlap) a segment of elements with another slice or an array.
+The examples in the following sections will prove this.
+</p>
+
+<p>
+Following sections will indroduce more differences and similarities between arrays and slices.
+</p>
+
+<h3>Zero Values Of Built-in Container Types</h3>
+
+<p>
+Zero values of an array type <code>[N]T</code> can be represented
+by <code>[N]T{}</code>, which is a composite literal.
+Composite literal will be introduced below.
+All elements stored in any zero value of an array type
+are zero values of the element type of the array type.
+</p>
+
+<p>
+Zero values of all slice and map types are represented by <code>nil</code> literally.
+</p>
+
+<p><i>
+(BTW, there are some other kinds of types whose zero values are also represented by <code>nil</code>,
+including pointer, function, channel and interface types.)
+</i></p>
+
+<h3>Map And Slice Types Are Not Comparable</h3>
+
+<p>
+Map and slice types belong to incomprable types,
+so map and slice types can't be used as map key types.
+</p>
+
+<p>
+Although a map value can't be compared with another map value (or itself),
+it can be compared to the bare <code>nil</code> identifer.
+The same is for slice values.
+</p>
+
+<p>
+Most arary types are comparable,
+except the ones whose element types are incomprable types.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var a [16]byte
+	var s []int
+	var m map[string]int
+	
+	fmt.Println(a == a)   // true
+	fmt.Println(m == nil) // true
+	fmt.Println(s == nil) // true
+	
+	// The following 4 lines don't compile.
+	/*
+	_ = m == m
+	_ = s == s
+	_ = m == map[string]int(nil)
+	_ = s == []int(nil)
+	*/
+}
+</code></pre>
+<p>
+</p>
+</div>
+
+<p><i>
+(BTW, function types are also incomparable types.
+About more incomparable types, please read <a href="#">this article</a>.)
+</i></p>
+
+<h3>Composite Literals</h3>
+
+<p>
+The form <code>T{elementA, elementB, ...}</code> is called <b><i>composite literal</i></b> in Go,
+where <code>T</code> must be either a built-in container type (array, slice and map) or a struct type.
+</p>
+
+<div>
+Container (array, slice and map) values can be represented with composite literals in code.
+Here are some examples:
+<pre class="line-numbers"><code class="language-go">// An array value which contains four bool values.
+[4]bool{false, true, true, false}
+
+// A slice value which contains three words.
+[]string{"break", "continue", "fallthrough"}
+
+// A map value which contains some key-value pairs.
+map[string]int{"C": 1972, "Python": 1991, "Java", 1995, "Go": 2009}
+</code></pre>
+
+There are some variations for array and slice composite literals:
+<pre class="line-numbers"><code class="language-go">// Followings array composite literals are all equivalent:
+[4]bool{false, true, true, false}
+[4]bool{0: false, 1: true, 2: true, 3: false}
+[4]bool{1: true, true}
+[4]bool{2: true, 1: true}
+[...]bool{false, true, true, false}   // let compiler deduce the length
+[...]bool{3: false, 1: true, 2: true} // let compiler deduce the length
+
+// Followings slice composite literals are all equivalent:
+[]string{"break", "continue", "fallthrough"}
+[]string{0: "break", 1: "continue", 2: "fallthrough"}
+[]string{2: "fallthrough", 1: "continue", 0: "break"}
+[]string{2: "fallthrough", 0: "break", "continue"}
+</code></pre>
+
+<p>
+From above examples, we know that element indexes (keys) are optional in composite literals.
+If the index of an element is present but the idnex of the next appeared element is absent,
+then the (implicit) index of the next element is the index of the previous element index plus one.
+</p>
+
+<p>
+<code>[]T{}</code> represents a blank slice value, it is different with <code>nil</code> slice values.
+The same is for <code>map[K]T{}</code> and <code>nil</code> map values.
+</p>
+</div>
+
+<h3>Lengths And Capacities Of Container Values</h3>
+
+<p>
+The number of elements stored in a container value is called the length of the container value.
+We can use the built-in <code>len</code> function to get the length of a container value.
+The length of an array value will never change,
+and it is the same as the length of the type of the array value.
+</p>
+
+<p>
+Each array and slice value has a capacity property.
+We can use the built-in <code>cap</code> function to get the capacity of an array or slice value.
+Map values have no capacity properties.
+We can think the capacity of a map value is infinite.
+The capacity of an array value is always the same as the length of the array value.
+The capacity of a slice value is never smaller than the length of the slice value.
+</p>
+
+<p>
+The capacity of a slice is the key to determine whether or not the base slice and the result slice
+of an <code>append</code> function call will share elements.
+Following sections will show some examples about this.
+</p>
+
+<h3>Access Container Elements</h3>
+
+<p>
+Each element stored in a container value has a corresponding key.
+The element corresponding to key <code>k</code> stored in a container value <code>v</code>
+can be accessed with the form <code>v[k]</code>.
+</p>
+
+<p>
+Above has mentioned that the key (index) types of array and slice types are always <code>int</code>.
+The valid element index (key) range of an array or slice value is from 0 (inclusive) to the length of the
+array or slice value (exclusive).
+Although the key types of array and slice types are <code>int</code>,
+to make programming convenient,
+the element indexes used to access array and slice elements can be of any interger types.
+</p>
+
+<h3>Ways To Create Array Values</h3>
+
+<div>
+There are several ways to create array values:
+<ol>
+<li>
+	declared an array variable without initilizing it.
+	The declared array variable is a zero value of its type.
+</li>
+<li>
+	use the composite literals introduced above.
+</li>
+<li>
+	dereference the array pointer created by the built-in <code>new</code> function.
+	The dereference result is a zero value of the passed array type to
+	the <code>new</code> function call.
+</li>
+<li>
+	copy an array value.
+</li>
+</ol>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var a0 [5]int   // a zero value.
+	fmt.Println(a0) // [0 0 0 0 0]
+	var a1 = *new([5]int) // a1 == a0
+	var a2 = [5]int{}     // a2 == a0
+	
+	var a3 = [5]int{6, 0, 9}
+	var a4 = [...]int{6, 0, 9, 0, 0} // a4 == a3
+	var a5 = [...]int{6, 2: 9, 4: 0} // a5 == a3
+	var a6 = [5]int{6, 1: 0, 9}      // a6 == a3
+	
+	// Copy an array. Each element is copied.
+	var a7 = a6 // a7 == a6 == a3
+	
+	// All print true.
+	fmt.Println(a0 == a1, a0 == a2)
+	fmt.Println(a3 == a4, a3 == a5,
+	            a3 == a6, a3 == a7)
+	
+	// All print 5.
+	fmt.Println(len(a0), cap(a0))
+	fmt.Println(len(a3), cap(a3))
+	
+	// a7 and a6 don't share elements.
+	a7[0], a7[4] = 123, 789
+	fmt.Println(a6) // [6 0 9 0 0]
+	fmt.Println(a7) // [123 0 9 0 789]
+}
+</code></pre>
+</div>
+
+<h3>Ways To Create Slice Values</h3>
+
+<div>
+<p>
+In the above example, <code>a0</code>, <code>a1</code> and <code>a2</code>
+are all zero values of array type <code>[5]int</code>.
+</p>
+
+There are several ways to create slice values:
+<ol>
+<li>
+	use <code>nil</code> as a slice value.
+</li>
+<li>
+	declared an slice variable without initilizing it.
+	The declared slice variable is a <code>nil</code> slice.
+</li>
+<li>
+	use the composite literals introduced above.
+</li>
+<li>
+	dereference the array pointer created by the built-in <code>new</code> function.
+	However, the dereference result is always a <code>nil</code> slice value.
+	So this way is seldom used in practice.
+</li>
+<li>
+	use the built-in <code>make</code> function.
+</li>
+<li>
+	derived a slice from an array (subslice).
+</li>
+<li>
+	derived a slice from another slice (subslice).
+</li>
+<li>
+	copy a slice.
+</li>
+<li>
+	use the built-in <code>append</code> function.
+</li>
+</ol>
+
+Example (the first 4 ways):
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var s0 []int       // s0 == nil
+	var s1 []int = nil // s1 == nil
+	s2 := []int(nil)   // s2 == nil
+	s3 := *new([]int)  // s3 == nil
+	s4 := []int{}      // blank slice, but s4 != nil
+	// All print 0.
+	fmt.Println(len(s0), cap(s0),
+	            len(s1), cap(s1),
+	            len(s2), cap(s2),
+	            len(s3), cap(s3),
+	            len(s4), cap(s4),
+	            )
+	
+	// The two composite literal are equivalent.
+	s5 := []int{0, 1, 2, 3, 4}    // composite literal
+	s6 := []int{3: 3, 4, 1: 1, 2} // composite literal
+	// All print 5.
+	fmt.Println(len(s5), cap(s5),
+	            len(s6), cap(s6),
+	            )
+}
+</code></pre>
+
+<p>
+The built-in function <code>make</code> can be used to create slice, map and channel values.
+When <code>make</code> function is used to create slices, its calls can take two or three arguments.
+The first argument must a slice type.
+The second argument specifies the length of the created slice, the third argument, which is
+optional, specifies the capacity of the created slice. If the third arguments is absent,
+its value is the same as the second argument (the length of the create slice).
+</p>
+
+<p>
+All elements of a slice created by <code>make</code> functions are zero values of
+element type of type of the created slice.
+</p>
+
+Example of using <code>make</code> to create slices:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	s4 := make([]int, 3, 5) // length is 2, capacity is 5
+	fmt.Println(len(s4), cap(s4)) // 3 5
+	s5 := make([]int, 3) // <=> makee([]int, 3, 3)
+	fmt.Println(len(s5), cap(s5)) // 3 3
+
+	fmt.Println(s4) // [0 0 0]
+	fmt.Println(s5) // [0 0 0]
+	
+	s4[0], s5[2] = 123, 789
+	fmt.Println(s4) // [123 0 0]
+	fmt.Println(s5) // [0 0 789]
+}
+</code></pre>
+
+We can use the form <code>anArrayOrSlice[low : high : max]</code> to derive
+a slice from an array or another slice (the other slice can be the slice itself).
+<code>low</code>, <code>high</code> and <code>max</code> are three interger values.
+<code>anArrayOrSlice</code> is called the source array or slice.
+The <code>: max</code> part is often omitted in programming,
+in which case, the <code>max</code> value is the capacity of anArrayOrSlice.
+The valid ranges of the three interger values:
+<ul>
+<li>
+	the valid range of <code>low</code> is from <code>0</code>
+	to <code>len(anArrayOrSlice)</code> inclusive.
+</li>
+<li>
+	the valid range of <code>high</code> is from <code>low</code> 
+	to <code>cap(anArrayOrSlice)</code> inclusive.
+</li>
+<li>
+	the valid range of <code>max</code> is from <code>high</code>
+	to <code>cap(anArrayOrSlice)</code> inclusive.
+</li>
+</ul>
+
+<p>
+The derived slice may share a segment of elements with the source array or slice.
+The length of the derived slice is <code>high-low</code>
+and the capacity of the derived slice is <code>max-low</code>.
+</p>
+
+Example of deriving and copying slices:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	x := [5]int{0, 1, 2, 3, 4}
+	// Derive slices from an array.
+	// The right parts of the 2 lines are equivalent.
+	s0 := x[1:4]
+	s1 := x[1:4:5]
+	fmt.Println(s0) // [1 2 3]
+	fmt.Println(len(s0), cap(s0)) // 3 4
+	fmt.Println(len(s1), cap(s1)) // 3 4
+	
+	// The derived slices will a segment of elements
+	// with the source array x (shares 3 elements).
+	s0[1] = 999
+	fmt.Println(x)  // [0 1 999 3 4]
+	fmt.Println(s1) // [1 999 3]
+	
+	// Derive slices from slcies.
+	// If the low index is 0, then it can be omitted.
+	// The right parts of the 4 lines are equivalent.
+	s2 := s1[0:2]
+	s3 := s1[:2]
+	s4 := s1[0:2:4]
+	s5 := s1[:2:4]
+	fmt.Println(len(s2), cap(s2)) // 2 4
+	fmt.Println(len(s3), cap(s3)) // 2 4
+	fmt.Println(len(s4), cap(s4)) // 2 4
+	fmt.Println(len(s5), cap(s5)) // 2 4
+	
+	// The derived slices will share a segment of elements
+	// with the source slice s1, and array x.
+	s5[0] = 333
+	fmt.Println(x)  // [0 333 999 3 4]
+	fmt.Println(s0) // [333 999 3]
+	fmt.Println(s1) // [333 999 3]
+	fmt.Println(s2) // [333 999]
+	fmt.Println(s3) // [333 999]
+	fmt.Println(s4) // [333 999]
+	
+	// If the high index is the length of the source
+	// container and the max index is absent, then the high
+	// index can be omitted. The max index can't be omitted.
+	// The following lines are equivalent.
+	_ = x[2:5]
+	_ = x[2:]
+	_ = x[2:5:5]
+	
+	// Copy a slice. The destination slcie will share all
+	// elements with the source slice.
+	s6 := s0
+	// The right part of the above copy line is equivalent
+	// to the right part of the following line.
+	s7 := s0[:]
+	fmt.Println(s6) // [333 999 3]
+	fmt.Println(s7) // [333 999 3]
+}	
+</code></pre>
+
+Please note, the derived slice may be not a subslice of the source slice.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	x := [5]int{0, 1, 2, 3, 4}
+	s0 := x[:2]
+	s1 := s0[len(s0):cap(s0)]
+	fmt.Println(len(s0), cap(s0)) // 2 5
+	fmt.Println(len(s1), cap(s1)) // 3 3
+	fmt.Println(s0) // [0 1]
+	fmt.Println(s1) // [2 3 4]
+}
+</code></pre>
+
+The built-in <code>append</code> function is used to create a slice value
+from a base slice value and several new elements.
+The first argument passed to an <code>append</code> function call
+is the base slice.
+The second parameter of the <code>append</code> function is Variadic.
+The base slice value will not be modified in the process.
+The base slice may share all its elements with the result slice,
+depending on whether or not the free capacity of the base slice
+is not enough to hold the appended elements.
+<ul>
+<li>
+	If the free capacity of the base slice is enough to hold the appended elements,
+	then the base slice will share all its elements with the result slice.
+</li>
+<li>
+	If the free capacity of the base slice is not enough to hold the appended elements,
+	then Go runtime will allocate a new underlying array for the result slice,
+	so the base slice will not share nay elements with the result slice.
+</li>
+</ul>
+
+Example (append):
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	s0 := make([]int, 2, 3)
+	fmt.Println(len(s0), cap(s0)) // 2 3
+	
+	// s0 shares elements with s1.
+	s1 := append(s0, 555)
+	fmt.Println(len(s1), cap(s1)) // 3 3
+	s1[0] = 123
+	fmt.Println(s0) // [123 0]
+	fmt.Println(s1) // [123 0 555]
+	
+	// s0 and s1 don't share elements with s2.
+	s2 := append(s0, 666, 777)
+	fmt.Println(len(s2), cap(s2)) // 4 6
+	s2[0] = 999
+	fmt.Println(s2) // [999 0 666 777]
+	// s0 and s1 are not modified.
+	fmt.Println(s0) // [123 0]
+	fmt.Println(s1) // [123 0 555]
+}	
+</code></pre>
+
+<p>
+The outputs (shown in comments) in the above example are for the official Go compiler/runtime.
+We can find that the capacity of <code>s2</code> is the double of
+the capacities of <code>s0</code> and <code>s1</code>.
+The capacity grow ratio is compiler dependent.
+</p>
+
+Some details about <code>append</code> function:
+<ul>
+<li>
+	for the case of the free capacity of the base slice is enough to hold the appended elements,
+	a call to <code>append</code> function may overwrite the elements of other slice values,
+	if the elements of the other slice values located at the free capacity of the base slice.
+</li>
+<li>
+	the first argument of <code>append</code> call can be a <code>nil</code> slice.
+</li>
+</ul>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	s0 := []int{0, 1, 2, 3, 4, 5}
+	s1 := s0[:2]
+	s2 := s0[2:]
+	fmt.Println(s2) // [2 3 4 5]
+
+	// The elements of s2 are located at the free capacity
+	// of s1. So the following append call will overwrite
+	// some elements of s2.
+	s3 := []int{7, 8, 9}
+	_ = append(s1, s3...)
+	fmt.Println(s2) // [7 8 9 5]
+	fmt.Println(s0) // [0 1 7 8 9 5]
+	
+	// Get a clone of s0.
+	s4 := append([]int(nil), s0...)
+	fmt.Println(s4) // [0 1 7 8 9 5]
+	s4[0] = 333
+	fmt.Println(s0[0], s4[0]) // 0 333
+}	
+</code></pre>
+</div>
+
+<h3>Ways To Create Map Values</h3>
+
+<div>
+There are several ways to create map values:
+<ol>
+<li>
+	use <code>nil</code> as a map value.
+</li>
+<li>
+	declared an map variable without initilizing it.
+	The declared slice variable is a <code>nil</code> map.
+</li>
+<li>
+	use the composite literals introduced above.
+</li>
+<li>
+	dereference the array pointer created by the built-in <code>new</code> function.
+	However, the dereference result is always a <code>nil</code> map value.
+	So this way is seldom used in practice.
+</li>
+<li>
+	copy a map.
+</li>
+<li>
+	use the built-in <code>make</code> function.
+</li>
+</ol>
+
+Example (the first 5 ways):
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var m0 map[string]int       // m0 == nil
+	var m1 map[string]int = nil // m1 == nil
+	m2 := map[string]int(nil)   // m2 == nil
+	m3 := *new(map[string]int)  // m3 == nil
+	
+	m4 := map[string]int{}  // blank map, but m4 != nil
+	
+	// All print 0.
+	fmt.Println(len(m0), len(m1), len(m2),
+	            len(m3), len(m4),)
+	            
+	m5 := map[string]int{"C": 1972, "Go": 2009}
+	fmt.Println(len(m5)) // 2
+	
+	// Copy a map. m6 and m5 will share elements. In fact,
+	// m6 and m5 reference the same underlying hashtable now.
+	m6 := m5
+	m6["Go"] = 2012
+	fmt.Println(m5) // map[C:1972 Go:2012]
+}
+</code></pre>
+
+<p>
+Above has mentioned that the offical implementation of map is hashtable internally.
+There is an underlying array to store the keys and elements within each hastable.
+The size of the array may be grow as needed.
+When the size grows, the array needs to be reallocated.
+</p>
+
+<p>
+When <code>make</code> function is used to create slices,
+its calls can take one or two arguments.
+The first argument must a map type.
+The optional second argument <code>size</code> specifies at least
+how many key-element pairs can be stored in the created map
+without reallocating the underlying array.
+If the second argument is absent, a small default size value is used.
+The default size is compiler dependent.
+</p>
+
+Example (make and copy maps):
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	m0 := make(map[string]int)
+	m1 := make(map[string]int, 10)
+	fmt.Println(len(m0), len(m1)) // 0 0
+}
+</code></pre>
+</div>
+
+<h3>Put And Delete Map Elements</h3>
+
+<p>
+In Go programming, we can use the form <code>m[k] = v</code> to put
+a key-element pair <code>(k, v)</code> to a map value <code>m</code>.
+</p>
+
+<p>
+The built-in <code>delete</code> function is used to delete a key-element pair
+from a map value. Calls to <code>delete</code> function take two arguments,
+the first one is the map one of which key-element pairs will be removed,
+the second one is the key in the removed key-element pair.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	m := map[string]int{"C": 1972, "Go": 2009}
+	
+	m["Python"] = 1991 // put one key-element pair
+	fmt.Println(m) // map[C:1972 Go:2009 Python:1991]
+	
+	delete(m, "C") // remove one key-element pair
+	fmt.Println(m) // map[Python:1991 Go:2009]
+}
+</code></pre>
+</div>
+
+<h3>More About Map Element Assessments</h3>
+
+<p>
+For an array (slice), an invalid element key (index) means there is not an element
+which is stored in the array (slice) and corresponds to the invalid key.
+Access array (slice) elements with invalid constant indexes (keys) will not compile.
+Access array (slice) elements with invalid non-constant indexes (keys) will panic at run time.
+</p>
+
+<p>
+Yet there is no keys are invalid for a map,
+as long as the keys are of the key type of the map.
+So retrieve elements from a map will never panic.
+</p>
+
+<p>
+Besides the just mentioned difference, an element retrieval from a map
+can return an optional second untyped bool value.
+The optional bool value indicate whether or not the retrieved element is stored in the map.
+If the retrieved element is not stored in the map,
+the first return is a zero value of the element type of the map type.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	m := map[string]int{"C": 1972, "Go": 2009}
+	
+	bornYear, present := m["Python"]
+	fmt.Println(bornYear, present) // 0 false
+	bornYear = m["Python"]
+	fmt.Println(bornYear) // 0
+	
+	bornYear, present = m["Go"]
+	fmt.Println(bornYear, present) // 2009 true
+	bornYear = m["Go"]
+	fmt.Println(bornYear) // 2009
+}
+</code></pre>
+
+In fact, even if a map is a <code>nil</code> map,
+retrieve elements from this map will still never panic.
+For this case, the first return is always a zero value of the element type of the map type,
+and the optional second untyped bool value is always <code>false</code>.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var nilMap map[string]int = nil
+	bornYear, present := nilMap["Go"]
+	fmt.Println(bornYear, present) // 0 false
+	
+	// However, put elements into nil maps will panic.
+	nilMap["Go"] = 2009 // will panic
+}
+</code></pre>
+</div>
+
+<h3>Take Addresses Of Container Elements</h3>
+
+<p>
+Array and slice elements are addressable, so array and slice elements can modified.
+However map elements are not addressable. Unaddressable values can't be modified,
+so map elements can only be replaced (overwritten as a whole).
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	type Person struct {
+		age int
+	}
+	personMap := map[string]Person{}
+	personMap["John"] = Person{26}
+	
+	// Map elements can be replaced.
+	john := personMap["John"]
+	john.age = 32
+	personMap["John"] = john
+	
+	// This two lines don't compile.
+	/*
+	personMap["John"].age = 32
+	_ = &personMap["John"]
+	*/
+	
+	// These lines compile and run okay.
+	ages := map[string]int{"John": 26}
+	ages["John"]++
+	ages["John"] += 1
+	// The above two lines are equivalent to:
+	ages["John"] = ages["John"] + 1
+}
+</code></pre>
+</div>
+
+<p><i>
+(About why map elements are not addressable, please read
+<a href="golang-unofficial-faq#maps-are-unaddressable">this answer</a>.)
+</i></p>
+
+<p>
+The address of the first element of an array must be
+the same as the address of the array, this is not true for slices.
+</p>
+
+<h3>Copy Slice Element Segments</h3>
+
+<p>
+The built-in <code>copy</code> is used to copy some consecutive elements
+from one slice to another.
+The two slice arguments passed to a <code>copy</code> call
+should be of the same slice type.
+The first argument is the destination slice, the second is the source slice.
+The destination and soure slices can share a segment of elements.
+The return value is the number of copied elements,
+which will be the minimum of lengths of the destination and soure slices.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	src := []int{5, 6, 7, 8}
+	dest := make([]int, 6)
+	n := copy(dest, src)
+	fmt.Println(dest, n) // [5 6 7 8 0 0] 4
+	n = copy(dest[4:], dest)
+	fmt.Println(dest, n) // [5 6 7 8 5 6] 2
+	
+	// We can make use of array dericed slices
+	// to copy array elements.
+	a0 := [4]int{5, 6, 7, 8}
+	a1 := [6]int{}
+	copy(a1[:], a0[:])
+	copy(a1[4:], a1[:])
+	fmt.Println(a1) // [5 6 7 8 5 6]
+}
+</code></pre>
+</div>
+
+<p><i>
+(If the first argument passed to a <code>copy</code> call is of type <code>[]byte</code>,
+then the second argument can be a string.
+Please read <a href="golang-string">Strings In Go</a> for detail.)
+</i></p>
+
+<h3>Modify The Length And Capacity Of A Slice Individually</h3>
+
+<p>
+Generally, the length and capacity of a slice value can't be modified individually.
+A slice value can only be overwritten as a whole by assigning another slice value to it.
+However we can modify the length and capacity of a slice individually by using
+<a href="#">reflections</a>.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	s := make([]int, 2, 6)
+	fmt.Println(len(s), cap(s)) // 2 6
+	
+	// The argument passed to SetLen must be in
+	// range from 0 to cap(s) inclusive.
+	reflect.ValueOf(&s).Elem().SetLen(3) // 3 6
+	fmt.Println(len(s), cap(s))
+	
+	// The argument passed to SetCap must be in
+	// range from len(s) to cap(s) inclusive.
+	reflect.ValueOf(&s).Elem().SetCap(5)
+	fmt.Println(len(s), cap(s)) // 3 5
+}
+</code></pre>
+<p>
+The argument passed to <code>SetLen</code> mustn't be larger than
+the current capacity of the slice <code>s</code>.
+The argument passed to <code>SetCap</code> mustn't be smaller than
+the current length of the slice <code>s</code> and larger than
+the current capacity of the slice <code>s</code>.
+</p>
+</div>
+
+<h3>Slice Manipulations (Delete And Insert)</h3>
+
+<p>
+Above has mentioned that we can remove a key-element pair from a map
+by calling the <code>delete</code> function,
+but how to remove an element from a slice?
+There is not a built-in function to do this.
+But it is not very verbose to implement it from scratch.
+</p>
+
+<div>
+Above here mentioned that slice elements must be stored continuously in memroy
+and there mustn't be gaps between any two adjacent elements of a slice.
+So when a slice element is removed,
+<ul>
+<li>
+	if the element orders must be preserved,
+	then each of the subsequent elements followed the removed element must be moved forwards.
+</li>
+<li>
+	if the element orders don't need to be preserved,
+	then we can move the last element in the slice to the removed index.
+</li>
+</ul>
+
+<p><i>
+(In following examples, assume <code>s</code> is the talked slice,
+<code>T</code> is the element type and <code>t0</code> is a zero value of <code>T</code>.)
+</i></p>
+
+Here are possible implementaions (
+assume <code>i</code> the index of the element to be removed and <code>i</code> is a valid index):
+<pre class="line-numbers"><code class="language-go">// Preserve index orders.
+s = append(s[:i], s[i+1:]...) // <=> s = s[:i + copy(s[i:], s[i+1:])]
+s[len(s):len(s)+1][0] = t0 // This line is to avoid memory leaking.
+                   // It is not essentail if the last element
+                   // of s doesn't contain pointers.
+
+// Index orders are not preserve.
+s[i] = s[len(s)-1]
+s[len(s)-1] = t0 // not essentail if s[len(s)-1] doesn't contain pointers.
+s = s[:len(s)-1]
+</code></pre>
+<p>
+</p>
+</div>
+
+<div>
+How to delete a segment of elements from a slice? One implementation:
+<pre class="line-numbers"><code class="language-go">// Assume both from and to index are valid.
+// (The to index is exclusive.)
+s = append(s[:from], s[to:]...)
+// If elements contain pointers, more work needs to be done,
+// to avoid potential memory leaking.
+s2 := s[len(s):len(s)+to-from]
+for i := range s2 {
+	s2[i] = t0
+}
+// The above loop will be optmized as a memclr call
+// by the officail Go compiler.
+</code></pre>
+<p>
+</p>
+</div>
+
+<div>
+Clone a slice (also shown in one of above example):
+<pre class="line-numbers"><code class="language-go">sClone := append([]T(nil), s...)
+</code></pre>
+<p>
+</p>
+</div>
+
+<div>
+Insert all elements of a slice (assume it is called <code>elements</code>) into another one:
+<pre class="line-numbers"><code class="language-go">// Assume elements are inserted before the <b>i</b><i>th</i> element.
+// The simple way (but may be not efficient).
+s = append(s[:i], append(elements, s[i:]...)...)
+
+// The efficient way.
+if len(s) + len(elements) < cap(s) {
+	copy(s[i:cap(s)][len(elements):], s[i:])
+	copy(s[i:], elements...)
+} else {
+	newS := make([]T, len(s) + len(elements))
+	copy(newS, s[:i])
+	copy(newS[i:], elements)
+	copy(newS[i+len(elements):], s[i:])
+	s = newS
+}
+</code></pre>
+
+If only one elemen, then the following way is preferred:
+<pre class="line-numbers"><code class="language-go">// Assume the inserted element is e.
+s = append(s, t0)
+copy(s[i+1:], s[i:])
+s[i] = e
+</code></pre>
+<p>
+</p>
+</div>
+
+<h3>Container Element Iterations</h3>
+
+<div>
+<p>
+In Go, keys and elements of a container value can be iterated with
+the <code>for key, element = range aContainer</code> syntax,
+where <code>key</code> and <code>element</code> are called iteration variables.
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	m := map[string]int{"C": 1972, "C++": 1983, "Go": 2009}
+	for lang, year := range m {
+		fmt.Printf("%s: %d \n", lang, year)
+	}
+	
+	a := [...]int{2, 3, 5, 7, 11}
+	for i, prime := range a {
+		fmt.Printf("%d: %d \n", i, prime)
+	}
+	
+	s := []string{"go", "defer", "goto", "var"}
+	for i, keyword := range s {
+		fmt.Printf("%d: %s \n", i, keyword)
+	}
+}
+</code></pre>
+
+<p>
+The variable <code>i</code> in the above example must be of type <code>int</code>.
+</p>
+
+The form <code>for key, element = range aContainer</code> has several variations.
+Examples:
+<pre class="line-numbers"><code class="language-go">// Ignore key iteration variable.
+for _, element := range aContainer {
+	// ...
+}
+
+// Ignore element iteration variable.
+for key, _ := range aContainer {
+	element = aContainer[key]
+	// ...
+}
+
+// Element iteration variable is omitted.
+// This form is equivalent to the above one.
+for key := range aContainer {
+	element = aContainer[key]
+	// ...
+}
+
+// Ignore both key and element iteration variables.
+for _, _ = range aContainer {
+	// This variation is not much useful.
+}
+
+// Both key and element iteration variables are omitted.
+for range aContainer {
+	// This variation is not much useful.
+}
+</code></pre>
+
+<p>
+Iterating over <code>nil</code> maps or <code>nil</code> slice is allowed,
+the number of iterated key-element pairs is zero for such case.
+</p>
+
+More details of iterations over maps:
+<ul>
+<li>
+	For a map container, the iteration order is not guaranteed to
+	be the same as the next iteration, even if the map is not modified
+	between the two iterations.
+</li>
+<li>
+	If map entries (key-element pairs) that have not yet been reached are removed during iteration,
+	the corresponding iteration values will not be produced.
+</li>
+<li>
+	If a map entry is created during an iteration,
+	that entry may be produced during the iteration or not.
+</li>
+</ul>
+
+If it is promised that there are no other goroutines (green threads in Go)
+manipulating a map <code>m</code>, then the following code are promised to
+clear all key-element pairs stored in <code>m</code>:
+<pre class="line-numbers"><code class="language-go">for key := range m {
+	delete(m, key)
+}
+</code></pre>
+
+Array and slice elements can also be iterated by using the traditional for-loop iteration:
+<pre class="line-numbers"><code class="language-go">for i := 0; i < len(anArrayOrSlice); i++ {
+	element := anArrayOrSlice[i]
+	// ...
+}
+</code></pre>
+
+If the length of <code>anArrayOrSlice</code> is not changed during the whole iteration
+(for arrays, this is always true), then the above for-loop iteration is equivalent to
+<pre class="line-numbers"><code class="language-go">for i := range anArrayOrSlice {
+	element := anArrayOrSlice[i]
+	// ...
+}
+</code></pre>
+
+<p>
+Like the traditional for-loop iterations, each for-range-loop iteration creates
+two code blocks, one implicit one and one explicit one enclosed in <code>{}</code>.
+The explicit one is nested in the implicit one.
+</p>
+
+
+The most important facts about the form <code>for key, element = range aContainer</code>
+are:
+<ul>
+<li>
+	The ranged container is a copy of <code>aContainer</code>.
+	(todo: the copied container is anonymous, so there are no ways to modify it,)
+	<ul>
+	<li>
+		If the <code>aContainer</code> is an array, then the modifications
+		made on the array elements during the iteration will be reflected to
+		the iteration variables.
+	</li>
+	<li>
+		If the <code>aContainer</code> is a slice, then the modifications
+		made on the slice le during the iteration will be reflected to
+		the iteration variables.
+	</li>
+	</ul>
+</li>
+<li>
+	The key-element pair will be assigned (copied) to the iteration variables
+	at each iteration step, so the modifications made on the iteration variables
+	will not be refelcted to the elements (and keys for maps) stored in
+	<code>aContainer</code>. 
+</li>
+</ul>
+
+Here is an example to prove the two facts (to make a better example):
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	type K struct {
+		v int
+	}
+	type T struct {
+		v bool
+	}
+	
+	// The ranged array is a copy of x.
+	// The copy will not share elements with x.
+	var x [2]T
+	fmt.Println(x) // [{false} {false}]
+	for i, t := range x {
+		switch i{
+		case 0:
+			t.v = true
+		case 1:
+			fmt.Print(i, ": ", t.v, "\n") // 1: false
+		}
+	}
+	
+	// For map and 
+	var y = make([]T, 2)
+	fmt.Println(y) // [{false} {false}]
+	for _, t := range y {
+		t.v = true
+	}
+	fmt.Println(y) // [{false} {false}]
+	
+	var z = map[K]T{{123}: {false}, {789}: {false}}
+	fmt.Println(z) // map[{789}:{false} {123}:{false}]
+	for k, t := range z {
+		k.v = 456
+		t.v = true
+	}
+	fmt.Println(z) // map[{123}:{false} {789}:{false}]
+}
+</code></pre>
+
+</div>
+
+<p>
+If the size of the values of the element type of an array or a slice,
+it is best to the form <code>for index := range aContainer</code>
+or the traditional for-loop to iterate elements,
+to avoid the performane loss caused by element value copying.
+For the same reason, plus larger the size of key values,
+more time consumed on comparing keys and calculating the hashes of the keys,
+it is not recommanded to use types which value size is too large
+as the key types and element types of map types.
+</p>
+
+<p>
+Don't range over an array to iterate its elements, for generally the cost of copy arrays is large.
+We can range over a pointer to the array instead, please read the next section for detail.
+</p>
+
+<p>
+There is a <code>memclr</code> optimization made by the official Go compiler,
+please read <a href="golang-array-iterations">this article</a> for detail.
+</p>
+
+<h3>Use Array Pointers As Arrays</h3>
+
+<p>
+In may situations, we can use a pointer to an array to replace occurances of the array in code.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var a [100]int // a large array.
+	var pa = &a
+	
+	// Range over a pointer to an array is much more
+	// effificient than range over the array itself.
+	for i, n := range pa {
+		fmt.Println(i, n)
+	}
+	
+	// We can access the elements of an array through
+	// a pointer to the array.
+	pa[3] = 999
+	fmt.Println(pa[3]) // 999
+	
+	// We can derive a slice from a pointer to an array.
+	s := pa[3:6]
+	fmt.Println(s) // [999 0 0]
+
+	// Even if pa is a nil pointer, it is still okay to
+	// range over it, as long as the second iteration
+	// varialbe is omitted.
+	pa = nil
+	for i:= range pa {
+		fmt.Println(i)
+	}
+}
+</code></pre>
+</div>
+
+<h3>Calls To <code>len</code> And <code>cap</code> May Be Evaluated At Compile Time</h3>
+
+<p>
+If the argument passed to a call to <code>len</code> or <code>cap</code> function
+is an array or an array pointer value, then the call will be evaluated at compile time
+and the return result can be assigned to an <code>int</code> constant.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+var (
+	a [5]int
+	p *[7]string
+)
+
+const (
+	N = len(a)
+	M = cap(p)
+)
+
+func main() {
+	fmt.Println(N) // 5
+	fmt.Println(M) // 7
+}
+</code></pre>
+</div>
+
+<h3>Container Releated Opetaions Are Not Synchronized Interally</h3>
+
+<p>
+Please note that, all container operations are not synchronized interally.
+Without making using of the <a href="golang-concurrent-synchronization">data synchronization technologies</a>,
+it is okay for multiple goroutines to read a container concurrently,
+but it is not okay for multiple goroutines to maniluplate a container concurrently
+and at least one goroutine will modify the container.
+The later case will cause data races, even make goroutines panic.
+We must synchronize the container operations manually.
+Please read <a href="golang-concurrent-synchronization">Synchrinizations In Go</a>
+to get how to synchronize among goroutines.
+</p>
+
+<!---
+NaN as map key (move to go details)
+non-comparable interface values as keys will panic (moved to go details)
+
+no list, no container/list.List instead (if you need efficient insertions and deletions)
+linked list is not used popular as slice.
+to avoid to increase the complexity of Go runtime implementation,
+Go authors decided not to implement it as a first-class type.
+
+no set, use map instead
+
+container value assign/copy needs one special chapter
+* generally, don't pass large arrays as arguments
+* the modifications on array parameters will not refected out of the tunrciton.
+  for map and slice, it is different.
+
+<p>
+Sometimes, the restructions made for Go pointers really will affect
+the code execcution efficiency. (put in slice<->string section is better)
+</p>
+
+Append and Subslice => new section
+b = append(a, x1, ..., xn)
+if cap(a) - len(a) < n, ...
+
+
+
+-->
+
+
+
+
+  
+
+
+
+
+
+
+

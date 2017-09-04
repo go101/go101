@@ -1,0 +1,140 @@
+﻿
+<p>
+In Go, we all know that the <code>for-range</code> syntax can be used to iterate elements
+in all sorts of containers, including arrays. 
+But some may not know there are some details in the <code>for-range</code> syntax
+and in the official Go compiler implementation.
+This article will show these details.
+</p>
+
+<h3>In a full form for-range block, the ranged array and iterated elements are both copies</h3>
+
+<div>
+The full form of <code>for-range</code> usage is like
+<code>for index, element = range anArray {...}</code>,
+in which a copy of <code>anArray </code> instead of <code>anArray </code> itself is ranged,
+and each <code>element</code> is a copy of the corresponding element in the copy of <code>anArray </code>:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	type Person struct {
+		name string
+		age  int
+	}
+	
+	persons := [3]Person {
+		{"John", 29},
+		{"Alice", 26},
+		{"Bob", 25},
+	}
+	
+	for i, p := range persons {
+		persons[len(persons)-1].name = "Jack" 
+		               // the modification will not reflect
+                   // to the iteration variable p.
+                                          
+		p.age = 40 - i // the modification will not reflect
+		               // to persons array.
+		fmt.Println(i, p.name, p.age)
+		fmt.Println("  ", &persons)
+	}
+	fmt.Println()
+	fmt.Println(&persons)
+}
+
+/* output:
+0 John 40
+   &[{John 29} {Alice 26} {Jack 25}]
+1 Alice 39
+   &[{John 29} {Alice 26} {Jack 25}]
+2 Bob 38
+   &[{John 29} {Alice 26} {Jack 25}]
+
+&[{John 29} {Alice 26} {Jack 25}]
+*/
+</code></pre>
+<p>
+From the outputs, it is shown clearly that the <code>age</code> values
+in array <code>persons</code> are never changed,
+and the <code>name</code> change on the last element
+is also not reflected to the iteration variable <code>p</code>.
+</p>
+</div>
+
+<h3>It is ok to iterate elements by ranging array pointers</h3>
+
+<div>
+It is ok to iterate elements by ranging array pointers, and generally, this is the preferred way
+to iterate array elements. When ranging an array pointer, the array pointer instead of the array is copied.
+Copying a pointer is much cheaper than copying a whole array.
+<pre class="line-numbers"><code class="language-go">for i, p := range &persons {
+  fmt.Println(i, p.name, p.age)
+}
+</code></pre>
+</div>
+
+<h3>If the second iteration variable is omitted, the ranged array will not be copied</h3> 
+
+<div>
+In the following loop, the array <code>persons</code> will not get copied.
+<pre class="line-numbers"><code class="language-go">for i = range persons {
+	...
+}
+</code></pre>
+
+
+NOTE: if the above loop ends naturally,
+the final value of <code>i</code> is <code>max(0, len(persons)-1)</code>,
+instead of <code>len(persons)</code>. In other words, the above loop is not
+equivalent to:
+
+<pre class="line-numbers"><code class="language-go">for i = 0; i < len(persons); i++ {
+	...
+}
+// i is always len(persons) here.
+</code></pre>
+</div>
+
+
+<p class="anchor" id="memclr-optimization"></p>
+<h3>The memclr optimization</h3> 
+
+<div>
+Assume <code>t0</code> is the literal presentation
+of the zero value of type <code>T</code>, and <code>a</code> is an array which
+element type is <code>T</code>, then the official Go compiler will translate code
+with the following form
+<pre class="line-numbers"><code class="language-go">for i := range a {
+	a[i] = t0
+}
+</code></pre>
+<p>
+<a href="https://github.com/golang/go/issues/5373">to
+an internal <code>memclr</code> call</a>, generally which is faster
+than resetting each element one by one.
+</p>
+
+<p>
+The optimization also works if the ranged containers are slices.
+But sadly, it doesn't work if the ranged values are array pointers
+(at least for Go 1.9). So if you want to reset an array, don't range its pointer.
+</p>
+
+How to reset a continuous portion of an array by making use of the
+<code>memclr</code> optimization?
+Just reset a slice derived from the array:
+<pre class="line-numbers"><code class="language-go">s := a[start:end]
+for i := range s {
+	s[i] = t0
+}
+</code></pre>
+
+</div>
+
+
+
+
+
+

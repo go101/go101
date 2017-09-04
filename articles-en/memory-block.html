@@ -1,0 +1,461 @@
+﻿
+
+<p>
+Go is a language which supports automatic memory management, such as memory allocation and garbage collection.
+So Go programmers can do programming without handling the underlying memory management.
+This saves Go programmers lots of time.
+</p>
+
+<p>
+Although knowing the underlying memory management implementation details is not necessary
+for Go programmers to write Go code, understanding some concepts and being aware of some facts
+in the memory management implementation by the official Go compiler and runtime is very
+helpful for Go programmers to write high quality Go code.
+</p>
+
+<p>
+This article will explain some concepts and facts of memory block allocation
+and garbage collection by the official Go compiler and runtime.
+Other aspects, such as memory apply and memory release in memory management,
+will not be touched in this article.
+</p>
+
+<h3>Values In This Article</h3>
+
+<p>
+We must clarify what is a value in this article to continue following content.
+</p>
+
+<p>
+In Go, each value always has a direct part.
+Some values each has only a direct part, for example,
+values of bool, numeric, pointer, array and custom struct types.
+Some values <a href="golang-underlying-values">each is composed of
+a direct part and several indirect underlying parts</a>,
+for example, non-nil values of map, slice, function and channel types.
+For any one of such mult-part values, its direct part is a pointer or
+a pointer wrapper which references its indirect underlying part(s).
+</p>
+
+<p>
+In the remaining of this article, unless otherwise specified,
+a value may be either a direct part or an underlying part mentioned above.
+The definition of values doesn't apply to the other articles in the Go 101 series.
+</p>
+
+<p class="anchor" id="memory-block"></p>
+<h3>Memory Blocks</h3>
+
+<p>
+A memory block is a continuous memory segment to host values at run time.
+Different memory blocks may have different sizes, to host different values.
+One memory block may host multiple values at the same time,
+but each value can only be hosted within one memory block, no matter how large the size of that value is.
+In other words, for any value, it will not be located crossing memory blocks.
+</p>
+
+<div>
+There are many reasons when one memory block may host multiple values. Some of them:
+<ul>
+<li>struct values often have several fields, so when a memory block is allocated for
+	a struct value, the memory block will also host these field values.
+</li>
+<li>container values often have many elements, so when a memory block is allocated for
+	a container value, the memory block will also host the element values.
+</li>
+<li>the underlying element sequences of two slices may be hosted on the same memory block,
+	the two element sequences even can overlap with each other.
+</li>
+</ul>
+</div>
+
+<h3>Definition: Reference</h3>
+
+<div>
+<a href="golang-underlying-values#reference-definition">This article</a>
+makes a definition for <b><i>reference</i></b>:
+<blockquote style="margin-top:0px;margin-bottom:0px;">
+<small>
+In Go specification, the word <b><i>reference</i></b> in Go indicates a relation.
+It is either a verb or an action noun, instead of a qualifier.
+For example, if a pointer value stores the address of another value,
+then we can say the pointer value references the other value,
+and the other value has at least one reference.
+If a struct/container value has a pointer field/element references another value,
+then we can also say the struct/container value references the other value.
+</small>
+</blockquote>
+<p>
+</p>
+</div>
+
+<p>
+Here, we extend the definition by saying
+a memory block is referenced by all the values it hosts.
+So if a value <code>v</code> is referenced by another value,
+then the other value will also reference the memory block hosting <code>v</code>, indirectly.
+</p>
+
+<p class="anchor" id="when-to-allocate"></p>
+<h3>When Will Memory Blocks Be Allocated?</h3>
+
+<div>
+In Go, memory blocks may be allocated but not limited at following occasions:
+<ul>
+<li>
+	explicitly call <code>new</code> and <code>make</code> built-in functions.
+	A <code>make</code> call may allocate more than one memory blocks.
+</li>
+<li>
+	create maps, slices and anonymous functions with corresponding composite literals.
+	More than one memory blocks may be allocated in the processes.
+</li>
+<li>
+	declare variables.
+	Depends on variable value types, one or more memory blocks may be allocated.
+</li>
+<li>
+	assign non-interface values to interface values (when the non-interface value is not a pointer value).
+</li>
+<li>
+	concatenate strings.
+</li>
+<li>
+	convert strings to <code>[]byte</code> or <code>[]rune</code>, and vice versa
+	(except <a href="golang-string#conversion-optimizations">some special compiler optimization cases</a>).
+</li>
+<li>
+	convert integers to <code>string</code>.
+</li>
+<li>
+	call <code>append</code> function (when the capacity of the base slice is not large enough).
+</li>
+<li>
+	add new key-element pairs into maps (when the underlying hash table needs to be resized).
+</li>
+</ul>
+</div>
+
+<h3>Where Will Memory Blocks Be Allocated?</h3>
+
+<p>
+For the official Go compiler and runtime, in every Go program,
+each goroutine will maintain a stack, a big memory block at run time.
+The initial stack size of each goroutine is several kilobytes.
+The stack size will grow and shrink as needed.
+</p>
+<!---
+now max stack size is 1Gb
+https://github.com/golang/go/issues/10936#issuecomment-295838599
+-->
+
+<p>
+Memory blocks allocated on the stack of a goroutine can only be used (referenced)
+in the goroutine internally.
+They are goroutine localized resources.
+They are not safe to be referenced crossing goroutines.
+</p>
+
+<p>
+Heap is a singleton in each program.
+Memory blocks allocated on heap can be accessed by multiple goroutines.
+In other words, they can be accessed concurrently.
+Their assessments should be synchronized when needed.
+</p>
+
+<p>
+Heap is a conservative place to register memory blocks.
+If compilers detect a memory block will be referenced crossing goroutines
+or can't easily make sure the memory block is safe to be put on stacks,
+then the memory block will be allocated on heap at run time. This means
+<a href="https://docs.google.com/document/d/1CxgUBPlx9iJzkz9JWkb6tIpTe5q32QDmz8l0BouG0Cw/preview">some
+values can be safely allocated on stacks may be also allocated on heap</a>.
+</p>
+<!---
+For the official Go compiler,
+
+very large memory blocks will always be allocated on heap?
+https://github.com/golang/go/issues/20021
+
+The values referenced by values allocated on heap will never be allocated in stacks.
+-->
+
+<div>
+In fact, stacks are not essential for Go programs.
+Go compiler/runtime can allocate all memory block on heap.
+Supporting stacks is just to make Go programs run more efficiently:
+<ul>
+<li>allocating memory blocks on stacks is much faster than on heap.</li>
+<li>memory blocks allocated on a stack will be collected along with
+	collecting the stack memory block, instead of one by one individually.
+</li>
+<li>stack memory blocks are more CPU cache friendly than heap ones.</li>
+</ul>
+</div>
+
+<p>
+If a memory block is allocated somewhere, we can also say the values hosted
+within the memory block are allocated on the same place.
+</p>
+
+<p>
+If a local value is allocated on heap, we can say the value escapes to heap.
+By using the official Go SDK, we can run <code>go build -gcflags -m</code> to check
+which local values will escape to heap at run time.
+As above has mentioned, the current escape analyzer in the official Go compiler
+is still not perfect, many local values can be allocated on stacks safely
+will escape to heap.
+</p>
+
+<p>
+When a local variable value of type <code>T</code> escapes to heap,
+what that really means is that Go runtime also creates
+an implicit pointer of type <code>*T</code> on the stack of the current goroutine.
+The value of the pointer stores the address of the memory block allocated on heap
+(a.k.a., the address of the local variable of type <code>T</code>).
+Go compiler has already replaced all references to the variable to
+the deferences of the pointer value at compile time.
+</p>
+
+<p>
+Global values (package-level values) will be allocated neither on stacks nor heap.
+A value referenced by any global value and any value allocated on heap
+will be allocated on heap if the value is not a global value.
+Global values and values allocated on heap values will never reference values allocated on stacks.
+Values allocated on a stack can only be referenced by values allocated on the same stack.
+</p>
+
+<div>
+Some facts:
+<ul>
+<li>if a field of a struct value escapes to heap, then the whole struct value will also escape to heap.</li>
+<li>if an element of an array value escapes to heap, then the whole array value will also escape to heap.</li>
+<li>if an element of a slice value escapes to heap, then the underlying element sequence value of the slice will also escape to heap.</li>
+<li>if a non-nil slice value escapes to heap, then its the underlying element sequence value will also escape to heap.</li>
+</ul>
+</div>
+
+<!---
+if a non-nil slice value escapes to heap, then its the underlying element sequence value will also escape to heap.
+
+A value referenced by any global value will be allocated on heap if the value is not a global value. 
+
+above two right or not? Or compile dependent?
+-->
+
+<p>
+A memory block created by calling <code>new</code> function may be allocated on heap or stacks.
+This is different to C++.
+</p>
+
+<h3>When Can A Memory Block Be Collected?</h3>
+
+<p>
+Memory blocks allocated for global values will never be collected.
+</p>
+
+<p>
+Each stack, as a big memory block, will be collected when the corresponding goroutine exits.
+So there is no need to collect the memory blocks allocated on stacks, individually, one by one.
+Collecting big stack memory blocks is not a duty of the garbage collector (see next section).
+</p>
+
+<p>
+For a memory block allocated on heap, it can be safely collected only when
+it is no longer referenced (either directly or indirectly)
+by any global value and any value allocated on goroutine stacks.
+We call such memory blocks as unused memory blocks.
+Here the global values include not only explicit package-level values,
+but also some runtime internal global values.
+Unused memory blocks on heap will be collected by garbage collector.
+</p>
+
+<div>
+Here is an example to show when some memory blocks can be collected:
+<pre class="line-numbers"><code class="language-go">package main
+
+var p *int
+
+func main() {
+	done := make(chan bool)
+	// done will be used on the main and following
+	// goroutines, so it will be allocated on heap.
+	
+	go func() {
+		x, y, z := 123, 456, 789
+		
+		p = &x // for x is referenced by global p,
+			// x will be allocated on heap.
+		
+		p = &y // y will be also allocated on heap.
+		
+		// as p references y now, x has not
+		// references any more. So x can be
+		// collected now.
+		
+		_ = z
+		// z can be allocated on stack safely.
+		
+		done <- true
+	}()
+	
+	<- done
+	// now the above goroutine exits, so its whole
+	// stack memory block will be collected.
+	
+	// ...
+}
+</code></pre>
+<p>
+</p>
+</div>
+
+<h3>When Will A Memory Block Be Collected?</h3>
+
+<p>
+Go runtime will collect unused heap memory blocks (garbage) to reuse or release memory.
+The current official Go compiler (v1.9) uses 
+<a href="https://blog.golang.org/go15gc">a concurrent, tri-color, mark-sweep garbage collector</a>.
+Here this article will not explain the detailed implementation. Just some facts are listed below.
+</p>
+
+<div>
+The collector is not always running. It will start when a threshold is satisfied.
+So an unused memory block may be not collected immediately after it becomes unused,
+it will be collected eventually.
+Currently, the threshold is controlled by
+<a href="https://golang.org/pkg/runtime/#hdr-Environment_Variables">GOGC environment variable</a>:
+<blockquote style="margin-top:0px;margin-bottom:0px;">
+<small>
+	The GOGC variable sets the initial garbage collection target percentage.
+	A collection is triggered when the ratio of freshly allocated data to live data remaining after the previous collection reaches this percentage.
+	The default is GOGC=100. Setting GOGC=off disables the garbage collector entirely.
+</small>
+</blockquote>
+<p>
+The value of this environment variable determines the frequency of garbage collecting,
+and it can <a href="https://golang.org/pkg/runtime/debug/#SetGCPercent">be modified at run time</a>.
+Smaller values lead to more frequent garbage collections.
+Go programs can also run the collector explicitly by calling the
+<a href="https://golang.org/pkg/runtime/#GC">runtime.GC</a> function.
+</p>
+</div>
+
+<div>
+In the mark phase, the collector uses the tri-color algorithm mentioned above to analyze
+which memory blocks are unused:
+<blockquote style="margin-top:0px;margin-bottom:0px;">
+<small>
+	At the start of a GC cycle all objects are white.
+	The GC visits all roots, which are objects directly accessible by the application
+	such as globals and things on the stack, and colors these grey.
+	The GC then chooses a grey object, blackens it, and then scans it for pointers to other objects.
+	When this scan finds a pointer to a white object, it turns that object grey.
+	This process repeats until there are no more grey objects.
+	At this point, white objects are known to be unreachable and can be reused. 
+</small>
+</blockquote>
+<p>
+Here, <b><i>objects</i></b> are either values or memory blocks.
+</p>
+
+<p>
+The unused memory blocks will be swept at the sweep phase.
+</p>
+</div>
+
+<!---
+There may be some other internal roots.
+https://github.com/golang/go/blob/master/src/runtime/HACKING.md#unmanaged-memory
+-->
+
+<p>
+There is a stop-the-world phase in garbage collecting. All goroutines must be paused in this phase.
+After many improvements from version to version,
+since v1.8, the collector makes typical worst-case stop-the-world duration less than 100μs (0.1 millisecond).
+This generally removes noticeable lags at run time.
+</p>
+
+<p>
+The collector is a non-compacting one, so it will not move memory blocks to rearrange them.
+</p>
+
+<!---
+<p>
+A memroy block may not be released to OS immediately after it is collected,
+so that it can be reused in another memory block allocation shortly after.
+Don't worry, the offical Go runtime is much less memory greedy than most Java runtimes.
+</p>
+-->
+
+<h3>Memory Leaking</h3>
+
+<div>
+Sometimes, a value only occupying a small portion of a memory block,
+which prevents the memory block from being collected.
+An example:
+<pre class="line-numbers"><code class="language-go">package main
+
+var smallStr string
+
+func f1(smallLen int) {
+	longStr := string(make([]byte, 1 << 20))
+	smallStr = longStr[0:smallLen]
+	// For the offcial Go compiler, now smallStr shares
+	// the same underlying byte sequence memory block
+	// with longStr. After exiting this function, this
+	// memory block is still referenced by smallStr, 
+	// even if smallLen is zero. This will prevent the
+	// memory block being collected,
+}
+
+var aSlice []int
+
+func f2(sliceLen int) {
+	anArray := [10000]int{}
+	aSlice = anArray[0:sliceLen]
+	// anArray and the underlying element sequence are
+	// hosted on the same memory block, so even if
+	// there is no elements in aSlice, after exiting
+	// this functions, the memory block hosting
+	// anArray still can't be collected.
+}
+
+func main() {
+	f1(0)
+	f2(0)
+	
+	// ...
+}
+</code></pre>
+<p>
+These are kind of memory leaking, not real memory leaking.
+</p>
+</div>
+
+<div>
+Setting a finalizer for a value which is a member of a cyclic reference group may
+<a href="https://golang.org/pkg/runtime/#SetFinalizer">prevent all memory blocks allocated
+for the cyclic reference group from being collected</a>.
+This is real memory leaking, not kind of.
+For example:
+<pre class="line-numbers"><code class="language-go">func memoryLeaking() {
+	type T struct {
+		v [1<<20]int
+		t *T
+	}
+
+	var finalizer = func(t *T) {
+		 fmt.Println("finalizer called")
+	}
+	
+	var x, y T
+	// SetFinalizer will make x escape to heap.
+	// Following two lines combined will make
+	// x and y not collectable.
+	x.t, y.t = &y, &x // y also escapes to heap.
+	runtime.SetFinalizer(&x, finalizer)
+}
+</code></pre>
+</div>
+

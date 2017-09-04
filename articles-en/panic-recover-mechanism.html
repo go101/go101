@@ -1,0 +1,441 @@
+<p>
+Go doesn't support exception, instead, panic/recover is supported.
+</p>
+
+<p>
+Exception throw/catch and panic/recover are some similar (in fact, equivalent, IMO), 
+for example, the value stored in a panic can be retrieved by a recover calling, 
+which can explained as the value thrown by a panic calling can be caught by a recover calling.
+</p>
+
+<p>
+The main difference is that even if the current goroutine is in panicking status, 
+or there are active panics in the current goroutine, 
+it is possible that recover callings still can't retrieve the values thrown by these active panics.
+</p>
+
+<div>
+For example:
+<pre class="line-numbers"><code class="language-go">// example1.go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	defer func() {
+		defer func() {
+			fmt.Println("6:", recover())
+		}()
+	}()
+	
+	defer func() {
+		func() {
+			fmt.Println("5:", recover())
+		}()
+	}()
+
+	func() {
+		defer func() {
+			fmt.Println("1:", recover())
+		}()
+	}()
+
+	func() {
+		defer fmt.Println("2:", recover())
+	}()
+
+	func() {
+		fmt.Println("3:", recover())
+	}()
+	
+	fmt.Println("4:", recover())
+	
+	panic(1)
+	
+	defer func() {
+		fmt.Println("0:", recover()) // never go here
+	}()
+}
+</code></pre>
+None of the 7 recover callings in above program recovers the program.
+The program crashes with printing out stack traces:
+<pre>
+$ go run example1.go
+1: &lt;nil&gt;
+2: &lt;nil&gt;
+3: &lt;nil&gt;
+4: &lt;nil&gt;
+5: &lt;nil&gt;
+6: &lt;nil&gt;
+panic: 1
+
+goroutine 1 [running]:
+...
+</pre>
+</div>
+
+<div>
+Obviously, the 0th recover calling is not reachable. 
+For others, let's check the <a href="handling panics">Go spec</a> firstly: 
+<div class="alert alert-success">
+The return value of recover is nil if any of the following conditions holds:
+<ul>
+<li> panic's argument was nil;</li>
+<li> the goroutine is not panicking;</li>
+<li> recover was not called directly by a deferred function.</li>
+</ul>
+</div>
+
+Let's ignore the first condition.
+The second condition covers the 1st/2nd/3rd and 4th recover callings. 
+The third one covers the 5th recover calling.
+However, none of the three conditions covers the 6th recover calling.
+</div>
+
+<p></p>
+
+<div>
+How to make the recover calling take effect? Do this:
+<pre class="line-numbers"><code class="language-go">// example2.go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	defer func() {
+		fmt.Println( recover() ) // 1
+	}()
+	
+	panic(1)
+}
+</code></pre>
+
+Now, the panic value is caught by the recover calling and the program will not crash.
+</div>
+
+<p>
+So, what is the principal rule to make a recover calling take effect?
+</p>
+
+<p>
+Firstly, let's learn some concepts and facts.
+</p>
+
+<h3>Concept: Deferred Function Calling</h3>
+
+<div>
+When a fucntion is called deferredly, or the calling of the function is prefixed with a
+<a href="https://golang.org/ref/spec#Defer_statements">defer</a> keyword, then the calling
+is called deferred calling.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	defer func() { // deferred function calling
+	
+		func() { // not a deferred function calling
+			
+			defer recover() // deferred function calling
+		}()
+	}()
+	
+	func() { // not a deferred function calling
+	
+		defer func() { /// deferred function calling
+		}()
+	}()
+}
+</code></pre>
+</div>
+
+<h3>Concept: Function Calling Level &amp; Goroutine Execution Level</h3>
+
+<div>
+Function calling level means the depth of a function calling, 
+related to <b><i>main</i></b> function or the entry function of a goroutine.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() { // level 0	
+	
+	go func() { // level 0
+		func() { // level 1
+			
+		}()
+		
+		func() { // level 1			
+			func() { // level 2
+				
+			}()
+		}()
+	}()
+	
+	func () { // level 1
+		func() { // level 2
+		
+			go func() { // level 0
+				
+			}()
+			
+		}()
+		
+		go func() { // level 0
+			
+		}()
+	}()
+}
+</code></pre>
+</div>
+
+<p>
+The calling level of the current execution point of a goroutine is called the execution level of the goroutine.
+</p>
+
+<h3>Fact: Panics Can Only Propagate Upwards</h3>
+
+<div>
+Yes, panics can only propagate upwards, along the function calling stack in reverse.
+Panics never propagate by deeping into a function calling.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() { // calling level 0
+	defer func() { // calling level 1
+		
+		fmt.Println("Now, the panic is still in calling level 0")
+		
+		func() { // calling level 2
+			
+			fmt.Println("Now, the panic is still in calling level 0")
+			
+			func() { // calling level 3
+				
+				fmt.Println("Now, the panic is still in calling level 0")
+			}()
+		}()
+	}()
+	
+	defer fmt.Println("Now, the panic is in calling level 0")
+	
+	func() { // calling level 1
+		
+		defer fmt.Println("Now, the panic is in calling level 1")
+		
+		func() { // calling level 2
+			
+			defer fmt.Println("Now, the panic is in calling level 2")
+			
+			func() { // calling level 3
+				
+				defer fmt.Println("Now, the panic is in calling level 3")
+				
+				panic(1)
+			}()
+		}()
+	}()
+}
+</code></pre>
+</div>
+
+<p></p>
+
+<div>
+The output:
+<pre>
+Now, the panic is in calling level 3
+Now, the panic is in calling level 2
+Now, the panic is in calling level 1
+Now, the panic is in calling level 0
+Now, the panic is still in calling level 0
+Now, the panic is still in calling level 0
+Now, the panic is still in calling level 0
+panic: 1
+
+goroutine 1 [running]:
+
+...
+</pre>
+</div>
+
+<h3>Concept: Level Of Panic</h3>
+
+<p>
+The level of a panic means what fucntion calling level the panic has propagated to.
+As panics can only propagate upwards, the level of a panic never increases, 
+it can only decrease.
+</p>
+
+<p>
+In a goroutine, the level of an active panic will never be larger than the execution level of the goroutine.
+</p>
+
+<h3>Fact: Panics Will Suppress Old Panics At The Same Level</h3>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	defer fmt.Println("program will not crash")
+	
+	defer func() {
+		fmt.Println( recover() ) // 3
+	}()
+	
+	defer fmt.Println("now, panic 3 suppresses panic 2")
+	
+	defer panic(3)
+	
+	defer fmt.Println("now, panic 2 suppresses panic 1")
+	
+	defer panic(2)
+	
+	panic(1)
+}
+</code></pre>
+</div>
+
+<div>
+Outputs:
+<pre>
+now, panic 2 suppresses panic 1
+now, panic 3 suppresses panic 2
+3
+program will not crash
+</pre>
+</div>
+
+<p>
+In this exanple, panic 1 is suppressed by panic 2, 
+and then panic 2 is suppressed by panic 3.
+So, in the end, there is only one active panic, which is panic 3.
+Panic 3 is recovered, hence the program will not crash.
+</p>
+
+<p>
+In one goroutine, there will be at most one active panic at the same calling level at any time,
+especially when the execution point runs at the calling level 0 of a goroutine,
+there will be at most one active panic in the goroutine.
+</p>
+
+<h3>Fact: Multiple Active Panics May Coexist In A Goroutine</h3>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() { // callnig level 0
+	
+	defer fmt.Println("program will crash, for panic 3 is stll active")
+	
+	defer func() { // calling level 1
+		
+		defer func() { // calling level 2
+
+			fmt.Println( recover() ) // 6
+		}()
+		
+		// the level of panic 3 is 0.
+		// the level of panic 6 is 1.
+		defer fmt.Println("now, there are two active panics: 3 and 6")
+		
+		defer panic(6) // will suppress panic 5
+		defer panic(5) // will suppress panic 4
+		panic(4) // will not suppress panic 3, for they have differrent levels 
+		         // the level of panic 3 is 0.
+		         // the level of panic 4 is 1.
+	}()
+	
+	defer fmt.Println("now, only panic 3 is active")
+	
+	defer panic(3) // will suppress panic 2
+	defer panic(2) // will suppress panic 1
+	panic(1)
+}
+</code></pre>
+</div>
+
+<p>
+In this exanple, panic 6, one of the two active panics, is recovered.
+But the other active panic, panic 3, is still active at the end of main calling, 
+so the program will crash.
+</p>
+
+<div>
+Outputs:
+<pre>
+now, only panic 3 is active
+now, there are two active panics: 3 and 6
+6
+program will crash, for panic 3 is stll active
+panic: 1
+	panic: 2
+	panic: 3
+
+goroutine 1 [running]:
+...
+</pre>
+</div>
+
+<h3>Fact: Low Level Panics May Be Recovered At First</h3>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	defer func() {
+		defer func() {
+			fmt.Println("panic", recover(), "is recovered") // panic 2 is recovered
+		}()
+		
+		defer fmt.Println("panic", recover(), "is recovered") // panic 1 is recovered
+		
+		defer fmt.Println("now, two active panics coexist")
+		
+		panic(2)
+	}()
+	
+	panic(1)
+}
+</code></pre>
+</div>
+
+<div>
+Outputs:
+<pre>
+now, two active panics coexist
+panic 1 is recovered
+panic 2 is recovered
+</pre>
+</div>
+
+<h3>Then, What Is The Principal Rule To Make A Recover Calling Take Effect?</h3>
+
+<div>
+The rule is simple:
+<div class="alert alert-success text-center"><big>
+in one goroutine,
+if the caller function of a recover calling is F and the level of the F calling is L,
+then, to make the recover calling take effect,
+the F calling must be a deferred calling and there must be an active panic at level L-1.
+</big></div>
+</div>
+
+<p>
+That is it. It is a better description than Go spec.
+Now you can page back to check why the 6th recover calling in the first example 
+doesn't take effect, and some others do in some other examples.
+</p>

@@ -1,0 +1,776 @@
+﻿
+
+<!---
+todo:
+	kinds of control flow blocks
+	control flow statements
+		return, break, fallthrough, continue, goto
+	which control flow statements can be followed a label.
+	which control flow statements can appean in which control flow blocks
+
+-->
+
+<div>
+Index
+<ul>
+<li><a href="#type-with-underlyings">Types whose values may have indirect underlying parts</a>.</li>
+<li><a href="#type-sizes">Value sizes of all kinds of types</a>.</li>
+<li><a href="#have-length-types">Types which values can be used as arguments of built-in function <code>len</code>
+	(and functions <code>cap</code>, <code>close</code>, <code>delete</code>, <code>make</code>)</a>.</li>
+<li><a href="#container-types">Comparison of built-in container types</a>.</li>
+<li><a href="#composite-literals-types">Types which values can be represented with composite literals (<code>T{...}</code>)</a>.</li>
+<li><a href="#nil-zero-value-types">Types which zero values can be represented with <code>nil</code></a>.</li>
+<li><a href="#types-can-have-methods">Types we can implement methods for</a>.</li>
+<li><a href="#types-can-be-embedded">Types which can be anonymously embedded in other types</a>.</li>
+<li><a href="#compile-time-evaluation">Functions whose calls will/may be evaluated at compile time</a>.</li>
+<li><a href="#not-addressable">Values that can't be taken addresses</a>.</li>
+<li><a href="#not-comparable">Types which don't support comparisons</a>.</li>
+<li><a href="#declared-but-unused">Which code elements are allowed to be declared but not used</a>.</li>
+<li><a href="#groupable-elements">Named source code elements which declarations can be grouped with <code>()</code></a>.</li>
+<li><a href="#declaration-places">Named source code elements which can be declared both inside functions and outside any functions</a>.</li>
+<li><a href="#additional-return">Expressions which may return an optional additional return value</a>.</li>
+<li><a href="#channel-blocking">Ways to block current goroutine ‎forever by using the channel mechanizm</a>.</li>
+<li><a href="#concatenate-strings">Ways to concatenate strings</a>.</li>
+</ul>
+</div>
+
+<p class="anchor" id="type-with-underlyings"></p><h3>
+	Types whose values may have indirect underlying parts</h3>
+
+<div>
+Types whose values may have indirect underlying parts:
+<ul>
+<li>string types</li>
+<li>function types</li>
+<li>slice types</li>
+<li>map types</li>
+<li>channel types</li>
+<li>interface types</li>
+</ul>
+<p>
+<a href="golang-underlying-values">This article</a> lists the
+internal definitions of above types by the official Go compiler/runtime.
+</p>
+</div>
+
+<p class="anchor" id="type-sizes"></p><h3>
+	Value sizes of all kinds of types</h3>
+
+<p><i>
+(Below, one word means 4 bytes on 32bits OSes and 8 bytes on 64bits OSes.
+and <a href="golang-underlying-values">the indirect underlying parts</a>
+of a value don't contribute to the size of the value.)
+</i></p>
+
+<table class="table table-bordered text-center" style="width: auto !important;">
+<thead>
+	<tr>
+	<th class="text-center">Type</th>
+	<th class="text-center">Value Size For The Official Go Compiler v1.9</th>
+	<th class="text-center">
+		<a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">Requirement</a>
+		By <a href="https://golang.org/ref/spec#Numeric_types">Go Specification</a>
+	</th>
+	</tr>
+</thead>
+<tbody>
+	<tr class="active">
+	<th scope="row" class="text-center">bool</th>
+	<td>1 byte</td>
+	<td>not specified</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">int8, uint8 (byte)</th>
+	<td>1 byte</td>
+	<td>1 byte</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">int16, uint16</th>
+	<td>2 bytes</td>
+	<td>2 bytes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">int32 (rune), uint32, float32</th>
+	<td>4 bytes</td>
+	<td>4 bytes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">int64, uint64, float64, complex64</th>
+	<td>8 bytes</td>
+	<td>8 bytes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">complex128</th>
+	<td>16 bytes</td>
+	<td>16 bytes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">int, uint</th>
+	<td>1 word</td>
+	<td>compiler-specific, either 4 or 8 bytes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">uintptr</th>
+	<td>1 word</td>
+	<td>large enough to store the uninterpreted bits of a pointer value</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">string</th>
+	<td>2 words</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">pointer</th>
+	<td>1 word</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">slice</th>
+	<td>3 words</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">map</th>
+	<td>1 word</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">channel</th>
+	<td>1 word</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">function</th>
+	<td>1 word</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">interface</th>
+	<td>2 words</td>
+	<td>not specified</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">struct</th>
+	<td>the sum of sizes of all fields 
+		+ <a href="golang-memory-alignment#size-and-padding">paddings</a>
+	</td>
+	<td>a <b>struct</b> type has size zero if it contains no fields
+		that have a size greater than zero</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">array</th>
+	<td>(element value size) * (array length)</td>
+	<td>an <b>array</b> type has size zero if its element type
+		has zero size</td>
+	</tr>
+</tbody>
+</table>
+
+<p class="anchor" id="have-length-types"></p><h3>
+	Types which values can be used as arguments of built-in function <code>len</code>
+	(and functions <code>cap</code>, <code>close</code>, <code>delete</code>, <code>make</code>)</h3>
+
+<table class="table table-bordered text-center" style="width: auto !important;">
+<thead>
+	<tr>
+	<th class="text-center"></th>
+	<th class="text-center">len</th>
+	<th class="text-center">cap</th>
+	<th class="text-center">close</th>
+	<th class="text-center">delete</th>
+	<th class="text-center">make</th>
+	</tr>
+</thead>
+<tbody>
+	<tr class="active">
+	<th scope="row" class="text-center">string</th>
+	<td>Yes</td>
+	<td></td>
+	<td></td>
+	<td></td>
+	<td></td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">array<br/>(and array pointer)</th>
+	<td>Yes</td>
+	<td>Yes</td>
+	<td></td>
+	<td></td>
+	<td></td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">slice</th>
+	<td>Yes</td>
+	<td>Yes</td>
+	<td></td>
+	<td></td>
+	<td>Yes</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">map</th>
+	<td>Yes</td>
+	<td></td>
+	<td></td>
+	<td>Yes</td>
+	<td>Yes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">channel</th>
+	<td>Yes</td>
+	<td>Yes</td>
+	<td>Yes</td>
+	<td></td>
+	<td>Yes</td>
+	</tr>
+</tbody>
+</table>
+
+<p>
+Values of above types can also be ranged over in for-range loops.
+</p>
+
+<p>
+Types which values can be used as arguments of built-in function <code>len</code>
+can be called container types.
+</p>
+
+<p class="anchor" id="container-types"></p><h3>
+	Comparison of built-in container types</h3>
+
+<table class="table table-bordered text-center" style="width: auto !important;">
+<thead>
+	<tr>
+	<th class="text-center">Type</th>
+	<th class="text-center">Can New Elements Be Added Into Values?</th>
+	<th class="text-center">Are Elements Of Values Replaceable?</th>
+	<th class="text-center">Are Elements Of Values Addressable?</th>
+	<th class="text-center">Will Lookup Modify Lengths Of Values?</th>
+	<th class="text-center">May Values Have Underlying Parts</th>
+	</tr>
+</thead>
+<tbody>
+	<tr class="active">
+	<th scope="row" class="text-center">string</th>
+	<td>No</td>
+	<td>No</td>
+	<td>No</td>
+	<td>No</td>
+	<td>Yes<sup>(1)</sup></td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">array</th>
+	<td>No</td>
+	<td>Yes<sup>(2)</sup></td>
+	<td>Yes<sup>(2)</sup></td>
+	<td>No</td>
+	<td>No</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">slice</th>
+	<td>No<sup>(3)</sup></td>
+	<td>Yes</td>
+	<td>Yes</td>
+	<td>No</td>
+	<td>Yes</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">map</th>
+	<td>Yes</td>
+	<td>Yes</td>
+	<td>No</td>
+	<td>No</td>
+	<td>Yes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">channel</th>
+	<td>Yes<sup>(4)</sup></td>
+	<td>No</td>
+	<td>No</td>
+	<td>Yes</td>
+	<td>Yes</td>
+	</tr>
+</tbody>
+</table>
+
+<p>
+<sup>(1)</sup> for the official Go compiler/runtime.
+<br/>
+<sup>(2)</sup> for addressable array values only.
+<br/>
+<sup>(3)</sup> slice lengths can be modified by using <code>reflect.SetLen</code> function.
+Increase the length of a slice by this way is kind of adding new elements into the slice.
+<br/>
+<sup>(4)</sup> for buffered channels which are still not full.
+</p>
+
+<p class="anchor" id="composite-literals-types"></p><h3>
+	Types which values can be represented with composite literals (<code>T{...}</code>)</h3>
+
+<p>
+Values of following types can be represented with composite literals:
+</p>
+
+<table class="table table-bordered text-center" style="width: auto !important;">
+<thead>
+	<tr>
+	<th class="text-center">Type (<code>T</code>)</th>
+	<th class="text-center">Is <code>T{}</code> A Zero Value Of <code>T</code>?</th>
+	</tr>
+</thead>
+<tbody>
+	<tr class="active">
+	<th scope="row" class="text-center">struct</th>
+	<td>Yes</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">array</th>
+	<td>Yes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center" style="vertical-align: middle">slice</th>
+	<td>No<br/>(zero value is <code>nil</code>)</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center" style="vertical-align: middle">map</th>
+	<td>No<br/>(zero value is <code>nil</code>)</td>
+	</tr>
+</tbody>
+</table>
+
+<p class="anchor" id="nil-zero-value-types"></p><h3>
+	Types which zero values can be represented with <code>nil</code></h3>
+
+<p>
+The zero values of the following types can be represented with <code>nil</code>:
+</p>
+
+<table class="table table-bordered text-center" style="width: auto !important;">
+<thead>
+	<tr>
+	<th class="text-center">Type (<code>T</code>)</th>
+	<th class="text-center">Size Of <code>T(nil)</code></th>
+	</tr>
+</thead>
+<tbody>
+	<tr class="active">
+	<th scope="row" class="text-center">pointer</th>
+	<td>1 word</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">slice</th>
+	<td>3 words</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">map</th>
+	<td>1 word</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">channel</th>
+	<td>1 word</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">function</th>
+	<td>1 word</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">interface</th>
+	<td>2 words</td>
+	</tr>
+</tbody>
+</table>
+
+<p>
+The zero value sizes listed above are consistent with the sizes listed in
+<a href="#cost-of-value-copy">the cost of copying values of all kinds of types</a>.
+</p>
+
+<p class="anchor" id="types-can-have-methods"></p><h3>
+	Types we can implement methods for</h3>
+
+<div>
+In Go, we can only implement methods for any type <code>T</code> and type <code>*T</code>, where <code>T</code>
+<ul>
+<li>must be a <a href="golang-conversions-assignments-and-comparisons#named-type">named type</a>;</li>
+<li>mustn't be a type in external packages (including the built-in package);</li>
+<li>mustn't be a pointer type;</li>
+<li>mustn't be an interface type.</li>
+</ul>
+</div>
+
+<p class="anchor" id="types-can-be-embedded"></p><h3>
+	Types which can be anonymously embedded in other types</h3>
+
+<div>
+In Go, if a type <code>T</code> can be anonymously embedded in a struct type <code>Tstruct</code>,
+then <code>T</code>:
+<ul>
+<li>mustn't be <code>Tstruct</code>;</li>
+<li>mustn't embed <code>Tstruct</code>, directly or indirectly;</li>
+<li>must be either 
+	<ul>
+	<li>a <a href="golang-conversions-assignments-and-comparisons#named-type">named type</a> which is not a pointer type, or</li>
+	<li>an unnamed pointer type which based type is a named non-pointer non-interface type.</li>
+	</ul>
+</li>
+</ul>
+<p>
+Besides above conditions, the name of the anonymous field <code>T</code> shouldn't be collide with other fields in type <code>Tstruct</code>.
+</p>
+</div>
+
+<p>
+If a type <code>T</code> can be embedded in an interface type <code>Tinterface</code>,
+then <code>T</code> must be also an interface type,
+and embedding <code>T</code> will not make <code>Tinterface</code>
+contain two methods with the same name.
+</p>
+
+<p class="anchor" id="compile-time-evaluation"></p><h3>
+	Functions whose calls will/may be evaluated at compile time</h3>
+
+<p>
+If a function call is evaluated at compile time, 
+its return results must be constants.
+</p>
+
+<table class="table table-bordered text-center" style="width: auto !important;">
+<thead>
+	<tr>
+	<th class="text-center">Function</th>
+	<th class="text-center">Return Type</th>
+	<th class="text-center">Are Calls Always Evaluated At Compile Time?</th>
+	</tr>
+</thead>
+<tbody>
+	<tr class="active">
+	<th scope="row" class="text-center">unsafe.Sizeof</th>
+	<td rowspan="3" style="vertical-align: middle"><code>uintptr</code></td>
+	<td rowspan="3" style="vertical-align: middle">Yes, always.</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center" style="vertical-align: middle">unsafe.Alignof</th>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center" style="vertical-align: middle">unsafe.Offsetof</th>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center" style="vertical-align: middle">len</th>
+	<td rowspan="2" style="vertical-align: middle"><code>int</code></td>
+	<td rowspan="2">
+		Not always. 
+		<br/><br/>
+		<div class="text-left">
+		From <a href="https://golang.org/ref/spec#Length_and_capacity">Go spec</a>: 
+		<ul>
+		<li>
+		the expression <code>len(s)</code> is constant if <code>s</code> is a string constant. 
+		</li>
+		<li>
+		the expressions <code>len(s)</code> and <code>cap(s)</code> are constants 
+		if the type of <code>s</code> is an array or pointer to an array 
+		and the expression <code>s</code> does not contain channel receives or (non-constant) function calls
+		(in other words, <code>s</code> can be array variables and arry pointer variables).
+		</li>
+		</ul>
+		</div>
+	</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center" style="vertical-align: middle">cap</th>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center" style="vertical-align: middle">real</th>
+	<td rowspan="2" style="vertical-align: middle"><code>float64</code><br/>(default type)</td>
+	<td rowspan="2">
+		Not always.
+		<br/><br/>
+		<div class="text-left">
+		From <a href="https://golang.org/ref/spec#Constants">Go spec</a>:
+		the expressions <code>real(s)</code> and <code>imag(s)</code> are constants 
+		if <code>s</code> is a complex constant.
+		</div>
+	</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center" style="vertical-align: middle">imag</th>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center" style="vertical-align: middle">complex</th>
+	<td style="vertical-align: middle"><code>complex128</code><br/>(default type)</td>
+	<td>
+		Not always.
+		<br/><br/>
+		<div class="text-left">
+		From <a href="https://golang.org/ref/spec#Constants">Go spec</a>:
+		the expression <code>complex(sr, si)</code> is constant 
+		if both <code>sr</code> and <code>si</code> are numeric constants.
+		</div>
+	</td>
+	</tr>
+</tbody>
+</table>
+
+<p class="anchor" id="not-addressable"></p><h3>
+	Values that can't be taken addresses</h3>
+
+<div>
+Following values can't be taken addresses:
+<ul>
+<li>bytes in strings</li>
+<li>map elements</li>
+<li>dynamic values of interface values (exposed by type assertions)</li>
+<li>constant values</li>
+<li>literal values</li>
+<li>package-level functions</li>
+<li>methods (used as function values)</li>
+<li>intermediate values
+	<ul>
+	<li>function calls</li>
+	<li>explicit value conversions</li>
+	<li>all sorts of operations, except pointer dereference operations, but including:
+		<ul>
+		<li>channel receive operations</li>
+		<li>sub-string operations</li>
+		<li>sub-slice operations</li>
+		<li>addition, subtraction, multiplication, and division, etc.</li>
+		</ul>
+	</li>
+	</ul>
+</li>
+</ul>
+</div>
+
+<div class="well">
+Please note, there is a syntax sugar, <code>&T{}</code>, in Go.
+It is a short form of
+<div style="padding:6px 16px;">
+<code>tmp := T{}; (&tmp)</code>
+</div>
+so <code>&T{}</code> is legal doesn't mean 
+<code>T{}</code> is addressable. 
+</div>
+<p></p>
+
+<div>
+BTW, following values can be taken addresses:
+<ul>
+<li>variables</li>
+<li>fields of addressable structs</li>
+<li>elements of addressable arrays</li>
+<li>elements of any slices (whether the slices are addressable or not)</li>
+<li>pointer dereference operations</li>
+</ul>
+</div>
+
+<p class="anchor" id="not-comparable"></p><h3>
+	Types which don't support comparisons</h3>
+
+<div>
+Following types don't support comparisons:
+<ul>
+<li>map</li>
+<li>slice</li>
+<li>function</li>
+<li>
+struct types containing incomparable fields
+</li>
+<li>
+array types with incomparable elements
+</li>
+</ul>
+<p>
+Types which don't support comparisons can't be used as the key type of map types.
+</p>
+</div>
+
+<div>
+Please note, 
+<ul>
+<li>
+although map, slice and function types don't support comparisons,
+their values can be compared to the bare <code>nil</code> identifier.
+</li>
+<li>
+comparing interface values with incomparable dynamic types will panic at run time,
+except the danymic value of one of the compared interfaces is untyped <code>nil</code>.
+</li>
+</ul>
+
+</div>
+
+<p class="anchor" id="declared-but-unused"></p><h3>
+	Which code elements are allowed to be declared but not used</h3>
+
+<table class="table table-bordered text-center" style="width: auto !important;">
+<thead>
+	<tr>
+	<th class="text-center"></th>
+	<th class="text-center">Allowed To Be Declared But Not Used</th>
+	</tr>
+</thead>
+<tbody>
+	<tr class="active">
+	<th scope="row" class="text-center">import</th>
+	<td>No</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">type</th>
+	<td>Yes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">variable</th>
+	<td>
+		Yes for package-level variables.
+		<br/>
+		No for local variables.
+	</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">constant</th>
+	<td>Yes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">function</th>
+	<td>Yes</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">label</th>
+	<td>No</td>
+	</tr>
+</tbody>
+</table>
+
+<p class="anchor" id="groupable-elements"></p><h3>
+	Named source code elements which declarations can be grouped with <code>()</code></h3>
+
+<div>
+Following named source code element declarations can be grouped with <code>()</code>:
+<ul>
+<li>import</li>
+<li>type</li>
+<li>variable</li>
+<li>constant</li>
+</ul>
+</div>
+<p>
+Functions and labels can't be grouped with <code>()</code>.
+</p>
+
+<p class="anchor" id="declaration-places"></p><h3>
+	Named source code elements which can be declared both inside functions and outside any functions</h3>
+
+<div>
+Following named source code elements can be declared both inside functions and outside any functions:
+<ul>
+<li>type</li>
+<li>variable</li>
+<li>constant</li>
+</ul>
+</div>
+<p>
+Imports must be declared before declarations of other elements (and after the package clause).
+</p>
+<p>
+Functions can only be declared outside any functions.
+Anonymous functions can be defined inside other function bodies,
+but they are not declared.
+</p>
+<p>
+Labels must declared inside functions.
+</p>
+
+<p class="anchor" id="additional-return"></p><h3>
+	Expressions which can return an optional additional bool return value</h3>
+
+<p>
+Following expressions can return an optional additional bool return value:
+</p>
+
+<table class="table table-bordered text-center" style="width: auto !important;">
+<thead>
+	<tr>
+	<th class="text-center"></th>
+	<th class="text-center">Meaning Of The Optional Return</th>
+	<th class="text-center">Will Omitting The Optional Return Affect Program Behavior?</th>
+	</tr>
+</thead>
+<tbody>
+	<tr class="active">
+	<th scope="row" class="text-center" style="vertical-align: middle">map element access</th>
+	<td>whether or not the accessed key is present in the map</td>
+	<td>No</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center" style="vertical-align: middle">channel value receive</th>
+	<td>whether or not the received value was sent before the channel was closed</td>
+	<td>No</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center" style="vertical-align: middle">type assertion</th>
+	<td>whether or not the dynamic type of the interface value matches the asserted type</td>
+	<td>Yes<br/>(when the optional bool return is omitted, 
+		a panic is created if the asserted type is not an ok type)</td>
+	</tr>
+</tbody>
+</table>
+
+<p class="anchor" id="channel-blocking"></p><h3>
+	Ways to block current goroutine ‎forever by using the channel mechanizm</h3>
+
+<div>
+Following ways can be used to block current goroutine ‎forever:
+<ol>
+<li>receive from a channel which no values will be sent to
+<div>
+<pre><code class="language-go"><-make(chan struct{})
+// or
+<-make(<-chan struct{})
+</code></pre></div>
+</li>
+<li>send value to a channel which no ones will receive values from
+<div>
+<pre><code class="language-go">make(chan struct{}) <- struct{}{}
+// or
+make(chan<- struct{}) <- struct{}{}
+</code></pre></div>
+</li>
+<li>receive value from a nil channel
+<div>
+<pre><code class="language-go"><-chan struct{}(nil)
+</code></pre></div>
+</li>
+<li>send value to a nil channel
+<div>
+<pre><code class="language-go">chan struct{}(nil) <- struct{}{}
+</code></pre></div>
+</li>
+<li>use a bare select block
+<div>
+<pre><code class="language-go">select{}
+</code></pre></div>
+</li>
+</ol>
+</div>
+
+<p class="anchor" id="concatenate-strings"></p><h3>
+	Ways to concatenate strings</h3>
+
+<div>
+Following ways can be used to concatenate strings:
+<ol>
+<li>use <code>+</code> operator to concatenate strings. 
+The Go official compiler will make optimizations when using the <code>+</code> operator to concatenate strings. 
+So generally, using <code>+</code> operator is convenient and performant.
+</li>
+<li>use <a href="https://golang.org/pkg/strings/#Join">strings.Join</a> in the <code>strings</code> standard package to concatenate strings.</li>
+<li>use the <code>fmt.Sprintf</code>, <code>fmt.Sprint</code> and <code>fmt.Sprintln</code> functions
+in <a href="https://golang.org/pkg/fmt/">fmt</a> package to concatenate strings.
+The three functions can concatenate values of any types into a string.
+<br/><code>fmt.Sprintln</code> will always put a space between concatenated values and new line character in the end.
+<br/><code>fmt.Sprint</code> will only put a space between two concatenated values if both of the two values are not strings.
+</li>
+<li>the <code>Buffer</code> type in <a href="https://golang.org/pkg/bytes/">bytes</a> standard package
+(or the built-in <a href="https://golang.org/pkg/builtin/#copy">copy</a> function) can be used to build byte slices, 
+which afterwards can be converted to string values.</li>
+</ol>
+</div>

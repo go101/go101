@@ -1,0 +1,571 @@
+﻿
+<p>
+Function is an important component of programming languages.
+For most static languages, functions are very rigid.
+But Go is different, functions in Go are very flexible.
+The feeling of using Go functions is much like programming in many dynamic languages.
+This article will explain all function related concepts in Go.
+</p>
+
+<h3>Function Signatures And Function Types</h3>
+
+<p>
+Each function signature is composed of two variable declration list,
+one is the input variable declaration list (or parameter list),
+the other is the output variable declaration list (or result list).
+Yes, Go functions can return multiple results.
+The <code>var</code> keyword mustn't be present in any of the variable declarations.
+The variables names in both of the two lists are not important.
+The variable types determine a function signature.
+</p>
+
+<p>
+In Go, function is one kind of type.
+Each unique function signature corresponds one function type.
+</p>
+
+<p>
+The literal representation differences between a function signaure and
+its corresponding type is minor.
+The literal representation of a function type is just prefixed a
+<code>func</code> keyword before the literal representation of it is signature.
+</p>
+
+<p>
+In fact, on many occasions, a function signature is often represented
+with the literal representation of its corresponding type.
+</p>
+
+<p><i>
+(For somplicity, the phrase <b>literal representation</b>
+will be omitted in many contextes later.)
+</i></p>
+
+<div>
+Here is function type (and signature):
+<pre class="line-numbers"><code class="language-go">func (a int, b string, c string) (x int, y int, z bool)
+</code></pre>
+
+Consecutive variables with the same type can be declared together.
+The above one is equivalent to
+<pre class="line-numbers"><code class="language-go">func (a int, b, c string) (x, y int, z bool)
+</code></pre>
+
+Parameter names and result names are not important,
+as long as there are no duplicated names among them.
+The above ones are equivalent to
+<pre class="line-numbers"><code class="language-go">func (x int, y, z string) (a, b int, c bool)
+</code></pre>
+
+Variable names can be blank identifier <code>_</code>.
+The above ones are equivalent to
+<pre class="line-numbers"><code class="language-go">func (_ int, _, _ string) (_, _ int, _ bool)
+</code></pre>
+
+The parameter names must be either all present or all absent.
+The same rule for result names.
+The above ones are equivalent to
+<pre class="line-numbers"><code class="language-go">func (int, string, string) (int, int, bool)
+func (a int, b string, c string) (int, int, bool)
+func (x int, _ string, z string) (int, int, bool)
+func (int, string, string) (x int, y int, z bool)
+func (int, string, string) (a int, b int, _ bool)
+</code></pre>
+
+
+Each parameter list must be enclosed in a <code>()</code>,
+even if the parameter list is blank.
+If a result list is blank, or has only one result and
+the name of the only result is absent,
+then the result list doesn't need to be enclosed in a <code>()</code>.
+<pre class="line-numbers"><code class="language-go">// The following three function types are identical.
+func () (x int)
+func () (int)
+func () int
+
+// The following two function types are identical.
+func (a int, b string) ()
+func (a int, b string)
+</code></pre>
+</div>
+
+<p>
+The zero values of function types are represented with <code>nil</code> literally.
+</p>
+
+<p>
+All function types are incomprable types.
+Incomprable types can't be used as the key types of map types.
+</p>
+
+<h4>Variadic Parameters</h4>
+
+<div>
+The last parameter in a parameter list can be a variadic one.
+There can be most one variadic parameter in each function declartion.
+To indicate a parameter is variadic, just prefix three dots <code>...</code> to its type
+in its declaration. Example:
+<pre class="line-numbers"><code class="language-go">func (values ...int64) (sum int64)
+func (seperator string, tokens ...string) string
+</code></pre>
+
+<p>
+A function type with variadic parameter can be called a variadic function type.
+</p>
+</div>
+
+<h4>Identical Unnamed Function Types</h4>
+
+<p>
+Two unnamed function types are identical if they have
+the same number of parameters and result values, 
+corresponding parameter and result types are identical, 
+and either both functions are variadic or neither is. 
+Parameter and result names are not required to match.
+</p>
+
+<h3>Function Declarations</h3>
+
+<div>
+<p>
+Each function declaration is composed of four parts, the <code>func</code> keyword,
+one function name, one function signature and one function body.
+The function bodymust be enclosed in a <code>{}</code>.
+</p>
+
+Here are some function declaration examples:
+<pre class="line-numbers"><code class="language-go">func AddSub(a int, b int) (add int, sub int) {
+	add = a + b
+	sub = a - b
+	return // Here the "return" is required if the
+	       // result list is not blank.
+}
+
+func Double(n int) (result int) {
+	return n + n
+	// The above line is equivalent to
+	// the following two lines.
+	result = n + n
+	return 
+}
+
+func AddSubCompare(a, b int) (int, int, bool) {
+	return a + b, a - b, a > b
+}
+
+func Compare(a, b int) bool {
+	return a > b
+}
+
+func Dummy(int, int, bool) {
+}
+</code></pre>
+
+<p>
+Although it looks the parameter and result variables are declared
+outside of the function body code block, they are declared in
+the function body actually.
+So the names of these variables and local top-level variables can't be duplicated.
+</p>
+
+Variadic parameters will be treated as slices in function declaration bodies.
+Here are two function declarations each has a variadic parameter.
+<pre class="line-numbers"><code class="language-go">// Sum and return the input numbers.
+func Sum (values ...int64) (sum int64) {
+	// The type of values is []int64.
+	sum = 0
+	for _, v := range values {
+		sum += v
+	}
+	return
+}
+
+// An inefficient string concatenation function. 
+func Concat (seperator string, tokens ...string) string {
+	// The type of tokens is []string.
+	r := ""
+	for i, t := range tokens {
+		if i != 0 {
+			r += seperator
+		}
+		r += t
+	}
+	return r
+}
+</code></pre>
+
+<p>
+A function with variadic parameter can be called a variadic function.
+</p>
+
+<p>
+A function with a variadic parameter is called a variadic function.
+The print functions in the <code>fmt</code> standard package,
+such as <code>fmt.Println</code> and <code>fmt.Printf</code>,
+are all variadic functions.
+</p>
+
+<p>
+Go does not support default parameter values.
+The default value of a named return result is the zero value of its type.
+</p>
+
+Generally, the names of the functions declared in the same code package
+can't be duplicated. But there are two exceptions.
+<ul>
+<li>
+	One exception is each code package can declare several functions
+	with the same name <code>init</code>.
+	The types of all the <code>init</code> functions
+	must be <code>func init()</code>.
+	Each of these <code>init</code> functions will be called
+	once and only once when that code package is imported
+	or loaded at run time.
+</li>
+<li>
+	The other exception is functions can be declared with names
+	as the blank identifier <code>_</code>, in which cases,
+	the declared function can never be called.
+</li>
+</ul>
+</code></pre>
+
+<p>
+Functions must be declared in package level.
+They can't be decalred in local code blocks.
+However, anonymous functions can be defined (not declared) in local code blocks.
+Anonymous functions will be introduced below in this article.
+</p>
+
+<p>
+There are some built-in functions in Go.
+These functions are declared in <code>builtin</code> and <code>unsafe</code>
+standard code packages.
+Built-in functions have some differences from other/custom dclared functions.
+One difference is that built-in functions support generic parameters,
+but custom delcared ones don't (up to now, v1.9).
+More differences will be mentioned at other places.
+</p>
+
+</div>
+
+<h3>Function Calls</h3>
+
+<div>
+Function calls (or invocations) in Go are much similar to many other popular languages.
+<pre class="line-numbers"><code class="language-go">package main
+
+... // To save space, the functions declared in the 
+    // last section are not shown here.
+
+func main() {
+	// Single-result function calls.
+	double6 := Double(6) // 12
+	cmp := Compare(5, 3) // true
+
+	// Multi-result function calls.
+	add, sub := AddSub(2, 3)
+	add, sub, cmp = AddSubCompare(2, 3)
+	
+	_, _, _, _ = double6, add, sub, cmp
+}
+</code></pre>
+
+<p>
+In the above example,
+the values passed to a function call are called arguments.
+Each argument is passed to a corresponding parameter.
+All arguments are passed by value in Go.
+In other words, each argument are copied to its corresponding parameter.
+</p>
+
+A function call to a single-result function can always be nested
+in another function call as an argument.
+But a call to a multi-result function can only be nested in
+another function call only if there are no other arguments
+mixed with the multi-result function call.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+... // To save space, the functions declared in the 
+    // last section are not shown here.
+
+func main() {
+	// The Double function only returns one result.
+	// So its calls can be mixed with other arguments
+	// in other function calls.
+	cmp := Compare(Double(2), 3) // true
+	
+	// A multi-result function call can be nested
+	// in another call if no other arguments are
+	// mixed with it.
+	add, sub, cmp := AddSubCompare(AddSub(2, 3))
+	Dummy(AddSubCompare(2, 3))
+	Dummy(Double(5), 23, Compare(5, 6))
+
+	// This line doesn't compile, for a multi-result
+	// function call is mixed with other arguments.
+	/*
+	Dummy(AddSub(2, 3), true)
+	*/
+
+	_, _, _ = add, sub, cmp
+}
+</code></pre>
+
+<p>
+A call to any single-result function can also be used as a single value
+to appear in any expressions and statements.
+</p>
+
+<p><i>
+(There is an exception to the rule of nesting multi-result function calls.
+The exception is that calls to multi-result functions can never be
+nested in the calls to the built-in <code>copy</code>,
+<code>print</code> and <code>println</code> functions,
+even if no other arguments are mixed with them.)
+</i></p>
+
+There are two ways to pass values to a variadic parameter:
+<ol>
+<li>
+	pass zero or more arguments.
+</li>
+<li>
+	pass a slice value suffixed with three dots <code>...</code>,
+	which is equivalent to pass each element of the slice individually one by one.
+	The passed slice can be called variadic argument.
+</li>
+</ol>
+<p>The two ways can't be mixed in using.</p>
+
+Variadic function call example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+... // Here are the Sum and Concat variadic functions
+    // declared in the last section.
+
+func main() {
+	// fmt.Println is a variadic function.
+	fmt.Println()
+	fmt.Println(123, "abc", true)
+	fmt.Println([]interface{}{123, "abc", true}...)
+
+	// Calls to Sum.
+	a0 := Sum()
+	a1 := Sum(2)
+	a3 := Sum(2, 3, 5)
+	// The above three calls are equivalent to
+	b0 := Sum([]int64{}...)
+	b1 := Sum([]int64{2}...)
+	b3 := Sum([]int64{2, 3, 5}...)
+	fmt.Println(a0, a1, a3) // 0 2 10
+	fmt.Println(b0, b1, b3) // 0 2 10
+
+	// Concat calls are alike.
+	tokens := []string{"Go", "C", "C++", "Rust"}
+	langsA := Concat(",", tokens...)
+	langsB := Concat(",", "Go", "C", "C++", "Rust")
+	fmt.Println(langsA == langsB) // true
+
+	// This line doesn't compile, for multi-result
+	// function call is mixed with other arguments.
+	/*
+	fmt.Println("languages:", Concat(",", tokens...))
+	*/
+}
+</code></pre>
+
+The results of function calls can be ignored by assigning them
+to the blank identifier <code>_</code>.
+For custom declared functions, the results of their calls can be omitted all together.
+<pre class="line-numbers"><code class="language-go">package main
+
+... // The functions declared in the last section.
+
+func main() {
+	_ = Double(6)
+	Double(6)
+
+	_, _, _ = AddSubCompare(2, 3)
+	AddSubCompare(2, 3)
+}
+</code></pre>
+
+<p>
+However, the results of calls to built-in functions
+(<code>len</code> and <code>make</code>, etc.),
+including the functions in <code>unsafe</code> standard package,
+can never be omitted.
+</p>
+
+<p>
+Most function calls are evaluated at run time.
+But calls to the functions of the <code>unsafe</code> standard package
+are evaluated at compile time.
+Calls to some other built-in functions,
+such as <code>len</code> and <code>cap</code>,
+<a href="golang-summaries#compile-time-evaluation">may be evaluated at
+either compile time or run time</a>,
+depending on the passed arguments.
+The results of the function calls evaluated at compile time can be
+assigned to constants.
+</p>
+
+</div>
+
+<h3>Function Values</h3>
+
+<p>
+As above has mentioned, function types are one kind of types in Go.
+A value of a function type is called a function value.
+</p>
+
+<p>
+When we declare a custom function, we also declared an immutable function value in fact.
+The function value is identified by the function name.
+The type of the function value can represented with the literal
+by omitting the function name and body parts from the function declaration.
+</p>
+
+<div>
+A function value can be assigned to a variable with the same type of the function value.
+A function variable can be invoked just like a declared function.
+A function variable can be reset by assigning a <code>nil</code> to it.
+Invoke a <code>nil</code> function value will panic.
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+// Double can be viewed as immutable function value,
+// which type is "func (int) int".
+func Double(n int) int {
+	return n + n
+}
+
+func main() {
+	fmt.Println(reflect.TypeOf(Double)) // func(int) int
+
+	// Double = nil // error: Double is immutable.
+
+	var f func(n int) int // default value is nil.
+	f = Double
+	fmt.Println("double of 9:", f(9)) // double of 9: 18
+	
+	// Generally, we let compile deduce
+	// the type of a function variable.
+	var f2 = Double
+	fmt.Println(reflect.TypeOf(f2)) // func(int) int
+	
+	f2 = nil
+	f2(9) // will panic.
+}
+</code></pre>
+
+<p>
+However, built-in functions, including the ones declared in
+<code>unsafe</code> standard package, can't be used as values.
+In other words, they can't be assinged to function variables,
+though they can be invoked (called) by their names.
+</p>
+
+<p>
+<code>init</code> functions also can't be used as values.
+</p>
+
+<p>
+As function types are incomprable types, generally, function values can't be compared.
+But there is an exception that any function value can be
+compared to the <code>nil</code> identifier.
+</p>
+
+</div>
+
+<h3>Anonymous Functions And Closures</h3>
+
+<div>
+Functions are not essential to have names.
+Functions without names are called anonymous functions.
+In other words, an anonymous function only has a type and a definition body.
+Anonymous function example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	// Call the anonymous function immediately
+	// after it is defined.
+	var isThreeOdd = func(n int) bool {
+		return n%2 == 1
+	}(3)
+	fmt.Println(isThreeOdd) // true
+
+	// Assign the anonymous function to a variable.
+	// The function variable can be called later.
+	var isOdd = func(n int) bool {
+		return n%2 == 1
+	}
+	fmt.Println(isOdd(6)) // false
+
+	// An anonymous function can use a value if the
+	// value reference is within the scope of the value.
+	feature := "annonymous functions."
+	func() {
+		// "lang" is a package-level variable.
+		fmt.Println(lang, "supports", feature)
+	}()
+}
+
+var lang = "Go"
+</code></pre>
+
+Go also supports closures.
+A closures is a special anonymous function value object
+which holds some references to the values
+outside of the closure function body.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+// This function return a function value.
+// The returned function is called a closure.
+func fIsMultipleOfX(x int) func(int) bool {
+	// The result function value has a property x.
+	return func(n int) bool {
+		return n%x == 0
+	}
+}
+
+func main() {
+	// Both types of the two function
+	// variables are "func(int) bool".
+	// The two variables are closures.
+	var isMultipleOf3 = fIsMultipleOfX(3)
+	var isMultipleOf5 = fIsMultipleOfX(5)
+
+	fmt.Println(isMultipleOf3(6))  // true
+	fmt.Println(isMultipleOf3(8))  // false
+	fmt.Println(isMultipleOf5(10)) // true
+	fmt.Println(isMultipleOf5(12)) // false
+}
+</code></pre>
+</div>
+
+<p>
+In fact, for the official Go compiler,
+there is no big differences between the underlying implementations for general functions and closures.
+In other words, we can think all function values, inclduding custom declared functions
+and <a href="golang-method">methods</a>, are closures in Go.
+This is why functions in Go are as flexible and convenient as many dyanmic languages.
+</p>
+
+<!---
+function types are incomparable types.
+A function value can only be compared with the
+<code>nil</code> identifer.
+-->
