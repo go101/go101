@@ -1161,6 +1161,27 @@ func main() {
 </p>
 </div>
 
+
+todo:
+
+<pre class="line-numbers"><code class="language-go">
+transforms := map[string][]func(int) int {
+	"plus,plus,plus": {plusone, plusone, plusone},
+	"square,plus,double": {square, plusone, double},
+	"double,square,square": {double, double, square},
+}
+
+[...]Point{{1.5, -3.5}, {0, 0}}     // same as [...]Point{Point{1.5, -3.5}, Point{0, 0}}
+[][]int{{1, 2, 3}, {4, 5}}          // same as [][]int{[]int{1, 2, 3}, []int{4, 5}}
+[][]Point{{{0, 1}, {1, 2}}}         // same as [][]Point{[]Point{Point{0, 1}, Point{1, 2}}}
+map[string]Point{"orig": {0, 0}}    // same as map[string]Point{"orig": Point{0, 0}}
+map[Point]string{{0, 0}: "orig"}    // same as map[Point]string{Point{0, 0}: "orig"}
+
+type PPoint *Point
+[2]*Point{{1.5, -3.5}, {}}          // same as [2]*Point{&Point{1.5, -3.5}, &Point{}}
+[2]PPoint{{1.5, -3.5}, {}}          // same as [2]PPoint{PPoint(&Point{1.5, -3.5}), PPoint(&Point{})}
+</code></pre>
+
 <!---
 
 
@@ -1182,7 +1203,7 @@ func main() {
 	type T *T
 	var a T
 	a = &a
-	a = *********a // compile okay
+	a = *********a // compile okay, the type *p is the same as the type of p
 	a = &a; a = &a; a = &a; a = &a
 	
 	type C chan C
@@ -1347,9 +1368,26 @@ Sometimes, the types in the compoiste literals can be omitted to make the code l
 
 
 https://groups.google.com/forum/#!topic/golang-nuts/J3kXXZivlHA
-
+*p and *p+1, *p*1 are different in a channel send operation.
 
 
 https://github.com/golang/go/issues/21256#issuecomment-321322952
 a Go program without main entry function can run okay.
+
+
+type D = d
+struct{D} and struct{d} are two different types,
+but struct{x D} and struct{x d} are two identical types.
+
+
+    var i = 99
+    for i = range []int{} {
+    }
+    fmt.Println(">>> i = ", i) // 99
+    for i = range [10]int{} {
+    }
+    fmt.Println(">>> i = ", i) // 9
+    for i = 0; i < 10; i++ {
+    }
+    fmt.Println(">>> i = ", i) // 10 
 -->

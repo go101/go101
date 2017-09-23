@@ -14,25 +14,25 @@ The select mechanism creates many interesting concurrent design patterns with a 
 </p>
 
 <p>
-However, there are two flawes in the current select mechanism
-implementation of the official Go compiler/runtime.
+However, there are some imperfections in the current design of the select mechanism
+and the select mechanism implementation of the official Go runtime.
 </p>
 
 <!--- will be moved to optimazation article.
 
-<h3>Flaw 1: Select Is Slow</h3>
+<h3>Imperfection 1: Select Is Slow</h3>
 
 <p>
 Each case in a <code>select</code> block consumes about 2x time of executing a single channel operation.
 Executing a two-case <code>select</code> block spends about 4x time of executing a single channel operation.
 Executing a five-case <code>select</code> block spends about 10x time of executing a single channel operation.
 Although often it is worth consuming more time by using the select mechanism,
-more than 5 cases in a <code>select</code> block is not recommended.
+more than 5 cases in a <code>select</code> block is highly not recommended.
 </p>
 
 -->
 
-<h3>Flaw 1: It Is Not Always Good To Select Unblocked Cases Randomly</h3>
+<h3>Imperfection 1: It Is Not Always Good To Select Unblocked Cases Randomly</h3>
 
 <div>
 Here is a common example by using a closed channel to notify goroutines to exit:
@@ -111,7 +111,7 @@ If there are multiple unblocked cases when executing a <code>select</code> block
 a random of them will be selected to run,
 so even if the <code>stop</code> channel is closed, its corresponding cases
 may still be not selected for several loops, and in theory, they may be
-never selected, so the program will never exit.
+never selected so that the program will never exit.
 </p>
 </div>
 
@@ -170,17 +170,20 @@ The one-case-plus-defalut <code>select</code> block will be specially optimized 
 The <code>case</code> channel operation will be translated to a try-send or try-receive operation.
 Although the above one-case-plus-defalut <code>select</code> block is optimized,
 the theory correct version is still more CPU consuming (about more 5% CPU usage) than the first one.
+And the additional <code>select</code> block makes code look verbose,
+which is against the design philosophy of Go.
 </p>
 
 <p>
-Howerver, if the unblocked cases are selected by their appearance orders
-(as another option alongside with randomized orders),
-then the first version is already theory correct and is more effocient (and cleaner) than the above theory correct one.
-In fact, it would be more theory correct than the second one.
+Howerver, if the unblocked cases are selected by their natural appearance order
+(as another option alongside with randomized order),
+then the first version is already theory correct and
+is more effocient (and cleaner) than the above revised version.
+In fact, it would be more theory correct than the revise one.
 </p>
 </div>
 
-<h3>Flaw 2: Behavior Inconsistency</h3>
+<h3>Imperfection 2: Behavior Inconsistency</h3>
 
 <div>
 A <code>select</code> block with a send-to-closed-channel case may panic the current goroutine, or not.
@@ -199,8 +202,8 @@ func main() {
 
 <p>
 This program may panic or not, by luck.
-This is really a bad design, which is not good to find bugs in time and verify tests.
-A good design should always panic the above program.
+This is really not good to find bugs in time and verify tests.
+A better design should always make the above program panic.
 </p>
 </div>
 

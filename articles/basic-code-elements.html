@@ -25,36 +25,45 @@ In the Go 101 article series, all examples are compiled with <code>gc</code>.
 </p>
 
 <p>
-The version of the official Go SDK and the verison of Go language are consistent.
+The version of the official Go SDK is consistent with
+the highest Go language verison the SDK supports.
+For example, Go SDK 1.9.x supports all Go versions from Go 1.0 to Go 1.9.
 </p>
 
-<div>
-There are three environment variables needed to be set or modified to use the tools in Go SDK.
-<ol>
-<li>
-	The first one is <code>GOROOT</code> environment variable, which value should be
-	the Go SDK installation root path.
-</li>
-<li>
-	Go SDK tools are put in the <code>bin</code> subfolder
-	under the Go SDK installation root path.
-	So the path of the <code>bin</code> subfolder must be put
-	in the <code>PATH</code> environment variable to invoke these tools.
-</li>
-<li>
-	The third one is the <code>GOPATH</code> environment variable.
-	Since Go 1.8, if the <code>GOPATH</code> environment variable is not set,
-	the tools in the official Go SDK will think the path of the <code>go</code> folder
-	under the home folder of the current user as <code>GOPATH</code>.
-	The <code>GOPATH</code> environment variable can contain multipe paths.
-</li>
-</ol>
-</div>
+<p>
+The path to the <code>bin</code> subfolder under the Go SDK installation root path
+must be put in the <code>PATH</code> environment variable to invoke the tools in the SDK.
+</p>
+
+<p><i>
+(Before Go SDK 1.9, a <code>GOROOT</code> environment variable must be configured
+as the root path of the SDK installation.
+<a href="https://golang.org/doc/go1.9#goroot">Since Go SDK 1.9</a>,
+this environment variable becomes optional and is recommended not to set it.)
+</i></p>
 
 <p>
-Currently (Go 1.9), the official Go SDK recommends all of
+Before Go SDK 1.8, a <code>GOPATH</code> environment variable must be set.
+<a href="https://golang.org/doc/go1.8#gopath">Since Go SDK 1.8</a>,
+the default value of this environment variable is the path of the <code>go</code>
+folder under the home directory of the current user.
+If you don't like the default path as your <code>GOPATH</code>,
+you still need to specify it manually.
+The <code>GOPATH</code> environment variable can contain multiple paths.
+</p>
+
+<p>
+The <code>bin</code> subfolder under the first path specified in
+the <code>GOPATH</code> environment variable is highly recommended
+to be put in the <code>PATH</code> environment variable to invoke
+some third-party Go tools.
+</p>
+
+<p>
+Up to Go 1.9, the official Go SDK recommends all of
 your Go packages (which will be introduced below) are put
-in the <code>src</code> subfolder under the <code>GOPATH</code> folder,
+in the <code>src</code> subfolder under any path specified
+in the <code>GOPATH</code> environment variable,
 especially when a Go project depends on some third party packages.
 However, all examples in Go 101 series are very simple so that
 you can put the example files in any folder.
@@ -360,7 +369,7 @@ and <code>vendor</code> as special package folders.
 <p>
 The Go 101 article series will not explain Go SDK related topics in detail.
 Readers can read <a href="https://golang.org/cmd/go/#hdr-Internal_Directories">the
-offcial documentation</a> for detail.
+offcial documentation</a> for details.
 </p>
 </div>
 
@@ -418,7 +427,8 @@ before invoking the <code>main</code> entry function.
 <p>
 The invocation order of the <code>init</code> functions in a package
 is not specified in Go specification.
-So there shouldn't be dependency relations between <code>init</code> functions.
+So there shouldn't be dependency relations between the
+<code>init</code> functions in any package.
 </p>
 
 <div>
@@ -426,18 +436,22 @@ Here is a simple example which contains two <code>init</code> functions:
 
 <pre class="line-numbers"><code class="language-go">package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
+var startTime time.Time
 func init() {
-	fmt.Println("How are you?")
+	startTime = time.Now()
 }
 
 func init() {
-	fmt.Println("Fine, thank you! And you?")
+	time.Sleep(time.Second * 3 / 2)
 }
 
 func main() {
-	fmt.Println("I'm fine too.")
+	fmt.Println(time.Since(startTime), "has passed.")
 }
 </code></pre>
 
@@ -448,11 +462,18 @@ will be called from top to down.
 
 Run it, get the following output:
 <pre class="output">
-How are you?
-Fine, thank you! And you?
-I'm fine too.
+1.500208731s has passed.
 </pre>
 </div>
+
+<p>
+This example imports the <code>time</code> standard package,
+which provides many time realated utilities.
+Function <code>time.Now()</code> returns a value of type <code>time.Time</code>.
+The function <code>time.Since</code> returns a value of <code>time.Duration</code>
+which represents the difference from a specified <code>time.Time</code> value
+and <code>time.Now()</code>.
+</p>
 
 <h3>Full Package Import Form</h3>
 
@@ -478,9 +499,11 @@ Please note that green texts are comments.
 <pre class="line-numbers"><code class="language-go">package main
 
 // import declarations don't need to be grouped together.
-import format "fmt"
-import random "math/rand"
-import "time"
+import (
+	format "fmt"
+	random "math/rand"
+	"time"
+)
 
 func main() {
 	random.Seed(time.Now().UnixNano()) // set the random seed
@@ -507,9 +530,7 @@ Some explainations:
 	prefix token in qualified identifiers, instead of the real package names.
 </li>
 <li>
-	<code>time</code> standard package provides functionality for measuring and displaying time.
-	Function <code>time.Now()</code> returns a value of type <code>time.Time</code>.
-	Type <code>time.Time</code> has a method
+	type <code>time.Time</code> has a method (methods will be explained later in another artcile)
 	<code>UnixNano</code>, which return the number of nanoseconds
 	(an <code>int64</code> value) elapsed since January 1, 1970 UTC.
 	Here, the number of nanoseconds is used as the random seed.
@@ -769,7 +790,7 @@ show up between its two operands in code.
 		<td rowspan="2" style="vertical-align: middle;">
 			generally, both operands should be comparable values
 			(please read the <a href="conversions-assignments-and-comparisons.html">value
-			comparison rules in Go</a> for detail)
+			comparison rules in Go</a> for details)
 		</td>
 		<td rowspan="6" style="vertical-align: middle;">untype boolean type</td>
 	</tr>
@@ -1089,7 +1110,7 @@ Here will not make an introduction for this form.
 Like many other languages, variables (and other kinds of identifiers) each has a scope.
 A variable may be shadowed by another same name variable which is declared in an inner
 code block within the scope of the first variable.
-Please <a href="block-and-scope.html">blocks and scopes in Go</a> for detail.
+Please <a href="block-and-scope.html">blocks and scopes in Go</a> for details.
 </p>
 
 
@@ -1235,7 +1256,7 @@ The basic control flow code blocks are much similar to the ones in many other po
 but there are also many differences.
 </p>
 
-There are also some special control flow code blocks in Go.
+There are also some control flow code blocks which are related to certain kinds of types in Go.
 <ul>
 <li>
 	<code>for-range</code> loop block for container types.
@@ -1249,14 +1270,22 @@ There are also some special control flow code blocks in Go.
 </ul>
 
 <p>
-The special ones will not explained in the current article.
-</p>
-
-<p>
 Like many ohter popular languages, Go also supports <code>break</code>,
 <code>continue</code> and <code>goto</code> code jump statements.
 Beside these, there is a special code jump statement, <code>fallthrough</code>, in Go.
 These statements are not simple statements.
+</p>
+
+<p>
+There are some other kind of flow control ways,
+such as <a href="defer.html">deferred function calls</a>
+and <a href="panic-recover-mechanism.html">panic/recover mechanism</a>.
+<a href="goroutine.htl">Goroutines</a> can also be viewed as a way of flow control.
+</p>
+
+<p>
+Only the basic control flow code blocks and code jump statements will be explained
+in the current article, other ones will be explained in many other articles in Go 101 series.
 </p>
 </div>
 
@@ -1803,6 +1832,14 @@ Here is the insertion rules listed in
 	a semicolon may be omitted before a closing ")" or "}".
 </li>
 </ol>
+
+In other words, <code>;</code> can be ignored for many situations.
+Certainly, we can choose to put multiple statements in one code line.
+For such situations, the <code>;</code> between two statements can't be ignored.
+<pre class="line-numbers"><code class="language-go">var a = 1; var b = true
+a++; b = !b
+print(a); print(b)
+</code></pre>
 
 The rules don't directly define which positions code lines can be broken at.
 They do mention which positions code lines can't be broken at.

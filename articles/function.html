@@ -32,7 +32,7 @@ The literal representation of a function type is just prefixed a
 </p>
 
 <p>
-In fact, on many occasions, a function signature is often represented
+In fact a function signature can be often represented
 with the literal representation of its corresponding type.
 </p>
 
@@ -130,15 +130,17 @@ Parameter and result names are not required to match.
 <p>
 Each function declaration is composed of four parts, the <code>func</code> keyword,
 one function name, one function signature and one function body.
-The function bodymust be enclosed in a <code>{}</code>.
+The function body must be enclosed in a <code>{}</code>.
 </p>
 
 Here are some function declaration examples:
 <pre class="line-numbers"><code class="language-go">func AddSub(a int, b int) (add int, sub int) {
 	add = a + b
 	sub = a - b
-	return // Here the "return" is required if the
-	       // result list is not blank.
+
+	// Here the "return" statement is required if the
+	// result list of this function is not blank.
+	return
 }
 
 func Double(n int) (result int) {
@@ -157,7 +159,13 @@ func Compare(a, b int) bool {
 	return a > b
 }
 
-func Dummy(int, int, bool) {
+func Print(a, b int, c bool) {
+	fmt.Print("a=", a, ", b=", b, ", c=", c, "\n")
+
+	// If the result list of a function is blank, then
+	// "return" statements are optional to be present.
+	// Here, this function will return naturally
+	// without "return" statements.
 }
 </code></pre>
 
@@ -166,6 +174,10 @@ Although it looks the parameter and result variables are declared
 outside of the function body code block, they are declared in
 the function body actually.
 So the names of these variables and local top-level variables can't be duplicated.
+</p>
+
+<p>
+A function can also return through <a href="panic-recover-mechanism.html">panicking</a>.
 </p>
 
 Variadic parameters will be treated as slices in function declaration bodies.
@@ -255,6 +267,8 @@ More differences will be mentioned at other places.
 Function calls (or invocations) in Go are much similar to many other popular languages.
 <pre class="line-numbers"><code class="language-go">package main
 
+import "fmt"
+
 ... // To save space, the functions declared in the 
     // last section are not shown here.
 
@@ -287,6 +301,8 @@ mixed with the multi-result function call.
 
 <pre class="line-numbers"><code class="language-go">package main
 
+import "fmt"
+
 ... // To save space, the functions declared in the 
     // last section are not shown here.
 
@@ -300,13 +316,13 @@ func main() {
 	// in another call if no other arguments are
 	// mixed with it.
 	add, sub, cmp := AddSubCompare(AddSub(2, 3))
-	Dummy(AddSubCompare(2, 3))
-	Dummy(Double(5), 23, Compare(5, 6))
+	Print(AddSubCompare(2, 3))
+	Print(Double(5), 23, Compare(5, 6))
 
 	// This line doesn't compile, for a multi-result
 	// function call is mixed with other arguments.
 	/*
-	Dummy(AddSub(2, 3), true)
+	Print(AddSub(2, 3), true)
 	*/
 
 	_, _, _ = add, sub, cmp
@@ -382,6 +398,8 @@ The results of function calls can be ignored by assigning them
 to the blank identifier <code>_</code>.
 For custom declared functions, the results of their calls can be omitted all together.
 <pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
 
 ... // The functions declared in the last section.
 

@@ -85,7 +85,7 @@ simpler below.)
 
 Here is a picture shows the block hierarchies in a program:
 <div class="text-center">
-	<img src="/static/golang/goblocks.png">
+	<img src="./res/blocks.png">
 </div>
 
 <p>
@@ -238,7 +238,7 @@ Package-level source code elements can be constants, types, variables, or functi
 
 <p>
 Each package-level source code element identifier is directly contained
-in both a package block and a file block.
+both in a package block and a file block.
 </p>
 
 <p class="anchor" id="scope"></p>
@@ -330,7 +330,7 @@ const iota = iota // error: constant definition loop
 var true = true   // error: typechecking loop
 */
 
-var a = b   // can reference variables declared later.
+var a = b   // can reference variables declared later
 var b = 123
 
 func main() {
@@ -340,8 +340,9 @@ func main() {
 	var true = true   // ok
 	_ = true
 	
+	// The following lines fail to compile.
 	/*
-	var c = d   // error: undefined: d
+	var c = d // can't reference variables declared later.
 	var d = 123
 	_ = c
 	*/
@@ -369,19 +370,31 @@ If an identifier is shadowed, its scope will exclude the scopes of its shadowing
 
 Below is an interesting example.
 The code contains 4 declared variables named <code>x</code>.
-A <code>x</code> declared in an inner block will shadow
-the <code>x</code>s declared in outer blocks.
-<pre class="line-numbers"><code class="language-go">var x int
-func f() {
-	var x int
+A <code>x</code> declared in an innerer block will shadow
+the <code>x</code>s declared in outerer blocks.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+var x = 9999
+var p0 = &x
+var p1, p2, p3 *int
+
+func main() {
+	var x = 888
+	p1 = &x
 	for x := 0; x < 5; x++ {
+		p2 = &x
 		x := x + 100
-		...
+		p3 = &x
 	}
+	
+	fmt.Println(*p0, *p1, *p2, *p3) // 9999 888 5 104
 }
 </code></pre>
 
-Another weird example (the following program compiles and runs okay):
+Here is another example which is some weird.
+Its compiles and runs okay.
 <pre class="line-numbers"><code class="language-go">package main
 
 import (

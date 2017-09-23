@@ -1,0 +1,385 @@
+﻿
+<p>
+Deferred function call is a unique feature in Go.
+Although it is not an essential feature for a programming language,
+this feature makes code look clean and sometimes avoid some bugs
+caused by incautiousness.
+</p>
+
+<p>
+This article will explain how to use deferred function calls
+and mention some details in using deferred function calls.
+</p>
+
+<h3>What Are Deferred Function Calls?</h3>
+
+<p>
+A deferred function call is a function call which follows a <code>defer</code> keyword.
+All the result values of the function call, if the called function has return results,
+mustn't be present. 
+</p>
+
+<p>
+When a function call is deferred, it is not executed immediately and its execution
+is deferred to the moment the innermost function whose body encloses this call returns,
+either because the enclosing function executed a return statement,
+reached the end of its function body,
+or because the corresponding goroutine is panicking. 
+</p>
+
+<p>
+There can be multiple deferred function calls in the body of a function.
+When the function returns and before it exits,
+the already deferred function calls after entering this function are executed,
+in the reverse order they were deferred.
+(Each goroutine maintains a stack of deferred function calls.)
+</p>
+
+<div>
+Here is an example to show how to use deferred function calls,
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func meet(whoA, whoB string) {
+	defer fmt.Printf("See you later, %s.\n", whoA)
+	fmt.Printf("Hello, %s.\n", whoA)
+	defer fmt.Printf("Bye, %s.\n", whoB)
+	fmt.Printf("Hi, %s.\n", whoB)
+}
+func main() {
+	fmt.Println("Alice and John will meet each other.")
+	defer fmt.Println("Alice and John said bye to each other.")
+	meet("Alice", "John")
+}
+</code></pre>
+
+The output:
+<pre class="output">
+Alice and John will meet each other.
+Hello, Alice.
+Hi, John.
+Bye, John.
+See you later, Alice.
+Alice and John said bye to each other.
+</pre>
+
+Here is another example with deferred functions which contain other deferred calls.
+The example will print <code>0</code> to <code>9</code>, each per line,
+by their natural order.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	defer fmt.Println("9")
+	fmt.Println("0")
+	defer fmt.Println("8")
+	fmt.Println("1")
+	if false {
+		defer fmt.Println("not reachable")
+	}
+	defer func() {
+		defer fmt.Println("7")
+		fmt.Println("3")
+		defer func() {
+			fmt.Println("5")
+			fmt.Println("6")
+		}()
+		fmt.Println("4")
+	}()
+	fmt.Println("2")
+	return
+	defer fmt.Println("not reachable")
+}
+</code></pre>
+</div>
+
+<h3>Calls To Many Built-in Functions Whose Have Return Results Can't Be Deferred</h3>
+
+<p>
+In Go, the return values of a call to custom functions can be all absent (discarded).
+But Go requires that the return values of a call to many built-in functions
+with non-blank return result lists must be all present (up to Go 1.9),
+except the <code>copy</code> and <code>recover</code> functions.
+</p>
+
+<div>
+Above has mentioned that all the result values of a deferred function call
+must be discarded (if the called function has return results).
+So here is a contradiction.
+Fortunately, the needs to defer built-in function calls which return values
+must be present are rare. As I can think of, only the calls to
+the <code>append</code> function may be needed to deferred sometimes.
+For this case, we can call an anonymous function which surrounds the
+deferred <code>append</code> calls.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	s := []string{"a", "b", "c", "d"}
+	defer fmt.Println(s) // [a x y d]
+	defer func() {
+		_ = append(s[:1], "x", "y")
+	}()
+}
+</code></pre>
+</div>
+
+<p><i>
+(BTW, A deferred call to the built-in <code>recover</code> function is always a no-op.)
+</i></p>
+
+<h3>Evaluations Of Deferred Function Values</h3>
+
+<p>
+Note, if a deferred call is a call to a custom function,
+and the function value in the deferred call is evaluated to <code>nil</code>,
+execution panics before the call is pushed into the deferred call stack.
+The function value is not evaluated again when the call is executed.
+</p>
+
+<p>
+Please read <a href="panic-recover-mechanism.html">panic/recover mechanism</a>
+to learn what is panic in Go.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	defer fmt.Println("reachable")
+	var f func() // f is a nil by default
+	defer f()    // main returns here for panicking
+	defer fmt.Println("not reachable")
+	f = func() {}
+}
+</code></pre>
+</div>
+
+<h3>Evaluations Of Deferred Function Arguments</h3>
+
+<p>
+Same as evaluations Of deferred function values,
+the arguments of a deferred function call are also evaluated at the moment
+just before the deferred call is pushed into the deferred call stack,
+insead of the moment of executing the deferred call.
+</p>
+
+<div>
+An example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	for i := 0; i < 3; i ++ {
+		defer fmt.Println(i)
+	}
+
+	for i := 0; i < 3; i ++ {
+		defer func() {
+			fmt.Println(i)
+		}()
+	}
+}
+</code></pre>
+
+What output do you expect?
+Here is it:
+<pre class="output">
+b: 3
+b: 3
+b: 3
+a: 2
+a: 1
+a: 0
+</pre>
+
+<p>
+The first loop prints <code>2</code>, <code>1</code> and <code>0</code> as a sequence.
+The second loop prints three <code>3</code> instead,
+for when the three calls deferred in it are executed,
+the value of the loop variable <code>i</code> has become to <code>3</code>.
+</p>
+</div>
+
+<h3>Deferred Calls Make Code Clean And Less Bug Prone</h3>
+
+<div>
+Example:
+
+<pre class="line-numbers"><code class="language-go">import "os"
+
+func withoutDefers (filepath string, head, body []byte) error {
+	f, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Seek(16, 0) 
+	if err != nil {
+		f.Close()
+		return err
+	}
+
+	_, err = f.Write(head)
+	if err != nil {
+		f.Close()
+		return err
+	}
+
+	_, err = f.Write(body)
+	if err != nil {
+		f.Close()
+		return err
+	}
+	
+	err = f.Sync()
+	f.Close()
+	return err
+}
+
+func withDefers(filepath string, head, body []byte) error {
+	f, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.Seek(16, 0) 
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(head)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(body)
+	if err != nil {
+		return err
+	}
+	
+	return f.Sync()
+}
+</code></pre>
+
+Which one looks cleaner? apparently, the one with the deferrd calls, though a little.
+And it is less bug prone, what about if any if <code>f.Close()</code> calls
+in the other one is missed? ;)
+</div>
+
+<h3>Performance Losses Bying Deferring Function Calls</h3>
+
+<div>
+<p>
+It is not always to use defered function calls.
+Up to now (Go 1.9), for the offical Go compiler,
+deferred function calls will cause some performance losses at run time,
+in particular for deferred the function calls within loop code blocks.
+</p>
+
+<p>
+A very large deferred call stack may also consume much memory or other resources
+</p>
+
+Sometimes, we can make some deferred function calls get executed earlier
+to avoid accumulating too many deferred calls.
+For example,
+<pre class="line-numbers"><code class="language-go">func writeManyFile(files []File) error {
+	for _, file := range files {
+		f, err := os.Open(file.path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		
+		_, err = f.WriteString(file.content)
+		if err != nil {
+			return err
+		}
+		
+		err = f.Sync()
+		if err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
+</code></pre>
+
+can be rewrittn and optimized as
+
+<pre class="line-numbers"><code class="language-go">func writeManyFile(files []File) error {
+	for _, file := range files {
+		if err := func() error {
+			f, err := os.Open(file.path)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			
+			_, err = f.WriteString(file.content)
+			if err != nil {
+				return err
+			}
+			
+			return f.Sync()
+		}(); err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
+</code></pre>
+
+<p>
+The performance losses may be eliminated for the deferred calls
+which are not within loop code blocks in the future Go SDK versions.
+Currently, if you really care about the performance of your programs,
+you can try to avoid using deferred function calls.
+</p>
+
+</div>
+<!---
+https://joeshaw.org/dont-defer-close-on-writable-files/
+-->
+
+
+<h3>Deferred Anonymous Functions Can Modify The Named Return Parameters Of Nesting Functions</h3>
+
+<div>
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func Triple(n int) (result int) {
+	defer func() {
+		result += n // modify the return value
+	}()
+	
+	return n + n // <=> result = n + n; return
+}
+
+func main() {
+	fmt.Println(Triple(5)) // 15
+}
+</code></pre>
+</div>
+
+<h3>The Necessary Of The Deffered Function Feature</h3>
+
+<p>
+For most cases, deferred function call is not a necessary feature for Go programming.
+There are many alternative ways to achieve the same goal.
+However, the deferred function call feature is necessary for the
+<a href="panic-and-recover.html">panic and recover mechanism</a> in Go.
+</p>

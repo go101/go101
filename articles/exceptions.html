@@ -12,7 +12,7 @@ This article will list the syntax/semantics sugars and exceptions in Go.
 Sugars are special syntax/semantics exceptions to make programming convenient.
 </p>
 
-<h3>Nested Function Callings</h3>
+<h3>Nested Function Calls</h3>
 
 <div>
 The basic rule:
@@ -164,6 +164,50 @@ func main() {
 	t.Double() // t.x == 6 now
 	// above line is a sugar for
 	(&t).Double()
+}
+</code></pre>
+</div>
+
+<h3>Selectors On Named One-Level Pointers</h3>
+
+values of one level named struct pointer types can access the fields of its base type.
+but can't access methods.
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+If <code>x</code> is a value of a named one-level pointer type,
+and selector <code>(*x).f</code> is a valid selector,
+the <code>x.f</code> is a legal shorthand (sugar) for <code>(*x).f</code>.
+</div>
+
+Exception:
+<div class="alert alert-success">
+The basic rule is only valid if <code>f</code> denotes a struct field,
+it is not valid if <code>f</code> denotes a method.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+type T struct {
+	x int
+}
+
+func (T) y() {
+}
+
+type P *T
+
+func main() {
+	var t T
+	var p P = &t
+	
+	_ = (*p).x // valid
+	_ = p.x    // legal
+	
+	_ = (*p).y // valid
+	_ = p.y    // not legal
 }
 </code></pre>
 </div>
@@ -342,26 +386,68 @@ Go doesn't support generic.
 
 Exception:
 <div class="alert alert-success">
-Most <code>builtin</code> and <code>unsafe</code> functions support generic.
+Most built-in functions, which declared in the <code>builtin</code> and <code>unsafe</code>
+standard packages, support generic.
+And type composition with all kinds of composite types in Go is kind of generic.
 </div>
 
-<p>
-</p>
 </div>
+
+<h3>Functions As Values</h3>
 
 <div>
-In fact, in Go specification,
-functions in <code>unsafe</code> packages are also viewed as built-in functions.
-There are more differences between built-in functions and other general functions:
-<ul>
-<li>general functions can be used as values, but built-in and unsafe functions can't.</li>
-<li>the return results of a general function call can be ignored all together
-	(if the called function has return results),
-	but this is not true for built-in and unsafe functions.
-	So if the number of results of a built-in or unsafe function is not zero,
-	then the calls to it can't be deferred.
-</li>
-</ul>
+The basic rule:
+<div class="alert alert-info">
+Declard functions can be used as function values.
+</div>
+
+Exception:
+<div class="alert alert-success">
+None of the built-in functions, which declared in the <code>builtin</code> and <code>unsafe</code>
+standard packages, can be used as function values.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "unsafe"
+
+func main() {
+	// These ones are okay.
+	var _ = main
+	var _ = fmt.Println
+	
+	// These ones fail to compile.
+	var _ = panic
+	var _ = unsafe.Sizeof
+}
+</code></pre>
+</div>
+
+<h3>Absence Of Return Values Of Function Calls</h3>
+
+<div>
+
+The basic rule:
+<div class="alert alert-info">
+The return values of a function call can be all absent.
+</div>
+
+Exception:
+<div class="alert alert-success">
+The return values of a call to the built-in functions
+which declared in the <code>builtin</code> and <code>unsafe</code>
+standard packages, can't be absent, if the calld function has return results.
+</div>
+
+Exception in exception:
+<div class="alert alert-success">
+The return values of a call to the built-in
+<code>copy</code> and <code>recover</code> functions
+can be all absent, even if the two functions have return results.
+</div>
+
 </div>
 
 <h3>Declared Varialbes</h3>
@@ -695,7 +781,6 @@ func main() {
 	_, ok = <-c // will not panic
 	_ = <-c     // will not panic
 	
-	
 	var v interface{} = "abc"
 	_, ok = v.(int) // will not panic
 	_ = v.(int)     // will panic!
@@ -704,3 +789,4 @@ func main() {
 </div>
 
 </div>
+

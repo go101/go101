@@ -1,0 +1,357 @@
+﻿<p>
+Go is famous for its easy built-in concurrent programming supports.
+Two built-in features, goroutine and channel in Go,
+lower the difficulties of concurrent programming much,
+and make concurrent programming fun and enjoyable.
+</p>
+
+<p>
+This article will make simple introduction for the two built-in
+concurrent programming features.
+</p>
+
+<h3>Goroutines</h3>
+
+<div>
+<p>
+In Go, there is not a formal way to explicitly create a system thread.
+In Go, concurrency is achieved through goroutines, which are also often
+called green threads. Green threads are maintained and scheduled by
+Go runtime instead of operation systems.
+The cost, such as memory consumption and context switching,
+of a goroutine is much smaller than a system thread.
+So it is not a problem for a Go program to maintain tons of thoundsands
+goroutines at the same time, as long as the system memory is sufficient.
+</p>
+
+Creating a goroutine is super easy in Go.
+There is a special keyword, <code>go</code>, used to create goroutines.
+A function call following a <code>go</code> keyword will be executed
+in a new created goroutine.
+The created goroutine will exist along with the exit of the called function.
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"log"
+	"time"
+)
+
+func John() {
+	log.Println("John: Hello.")
+	log.Println("John: I'm fine, thanks! And you?")
+}
+
+func Alice() {
+	log.Println("Alice: Hi, long time no see. How are you now?")
+	log.Println("Alice: Me too.")
+}
+
+func main() {
+	log.SetFlags(0) // avoid outputting time string in logs
+	
+	// Create two new goroutines.
+	go John()
+	go Alice()
+	
+	time.Sleep(time.Second)
+}
+</code></pre>
+
+<p>
+This program will create two new goroutines at run time.
+So it is very possible that there will be at least
+three goroutines coexisting at the peak,
+including the two new created ones and the main goroutine.
+</p>
+
+The new goroutines almost start at the same time,
+so the order of the texts ouputed by them is kind of randomized.
+One possible output result is
+<pre class="output">
+John: Hello.
+Alice: Hi, long time no see. How are you now?
+Alice: Me too.
+John: I'm fine, thank you! And you?
+</pre>
+
+<p>
+To make the result predictable,
+we need to make some synchronizations among involoved goroutines.
+One synchronization method is through channels, which will be introduced below.
+</p>
+
+Please note that,
+<ol>
+<li>
+    this program uses the print functions in the
+    <code>log</code> standard package instead of the <code>fmt</code> standard package.
+    The reason is <b>the print functions in the <code>log</code> standard package
+    are synchronized between goroutines,
+    but the ones in the <code>fmt</code> standard package are not</b>.
+    If we use the print functions in the <code>fmt</code> standard package,
+    the output texts may interlace with each other.
+</li>
+<li>
+    the line <code>time.Sleep(time.Second)</code> in the main function
+    is a non-guaranteed (defective) way to avoid the main goroutine existing too early
+    to make the texts outputted in the two new created goroutines
+    have no chances to show up,
+    for <b>if the main goroutine exits, the program will also exit</b>.
+    To make it is guaranteed that the log texts will show up before the program exit,
+    some a synchronization technology introduced in this article and other articles
+    must be exploited.
+</li>
+</ol>
+
+</div>
+
+<h3>Channels</h3>
+
+<p>
+Channel is a unique built-in feature in Go.
+It makes the synchronizations among goroutines easy and fun.
+</p>
+
+<p>
+A channel value can be viewed as a FIFO (first in, first out) data queue.
+The operations, such as send data to the channel and receive data from the channel,
+are all synchronous so that we don't need to make further synchronizations for them.
+</p>
+
+<p>
+A bidirectional channel type with element type <code>T</code> is denoted
+as <code>chan T</code>.
+A channel value must be initialized with the built-in <code>make</code> function.
+<code>make(chan T, N)</code> will create a channel with capacity <code>N</code>,
+where the argument integer N is optional.
+<code>make(chan T)</code> is equivalent to <code>make(chan T, 0)</code>.
+Channels with zero capacity are called unbuffered channels.
+</p>
+
+<p>
+For a bidirectional channel <code>c</code> of type <code>chan T</code>
+and a value <code>v</code> of type <code>T</code>,
+we can use the channel send simple statement <code>c &lt;- v</code> to send
+<code>v</code> into channel <code>c</code>, and use the expression <code>&lt;- c</code>
+to receive a value out of channel <code>c</code>.
+The receive expression can also be used as a simple statement.
+</p>
+
+<div>
+For an unbuffered channel, a goroutine will be blocked when:
+<ol>
+<li>
+    the goroutine tries to receive a value from the channel but there
+    are no values queued in the channel. The goroutine will keep in
+    blocking until another goroutine sends a value to the channel.
+</li>
+<li>
+    the goroutine tries to send a value to the channel but there
+    are no other (blocking) goroutines trying to receive value from
+    the channel. The goroutine will keep in blocking until another
+    goroutine tries to receive a value from the channel.
+</li>
+</ol>
+
+A simple example by using a channel to make synchronizations.
+In this example, the event of printing <code>Hello </code> always
+happens before the event of printing <code>world!</code> for sure.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	c := make(chan string) // an unbuffered channel.
+	
+	go func() {
+        fmt.Print("Hello ")
+        c <- "world!" // send a value
+	}()
+
+	w := <- c // receive a value
+	fmt.Println(w)
+}
+</code></pre>
+
+Here is a modified version of the first example in this article.
+The modified version uses two channels to make synchronizations.
+The channel element types, <code>bool</code> and <code>struct{}</code>,
+are not important in this modified example.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "log"
+
+func John(c chan bool) {
+	log.Println("John: Hello.")
+	c <- true
+	<-c
+	log.Println("John: I'm fine, thanks! And you?")
+	c <- true
+}
+
+func Alice(c chan bool, exit chan struct{}) {
+	<-c
+	log.Println("Alice: Hi, long time no see. How are you now?")
+	c <- true
+	<-c
+	log.Println("Alice: Me too.")
+	exit <- struct{}{}
+}
+
+func main() {
+	log.SetFlags(0) // avoid outputting time string in logs
+	
+	c, exit := make(chan bool), make(chan struct{})
+	
+	// Create two new goroutines.
+	go John(c)
+	go Alice(c, exit)
+	
+	<- exit // a better way to wait the other goroutines to end
+}
+</code></pre>
+
+The output results are always
+<pre class="output">
+John: Hello.
+Alice: Hi, long time no see. How are you now?
+John: I'm fine, thanks! And you?
+Alice: Me too.
+</pre>
+</div>
+
+<p>
+This article will not explain channels and channel rules in detail,
+Please read <a href="channel.html">this article</a> for more on channels,
+<a href="#">this article</a> for channel usage patterns in Go,
+and <a href="#">this article</a> for common synchronization mistakes in
+Go concurrent programming.
+</p>
+
+<h3>The Cost Of Goroutines</h3>
+
+<p>
+The cost of a new goroutine is very small in Go.
+It is okay for a Go program to create thounsands of, even millions of,
+concurrent goroutines, as long as there is enough memory.
+</p>
+
+<h3>Concurrence vs. Parallel</h3>
+
+<p>
+The following picture depicts the differences between concurrence and parallel.
+<br/>
+<img src="./res/concurrent-vs-parallel.png">
+<br/>
+Simple speaking, two concurrent executions may not been processed simultaneously
+at any given time point, but two parallel executions are processed simultaneously
+at any given time point. Parallel is special concurrence.
+</p>
+
+<p>
+For example, if a Go program can use only one logical CPU,
+then it is impossilbe to make two goroutines execute in paralle.
+However it is posssilbe to make many goroutine execute concurrently
+by frequenctly switching the execution among these goroutines.
+</p>
+
+<p>
+Although a Go program can maintain thousands of concurrent goroutines,
+the max possible number of goroutines being executed in parallel depends on
+the logical CPUs the program uses.
+The <code>runtime.NumCPU</code> function can used to
+get the number of logical CPUs a program uses at run time.
+</p>
+
+<p>
+The <code>GOMAXPROCS(n int) int</code> function in the <code>runtime</code>
+standard package is used to set the maximum number of logical CPUs that
+can be executing simultaneously and returns the previous value.
+If <code>n &lt; 1</code>, it does not change the current setting.
+Since Go SDK 1.5, the default setting value is <code>runtime.NumCPU()</code>.
+</p>
+
+<p>
+Generally, the number of hyper threads claimed by a CPU model
+correponds the number of logic CPUs the model supports.
+For example, a 2-core-4-thread CPU supports four logic CPUs.
+</p>
+
+<h3>The Statuses Of Goroutines</h3>
+
+<p>
+As the above channel examples have shown,
+a live goroutine may stay in two statuses, running and blocking.
+A goroutine may be blocked when it tries to send a value to,
+or receive a value from, a channel.
+</p>
+
+<p>
+A goroutine in sleeping (by calling <code>time.Sleep</code> function) is
+viewed as a running gorotuine.
+</p>
+
+<p>
+A speicfied Go runtime implementation may use more
+internal goroutine statuses for programming convenience.
+</p>
+
+<div>
+As a blocking goroutine can only be unblocked by another goroutine,
+if all goroutines in a Go program are in blocking status,
+then all of they will stay in blocking status for ever.
+This can be viewed as an overall deadlock.
+For such case, the official Go runtime will crash the program.
+For example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	c := make(chan string)
+	
+	go func() {
+		<- c // blocks here
+	}()
+
+	<- c // blocks here
+}
+</code></pre>
+
+The two goroutines both try to receive value from a channel,
+but no one sends values to the channel.
+So the program will crash with the following output:
+<pre class="output">
+fatal error: all goroutines are asleep - deadlock!
+
+goroutine 1 [chan receive]:
+...
+</pre>
+</div>
+
+<h3>Goroutine Function Value Evaluation</h3>
+
+<div>
+If a goroutine function is evaluated to a <code>nil</code> function,
+then program will crash when trying to start the goroutine.
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var f func() // f == nil
+	go f() // fatal error: go of nil func value
+}
+</code></pre>
+</div>
+
+<!---
+
+====== move to panic article
+
+<h3>Panic In Goroutine</h3>
+
+(to write, mention unrecovered panic will make program crash)
+mention painc can be revovered
+
+-->
+
+
+

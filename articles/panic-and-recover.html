@@ -1,0 +1,368 @@
+<p>
+Go doesn't support exception throwing, instead,
+explicit error handling is preferred in Go programming.
+</p>
+
+<p>
+In fact, Go supports an exception throw/catch alike mechanism.
+The mechanism is called panic and recover.
+This article will show how to use this mechanism.
+</p>
+
+<h3>Panic</h3>
+
+<p>
+We can make a goroutine become panicking by calling the built-in
+<code>panic</code> function to create a panic in the gorotuine.
+If a goroutine is panicking, only the deferred function calls
+will get executed, in the reverse order they were deferred.
+</p>
+
+<p>
+A panic can be recovered to make the corresponding panicking goorutine restore to normal.
+Please read the next section for details.
+</p>
+
+<p>
+Creating a panic is one way for a function to return.
+After the return and before the exit of the function,
+the function calls deferred in the function will still get executed.
+A panic can propagate upwards to the caller functions in a goroutine
+until the goroutine exits.
+A panic will not propagate from one goroutine to another one.
+If a panicking goroutine exits without being recovered, the whole program will crash.
+</p>
+
+<p>
+The <code>panic</code> function is declared as <code>func panic(v interface{})</code>,
+so a <code>panic</code> function call can takes an argument of any type.
+</p>
+
+<div>
+For the following example,
+even if the main goroutine is not panicking, the program still crashes.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func doSomething() {
+	defer fmt.Println("Hello!")
+	panic("Bye!") // create a panic
+	fmt.Println("Unreachable.")
+}
+
+func main() {
+	c := make(chan bool)
+	
+	go func() {
+		defer fmt.Println("Hi!")
+		doSomething()
+		fmt.Println("Unreachable.")
+		c <- true
+	}()
+	
+	<-c
+}
+</code></pre>
+
+The output:
+<pre class="output">
+Hello!
+Hi!
+panic: Bye!
+
+goroutine 1 [running]:
+main.doSomething()
+...
+</pre>
+
+<p>
+After the new created goroutine panics in the <code>doSomething</code> function,
+the two already deferred <code>fmt.Println</code> calls will be executed eventaully,
+but the other two <code>fmt.Println</code> calls have no any chances to get executed.
+</p>
+
+There are many situations the official Go runtime and standard packages would create panics,
+such as
+<ul>
+<li>
+	divide an integer by zero.
+</li>
+<li>
+	dereference a <code>nil</code> pointer.
+</li>
+<li>
+	call a <code>nil</code> function value.
+</li>
+<li>
+	access elements of <code>nil</code> slices.
+</li>
+<li>
+	put elements into <code>nil</code> maps.
+</li>
+<li>
+	close (or send values to) a closed channel.
+	(Please read <a href="channel.html">channels in Go</a> for details.)
+</li>
+<li>
+	..., etc.
+</li>
+</ul>
+</div>
+
+<p>
+There can be multiple active panics coexisting in the same goroutine.
+Please read <a href="panic-and-recover-more.html">this article</a> for details.
+</p>
+
+<h3>Recover</h3>
+
+<p>
+As above mentions, a panic can be revocered.
+If the recovered panic is the only alive panic in the current panicking goroutine,
+then the goroutine will restore to normal.
+</p>
+
+<p>
+We can call the built-in <code>recover</code> function to recover a panic.
+If a <code>recover</code> function call recover a panic,
+then the return value of the <code>recover</code> function call
+is an <code>interface{}</code> value which dynamic value is
+a copy of the argument passed to the corresponding <code>panic</code> call.
+</p>
+
+<div>
+The following example demos the idiomatic way to recover the panic in the last example.
+Yes, <code>recover</code> calls must be placed in a deferred function to take effect.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func doSomething() {
+	defer func() {
+		// recover the panic
+		v := recover()
+		fmt.Println("Recovered:", v) // Recovered: Bye!
+	}()
+	
+	defer fmt.Println("Hello!")
+	panic("Bye!") // create a panic
+	fmt.Println("Still unreachable.")
+}
+
+func main() {
+	c := make(chan bool)
+	
+	go func() {
+		defer fmt.Println("Hi!")
+		doSomething()
+		fmt.Println("Reachable now.")
+		c <- true
+	}()
+	
+	<-c
+}
+</code></pre>
+
+The output:
+<pre class="output">
+Hello!
+Recovered: Bye!
+Reachable now.
+Hi!
+</pre>
+
+<p>
+We can find that, after the goroutine execution exits the <code>doSomething</code>
+function, the goroutine is not panicking any more,
+so the following non-deferred statements will get executed as noraml.
+The program will not crash.
+</p>
+
+<p>
+Note, not any <code>recover</code> function call can recover alive panics.
+A <code>recover</code> function call must be put at a proper place to
+recover a specified panic. For more details, please read
+<a href="panic-and-recover-more.html">this article</a>.
+</p>
+
+In a server program, We often use <code>recover</code> to avoid a
+panicking client session goorutine crashing the whole program.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"net"
+	"log"
+	"errors"
+)
+
+func main() {
+	listener, err := net.Listen("tcp", ":55555")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Println(err)
+		}
+		
+		go handleClient(conn)
+	}
+}
+
+func handleClient(c net.Conn) {
+	defer func() {
+		c.Close()
+		// If we don't recover the potential panic, the
+		// potential panic will make this program crash.
+		if v := recover(); v != nil {
+			log.Println("client handler panic:", v)
+		}
+	}()
+	
+	// This function may panic below somewhere.
+	// Here it always panic here in this demo.
+	panic(errors.New("just a demo."))
+}
+</code></pre>
+
+We can restart goroutines automatically on unexpected exits caused by panics
+by catching/recovering the panics.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"log"
+	"math/rand"
+	"time"
+)
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+	log.SetFlags(0)
+}
+
+func shouldNotExit() {
+	for {
+		// Do something ...
+		time.Sleep(time.Second)
+
+		// Simultate an unexpected panic.
+		if rand.Intn(5) == 0 {
+			panic("0 is unexpected")
+		}
+	}
+}
+
+func NeverExit(name string, f func()) {
+	defer func() {
+		if v := recover(); v != nil {
+			log.Println(name, "is crashed. Restart it now.")
+			go NeverExit(name, f) // restart
+		}
+	}()
+	
+	f()
+}
+
+func main() {
+	go NeverExit("job#A", shouldNotExit)
+	go NeverExit("job#B", shouldNotExit)
+	select{} // blocks here for ever
+}
+</code></pre>
+</div>
+
+<h3>Use Panic/Recover To Control Code Flow</h3>
+
+<div>
+<p>
+Somtimes, we can use panic/recover as a way to
+simulate crossing-functions long jump statements
+and crossing-functions returns,
+though generally this way is not recommended to use.
+This way does harm for both code readibilty and execution efficiency.
+The only benefit is sometimes it can make code look less verbose.
+</p>
+
+In the following example, once a panic is created in an inner function,
+the exection will jump to the defer <code>recover</code> call.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	n := func () (result int)  {
+		defer func() {
+			if v := recover(); v != nil {
+				if n, ok := v.(int); ok {
+					result = n
+				}
+			}
+		}()
+		
+		result = func () int {
+			func () {
+				func () {
+					// ...
+					panic(123)
+				}()
+				// ...
+			}()
+			return 0
+		}()
+		// ...
+		return
+	}()
+	fmt.Println(n) // 123
+}
+</code></pre>
+</div>
+
+<h3>Panic Or Return An Error?</h3>
+
+<p>
+At run time, there are often many circumstances which make the executions
+in functions can't always be along the normal routes.
+For such circumstances, is it better to panic or return an error?
+Like many questions, the standard answer is "depends".
+</p>
+
+<p>
+For some circumstances, there is no way to return errors, then panic is the only choice.
+For example, an integer is divided by zero and a <code>nil</code> function value is called, etc.
+Such operations are too elemental, return erros will make them
+</p>
+
+<p>
+For custom functions,
+the convention in Go programming is try to return errors
+and handle them explicitly instead of panic arbitrarily.
+</p>
+
+<p>
+The circumstances to return errors should be more tolerable than the circumstances to panic.
+Panics should only be created for unexpected and intolerable circumstances.
+But even for some unexpected circumstances, panic is still not a good choice.
+However, generally return an error is always not a bad choice for all circumstances,
+if it is possible to return an error.
+So if it is hard to make a decision, try to return errors.
+</p>
+
+<p>
+Unexpected user inputs shouldn't crash a program.
+</p>
+
+<h3>More About Panic And Recover</h3>
+
+<p>
+Generally, the idiomatic usages introduced in this article
+is enough for using the panic and recover mechenism in daily Go programming.
+To understand the panic and recover mechanism thoroughly,
+please read <a href="panic-and-recover-more.html">the right places
+to call <code>recover</code> function</a>.
+</p>
+
