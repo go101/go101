@@ -19,14 +19,17 @@ Here is an example of type embedding:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
+	type P = *int
 	var x struct {
-		string // a named non-pointer non-interface type
+		string // a defined non-pointer type
+		error  // a defined interface type
 		*int   // an unnamed pointer type
-		error  // an interface type
+		P      // an alias of an unnamed pointer type
 	}
 	x.string = "Go"
-	x.int = new(int)
 	x.error = nil
+	x.int = new(int)
+	x.P = new(int)
 }
 </code></pre>
 
@@ -42,50 +45,58 @@ The names of the three anonymous fields are
 
 <h3>Which Types Can be Embedded?</h3>
 
-todo: named -&lt; declared
-
 <div>
 Following types can be embedded in struct types.
-<ul>
+<ol>
 <li>
-	Any named type which is not a pointer type. The named types can be interface types.
+	Any named type which is not a pointer type (but can be an interface type).
+	The named types can be alias of unnamed types.
 </li>
 <li>
 	Any unamed pointer type which base type must be a named type,
 	and the named base type must be neither a pointer type nor an interface type.
 </li>
-</ul>
+<li>
+	The aliases of the unamed pointer types described in the second case.
+</li>
+</ol>
 
 Following lists some types can and can't be embedded:
-<pre class="line-numbers"><code class="language-go">type IntPtr *int
-type Encoder interface {Encode([]byte) []byte}
+<pre class="line-numbers"><code class="language-go">type Encoder interface {Encode([]byte) []byte}
+type Person struct {name string; age int}
+type Alias = struct {name string; age int}
+type AliasPtr = *struct {name string; age int}
+type IntPtr *int
 
 // These types can be embedded in a struct type.
+Encoder
+Person
+*Person
+Alias
+*Alias
+AliasPtr
 int
 *int
-Encoder
-string
-bool
 
 // These types can't be embedded.
-IntPtr
 *Encoder
+*AliasPtr
+IntPtr
+*IntPtr
+struct {name string; age int}
 map[string]int
 []int64
 func()
-struct {
-	x int
-}
 </code></pre>
 
 As the last section mentioned, each anonymous field has an implicit name.
-Here are the the implicitly naming rules:
+The name of an anonymous field is
 <ul>
 <li>
 	the name of the field type, which is embedded, if the field type is a named type.
 </li>
 <li>
-	the base name of the field type if the field type is a pointer type.
+	the base name of the field type if the field type is an unnamed pointer type.
 </li>
 </ul>
 
@@ -400,7 +411,6 @@ func (s *Singer) PrintInfo() {
 }
 </code></pre>
 
-
 Beside above mentioned implicitly declared methods and functions,
 for each method of the pointer type whose base type is an embedded type,
 if it neither collides nor is shadowed by other methods and fields,
@@ -659,3 +669,8 @@ func main() {
 </code></pre>
 
 </div>
+
+<h3>A Detail About Selector Shorthands</h3>
+
+
+todo: named pointer types selector rules. different to fields
