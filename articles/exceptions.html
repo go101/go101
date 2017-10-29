@@ -18,7 +18,7 @@ Sugars are special syntax/semantics exceptions to make programming convenient.
 The basic rule:
 <div class="alert alert-info">
 If the return results of a function call exactly match the input parameters
-of another function call and the number of the return result is not zero,
+of another function call and the number of the return results is not zero,
 then the first call can be nested in the second one.
 When nested in the second call, the first call can't mix up with
 other parameters of the second call.
@@ -27,15 +27,16 @@ other parameters of the second call.
 Sugar:
 <div class="alert alert-success">
 If the number of the return results of a function call is exactly one,
-then the function call can be nested in another function call, even if the other
-function call need more than one parameters, and the single-return
-function call can mix up with other parameters of the other function call.
+then the function call can be nested in another function call,
+as long as the other function call need at least one argument,
+and the single-return function call can mix up with other arguments of the other function call.
 </div>
 
 Exception:
 <div class="alert alert-success">
-The basic rule doesn't apply to the built-in <code>copy</code>,
-<code>print</code> and <code>println</code> functions.
+The basic rule doesn't apply to calls of some built-in functions with multiple input parameters,
+including <code>copy</code>, <code>delete</code>, <code>print</code> and <code>println</code> functions.
+A calls to any of these functions can't take a solo multi-return function call as the only argument.
 </div>
 
 <p><i>
@@ -45,6 +46,18 @@ but will <a href="https://github.com/golang/go/issues/20656">never apply to</a>
 <code>print</code> and <code>println</code> functions.)
 </i></p>
 
+The basic rule applies to the calls of built-in <code>append</code> and <code>complex</code> functions,
+with one exception scenario (for the official Go compiler):
+<div class="alert alert-success">
+Calls to the <code>complex</code> function can't take a solo method call
+on an interface value receiver as the only argument.
+</div>
+
+<p><i>
+(This exception scenario may be a bug of the official Go compiler.
+At present, Go 1.9, the bug still exists.)
+</i></p>
+
 Example:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -52,37 +65,31 @@ import (
 	"fmt"
 )
 
-func f1() int {
-	return 1
-}
+func f0() float64 {return 1}
+func f1() (float64, float64) {return 1, 2}
+func f2(float64, float64) {}
+func f3(float64, float64, float64) {}
 
-func f2(x int) (int, int, int) {
-	return x*x, x+x, x-1
-}
-
-func f3(a, b, c int) int {
-	return a+b+c
-}
-
-func f4() (int, int) {
-	return 2, 3
-}
+type I interface {m()(float64, float64)}
+type T struct{}
+func (T) m()(float64, float64) {return 1, 2}
 
 func main() {
-	// returns match inputs
-	f3( f2(3) ) // compile okay
-	fmt.Println( f2(3) ) // 9 6 2
+	// These lines compile okay.
+	f2(f0(), 123)
+	f2(f1())
+	fmt.Println(f1())
+	_ = complex(f1())
+	_ = complex(T{}.m())
+	f2(I(T{}).m())
 	
-	// can't mix multiple returns with other parameters
-	// fmt.Println( "output:", f2(3) ) // error
-	// f3(1, f4()) // error
-	
-	// sugar: single return can be mixed with other parameters
-	f3( f1(), 2, 3 ) // compile okay
-	fmt.Println( "output:", f1() ) // output: 1
-	
-	// error: multiple-value f2() in single-value context
-	// println(f2(3))
+	// These lines don't compile.
+	/*
+	f3(123, f1())
+	f3(f1(), 123)
+	println(f1())
+	_ = complex(I(T{}).m())
+	*/
 }
 </code></pre>
 </div>
@@ -98,7 +105,9 @@ Local variables can't be declared but not used.
 <div>
 Exception:
 <div class="alert alert-success">
-Function parameter and result variables, which can also be viewed as local variables, can be not used.
+Function parameter and result variables,
+which can also be viewed as local variables,
+are allowed to be not used.
 </div>
 </div>
 
@@ -168,50 +177,6 @@ func main() {
 </code></pre>
 </div>
 
-<h3>Selectors On Named One-Level Pointers</h3>
-
-values of one level named struct pointer types can access the fields of its base type.
-but can't access methods.
-
-<div>
-The basic rule:
-<div class="alert alert-info">
-If <code>x</code> is a value of a named one-level pointer type,
-and selector <code>(*x).f</code> is a valid selector,
-the <code>x.f</code> is a legal shorthand (sugar) for <code>(*x).f</code>.
-</div>
-
-Exception:
-<div class="alert alert-success">
-The basic rule is only valid if <code>f</code> denotes a struct field,
-it is not valid if <code>f</code> denotes a method.
-</div>
-
-Example:
-<pre class="line-numbers"><code class="language-go">package main
-
-type T struct {
-	x int
-}
-
-func (T) y() {
-}
-
-type P *T
-
-func main() {
-	var t T
-	var p P = &t
-	
-	_ = (*p).x // valid
-	_ = p.x    // legal
-	
-	_ = (*p).y // valid
-	_ = p.y    // not legal
-}
-</code></pre>
-</div>
-
 <h3>Take Addresses Of Composite Literal Values</h3>
 
 <div>
@@ -238,11 +203,76 @@ func (pt *T) Double() {
 
 func main() {
 	// T{3}.Double() // error: T{3} is not addressable
-                   // The last sugar doesn't work here.
+	                 // The last sugar doesn't work here.
 	
 	var pt = &T{3} // sugar: explicitly take address of 
 	               // unaddressable composite literal.
 	pt.Double()
+}
+</code></pre>
+</div>
+
+<h3>Selectors On Defined One-Level Pointers</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Generally, selectors can be used on values of <b>defined</b> pointer types.
+</div>
+
+<div>
+Sugar:
+<div class="alert alert-info">
+If <code>x</code> is a value of a defined <b>one-level</b> pointer type,
+and selector <code>(*x).f</code> is a valid selector,
+the <code>x.f</code> is a legal shorthand (sugar) for <code>(*x).f</code>.
+</div>
+
+<p>
+Selectors can never be used on values of <b>multi-level</b> pointer types,
+no matter whether the multi-level pointer types are defined or not.
+</p>
+
+Exception of the sugar:
+<div class="alert alert-success">
+The sugar is only valid if <code>f</code> denotes a struct field,
+it is not valid if <code>f</code> denotes a method.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+type T struct {
+	x int
+}
+
+func (T) y() {
+}
+
+type P *T
+type PP **T // a multi-level pointer type
+
+func main() {
+	var t T
+	var p P = &t
+	var pt = &t   // type of pt is *T
+	var ppt = &pt // type of ppt is **T
+	var pp PP = ppt
+	_ = pp
+	
+	_ = (*p).x // valid
+	_ = p.x    // legal
+	
+	_ = (*p).y // valid
+	// _ = p.y // illegal
+	
+	// Following ones are all illegal.
+	/*
+	_ = ppt.x
+	_ = ppt.y
+	_ = pp.x
+	_ = pp.y
+	*/
 }
 </code></pre>
 </div>
@@ -281,14 +311,14 @@ func main() {
 	var t = &T{}
 	var a = *t.M()
 	var b = *(t.M())
-	// the above two lines are equivalent.
+	// The above two lines are equivalent.
 	var c = (*t).M()
 	fmt.Printf("%T %T %T\n", a, b, c) // int int *int
 	
 	var s = [...]int{0, 1, 2}
 	var u = &s[0]
 	var v = &(s[0])
-	// the above two lines are equivalent.
+	// The above two lines are equivalent.
 	var w = (&s)[0]
 	fmt.Printf("%T %T %T\n", u, v, w) // *int *int int
 	
@@ -296,7 +326,7 @@ func main() {
 	
 	var x = new(int)
 	*x++ // *x == 1 now
-	// above line is a sugar for
+	// The Above line is a sugar for
 	(*x)++
 }
 </code></pre>
@@ -312,7 +342,12 @@ Container elements are addressable if their values can be overwritten.
 
 Exception:
 <div class="alert alert-success">
-Map elements are not addressable, even if they can be overwritten.
+Map elements are always not addressable, even if they can be overwritten.
+</div>
+
+Sugar:
+<div class="alert alert-success">
+Elements of a slice are always addressable, even if the slice itself is not addressable.
 </div>
 
 Example:
@@ -326,7 +361,14 @@ func main() {
 	var m = map[string]int{"abc": 123}
 	_ = m
 	
+	// The exception:
 	// p = &m["abc"] // error: cannot take addresses of map elements
+	
+	// The sugar:
+	f := func() []int { // return results are not addressable
+		return []int{0, 1, 2}
+	}
+	_ = &f()[2] // ok
 }
 </code></pre>
 </div>
@@ -388,12 +430,12 @@ Exception:
 <div class="alert alert-success">
 Most built-in functions, which declared in the <code>builtin</code> and <code>unsafe</code>
 standard packages, support generic.
-And type composition with all kinds of composite types in Go is kind of generic.
+And type compositions with all kinds of composite types in Go is kinda of generic.
 </div>
 
 </div>
 
-<h3>Functions As Values</h3>
+<h3>Functions Being Used As Values</h3>
 
 <div>
 The basic rule:
@@ -404,7 +446,8 @@ Declard functions can be used as function values.
 Exception:
 <div class="alert alert-success">
 None of the built-in functions, which declared in the <code>builtin</code> and <code>unsafe</code>
-standard packages, can be used as function values.
+standard packages, can be used as function values,
+including the non-generic <code>panic</code> and <code>recover</code> functions.
 </div>
 
 Example:
@@ -643,24 +686,6 @@ BTW, accessing array elements on array pointers (<code>pArray[index]</code>)
 and deriving slices from array pointers (<code>pArray[start : end]</code>)
 are also legal.
 </div>
-
-<!--
-<h3>Identical Types</h3>
-
-<div>
-The basic rule:
-<div class="alert alert-info">
-Any two named types with different names are different types.
-</div>
-
-Exceptions:
-<div class="alert alert-success">
-<code>byte</code> and <code>uint8</code> are the same identical type.
-<br/>
-<code>rune</code> and <code>int32</code> are the same identical type.
-</div>
-</div>
--->
 
 <h3>Built-in Types</h3>
 

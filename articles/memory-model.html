@@ -1,0 +1,520 @@
+﻿<h3>Memory Ordering</h3>
+
+<p>
+Modern compilers (at compile time) and CPUs (at run time)
+often make some optimizations by adjusting the instruction orders,
+so that the instruction execution orders may differ from the
+orders presented in code.
+Surely, instruction reorderings are not arbitrary.
+The basic requirement for a reordering inside a goroutine is
+the reordering must not be detectable by the gorotuine.
+However, other goroutines may observe the reordering.
+A goroutine can always think there are no instruction reorderings in it,
+even if there are really some instruction reorderings happening in it.
+</p>
+
+<p>
+In other words, a reordering must not affact the behaviors of a goroutine
+if the goroutine doesn't share data with other goroutines.
+But the reordering may affact the behaviors of a concurrent program,
+if the goroutine shares data with other goroutines and
+the program doesn't handle instruction reorderings properly.
+</p>
+
+<p>
+Instruction reordering is also often called
+<a href="https://en.wikipedia.org/wiki/Memory_ordering">memory ordering</a>.
+</p>
+
+<div>
+Here is an unprofessional Go program which doesn't consider instruction reordering.
+the program is expanded from an example in
+<a href="https://golang.org/ref/mem">Go 1 memory model</a>.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "runtime"
+
+var a string
+var done bool
+
+func setup() {
+	a = "hello, world"
+	done = true
+}
+
+func main() {
+	go setup()
+
+	for !done {
+		runtime.Gosched()
+	}
+	println(a) // expect to print: hello, world
+}
+</code></pre>
+
+The behavior of this program is very possible as we expect,
+a <code>hello, world</code> text will be printed.
+However, the behavior of this program is compiler and CPU dependent.
+If the program is compiled with a different compiler,
+or it runs on a different architecture,
+it may print nothing, or a text different from <code>hello, world</code>.
+The reason is compilers and CPUs may exchange the execution orders of the two lines
+in the <code>setup</code> function,
+so the final effect of the <code>setup</code> function may become to
+<pre class="line-numbers"><code class="language-go">func setup() {
+	done = true
+	a = "hello, world"
+}
+</code></pre>
+</div>
+
+<p>
+The <code>setup</code> goroutine in the above program will not observe the reordering,
+however, the main goroutine will.
+</p>
+
+<p>
+Beside the reordering problem, there are data races in the program.
+There are not any synchronizations made in accessing the variable
+<code>a</code> and <code>done</code>.
+So, the above program is a showcase full of concurrent programming mistakes.
+A professional Go programmer should make these mistakes.
+</p>
+
+<h3>Go Memory Model</h3>
+
+<p>
+Sometimes, we need to ensure that the execution of some code lines in a goroutine
+must happen before (or after) the execution of some code lines in another goroutine,
+to keep the correctness of a program.
+Instruction reorderings may cause some troubles for such circumstances.
+How should we do to prevent some possible instruction reorderings?
+</p>
+
+<p>
+Different CPU architectures provide different fence instructions
+to prevent different kinds of instruction reorderings.
+Some programming languages provide corresponding functions
+to insert these fence instructions in code.
+However, understanding and correctly using the fence instructions
+raises the bar of concurrent programming.
+</p>
+
+<p>
+The design philosophy of Go is to use as fewer features as possible
+to support as more use cases as possible, at the same time to
+ensure a good enough overall code execution efficiency.
+So Go built-in and standard packages don't provide direct ways
+to use the CPU fence instructions.
+In fact, in Go, we can use some kinds of the synchronization methods
+in Go to ensure expected code execution orders.
+</p>
+
+<p>
+Following will list some guaranteed (and non-guaranteed) code execution orders,
+which are mentioned or not mentioned in
+<a href="https://golang.org/ref/mem">Go 1 memory model</a> and other official Go documentations.
+</p>
+
+<p>
+In the following descriptions, if we say
+event <code>A</code> is guaranteed to happen before event <code>B</code>,
+it means any of the goroutines involved in the two events will observe that
+any of the statements presented before event <code>A</code> in source code
+will be executed before
+any of the statements presented after event <code>B</code> in source code.
+For other irrelevant goroutines,
+the observed orders may be different from the just described.
+</p>
+
+<h4>Channel Related Order Guarantees</h4>
+
+<div>
+The following listed guarantees are not mentioned in
+<a href="https://golang.org/ref/mem">Go 1 memory model</a>,
+but I think they are obvious.
+<ul>
+<li>
+	A channel send operation happens before the completion of the send operation.
+</li>
+<li>
+	A channel receive operation happens before the completion of the receive operation.
+</li>
+<li>
+	The completions of two send operations on a channel can't happen at the same time.
+</li>
+<li>
+	The completions of two receive operations on a channel can't happen at the same time.
+</li>
+</ul>
+
+<a href="https://golang.org/ref/mem">Go 1 memory model</a> lists the following three
+channel related order guarantees.
+<ol>
+<li>
+	The <b>n</b>th successful send to a channel happens before
+	the <b>n</b>th successful receive from that channel completes,
+	no matter that channel is buffered or unbuffered.
+</li>
+<li>
+	The <b>n</b>th successful receive from a channel with capacity <b>m</b>
+	happens before the (<b>n+m</b>)th send to that channel completes.
+	In particular, if that channel is unbuffered (m == 0),
+	the <b>n</b>th successful receive from that channel happens
+	before the <b>n</b>th successful send on that channel completes.
+</li>
+<li>
+	The closing of a channel happens before a receive completes if
+	the receive returns a zero value because the channel is closed.
+</li>
+</ol>
+
+<p>
+Please note, all above order guarantees are made for the involved goroutines.
+For other irrelevant goroutines,
+the observed orders may be different from the above described.
+</p>
+
+Here is an example show some guaranteed code execution orders
+in using an unbuffered channel.
+<pre class="line-numbers"><code class="language-go">func f() {
+	var a, b int
+	var c = make(chan bool)
+
+	go func() {
+		a = 1
+		c <- true
+		if b != 1 { // impossible
+			panic("b != 1") // will never happen
+		}
+	}()
+
+	go func() {
+		b = 1
+		<-c
+		if a != 1  { // impossible
+			panic("a != 1") // will never happen
+		}
+	}()
+}
+</code></pre>
+
+Here, for the two new created goroutines, the following orders are guaranteed:
+<ul>
+<li>
+	the assignment <code>b = 1</code> absolutely happens
+	before the condition evaluation <code>b != 1</code>.
+</li>
+<li>
+	the assignment <code>a = 1</code> absolutely happens
+	before the condition evaluation <code>a != 1</code>.
+</li>
+</ul>
+
+So the two calls to <code>panic</code> in the above example will never get executed.
+However, the <code>panic</code> calls in the following example may get executed.
+<pre class="line-numbers"><code class="language-go">func f() {
+	var a, b, x, y int
+	c := make(chan bool)
+
+	go func() {
+		a = 1
+		c <- true
+		x = 1
+	}()
+
+	go func() {
+		b = 1
+		<-c
+		y = 1
+	}()
+	
+	// Many data races are in this goroutine.
+	// Don't write code as such.
+	go func() {
+		if x == 1 {
+			if a != 1 { // possible
+				panic("a != 1") // may happen
+			}
+			if b != 1 { // possible
+				panic("b != 1") // may happen
+			}
+		}
+		
+		if y == 1 {
+			if a != 1 { // possible
+				panic("a != 1") // may happen
+			}
+			if b != 1 { // possible
+				panic("b != 1") // may happen
+			}
+		}
+	}()
+}
+</code></pre>
+
+<p>
+Here, for the third goroutine,
+which is irrelevant to the operations on channel <code>c</code>,
+will not be guaranteed to observe the orders observed by the first two new created goroutines.
+So, any of the four <code>panic</code> calls may get executed.
+</p>
+
+<p>
+In fact, most compiler implementations do guarantee the four <code>panic</code> calls
+in the above example will never get executed,
+however, none of the Go official documentations make such guarantees.
+So the code in the above example is not cross-compiler or cross-compiler-version compatible.
+We should stick to the Go official documentations to write professional Go code.
+</p>
+
+Here is an example using an unbuffered channel.
+<pre class="line-numbers"><code class="language-go">func f() {
+	var k, l, m, n, x, y int
+	c := make(chan bool, 2)
+	
+	go func() {
+		k = 1
+		c <- true
+		l = 1
+		c <- true
+		m = 1
+		c <- true
+		n = 1
+	}()
+	
+	go func() {
+		x = 1
+		<-c
+		y = 1
+	}()
+}
+</code></pre>
+
+The following orders are guaranteed:
+<ul>
+<li>
+	the execution of <code>k = 1</code> happens before
+	the execution of <code>y = 1</code>.
+</li>
+<li>
+	the execution of <code>x = 1</code> happens before
+	the execution of <code>n = 1</code>.
+</li>
+</ul>
+
+<p>
+The execution of <code>x = 1</code> is not guaranteed to happen before
+the execution of <code>l = 1</code> and <code>m = 1</code>,
+and the execution of <code>l = 1</code> and <code>m = 1</code>
+is not guaranteed to happen before the execution of <code>y = 1</code>.
+</p>
+
+The following is an example on channel closing.
+In this example, the execution of <code>k = 1</code>
+is guaranteed to happen before the execution of <code>y = 1</code>,
+but not guaranteed to happen before the execution of <code>x = 1</code>,
+<pre class="line-numbers"><code class="language-go">func f() {
+	var k, x, y int
+	c := make(chan bool, 1)
+	
+	go func() {
+		c <- true
+		k = 1
+		close(c)
+	}()
+	
+	go func() {
+		<-c
+		x = 1
+		<-c
+		y = 1
+	}()
+}
+</code></pre>
+
+<!---
+The two guarantees may be not true.
+
+There are two other obvious channel related order guarantees.
+But they are not very valuable for Go programming in pratice.
+<ol>
+<li>
+	The completion of the <b>n</b>th successful send on a channel happens before 
+	the completion of the (<b>n+1</b>)th successful send on the channel.
+</li>
+<li>
+	The completion of the <b>n</b>th successful receive on a channel happens before 
+	the completion of the (<b>n+1</b>)th successful receive on the channel.
+</li>
+</ol>
+-->
+
+</div>
+
+<h4>Mutex Related Order Guarantees</h4>
+
+<div>
+Followings are the mutex related order guarantees in Go.
+<ol>
+<li>
+	For a value <code>l</code> of type <code>Mutex</code> or <code>RWMutex</code>
+	in the <code>sync</code> standard package, the <b>n</b>th call of
+	<code>l.Unlock()</code> happens before the (<b>n+1</b>)th call of
+	<code>l.Lock()</code> returns. 
+</li>
+<li>
+	For a value <code>l</code> of type <code>RWMutex</code>,
+	if a call of <code>l.Lock()</code> has returned, then the next
+	valid call of <code>l.Unlock()</code> will happen before the return
+	of any call of <code>l.RLock()</code> which has not started or returned yet.
+</li>
+<li>
+	For a value <code>l</code> of type <code>RWMutex</code>,
+	if a call of <code>l.RLock()</code> has returned, then the next
+	valid call of <code>l.RUnlock()</code> will happen before the return
+	of any call of <code>l.Lock()</code> which has not started or returned yet.
+</li>
+</ol>
+
+In the following exanmple, the following orders are guaranteed:
+<ul>
+<li>
+	the execution of <code>a = 1</code> happens before
+	the execution of <code>b = 1</code>.
+</li>
+<li>
+	the execution of <code>m = 1</code> happens before
+	the execution of <code>n = 1</code>.
+</li>
+<li>
+	the execution of <code>x = 1</code> happens before
+	the execution of <code>y = 1</code>.
+</li>
+</ul>
+
+<pre class="line-numbers"><code class="language-go">func fab() {
+	var a, b int
+	var l sync.RWMutex
+	
+	l.Lock()
+	go func() {
+		l.Lock()
+		b = 1
+		l.Unlock()
+	}()
+	go func() {
+		a = 1
+		l.Unlock()
+	}()
+}
+
+func fmn() {
+	var m, n int
+	var l sync.RWMutex
+	
+	l.RLock()
+	go func() {
+		l.Lock()
+		n = 1
+		l.Unlock()
+	}()
+	go func() {
+		m = 1
+		l.RUnlock()
+	}()
+}
+
+func fxy() {
+	var x, y int
+	var l sync.RWMutex
+	
+	l.Lock()
+	go func() {
+		l.RLock()
+		y = 1
+		l.RUnlock()
+	}()
+	go func() {
+		x = 1
+		l.Unlock()
+	}()
+}
+</code></pre>
+</div>
+
+<h4>Order Guarantee Made By <code>sync.Once</code></h4>
+
+<h4>Order Guarantee Made By <code>sync.WaitGroup</code></h4>
+
+<h4>Order Guarantee Made By <code>sync.Cond</code></h4>
+
+<h4>Atomic Related Order Guarantees</h4>
+
+<div>
+<p>
+All above mentioned synchronization technolodgies make some memory order guarantees.
+These guarantees are well documented in all kinds of Go official documentations.
+However, none of Go official documentations mentions what memory order guarantees
+are made by the atomic synchronization technolodgy.
+</p>
+
+In fact, in the implementation of the official Go compiler, at least for Go 1.9,
+there are exactly some memory order guarantees made by atomic operations.
+The official implementations of many other synchronization technolodgies rely on
+the guarantees provided by atomic operations.
+For example, the following program always prints <code>1</code>,
+if it is compiled with Go SDK 1.9.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "sync/atomic"
+import "runtime"
+
+func main() {
+	var a, b int32 = 0, 0
+
+	go func() {
+		a = 1
+		atomic.AddInt32(&b, 1)
+	}()
+
+	for {
+		if n := atomic.LoadInt32(&b); n == 1 {
+			fmt.Println(a) // always print 1
+			break
+		}
+		runtime.Gosched()
+	}
+}
+</code></pre>
+
+<p>
+Here, the main goroutine will always observe that <code>a = 1</code>
+happens before <code>atomic.AddInt32(&amp;b, 1)</code>.
+When <code>b</code> becomes <code>1</code>,
+<code>a</code> must have also become <code>1</code>.
+</p>
+
+<p>
+However, the guarantees made by atomic operations are not
+written down in the Go specification and other offcial Go documentations.
+If you want to write cross-compiler and cross-compile-version compatible Go code,
+the safe advice is, <b>don't rely on atomic to guarantee memory orderings in general Go programming</b>.
+There is <a href="https://github.com/golang/go/issues/5045">an issue</a>
+on how these guarantees should be written down.
+But, up to now (Go 1.9), the decision has not been made.
+</p>
+</div>
+
+<!--
+
+https://github.com/golang/go/issues/5045
+https://bartoszmilewski.com/2008/12/01/c-atomics-and-memory-ordering/
+https://bartoszmilewski.com/2008/11/05/who-ordered-memory-fences-on-an-x86/
+http://preshing.com/20130922/acquire-and-release-fences/
+https://en.wikipedia.org/wiki/Memory_barrier
+https://groups.google.com/forum/#!topic/golang-nuts/AoO3aivfA_E
+https://peeterjoot.wordpress.com/2009/12/04/intel-memory-ordering-fence-instructions-and-atomic-operations/
+
+-->

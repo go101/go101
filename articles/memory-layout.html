@@ -5,10 +5,6 @@ https://groups.google.com/forum/#!topic/golang-nuts/YSxEBt9kzuc
 https://groups.google.com/forum/#!topic/golang-nuts/HaxJMtSngOo
 -->
 
-<p><i>
-(This article is a complementary of <a href="memory-block.html">memory blocks in Go</a>.)
-</i></p>
-
 <p>
 This articles will introduce type alignment guarantees in Go.
 It is essential to know the guarantees to 
@@ -151,7 +147,7 @@ So, on very old CPU architectures, 64-bit atomic functions are not supported.
 Programs will panic when 64-bit atomic functions are called on such platforms.
 If a program is expected to support these architectures,
 <code>sync.Mutex</code> should be used instead to synchronize 64-bit words.
-However, <code>sync.Mutex</code> is less efficient than atomic functions.
+<code>sync.Mutex</code> is less efficient than atomic functions.
 </p>
 
 <p>
@@ -177,53 +173,43 @@ or slice can be relied upon to be 8-byte aligned</i></b>.
 </p>
 
 <p>
-In my honest opinion, the wording is very vague. Here is a better one:
-<b><i>the first 64-bit word in a global variable or in an allocated struct
-or <u>array</u> can be relied upon to be 8-byte aligned.
-<u>The underlying element sequence of a slice can be viewed as an array
-which shares the same element type with the slice.</u></i></b>
+In my honest opinion, the wording is very vague.
+And it is very conservative.
+In fact, Ian, one of the core member of Go team,
+<a href="https://groups.google.com/forum/#!topic/golang-nuts/_nHK6P8_lhw">clarified</a> that
+local declared 64-bit word variables can also be relied upon to be 8-byte aligned.
 </p>
 
 <p>
 What does the word <b><i>allocated</i></b> mean?
-To make it clear, an allocated value mentioned above means the address of the value is
-the start address of the <a href="memory-block.html#memory-block">memory block</a>
-the value is located at. 
-In other words, the value is placed at the beginning of the memory block it is located at.
-Declared variables are all allocated values.
-ore memory block allocation situations are listed
-<a href="memory-block.html#when-to-allocate">here</a>.
+You can think an <b><i>allocated</i></b> value
+as a <b><i>declared</i></b> variable or a value returned
+by the <code>new</code> and <code>make</code> functions.
+If a slice value is derived from an alloacted array and
+the first element of the slice is the first element of the array,
+then the slice value can also be viewed as an alloacted value.
+</p>
+
+<p>
+By common sense, a qualified compiler should promise that
+all elements in an array/slice can also be accessed atomically
+if any element in the array/slice can be accessed atomically
+and the element type is a 64-bit word type.
 </p>
 
 <p>
 And <b><i>be relied upon to be 8-byte aligned</i></b> doesn't mean the address of
 the first 64-bit word in a global variable or in an allocated struct or array
 is always 8-byte aligned on 32-bit architectures.
-It just means if the first 64-bit word is ever accessed atomically,
-then compilers must guarantee its address is 8-byte aligned at run time.
+It just means if the first 64-bit word of such a value is ever accessed atomically,
+then compilers must guarantee the memory address of that value is 8-byte aligned at run time.
 If it is never accessed atomically, its address may be not 8-byte aligned.
 </p>
 
 <p>
-The above 64-bit word assessment guarantees are really some conservative.
-In fact, local declared 64-bit word variables can also be accessed atomically.
-So the above guarantees can be improved again as: <b><i>if a 64-bit word
-is located at the beginning of the memory block hosting the word, then
-the word can be relied upon to be accessed atomically</i></b>.
-</p>
-
-<p>
-The final improved 64-bit word assessment guarantees are still conservative.
-By common sense, a qualified compiler should promise that
-all elements in an array/slice can also be accessed atomically
-if one element in the array/slice can be accessed atomically
-and the element type is a 64-bit word type.
-</p>
-
-<p>
 There are more other 64-bit words can also be accessed atomically.
-It is just some subtle and verbose to make a simple clear explanation in wording.
-So the documentation makes conservative guarantees.
+It is just some subtle and verbose to make a simple clear definition in wording.
+So the official documentation makes conservative guarantees.
 </p>
 
 <div>
@@ -263,8 +249,7 @@ func f() {
 	
 	var h = e.x[:] // h[0] is unsafe
 	
-	// here, d.y and e.y are safe, for they are ensured to be 
-	// located at the beginning of the memory blocks hosting them.
+	// here, d.y and e.y are safe, for they are both allocated.
 	d.y = new(T1)
 	e.y = &[6]int64{}
 	

@@ -108,11 +108,9 @@ except the <code>copy</code> and <code>recover</code> functions.
 Above has mentioned that all the result values of a deferred function call
 must be discarded (if the called function has return results).
 So here is a contradiction.
-Fortunately, the needs to defer built-in function calls which return values
-must be present are rare. As I can think of, only the calls to
-the <code>append</code> function may be needed to deferred sometimes.
-For this case, we can call an anonymous function which surrounds the
-deferred <code>append</code> calls.
+Fortunately, the needs to defer built-in function calls (which returns must be present) are rare.
+As far as I know, only the calls to the <code>append</code> function may be needed to deferred sometimes.
+For this case, we can call an anonymous function which surrounds the deferred <code>append</code> call.
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -120,16 +118,13 @@ import "fmt"
 func main() {
 	s := []string{"a", "b", "c", "d"}
 	defer fmt.Println(s) // [a x y d]
+	// defer append(s[:1], "x", "y") // error
 	defer func() {
 		_ = append(s[:1], "x", "y")
 	}()
 }
 </code></pre>
 </div>
-
-<p><i>
-(BTW, A deferred call to the built-in <code>recover</code> function is always a no-op.)
-</i></p>
 
 <h3>Evaluations Of Deferred Function Values</h3>
 
@@ -203,7 +198,7 @@ a: 0
 <p>
 The first loop prints <code>2</code>, <code>1</code> and <code>0</code> as a sequence.
 The second loop prints three <code>3</code> instead,
-for when the three calls deferred in it are executed,
+for when the three <code>fmt.Println</code> calls in the deferred anonymous calls are executed,
 the value of the loop variable <code>i</code> has become to <code>3</code>.
 </p>
 </div>
@@ -353,8 +348,7 @@ you can try to avoid using deferred function calls.
 https://joeshaw.org/dont-defer-close-on-writable-files/
 -->
 
-
-<h3>Deferred Anonymous Functions Can Modify The Named Return Parameters Of Nesting Functions</h3>
+<h3>Deferred Anonymous Functions Can Modify The Named Return Results Of Nesting Functions</h3>
 
 <div>
 <pre class="line-numbers"><code class="language-go">package main
@@ -378,8 +372,11 @@ func main() {
 <h3>The Necessary Of The Deffered Function Feature</h3>
 
 <p>
-For most cases, deferred function call is not a necessary feature for Go programming.
-There are many alternative ways to achieve the same goal.
-However, the deferred function call feature is necessary for the
+For many cases, deferred function calls are not necessary.
+We can use normal function calls instead to get a better execution performance,
+though the noraml function calls will make code look less clean.
+However, deferred function calls are necessary for the
 <a href="panic-and-recover.html">panic and recover mechanism</a> in Go.
+Deferred function calls can help us write more robust programs.
 </p>
+

@@ -1,0 +1,1389 @@
+﻿
+<div>
+Before reading this article, please read two other articles 
+in the Go 101 article series.
+<ol>
+<li>
+	The article <a href="goroutine-and-channel-introduction.html#channel">goroutine
+	and channel introduction</a> shows some simple channel uses
+</li>
+<li>
+	The article <a href="channel.html">channels in Go</a> explains
+	channel rules in detail.
+</li>
+</ol>
+
+Following of this article will show all kinds of channel use cases.
+I hope this article will convince you that
+<ul>
+<li>
+	asynchronous and concurrence programming with Go channels is easy and enjoyable.
+</li>
+<li>
+	the channel synchronization technolodgy has a wider range of uses
+	and has more variations than the asynchronous programming features,
+	such as future and promise, used in other langauges.
+</li>
+</ul>
+</div>
+
+<p>
+Please note that, the intention of this article is to show
+as many possibilities chanel use cases as possible.
+In fact, channel is not the only synchronization technolodgy supported in Go.
+Like many other languages, Go also supports
+<a href="concurrent-synchronization-more.html">some other synchronization technolodgies</a>.
+Channel is not always the best solution for all circumstances.
+</p>
+
+<h3>Request/Response: Use Channels As Futures/Promises</h3>
+
+<p>
+By using goroutines and channels together, we achieve the same effects of the
+<a href="https://en.wikipedia.org/wiki/Futures_and_promises">future and promise</a>
+asynchronous programming feature supported in many other languages.
+</p>
+
+<p>
+Generally, receive-only channels can be viewed as futures (by the request side),
+and send-only channels can be viewed as promises (by the response side).
+</p>
+
+<h4>Return Receive-Only Channels As Results</h4>
+
+todo: maybe it is good to seperate Aggregate as a new use case 
+or
+futures/promises are often coupled with aggregations. 
+
+<div>
+<p>
+In the following example, the values of two arguments of the
+<code>sumSquares</code> function call are requested concurrently.
+As the two channels are both unbuffered channels,
+each of the two channel receive operations will block until
+a send operation performs on the corresponding channel.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"time"
+	"math/rand"
+	"fmt"
+)
+
+// This function return a receive-only channel as a future.
+func longTimeRequest() <-chan int32 {
+	var r = make(chan int32)
+
+	// This goroutine treat the channel r as a promise.
+	go func() {
+		time.Sleep(time.Second * 3)
+		r <- rand.Int31n(100)
+	}()
+
+	return r
+}
+
+func sumSquares(a, b int32) int32 {
+	return a*a + b*b
+}
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	
+	var ra = longTimeRequest()
+	var rb = longTimeRequest()
+	fmt.Println(sumSquares(<-ra, <-rb))
+}
+</code></pre>
+</div>
+
+<h4>Pass Send-Only Channels As Arguments</h4>
+
+<div>
+<p>
+Same as the last example,
+in the following example, the values of two arguments of the
+<code>sumSquares</code> function call are requested concurrently.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"time"
+	"math/rand"
+	"fmt"
+)
+
+// Different from the last example, this function
+// takes a send-only channel input parameter.
+func longTimeRequest(r chan<- int32)  {
+	time.Sleep(time.Second * 3)
+	r <- rand.Int31n(100)
+}
+
+func sumSquares(a, b int32) int32 {
+	return a*a + b*b
+}
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	
+	var ra = make(chan int32)
+	go longTimeRequest(ra)
+	var rb = make(chan int32)
+	go longTimeRequest(rb)
+	
+	fmt.Println(sumSquares(<-ra, <-rb))
+}
+</code></pre>
+</div>
+
+<h4>Futures Can Result Errors Finally</h4>
+
+<div>
+Sometimes, a request is not guarenteed to be responsed back a normal value.
+For many reasons, such as the request parameter may be invalid or service
+unavailable on the response side, an error is returned instead.
+Usually, we can use either of the following two implementations for such circumstances:
+<ul>
+<li>
+	an interface type as the channel element type.
+	Then we can use type assertion to check the response result
+	is an <code>error</code> or a normal value.
+</li>
+<li>
+	a struct type which has two fields, the type of one field is 
+	the noraml value type, the other type is <code>error</code>.
+	A non-nil <code>error</code> field of the response result
+	indicate the normal field is unusable.
+</li>
+
+<p>
+Somtimes, for some reasons, the response may need
+much longer time than expected to arrive, or will nerver arrive.
+We can use the timeout pattern introduced in the
+select mechanism section below to handle such circumstances.
+</p>
+</div>
+
+<h3>Response With Multiple Results</h3>
+
+<p>
+It is easy to return multiple results from the response side by using channels.
+This is a big advantage over the futures and promises in the strict sense.
+</p>
+
+<h4>Block On Each Sending</h4>
+
+...
+
+<h4>Use Bufferred Channels To Avoid Blocking On Sending</h4>
+
+<p>
+If the response side doesn't want to block until the request size
+receive the sent value, we can use buffered channels instead of unbuffered ones.
+</p>
+
+<h4>Response Uncertain Number Of Results</h4>
+
+sender close + receiver range
+
+
+
+<p>
+Once a channel is closed, then infinite values can be received from this channel.
+The values which have already been sent to this channel will be received firstly,
+followed by infinite zero values of the channel element type.
+The second return value, which is an optional boolean value,
+of a receive operation indicate whether or not the first return value
+is sent before the channel is closed.
+</p>
+
+<p>
+The response side can close the involved channel to indicate all results are sent.
+The request side can check this optional value to know whether or not
+all results has been sent by the response side.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+</code></pre>
+
+<pre class="line-numbers"><code class="language-go">
+for {
+	if v, ok := <-c {
+		if !ok {
+			break
+		}
+
+		...
+	}
+}
+</code></pre>
+
+In fact, the <code>for-range</code> syntax also applies to channels.
+It can used to receive the value sent to a channel iteratively until
+no values remain in the value buffer of the channel and the channel is closed.
+So the above code can be simplified to
+<pre class="line-numbers"><code class="language-go">
+for v := range c {
+	...
+}
+</code></pre>
+
+
+<h3>Use Channels For Notifications</h3>
+
+<p>
+Notifications can be viewed as special requests/reponses
+in which the values sent to or received from channels are not important.
+Generally, we use the blank struct type <code>struct{}</code>
+as the element types of the notification channels,
+for the size of type <code>struct{}</code> is zero,
+hence values of <code>struct{}</code> doesn't consume memory.
+</p>
+
+<h4>Notify By Receiving A Value From A Channel</h4>
+
+<div>
+<p>
+If the value buffer queue of a channel is full,
+a send operation on the channel will block
+until another goroutine receive a value out of the channel.
+So we can receive a value from a channel to notify another goroutine
+which is waiting to send a value to the same channel.
+Generally, the channel should be an unbuffered channel.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"crypto/rand"
+	"fmt"
+	"os"
+	"sort"
+)
+
+func main() {
+	var values = make([]byte, 16)
+	var done = make(chan struct{}, 1) // capacity is 1
+	
+	// For the capacity of the channel is one, so the
+	// first send operation on the channel will not block.
+	done <- struct{}{}
+	
+	// Now the value buffer of the channel is full.
+
+	go func() {
+		_, err := rand.Read(values)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		
+		sort.Slice(values, func(i, j int) bool {
+			return values[i] < values[j]
+		})
+		
+		// Retrieve a value out of the channel "done"
+		// to unblock the second send operation below
+		// in the main goroutine.
+		<- done
+	}()
+	
+	// Block and wait until being notified.
+	done <- struct{}{}
+	fmt.Println(values)
+}
+</code></pre>
+
+<p>
+In fact, the channel in the above example acts as an one-time 
+<a href="https://en.wikipedia.org/wiki/Semaphore_(programming)">binary semaphore</a>.
+</p>
+
+<p>
+This notification way is used much less common than the following ones.
+</p>
+</div>
+
+<h4>Notify By Sending A Value To A Channel</h4>
+
+<div>
+<p>
+If there are no values to receive from a channel,
+then a channel receive operation on the channel will block
+until another goroutine send a value to the channel.
+So we can send a value to a channel to notify another goroutine
+which is waiting to receive a value from the same channel.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"crypto/rand"
+	"fmt"
+	"os"
+	"sort"
+)
+
+func main() {
+	var values = make([]byte, 16)
+	var done = make(chan struct{}) // used as a signal
+	
+	// Do the time consuming task in a new goroutine.
+	go func() {
+		// Generate values.
+		_, err := rand.Read(values)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		
+		// Sort values.
+		sort.Slice(values, func(i, j int) bool {
+			return values[i] < values[j]
+		})
+		
+		// Send a value to notify the main goroutine.
+		done <- struct{}{}
+	}()
+	
+	// Block and wait until being notified.
+	<- done
+	fmt.Println(values)
+}
+</code></pre>
+</div>
+
+<h4>Use One Channel To Notify Multiple Times</h4>
+
+<p>
+Same as a response can return multiple results,
+we can use a channel to make multiple notifications.
+The logic is simple, so here will not provide examples for such use case.
+</p>
+
+<h4>Use Bufferred Channels To Avoid Blocking On Notifying By Sending</h4>
+
+<p>
+The logic is the same as using bufferred channels to avoid blocking on sending,
+so here will not provide examples for such use case.
+</p>
+
+<h4>Notify By Closing A Channel Instead Of Sending A Value To The Channel</h4>
+
+<p>
+Once a channel is closed, the receive operations on it will never block.
+So we can close the <code>done</code> chanenl instead of
+send a value to it to unblock the receiver who is waiting for a notification.
+In fact, the close way is used more popular than the send way in pratice.
+</p>
+
+<h4>Be Notified By Any Goroutine</h4>
+
+<p>
+Sometimes, a goroutine is waiting for a notification
+from any of some other goroutines.
+
+</p>
+
+<p>
+This is kinda of N-to-1 OR notification.
+</p>
+
+<h4>Notofied By Any Of Several Goroutines</h4>
+
+This is kinda of N-to-1 OR notification.
+
+use a N buffered channel, receive one then go ...
+
+<p>
+BTW, there are other ways to do N-to-1 OR notifications,
+please read the select mechanism use cases below.
+</p>
+
+<h4>Notofied By All Of Several Goroutines</h4>
+
+This is kinda of N-to-1 AND notification.
+
+wait multiple writes, the above promise/future example can viewed as this
+
+<pre class="line-numbers"><code class="language-go">package main
+for _, w := range workers {
+	<- w.done
+}
+</code></pre>
+
+in fact, sync.WaitGroup is more efficient and flexible for this scenario.
+
+<h4>Broadcast Notify by Closing A Channel</h4>
+
+<div>
+<p>
+Above notifications are either for 1-to-1 or N-to-1 notifications.
+How to make 1-to-N notifications?
+</p>
+
+<p>
+Above has mentioned that receives from a closed channel never block.
+The fact that infinite values can be received from a closed channel
+can used to broadcast notify unlimited number of goroutines
+which are waiting to receive values from a channel.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"log"
+	"time"
+)
+
+func worker(id int, ready <-chan struct{}, done chan<- struct{}) {
+	<-ready // wait until ready is closed
+	log.Print("Worker#", id, " starts to process.")
+	
+	// Simulate a workload.
+	time.Sleep(time.Second)
+
+	log.Print("Worker#", id, " exits.")
+	done <- struct{}{} // notify main goroutine
+}
+
+func main() {
+	log.SetFlags(0)
+	
+	// No values will be sent to this channel.
+	ready, done := make(chan struct{}), make(chan struct{})
+	
+	go worker(0, ready, done)
+	go worker(1, ready, done)
+	go worker(2, ready, done)
+	
+	// Simulate the initialzation phase.
+	time.Sleep(time.Second * 2)
+	
+	// Notify all worker goroutines to start processing.
+	close(ready)
+	
+	// Wait to be unblocked by the three workers.
+	<-done
+	<-done
+	<-done
+}
+</code></pre>
+
+<p>
+About how to notify worker goroutines to exit,
+please read the select block use cases demoed below.
+</p>
+</div>
+
+<h3>Use Channels As Mutex Locks</h3>
+
+<div>
+<p>
+One of the above examples has shown that one-capacity buffered channels
+can be used as one-time
+<a href="https://en.wikipedia.org/wiki/Semaphore_(programming)">binary semaphores</a>.
+In fact, such channels can also be used as multi-time binary semaphores,
+a.k.a., mutex locks, though such mutex locks are not efficient as
+the mutexes in the <code>sync</code> standard package.
+</p>
+
+There are two styles to use one-capacity buffered channels as mutex locks.
+<ol>
+<li>
+	Lock by a send, unlock by a receive.
+</li>
+<li>
+	Lock by a receive, unlock by a send.
+</li>
+</ol>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func lockBySending() {
+	var counter = 0
+	var m = make(chan struct{}, 1)
+	
+	var increase = func() {
+		m <- struct{}{}
+		counter++
+		<-m
+	}
+	
+	var increase1000 = func(done chan<- struct{}) {
+		for i := 0; i < 1000; i++ {
+			increase()
+		}
+		close(done) // broadcase notification
+	}
+	
+	var doneA = make(chan struct{})
+	var doneB = make(chan struct{})
+	go increase1000(doneA)
+	go increase1000(doneB)
+	<-doneA
+	<-doneB
+	fmt.Println(counter) // 2000
+}
+
+func lockByReceiving() {
+	var counter = 0
+	var m = make(chan struct{}, 1)
+	m <- struct{}{} // a difference from the last one
+	
+	var increase = func() {
+		<-m // another difference from the last one
+		counter++
+		m <- struct{}{}
+	}
+	
+	var increase1000 = func(done chan<- struct{}) {
+		for i := 0; i < 1000; i++ {
+			increase()
+		}
+		close(done) // broadcase notification
+	}
+	
+	var doneA = make(chan struct{})
+	var doneB = make(chan struct{})
+	go increase1000(doneA)
+	go increase1000(doneB)
+	<-doneA
+	<-doneB
+	fmt.Println(counter) // 2000
+}
+
+func main() {
+	lockBySending()
+	lockByReceiving()
+}
+</code></pre>
+</div>
+
+<h3>Use Channels As Counting Semaphores</h3>
+
+<p>
+Buffered channels with capacity larger than one can be used as
+<a href="https://en.wikipedia.org/wiki/Semaphore_(programming)">counting semaphores</a>.
+Counting semaphores can be viewed as multi-owner locks.
+If the capacity of a semaphore channel is <code>N</code>,
+the semaphore can has most <code>N</code> owners at any time.
+Binary semaphores (mutexes) are special counting semaphores,
+each of binary semaphores can has most one owner at any time.
+Counting semaphores are often used to limit throughput and assure resource quotas.
+</p>
+
+<div>
+Like using channel mutexes,
+there are also two styles to acquire one piece ownership of a channel semaphore.
+<ol>
+<li>
+	Acquire by a send, release by a receive.
+</li>
+<li>
+	Acquire by a receive, release by a send.
+</li>
+</ol>
+
+An example of acquiring ownership by receiving:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"log"
+	"time"
+	"math/rand"
+)
+
+const NumSeats = 10
+type Seat int
+type Bar chan Seat
+var bar = make(Bar, NumSeats)
+
+func ConsumerEntersBar(customerId int, bar Bar) {
+	log.Print("-> consumer#", customerId, " enters the bar")
+	seat := <- bar // need a seat to drink
+	
+	// Drink. Just view one second as ten minutes in reality.
+	log.Print("consumer#", customerId, " drinks at seat#", seat)
+	time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
+	
+	log.Print("<- consumer#", customerId, " frees seat#", seat)
+	bar <- seat // free the seat and leave the bar
+}
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	
+	// Place seats in an bar.
+	for s := Seat(0); s < NumSeats; s++ {
+		bar <- s // none of the sends will block
+	}
+	
+	// Every 10 minutes, a customer enters the bar.
+	for customerId := 0; customerId < 100; customerId++ {
+		time.Sleep(time.Second)
+		go ConsumerEntersBar(customerId, bar)
+	}
+	
+	// Main goroutine will sleep here for ever. (sleep != block)
+	for {
+		time.Sleep(time.Second)
+	}
+}
+</code></pre>
+
+<p>
+In the above example, only the consumers who get a seat can drink.
+So there will be most ten consumers are drinking at any given time.
+</p>
+
+Although there will be most ten consumers are drinking at any given time,
+there may be more than ten live consumer goroutines coexisting.
+Although each goroutine consumes much less resources than a system thread,
+the total resources consumed by a large quantity of goroutines are not neglectable.
+The above program can be optimized by only creating a new consumer goroutine
+when there are seats available.
+<pre class="line-numbers"><code class="language-go">... // common stuffs shared with last example
+
+func ConsumerEntersBar(customerId int, bar Bar, seat Seat) {
+	log.Print("consumer#", customerId, " drinks at seat#", seat)
+	time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
+
+	log.Print("<- consumer#", customerId, " frees seat#", seat)
+	bar <- seat // free the seat and leave the bar
+}
+
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	
+	for s := Seat(0); s < NumSeats; s++ {
+		bar <- s
+	}
+	
+	for customerId := 0; customerId < 100; customerId++ {
+		time.Sleep(time.Second)
+		log.Print("-> consumer#", customerId, " enters the bar")
+		seat := <- bar // need a seat for the consumer
+		go ConsumerEntersBar(customerId, bar, seat)
+	}
+	
+	for {
+		time.Sleep(time.Second)
+	}
+}
+</code></pre>
+
+<p>
+There will be most ten live consumer goroutines coexisting in the optmized version.
+</p>
+
+The style of acquiring ownership by sending is simpler comparatively.
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"log"
+	"time"
+	"math/rand"
+)
+
+const NumSeats = 10
+type Body struct{}
+type Bar chan Body
+var bar = make(Bar, NumSeats)
+
+func ConsumerEntersBar(customerId int, bar Bar) {
+	log.Print("consumer#", customerId, " starts drinking")
+	time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
+
+	<- bar // leaves the bar and save a space
+	log.Print("<- consumer#", customerId, " leaves the bar")
+}
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	
+	for customerId := 0; customerId < 100; customerId++ {
+		time.Sleep(time.Second)
+		bar <- Body{} // need space to serve the consumer
+		log.Print("-> consumer#", customerId, " enters the bar")
+		go ConsumerEntersBar(customerId, bar)
+	}
+	
+	for {
+		time.Sleep(time.Second)
+	}
+}
+</code></pre>
+</div>
+
+<h4>Rate Limit</h4>
+
+https://github.com/golang/go/wiki/RateLimiting
+
+<h3>Timer And Ticker</h3>
+
+<div>
+It is easy to use channels to implement timers and tickers.
+<pre class="line-numbers"><code class="language-go">package main
+
+</code></pre>
+</div>
+
+In fact, the <code>time</code> standard package has already provided
+similar timer and ticker implementations.
+We should use them directly to make code look less verbose.
+<pre class="line-numbers"><code class="language-go">package main
+
+</code></pre>
+
+<h3>Ping-Pong, Dialogue</h3>
+
+<p>
+Sometimes, data will be processed between two goroutines back and forth.
+It is some like the ping-pong game or the goroutines are dialoguing.
+</p>
+
+<div>
+Example (print a series of Fibonacci numbers):
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "time"
+import "os"
+
+type Ball uint64
+
+func Play(playerName string, table chan Ball) {
+	var lastValue Ball = 1
+	for {
+		ball := <- table // get the ball
+		
+		fmt.Println(playerName, ball)
+		ball += lastValue
+		if ball < lastValue { // overflow
+			os.Exit(0) 
+		}
+		lastValue = ball
+		
+		table <- ball // bat back the ball
+		
+		time.Sleep(time.Second)
+	}
+}
+
+func main() {
+	table := make(chan Ball)
+	go func() {
+		table <- 1 // throw ball on table
+	}()
+	go Play("A:", table)
+	Play("B:", table)
+}
+</code></pre>
+
+<p>
+The ping-pong use case can be viewed as two goroutines are notified
+by each other for multiple times.
+</p>
+</div>
+
+<h3>Channel Encapsulated In Channel</h3>
+
+<div>
+Sometimes, we can use a channel type as the element type of another channel type,
+a.k.a., future in future.
+In the following example, <code>&lt;-chan chan&lt;- int</code> is a receive-only channel type
+which element type is a send-only channel type <code>chan&lt;- int</code>.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func counter(in <-chan chan<- int) {
+	n := 0
+	for c := range in { // the type of c is chan int
+		if c == nil {
+			n++ // increase
+		} else {
+			c <- n // retrieve the current value
+		}
+	}
+}
+
+func main() {
+	in := make(chan chan<- int)
+	go counter(in)
+	
+	increase1000 := func(done chan<- struct{}) {
+		for i := 0; i < 1000; i++ {
+			in <- nil
+		}
+		close(done)
+	}
+	
+	var doneA = make(chan struct{})
+	var doneB = make(chan struct{})
+	go increase1000(doneA)
+	go increase1000(doneB)
+	<-doneA
+	<-doneB
+	
+	out := make(chan int, 1)
+	in <- out
+	fmt.Println(<-out) // 2000
+}
+</code></pre>
+
+<p>
+Although here the encapsulation implementaion may be the most efficient one
+for the specific use case in the above example,
+the encapsulation pattern is really useful for some scenarios.
+</p>
+</div>
+
+<h3>Use len and cap for channels</h3>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+</code></pre>
+
+<h3>Some Inappropriate Channel Uses</h3>
+
+<p>
+These use cases should use other better alternative synchronization techniques.
+Using channels for them may be fun but inefficient.
+Here the examples are just for demo purpose.
+</p>
+
+<h4>Use Buffered Channels As FIFO Queues</h4>
+
+...
+
+<h4>Cache</h4>
+
+http://nomad.so/2016/01/interesting-ways-of-using-go-channels/
+Memory recycler
+
+<h4>Counter</h4>
+
+http://nomad.so/2016/01/interesting-ways-of-using-go-channels/
+Unique ID service
+
+<h3>Patterns And Tricks By Using The Select Mechanism</h3>
+
+<p>
+The select mechanism is a unique feature in Go and it
+brings many interesting concurrent programming patterns and tricks to Go.
+</p>
+
+<p>
+About the coding and execution rules of the select mechanism,
+plead read the article <a href="channel.html#select">channel rules</a>.
+</p>
+
+<h4>Block The Current Goroutine For Ever</h4>
+
+<p>
+We can use a blank select block <code>select{}</code>
+to block the current goroutine for ever.
+This is the simplest use case of select blocks.
+In fact, it has been used in the broadcast notification example shown above.
+</p>
+
+<div>
+Generally, <code>select{}</code> is used to prevent the main goroutine from exiting.
+If the main goroutine exits, the whole program will also exit.
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "time"
+
+func NonBlocking() {
+	for {
+		time.Sleep(time.Hour)
+	}
+}
+
+func main() {
+	go NonBlocking()
+	select{}
+}
+</code></pre>
+
+<p>
+In this example, in the end,
+the main goroutine will stay in blocking status for ever.
+The other goroutine will also never exit,
+but the <code>time.Sleep</code> call will not make
+it enter blocking status, one the contrary,
+sleeping is viewed as running in Go.
+</p>
+
+<p>
+As if a goroutine enters blocking status,
+it can only be unblocked by another goroutine,
+so if all goroutines are staying blocking status,
+no goroutines will become running again.
+For such case, the official Go compiler will
+make the program exit with a fatal error.
+</p>
+</div>
+
+<p>
+By the way, there are <a href="summaries.html#block-forever">some other ways</a>
+to make a goroutine stay in blocking status for ever.
+But <code>select{}</code> is the simplest one.
+</p>
+
+<h4>Try Send/Receive</h4>
+
+<div>
+In Go, a select block with one <code>default</code> branch
+and only one <code>case</code> branch
+is called a non-blocking channel operation.
+<ul>
+<li>
+	If the operation following the <code>case</code> keyword is a send operation,
+	then the select block can also be called as try-send operation.
+	If the send operation would block,
+	then the <code>default</code> branch will get executed (fail to send),
+	otherwise, the send succeeds and
+	the only <code>case</code> branch will get executed.
+</li>
+<li>
+	If the operation following the <code>case</code> keyword is a receive operation,
+	then the select block can also be called as try-receive operation.
+	If the receive operation would block,
+	then the <code>default</code> branch will get executed (fail to receive),
+	otherwise, the receive succeeds and
+	the only <code>case</code> branch will get executed.
+</li>
+</ul>
+
+<p>
+The official Go compiler makes special optimations for the try-send
+and try-receive select blocks, their execution efficiency is much
+higher than multi-case select blocks.
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	type Book struct{}
+	bookshelf := make(chan Book, 10)
+	
+	// Put ten books on the shelf.
+	// All of the ten put actions will succeed.
+	// The case branch will get executed.
+	for i := 0; i < cap(bookshelf); i++ {
+		select {
+		case bookshelf <- Book{}:
+			fmt.Println("succeed to put book", i)
+		default: // unreachable
+		}
+	}
+	
+	// The bookshelf channel is already full now,
+	// so the following ten put actions will all fail.
+	// The default branch will get executed.
+	for i := 0; i < cap(bookshelf); i++ {
+		select {
+		case bookshelf <- Book{}: // unreachable
+		default:
+			fmt.Println("failed to put book")
+		}
+	}
+	
+	// Move all books away the shelf.
+	// All of the ten move actions will succeed.
+	// The case branch will get executed.
+	for i := 0; i < cap(bookshelf); i++ {
+		select {
+		case <-bookshelf:
+			fmt.Println("succeed to move book", i)
+		default: // unreachable
+		}
+	}
+	
+	// Now the bookshelf channel is empty again,
+	// so the following ten move actions will all fail.
+	// The default branch will get executed.
+	for i := 0; i < cap(bookshelf); i++ {
+		select {
+		case <-bookshelf: // unreachable
+		default:
+			fmt.Println("failed to move book")
+		}
+	}
+}
+</code></pre>
+
+<p>
+From the notification pattern section above,
+we know that a goroutine in blocking status
+can be notified passively by other goroutines.
+This is a push notification model.
+
+By making use of try-send and try-receive, 
+a goroutine in running status can actively
+check whether or not a signal channel is ready.
+This is a pull notification model.
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+</code></pre>
+
+</div>
+
+<h4>Check If A Channel Is Closed Without Blocking</h4>
+
+<p>
+This is a special use case of try-receive.
+</p>
+
+<p>
+There are no built-in ways to check whether or not an arbitrary channel is closed.
+But if we can make sure that no values were ever sent to the channel,
+we can use a try-receive operation to check the close status of the channel.
+If the try-receive operation succeeds, then the channel must be closed already.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+
+</code></pre>
+
+<p>
+This pattern is common used to implement cancellation.
+The <code>context</code> standard package is good evidence.
+</p>
+
+</div>
+
+<h4>Use Buffered Channels To Assure The Beginning Try-Sends Always Succeed</h4>
+
+<p>
+Sometimes, if a goroutine is waiting notifications as a channel receiver,
+</p>
+
+<h4>First Response Wins</h4>
+
+<p>
+Assume that you are looking for a plain text document file
+which has been stored and not touched for many years on your computor.
+but you forget which folder the file is stored under
+and you also forget the filename of the file.
+You just can make sure that it is stored in several certain folders
+and the file contains a very special keyword which none of other files would contain.
+Each of these folders contains a large quantity of files.
+</p>
+
+<p>
+To find out this file as soon as possible,
+you decide to write a concurrent Go program to search this file.
+You go program will create several goroutines and each of them will search one folder.
+If any one of the goroutine finds the file, the search is finished.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+
+</code></pre>
+</div>
+
+<p>
+Please note that the capacity of the channel is one.
+If its capacity is zero, and if the corresponding search
+finishes too quickly but the receiver side has not got ready,
+then the first try-send operation will fail and the whole search jobs will be in vain.
+</p>
+
+<p>
+A more usual usage scenario of this pattern is to send parallel identical queries
+to multiple API or database replication servers to get the best query response time.
+</p>
+
+<h4>Timeout</h4>
+
+<p>
+To handle many concurrent client requests,
+a web server program will start a new goroutine to handle every client request.
+Each of the request is expected to response soon to get a good user experience.
+But for all kinds of reasons, a request may need a long time to response,
+sometimes even will never response.
+For such circumstances, we should return an error message to the client side
+by using a timeout solution.
+Such a timeout solution can be implemented with the select mechanism.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+
+</code></pre>
+
+</div>
+
+<h4>Switches</h4>
+
+<div>
+The following is another ping-pong example which is implemented
+by using the select mechanism.
+In this example, one of the two channel variables involved
+in the select block is <code>nil</code>.
+Either a send or a receive operation on a <code>nil</code> channel will block,
+so the <code>case</code> branch corresponds such operations
+will never get selected.
+We can think such <code>case</code> branch is in off status.
+In the end of each loop step,
+the <code>case</code> brach which is in on status will be turned off,
+whereas the <code>case</code> brach which is in off status will be turned on.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "time"
+import "os"
+
+type Ball uint8
+func Play(playerName string, table chan Ball, serve bool) {
+	var receive, send chan Ball
+	if serve {
+		receive, send = nil, table
+	} else {
+		receive, send = table, nil
+	}
+	var lastValue Ball = 1
+	for {
+		select {
+		case send <- lastValue:
+		case value := <- receive:
+			fmt.Println(playerName, value)
+			value += lastValue
+			if value < lastValue { // overflow
+				os.Exit(0)
+			}
+			lastValue = value
+		}
+		receive, send = send, receive
+		time.Sleep(time.Second)
+	}
+}
+
+func main() {
+	table := make(chan Ball)
+	go Play("A:", table, false)
+	Play("B:", table, true)
+}
+</code></pre>
+</div>
+
+<h4>Notofied By Any Of Several Goroutines (The Select Ways)</h4>
+
+<p>
+Above has introduced a way on
+how to get a notification from any of several goroutines.
+Here several other ways by using the select mechanism will be introduced.
+</p>
+
+<h4>Weights Of Case Branches</h4>
+
+<div>
+<p>
+We can duplicate a <code>case</code> branch in a <code>select</code> code block
+to increase the exection weigh of the corresponding <code>case</code> block.
+Example:
+</p>
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	foo, bar := make(chan struct{}), make(chan struct{})
+	close(foo)
+	close(bar)
+	x, y := 0.0, 0.0
+	f := func(){x++}
+	g := func(){y++}
+	for i := 0; i < 100000; i++ {
+		select {
+		case <-foo: f()
+		case <-foo: f()
+		case <-bar: g()
+		}
+	}
+	fmt.Println(x/y) // about 2
+}
+</code></pre>
+<p>
+The possibility of the <code>f</code> function being called
+is about double of the <code>g</code> function.
+</p>
+</div>
+
+<h4>Select From Dynamic Number Of Select Cases</h4>
+
+<p>
+We can use the functionalities provided in the <code>reflect</code>
+standard package to construct a select block at run time.
+The dynamically created select block can have arbitrary number of case branches.
+But please note, the more number of case branches a select block has,
+the more time consuming to execute the select block.
+</p>
+
+<p>
+The <code>reflect</code> standard package also provides
+TrySend and TryReceive functions to implement the one-case-plus-default
+select blocks.
+</p>
+
+<h3>Data Flow Manipulations</h3>
+
+<p>
+This section will introduce some use cases where long life channels
+are used in data flow manipulations.
+There are many data flow related application scenarios in practice,
+such as message queue (pub/sub), big data processing (map/reduce),
+load balancer, and division of labour, etc.
+</p>
+
+<div>
+Generally, a data flow application is composed of many modules.
+Different module do different jobs.
+Each module may own one or more workers (goroutines),
+which concurrently do the same job specified by that module.
+Some module job examples in practice:
+<ul>
+<li>
+	data generation/collecting/loading.
+</li>
+<li>
+	data saving.
+</li>
+<li>
+	data calculation/analyzation.
+</li>
+<li>
+	data validation/filtering.
+</li>
+<li>
+	data aggregation.
+</li>
+<li>
+	data composite/decomposition.
+</li>
+<li>
+	data deplication.
+</li>
+</ul>
+</div>
+
+<p>
+A module may receive data from some other modules as inputs
+and send data to some other modules as outputs.
+In other words, a module can be both a data consumer and a data producer.
+A producer-only module will only send data to some other modules
+but never receive data from other modules.
+A consumer-only module will only receive data from some other modules
+but never send data to other modules.
+</p>
+
+<p>
+The simplest, and most common, data flow topology
+may be the linear structure shown in the following picture.
+
+<br/>
+<img src="#">
+<br/>
+
+This topology can be viewed as data relay.
+Data only flows along one direction.
+Each module will receive data from an upstream module, except the first one,
+and send data to a downstream module, except the last one.
+</p>
+
+
+<p>
+More complex data flow topologies may be arbitrary graphs.
+Following picture shows one example:
+
+<br/>
+<img src="#">
+<br/>
+
+</p>
+
+<p>
+Following will show some data flow manipulation examples.
+</p>
+
+<h4>Simple Producer And Consumer</h4>
+
+We can call producer-only goroutines as generators.
+An generator may be a data collector, database table iterator,
+or a random generator, etc.
+
+generator: Heartbeat, time.Ticker, ..., use request, ...
+
+<div>
+<pre class="line-numbers"><code class="language-go">
+</code></pre>
+</div>
+
+<h4>Fan In And Fan Out</h4>
+
+It is very easy to implement fan out and fan in by using channels.
+
+Message Queues, Pub/Sub
+
+MapReduce
+find the biggest number
+1 -> 2 ....
+
+<p>
+We can adjust the number of senders and receivers of a channel.
+We call a situation in which the number of receivers is
+larger than the number of senders as fan out.
+On the contrary, we call the situation in which the number of
+the receivers is smaler than the number of senders as fan in.
+In particular, a fan out situation in which the number of
+senders is one is called a multiplex, and a fan in situation
+in which the number of receivers is one is called an aggregation.
+</p>
+
+<h4>Data Aggregation</h4>
+
+
+(c0 <- <- c1)
+(c0 <- <- c2)
+
+<h4>Data Composite And Decomposite</h4>
+
+N meterals make to One new produce.
+A traditional hand-held hammer consists of a separate head and a handle
+
+three different parrallel tasks,
+(three random generators, once one is generated, change that channel to nil)
+
+<h3>Composite The Patterns/Tricks Mentioned Above</h3>
+
+https://talks.golang.org/2012/concurrency.slide#50
+

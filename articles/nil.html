@@ -161,7 +161,7 @@ For 32--bit architectures, the printed sizes will be half.
 <p>
 For the official Go compiler, the sizes of two <code>nil</code> values of different types
 of the same kind are always the same. For example, two <code>nil</code> values of two
-different slice types, <code>[]int</code> and <code>[]string</code>, are always the same.
+different slice types, <code>[]int</code> and <code>[]string</code>, are the same.
 </p>
 </div>
 
@@ -267,20 +267,43 @@ fmt.Println( (map[int]*int64)(nil)[123] )   // &lt;nil&gt;
 </code></pre>
 </div>
 
-<h3>It Is Okay To Iterate A <code>nil</code> Array Pointer</h3>
+<h3>It Is Okay To Range Over <code>nil</code> Channels, Maps, Slices, And Array Pointers</h3>
 
 <div>
 <p>
-The number of loops steps by iterate a <code>nil</code> array pointer
+The number of loops steps by iterate <code>nil</code> maps and slices is zero.
+</p>
+
+<p>
+The number of loops steps by iterate a <code>nil</code> array pointers
 is the length of corresponding array type.
 </p>
 
+<p>
+Ranging over a <code>nil</code> channel will block for ever.
+</p>
+
 For example:
-<pre class="line-numbers"><code class="language-go">for i := range (*[5]int)(nil) {
-	fmt.Pintln(i)
+<pre class="line-numbers"><code class="language-go">for range []int(nil) {
+	fmt.Println("Hello")
+}
+
+for range map[string]string(nil) {
+	fmt.Println("world")
+}
+
+for i := range (*[5]int)(nil) {
+	fmt.Println(i)
+}
+
+for range chan bool(nil) {
+	fmt.Println("Bye")
 }
 </code></pre>
-will print <code>0</code>, <code>1</code>, <code>2</code>, <code>3</code> and <code>4</code>.
+will print <code>0</code>, <code>1</code>, <code>2</code>, <code>3</code> and <code>4</code>,
+then block for ever.
+
+<code>Hello</code>, <code>world</code> and <code>Bye</code> will never be printed.
 </div>
 
 <h3>Call Methods Through <code>nil</code> Arguments Will Not Panic</h3>
@@ -313,7 +336,7 @@ func (p *Slice) Append(x bool) {
 }
 
 func main() {
-	// The following selectors will not cause panic.
+	// The following selectors will not cause panics.
 	_ = ((Slice)(nil)).Length
 	_ = ((Slice)(nil)).Modify
 	_ = ((*Slice)(nil)).DoNothing
@@ -323,7 +346,7 @@ func main() {
 	_ = ((Slice)(nil)).Length()
 	((*Slice)(nil)).DoNothing()
 	
-	// The following two lines will panic. But panic will
+	// The following two lines will panic. But panics will
 	// not be triggered at the time of invoking the methods.
 	// It will be triggered in the method bodies.
 	/*

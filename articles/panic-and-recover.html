@@ -26,7 +26,7 @@ Please read the next section for details.
 <p>
 Creating a panic is one way for a function to return.
 After the return and before the exit of the function,
-the function calls deferred in the function will still get executed.
+the function calls alreay been deferred in the function will still get executed.
 A panic can propagate upwards to the caller functions in a goroutine
 until the goroutine exits.
 A panic will not propagate from one goroutine to another one.
@@ -199,7 +199,7 @@ import (
 )
 
 func main() {
-	listener, err := net.Listen("tcp", ":55555")
+	listener, err := net.Listen("tcp", ":12345")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -210,25 +210,30 @@ func main() {
 			log.Println(err)
 		}
 		
-		go handleClient(conn)
+		go ClientHandler(conn)
 	}
 }
 
-func handleClient(c net.Conn) {
+func ClientHandler(c net.Conn) {
 	defer func() {
-		c.Close()
 		// If we don't recover the potential panic, the
 		// potential panic will make this program crash.
 		if v := recover(); v != nil {
 			log.Println("client handler panic:", v)
 		}
+
+		c.Close()
 	}()
 	
-	// This function may panic below somewhere.
-	// Here it always panic here in this demo.
+	// Create a demo-purpose panic.
 	panic(errors.New("just a demo."))
 }
 </code></pre>
+
+<p>
+Start the server and run <code>telnet localhost 12345</code> in another terminal,
+we can observe that the server will not crash down for the panics created in the client handler.
+</p>
 
 We can restart goroutines automatically on unexpected exits caused by panics
 by catching/recovering the panics.
@@ -367,3 +372,10 @@ please read <a href="panic-and-recover-more.html">the right places
 to call <code>recover</code> function</a>.
 </p>
 
+<h3>Some Fatal Errors Are Not Panics And Unrecoverable</h3>
+
+<p>
+For the official Go compiler,
+some fatal errors, such as stack overflow and out of memory errors, are not panics.
+They are not recoverable. Once they happen, program will crash.
+</p>

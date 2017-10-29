@@ -25,8 +25,8 @@ In the Go 101 article series, all examples are compiled with <code>gc</code>.
 </p>
 
 <p>
-The version of the official Go SDK is consistent with
-the highest Go language verison the SDK supports.
+The version of an official Go SDK release is consistent with
+the highest Go language verison the release supports.
 For example, Go SDK 1.9.x supports all Go versions from Go 1.0 to Go 1.9.
 </p>
 
@@ -113,7 +113,7 @@ Some explainations:
 There must be a <code>main</code> package which contains a
 <code>main</code> function without any input parameters and return results.
 </b>
-These are the minimum requirements for any Go program.
+These are the minimum requirements for any normal Go program.
 </p>
 
 <p>
@@ -359,6 +359,8 @@ and <code>vendor</code> as special package folders.
 	An <code>internal</code> package can only be imported by the packages
 	which folders are the containing folders (inlcuding indirect ones) of the
 	<code>internal</code> package folder.
+	In other words, a package can't import an <code>internal</code> package
+	which is not in the subtree of the importing package folder.
 </li>
 <li>
 	The <code>vendor</code> folder under a package folder is used to
@@ -1171,18 +1173,22 @@ func main() {
 	// "iota" is a special predecalred constant.
 	// In a multi-constant declaration, the value
 	// of "iota" will start from 0 and increase one
-	// line by line in this declareation body.
+	// line by line in the const declareation body.
 	const (
-		m = iota + iota // <=> 0 + 0
-		n               // <=> 1 + 1
-		_               // <=> 2 + 2
-		p               // <=> 3 + 3
-		q               // <=> 4 + 4
+		k = 3                // now iota == 0
+		m = iota + iota      // <=> 1 + 1
+		n                    // <=> 2 + 2
+		_                    // <=> 3 + 3
+		p = 9                //
+		q = iota * 2         // <=> 5 * 2
+		_                    // <=> 6 * 2
+		s = "abc"            // 
+		t = len([iota]int{}) // <=> len([8]int)
 	)
 	// Please note, the name of third constant in the
 	// last declaration is the blank identifer.
 	
-	fmt.Println(m, n, p, q) // 0 2 6 8
+	fmt.Println(k, m, n, p, q, t) // 3 2 4 9 10 8
 	
 	// All below declared constants are 0, for they
 	// are declared in seperated declaration bodies.
@@ -1193,6 +1199,18 @@ func main() {
 	fmt.Println(a, b, c, d) // 0 0 0 0
 }
 </code></pre>
+
+<p><i>
+(Note 1: here, <code>[7]int{}</code> is an array value.
+Arrays, and other container types, will be explained in article
+<a href="container.html">containers in Go</a>.)
+</i></p>
+
+<p><i>
+(Note 2: under <a href="summaries.html#compile-time-evaluation">specific circumstances</a>,
+the built-in <code>len</code> function will be evaluated at compile time.
+The values assigned to constants must be evaluated at compile time.)
+</i></p>
 
 <p>
 Constants can be assigned to variables, but not vice versa.
@@ -1228,6 +1246,12 @@ which is impossible to be stored in any integer variable at run time.
 </code></pre>
 
 </div>
+
+<h3>Conversions, Assignments And Comparisons</h3>
+
+type inference in variable decl + assign typed source value
+
+todo:
 
 <h3>Basic Control Flows</h3>
 
@@ -1578,7 +1602,7 @@ The second part must an expression which result should be a typed value.
 </ul>
 
 The <code>default</code> branch is optional, the same for any <code>case</code> branch.
-So the following code blocks are all legal, they are all no-ops.
+So the following code blocks are all legal, but they are all no-ops.
 <pre class="line-numbers"><code class="language-go">switch n := 5; n {
 }
 
@@ -1869,3 +1893,8 @@ or any of <code>{[(,:=</code> (six symbol letters).
 
 todo: "," following the last value in a sequence literal.
 </div>
+
+
+<!---
+Common standard libraries introduction.
+-->
