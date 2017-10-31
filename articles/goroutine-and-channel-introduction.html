@@ -165,8 +165,8 @@ func main() {
 	c := make(chan string) // an unbuffered channel.
 	
 	go func() {
-        fmt.Print("Hello ")
-        c <- "world!" // send a value
+		fmt.Print("Hello ")
+		c <- "world!" // send a value
 	}()
 
 	w := <- c // receive a value
@@ -281,29 +281,48 @@ correponds the number of logic CPUs the model supports.
 For example, a 2-core-4-thread CPU supports four logic CPUs.
 </p>
 
-<h3>The Statuses Of Goroutines</h3>
+<h3>The States Of Goroutines</h3>
 
 <p>
 As the above channel examples have shown,
-a live goroutine may stay in two statuses, running and blocking.
-A goroutine may be blocked when it tries to send a value to,
-or receive a value from, a channel.
+a live goroutine may stay in two states, running and blocking.
 </p>
+
+<p><i>
+(A speicfied Go runtime implementation may use more
+internal goroutine states for programming convenience.)
+</i></p>
 
 <p>
 A goroutine in sleeping (by calling <code>time.Sleep</code> function)
 or waiting the response of a syscall is viewed as a running goroutine.
 </p>
 
-<p>
-A speicfied Go runtime implementation may use more
-internal goroutine statuses for programming convenience.
-</p>
+<div>
+A goroutine may enter blocking state when it
+<ul>
+<li>
+	tries to send a value to a channel.
+</li>
+<li>
+	tries to receive a value from a channel.
+</li>
+<li>
+	tries to acquire a mutex lock.
+</li>
+<li>
+	starts to wait a aignal from other goroutines
+	by calling the <code>Wait()</code> method of
+	a value of the <code>WaitGroup</code> type or <code>Cond</code>
+	type in the <code>sync</code> standard package.
+</li>
+</ul>
+</div>
 
 <div>
 As a blocking goroutine can only be unblocked by another goroutine,
-if all goroutines in a Go program are in blocking status,
-then all of they will stay in blocking status for ever.
+if all goroutines in a Go program are in blocking states,
+then all of they will stay in blocking states for ever.
 This can be viewed as an overall deadlock.
 For such case, the official Go runtime will crash the program.
 For example:

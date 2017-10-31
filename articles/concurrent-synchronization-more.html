@@ -1,0 +1,276 @@
+﻿
+<p>
+The <a href="channel-use-cases.html">channel use cases</a> article introduces
+many use cases where channels are used to do data synchronizations among goroutines.
+In fact, channels are not the only synchronization technolodgies provided in Go.
+There are some other synchronization technolodgies supported by Go.
+For some specific circumstances, using the other synchronization technolodgies
+are more efficient and readable than using channels.
+Below will list these synchronization technolodgies other than channel.
+</p>
+
+<h3>The Technolodgies Provided In The <code>sync</code> Standard Package</h3>
+
+<h4><code>sync.Mutex</code></h4>
+
+<h4><code>sync.RWMutex</code></h4>
+
+<h4><code>sync.Once</code></h4>
+
+<h4><code>sync.WaitGroup</code></h4>
+
+<h4><code>sync.Cond</code></h4>
+
+<h3>Atomic Operations</h3>
+
+<h3>Make Using Of Network</h3>
+
+
+<!---
+https://golang.org/ref/mem
+
+
+https://github.com/golang/go/issues/5045#issuecomment-292673178
+C++ atomics and memory ordering 
+https://bartoszmilewski.com/2008/12/01/c-atomics-and-memory-ordering/
+Memory ordering
+https://en.wikipedia.org/wiki/Memory_ordering
+Cmd/compile: Go 1.8 regression: sync/atomic loop elided
+https://news.ycombinator.com/item?id=13686863
+
+
+https://groups.google.com/forum/#!topic/golang-nuts/D4DwnG4012E
+
+other data syncrhonization methods (including other messaging ways, such as network IO)
+
+WaitGroup.Wait可以在多个goroutine中调用，将同时被notify.
+
+if the transferred values are ignored, channel == mutex
+
+buffer channel, sender and receiver don't kwno when the peer will ...
+
+Note that it's not just the compiler.  As I was saying on another
+thread earlier today, it's also the memory ordering of the processor. 
+
+goroutine states
+* suspended
+* blocking
+* running
+  * sleeping
+
+
+map sync
+
+
+a channel is a bridge to exchange the ownership of values among goroutines.
+
+try to one directional channels.
+
+runtime.Goexit() terminates the goroutine that calls it. 
+
+sync.Pool is drained during garbage collection.
+sync.Pool is cleared before garbage collection, so it never retains unnecessary memory.
+
+https://groups.google.com/forum/#!msg/golang-nuts/AoO3aivfA_E/zFjhu8XvngMJ
+We generally don’t want sync/atomic to be used at all…Experience has shown us again and again that very very few people are capable of writing correct code that uses atomic operations…If we had thought of internal packages when we added the sync/atomic package, perhaps we would have used that. Now we can’t remove the package because of the Go 1 guarantee.
+
+https://dave.cheney.net/2015/11/18/wednesday-pop-quiz-spot-the-race
+substle data race
+mix non-pointer and pointer receivers ...
+
+atomic.AddUintUintXX (p, -N)
+
+atomic.CompareAndSwapUint64 may be failed, so need retry
+
+https://en.wikipedia.org/wiki/Memory_barrier 
+
+https://groups.google.com/forum/#!topic/golang-nuts/AoO3aivfA_E
+
+https://news.ycombinator.com/item?id=13686863
+
+For the complexity and subtlety of properly using atomic functions, atomic functions are not recommanded
+to synchronize values. Mutexes are more preferred.
+Some Go team members are regreted that the atomic package is expose as a public standard package
+and think the atomic package should only be used inside standard pckages and runtime code.
+</p>
+
+
+atomic, CPU barriers, the instructions before and after a barrier ...
+
+
+This article will not recommend any sync tech,
+choose one by your own taste.
+
+
+<div>
+There are three basic data synchronization techniques in Go concurrent programming:
+<ul>
+<li>atomic operation,</li>
+<li>mutex locking,</li> 
+<li>channel communication.</li>
+</ul>
+</div>
+
+<p>
+Theoretically speaking,
+mutex locking can be used for all the usage scenarios of atomic operations,
+and channel communication can be used for all the usage scenarios of mutex locking.
+Surely, these facts don't mean atomic operation and mutex locking are unnecessary.
+In fact, atomic operation is more efficient than mutex locking and channel communication
+for its specific usage scenarios, 
+and mutex locking is more efficient than channel communication
+for the specific usage scenarios of mutex locking.
+</p>
+
+<div>
+Here is an example to use all of the three techniques for one same scenario:
+
+</div>
+
+<p>
+</p>
+
+<h3>Atomic Operations</h3>
+
+<h3>Mutex Locking</h3>
+
+
+embed:
+
+	package main
+
+	import "fmt"
+	import "reflect"
+
+	type T struct {
+		x struct {
+			y int
+		}
+	}
+
+	func main() {
+		var t T
+		fmt.Println(reflect.TypeOf(&t.x))   // *struct { y int }
+		fmt.Println(reflect.TypeOf((&t).x)) // struct { y int }
+		
+	}
+
+
+<h3>Channel Communication</h3>
+
+<hr/>
+
+There are three data sync methods in Go: atomic operation, mutex and channel.
+
+Different siuations 
+
+Let's begin on how to use the three sync methods.
+
+Mutex
+
+BTW, now, mutex in Go has no TryLocking method.
+
+Atomic
+
+aotimic can be viewed as special mutex.
+
+unsafe.Pointer.
+
+Channel
+aas
+
+Here we will not explain the channel detailedly.
+
+Notification based.
+
+How To Choose Which One To Use?
+
+aotimic package: fastest, but not flexible.
+mutex: a general replacement for atimic.
+channel: slow (comparily)
+
+
+
+So how to choose a proper locking technoledge in pratice:
+1. access cases, if possible, try to use atomic 
+2. flow cases
+
+Comparing To Java
+
+Conclusion: cocurrent in Go is more powerful and flexible than Java.
+
+<h3>sync.Cond, sync.Mutex and sync.WaitGroup, etc should not be copied</h3>
+
+sync.Cond
+
+<h3>sync.WaitGroup</h3>
+
+Add adds delta, which may be negative, to the WaitGroup counter. 
+If the counter becomes zero, all goroutines blocked on Wait are released. If the counter goes negative, Add panics.
+
+Note that calls with a positive delta that occur when the counter 
+is zero must happen before a Wait. Calls with a negative delta, 
+or calls with a positive delta that start when the counter is 
+greater than zero, may happen at any time. Typically this means 
+the calls to Add should execute before the statement creating the 
+goroutine or other event to be waited for. If a WaitGroup is reused 
+to wait for several independent sets of events, new Add calls must 
+happen after all previous Wait calls have returned. See the WaitGroup example. 
+
+<h3>64-bit atomic operations require 64-bit alignment</h3>
+
+	type WaitGroup struct {
+
+		noCopy noCopy
+
+	
+
+		// 64-bit value: high 32 bits are counter, low 32 bits are waiter count.
+
+		// 64-bit atomic operations require 64-bit alignment, but 32-bit
+
+		// compilers do not ensure it. So we allocate 12 bytes and then use
+
+		// the aligned 8 bytes in them as state.
+
+		state1 [12]byte
+
+		sema   uint32
+
+	}
+
+	
+
+	func (wg *WaitGroup) state() *uint64 {
+
+		if uintptr(unsafe.Pointer(&wg.state1))%8 == 0 {
+
+			return (*uint64)(unsafe.Pointer(&wg.state1))
+
+		} else {
+
+			return (*uint64)(unsafe.Pointer(&wg.state1[4]))
+
+		}
+
+	}
+
+<h3>Channel And Mutex Are Equivalent</h3>
+
+for example:
+* unique id generator
+* ...
+
+<h3>Try To Use atomic if it is convienient, then mutex if it is convienient, then channel</h3>
+
+Three circle, atomic is a sub-circle in mutex, mutex is a sub-circle in channel.
+
+If performance is more important, convienience should be put in the second place.
+
+
+<h3>Every Synchronization Has A Cost</h3>
+
+try to avoid data sharing among goroutines.
+for example, 
+
+-->

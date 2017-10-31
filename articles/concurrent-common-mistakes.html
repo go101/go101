@@ -1,0 +1,377 @@
+﻿
+<p>
+Go is a language supporting concurrent programming natively.
+By using the <code>go</code> keyword,
+it is intuitive and convenient and to create new green threads,
+a.k.a., goroutines.
+To avoid data races in concurrent programming,
+Go provides several technolodgies to do synchronizations among goroutines.
+These technolodgies are introduced in
+<a href="channel.html">Go channel concepts and rules</a>,
+<a href="channel-use-cases.html">channel use cases</a> and
+<a href="concurrent-synchronization-more.html">more concurrency synchronization technolodgies</a>.
+</p>
+
+<p>
+This article will show some common mistakes in Go concurrent programming,
+including some improper uses of all kinds of synchronization methods.
+</p>
+
+<!---
+
+<h3>No Synchronizations When Synchronizations Are Needed</h3>
+
+Go <a href="memory-model.html">memory model</a>
+
+var a []int = nil
+f1() {
+	a = []int{1, 2, 3}
+	b = true
+}
+
+f2() {
+	if b {
+		// The assertion "a != nil" may fail,
+		// though often the condition is really true.
+		fmt.Println(a[0])
+	}
+}
+
+The example takes two mistakes.
+Firstly, the read of <code>b</code> is goroutine <code>f2</code>
+and the write of <code>b</code> in goroutine <code>f1</code> would cause data race.
+Secondly, the condition <code>b == true</code> can't assure that <code>a != nil</code>,
+for compilers or CPU may make optimizations for function <code>f1</code> so that
+the assignment of <code>b</code> may happen before the assignment of <code>a</code>.
+
+
+
+another article: traps in Go
+* compare nil with interface values which dynamic value is nil non-interface value
+* := and scope, particully, when return results have names.
+* for i: go func() {use i} ....
+
+=========================== send values to nil channel
+
+var r = chan int32
+go func() {
+	r <- longTimeRequest() // block for ever
+}()
+
+==========================
+
+func longTimeRequest() <-chan int32 {
+	var r = make(chan int32)
+	go func() {
+		time.Sleep(time.Second * 3)
+		r <- rand.Int31n(100)
+	}()
+	return r
+}
+
+func subSquares(a, b int32) int32 {
+	return a*a + b*b
+}
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+
+	fmt.Println(subSquares(<-longTimeRequest(), <-longTimeRequest()))
+	
+	// should be this:
+	var ra = longTimeRequest()
+	var rb = longTimeRequest()
+	fmt.Println(<-ra, <-rb)
+}
+
+
+===================
+
+* make sure every goroutine will not hang for ever
+* if a channel will never be closed, be careful when 
+  using bare <code><-ch</code> or <code>ch<-v</code> for it.
+* if a channel will never be closed, if bare <code>ch<-v</code> is used, 
+  make sure the sender will not send more and read all values out of the channel in the end.
+* it is recommended to close every channel and read every values out of channels.
+
+
+
+time.AfterFunc be careful memory leak
+
+======================
+
+first return wins case: the channel should has a capacity one.
+
+============= close channels at the receiver side
+
+https://github.com/kubernetes/kubernetes/pull/26558
+
+
+================ non-last-sender close channel
+
+
+
+================ memory leak: goroutine block for ever, lost goroutines
+
+================ atomic 64 bit, embeded, on 32-bit OS
+
+================ select case send to closed channel
+
+================= wait group wait before add.
+
+================= memory model
+
+=============== x is sunced, but fotget to sync x.y
+
+================ channel assignment is not synced
+
+================
+
+for val := range values {
+	go func() {
+		fmt.Println(val)
+	}()
+}
+
+for val := range values {
+	go val.MyMethod()
+}
+
+
+============================
+
+sync.Timer, Ticker.Reset
+
+===================== goroutine may be never collected.
+
+timeout := make(chan struct{})
+go func() {
+	time.Sleep(time.Second)
+	timeout <- struct{}{}
+}()
+
+select {
+case <- data:
+case <- timeout:
+}
+
+===================================
+
+for i := 0; i < n; i++ {
+	go func() {
+		// use i
+	}()
+}
+
+================== call cond.Notify and cond.Broadcase without accquiring a lock
+
+https://stackoverflow.com/questions/36857167/how-to-correctly-use-sync-cond
+
+it is both ok to put the cond.Notify and cond.Broadcase
+bwtween lock and unlock, or after the unlock.
+
+
+=============== RWMutex deadlock
+
+The lock goroutine queue
+the rlock goroutine queue
+
+a Unlock call can unblock both a goroutine in the lock or a rlock queue,
+but rlock one has prority.
+a RUnlock call will unblock a goroutine in lock queue in priroty.
+
+package main
+
+import (
+    "sync"
+    "time"
+    "fmt"
+)
+
+func main() {
+    m := sync.RWMutex{}
+    c := make(chan struct{})
+    
+    fa := func() {
+	    m.Lock()
+	    fmt.Println("a")
+	    m.Unlock()
+    }
+    
+    fb := func() {
+	    time.Sleep(time.Second)
+	    m.RLock()
+	    fmt.Println("b")
+	    <-c
+	    m.RUnlock()
+    }
+    
+    fc := func() {
+	    time.Sleep(2 * time.Second)
+	    m.RLock()
+	    fmt.Println("c")
+	    c <- struct{}{}
+	    m.RUnlock()
+    }
+    
+    m.Lock()
+    go fa()
+    go fb()
+    go fc()
+    time.Sleep(3 * time.Second)
+    m.Unlock()
+    
+    select{}
+}
+
+================ copy snyc.XXX
+
+<p>
+Some princinples:
+* know clearly whether a goroutine will exit or not.
+  * know clearly how/when a goroutine will exit.
+* avoid goroutine exited by unexpected panic.
+  * avoid unintended sending data to closed channels.
+  * use defer/recover to restart ...
+</p>
+
+<p>
+Experienced gophers all know that there are three value synchronization technologies: 
+mutex, atomic and channel. 
+Mutex and atomic are often used in object property getter and setter methods. 
+Althought the usage of mutex is simple, but it is not easy to use it without any mistakes.
+</p>
+
+<p>
+<i>(All pointer values are assumed not nil in this article.)</i>
+</p>
+
+<div>
+Let's start with the most simplest mistake: 
+<pre class="line-numbers"><code class="language-go">type T struct {
+	sync.RWMutex
+	a, b int // b is just for examples
+}
+
+func (t T) AB() int {
+	// here t is a copy of T value, 
+	// so t.RWMutex is also a copy.
+	// W
+	t.RLock()
+	defer t.RUnlock()
+	return t.a
+}
+
+func (t *T) SetAB(ab int) {
+	t.Lock()
+	t.a = ab
+	t.b = ab
+	t.Unlock()
+}
+</code></pre>
+The mistake is that mutex values should not be copied, which is stated in Go spec clearly.
+</div>
+
+<div>
+Ok, let's change the mutex field into a pointer one: 
+<pre class="line-numbers"><code class="language-go">type T struct {
+	*sync.RWMutex
+	a, b int
+}
+
+func (t T) AB() int {
+	t.RLock()
+	defer t.RUnlock()
+	return t.a
+}
+
+func (t *T) SetAB(ab int) {
+	t.Lock()
+	t.a = ab
+	t.b = ab
+	t.Unlock()
+}
+</code></pre>
+This above example is verified by govet, but the synchronization in AB method is totally meaningless. 
+Even if the passed receiver is a singleton, the synchronization is still meaningless.
+The reason is, although t.a is synchronized, but t itself is not synchronized. 
+This can be easily proved by the following simple program: 
+<pre class="line-numbers"><code class="language-go">package main
+
+import "sync"
+import "time"
+import "log"
+
+type T struct {
+	*sync.RWMutex
+	a, b int
+}
+
+func (t T) AB() int {
+	t.RLock()
+	defer t.RUnlock()
+	if t.a != t.b {
+		log.Fatalln("a != b") // very possible exit here.
+	}
+	return t.a
+}
+
+func (t *T) SetAB(ab int) {
+	t.Lock()
+	t.a = ab
+	time.Sleep(time.Microsecond)
+	t.b = ab
+	t.Unlock()
+}
+
+func main() {
+	const NLoops = 100
+	var wg = sync.WaitGroup{}
+	wg.Add(NLoops + NLoops)
+	
+	var t = T{&sync.RWMutex{}, 0, 0}
+	
+	for i := range [NLoops]struct{}{} {
+		go func(i int) {
+			t.SetAB(i)
+			wg.Done()
+		}(i)
+	}
+	
+	for range [NLoops]struct{}{} {
+		go func() {
+			t.AB()
+			wg.Done()
+		}()
+	}
+	
+	wg.Wait()
+}
+</code></pre>
+</div>
+
+<div>
+So we should always define synchronization methods on pointer types 
+instead of non-pointer types: 
+<pre class="line-numbers"><code class="language-go">type T struct {
+	sync.RWMutex
+	a, b int
+}
+
+func (t *T) AB() int {
+	t.RLock()
+	defer t.RUnlock()
+	return t.a
+}
+
+func (t *T) SetAB(ab int) {
+	t.Lock()
+	t.a = ab
+	t.b = ab
+	t.Unlock()
+}
+</code></pre>
+Done? Partially.
+</div>
+
+-->
