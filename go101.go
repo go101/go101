@@ -39,12 +39,14 @@ func main() {
 var (
 	rootPath              = findGo101ProjectRoot()
 	go101    http.Handler = &Go101{
-		staticHandler: http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))),
+		staticHandler:     http.StripPrefix("/static/", http.FileServer(http.Dir(rootPath + "static"))),
+		articleResHandler: http.StripPrefix("/article/res/", http.FileServer(http.Dir(rootPath + "articles/res"))),
 	}
 )
 
 type Go101 struct {
-	staticHandler http.Handler
+	staticHandler     http.Handler
+	articleResHandler http.Handler
 }
 
 func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -69,10 +71,14 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		go101.staticHandler.ServeHTTP(w, r)
 		return
 	case "article":
+		if strings.HasPrefix(item, "res/") {
+			go101.articleResHandler.ServeHTTP(w, r)
+			return
+		}
+		
 		if go101.renderArticlePage(w, r, strings.ToLower(item)) {
 			return
 		}
-		log.Println("****************88")
 	}
 
 	http.Redirect(w, r, "/article/101.html", http.StatusTemporaryRedirect)
