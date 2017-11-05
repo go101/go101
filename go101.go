@@ -130,7 +130,7 @@ func (*Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file str
 		page := map[string]interface{}{
 			"Article": article,
 		}
-		if err := articleTemplate.Execute(w, page); err == nil {
+		if err = articleTemplate.Execute(w, page); err == nil {
 			return true
 		}
 	}
