@@ -126,6 +126,7 @@ func (*Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file str
 	if err == nil {
 		article := map[string]interface{}{
 			"Content": content,
+			"File":    strings.TrimSuffix(file, ".html"),
 		}
 		page := map[string]interface{}{
 			"Article": article,
@@ -134,6 +135,7 @@ func (*Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file str
 			return true
 		}
 	}
+	
 	w.Write([]byte(err.Error()))
 	return false
 }
