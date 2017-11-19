@@ -71,12 +71,13 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		go101.staticHandler.ServeHTTP(w, r)
 		return
 	case "article":
+		item = strings.ToLower(item)
 		if strings.HasPrefix(item, "res/") {
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
 		}
 		
-		if go101.renderArticlePage(w, r, strings.ToLower(item)) {
+		if go101.renderArticlePage(w, r, item) {
 			return
 		}
 	}

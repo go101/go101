@@ -15,7 +15,7 @@ Each function signature is composed of two variable declration list,
 one is the input variable declaration list (or parameter list),
 the other is the output variable declaration list (or result list).
 Yes, Go functions can return multiple results.
-The <code>var</code> keyword mustn't be present in any of the variable declarations.
+The <code>var</code> keyword must not be present in any of the variable declarations.
 The variables names in both of the two lists are not important.
 The variable types determine a function signature.
 </p>
@@ -30,10 +30,7 @@ The literal representation differences between a function signaure and
 its corresponding type is minor.
 The literal representation of a function type is just prefixed a
 <code>func</code> keyword before the literal representation of it is signature.
-</p>
-
-<p>
-In fact a function signature can be often represented
+In fact, a function signature can be often represented
 with the literal representation of its corresponding type.
 </p>
 
@@ -73,6 +70,9 @@ func (int, string, string) (x int, y int, z bool)
 func (int, string, string) (a int, b int, _ bool)
 </code></pre>
 
+<p>
+All of the above function type literals denote the same (unnamed) function type.
+</p>
 
 Each parameter list must be enclosed in a <code>()</code>,
 even if the parameter list is blank.
@@ -99,7 +99,7 @@ All function types are incomprable types.
 Incomprable types can't be used as the key types of map types.
 </p>
 
-<h4>Variadic Parameters</h4>
+<h4>Variadic Parameters And Variadic Function Types</h4>
 
 <div>
 The last parameter in a parameter list can be a variadic one.
@@ -113,17 +113,11 @@ func (seperator string, tokens ...string) string
 <p>
 A function type with variadic parameter can be called a variadic function type.
 </p>
-</div>
-
-<h4>Identical Unnamed Function Types</h4>
 
 <p>
-Two unnamed function types are identical if they have
-the same number of parameters and result values, 
-corresponding parameter and result types are identical, 
-and either both functions are variadic or neither is. 
-Parameter and result names are not required to match.
+A variadic function type and a non-variadic function type are absolutely not identical.
 </p>
+</div>
 
 <h3>Function Declarations</h3>
 
@@ -178,11 +172,13 @@ So the names of these variables and local top-level variables can't be duplicate
 </p>
 
 <p>
-A function can also return through <a href="panic-recover-mechanism.html">panicking</a>.
+A function can also return through <a href="panic-and-recover.html">panicking</a>.
 </p>
 
+<h4>Variadic Function Declarations</h4>
+
 Variadic parameters will be treated as slices in function declaration bodies.
-Here are two function declarations each has a variadic parameter.
+Here are two function declarations each of which has a variadic parameter.
 <pre class="line-numbers"><code class="language-go">// Sum and return the input numbers.
 func Sum (values ...int64) (sum int64) {
 	// The type of values is []int64.
@@ -217,6 +213,8 @@ The print functions in the <code>fmt</code> standard package,
 such as <code>fmt.Println</code> and <code>fmt.Printf</code>,
 are all variadic functions.
 </p>
+
+<h4>More About Function Declarations</h4>
 
 <p>
 Go does not support default parameter values.
@@ -294,54 +292,59 @@ All arguments are passed by value in Go.
 In other words, each argument are copied to its corresponding parameter.
 </p>
 
-A function call to a single-result function can always be nested
-in another function call as an argument.
-But a call to a multi-result function can only be nested in
-another function call only if there are no other arguments
-mixed with the multi-result function call.
+A call to a single-result function can always be nested
+in another function call as an argument,
+and can also be used as a single value to appear in any expressions and statements.
 
 <pre class="line-numbers"><code class="language-go">package main
 
-import "fmt"
-
-... // To save space, the functions declared in the 
-    // last section are not shown here.
+... // Here are the Sum and Concat variadic functions
+    // declared in the last section.
 
 func main() {
-	// The Double function only returns one result.
-	// So its calls can be mixed with other arguments
-	// in other function calls.
-	cmp := Compare(Double(2), 3) // true
+	cmp := Compare(5, Double(6))
+	m, n := Double(6) / 4, Double(2) * 5
+	add, sub, cmp := AddSubCompare(Double(3), m)
+	_, _, _, _ = add, sub, cmp, n
+}
+</code></pre>
+
+Generally, a call to a multi-result function can also be nested
+in another function call, but only if there are no other arguments
+mix with the multi-result function call.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+... // Here are the Sum and Concat variadic functions
+    // declared in the last section.
+
+func main() {
+	add, sub, cmp := AddSubCompare(AddSub(5, 3))
+	// Both the two print "10, 6, true"
+	Print(add, sub, cmp) // "Print" is declared above.
+	Print(AddSubCompare(AddSub(5, 3)))
 	
-	// A multi-result function call can be nested
-	// in another call if no other arguments are
-	// mixed with it.
-	add, sub, cmp := AddSubCompare(AddSub(2, 3))
-	Print(AddSubCompare(2, 3))
-	Print(Double(5), 23, Compare(5, 6))
-
-	// This line doesn't compile, for a multi-result
-	// function call is mixed with other arguments.
+	// The following one doesn't compile.
 	/*
-	Print(AddSub(2, 3), true)
+	Print(AddSub(5, 3), true)
 	*/
-
-	_, _, _ = add, sub, cmp
 }
 </code></pre>
 
 <p>
-A call to any single-result function can also be used as a single value
-to appear in any expressions and statements.
+The line <code>Print</code> call doesn't compile for
+the <code>AddSub</code> call is mixed with another argument <code>true</code>.
 </p>
 
 <p><i>
 (There is an exception to the rule of nesting multi-result function calls.
-The exception is that calls to multi-result functions can never be
-nested in the calls to the built-in <code>copy</code>,
+The exception is that, up to Go 1.9, calls to multi-result functions can never be
+nested in the calls to the built-in <code>copy</code>, <code>delete</code>,
 <code>print</code> and <code>println</code> functions,
 even if no other arguments are mixed with them.)
 </i></p>
+
+<h4>Variadic Function Calls</h4>
 
 There are two ways to pass values to a variadic parameter:
 <ol>
@@ -354,6 +357,7 @@ There are two ways to pass values to a variadic parameter:
 	The passed slice can be called variadic argument.
 </li>
 </ol>
+
 <p>The two ways can't be mixed in using.</p>
 
 Variadic function call example:
@@ -374,26 +378,30 @@ func main() {
 	a0 := Sum()
 	a1 := Sum(2)
 	a3 := Sum(2, 3, 5)
-	// The above three calls are equivalent to
-	b0 := Sum([]int64{}...)
+	// The above three lines are equivalent to
+	// the following three lines.
+	b0 := Sum([]int64{}...) // <=> Sum(nil...)
 	b1 := Sum([]int64{2}...)
 	b3 := Sum([]int64{2, 3, 5}...)
 	fmt.Println(a0, a1, a3) // 0 2 10
 	fmt.Println(b0, b1, b3) // 0 2 10
 
-	// Concat calls are alike.
+	// Concat calls are alike. ("Concat" is declared above)
 	tokens := []string{"Go", "C", "C++", "Rust"}
 	langsA := Concat(",", tokens...)
 	langsB := Concat(",", "Go", "C", "C++", "Rust")
 	fmt.Println(langsA == langsB) // true
 
-	// This line doesn't compile, for multi-result
-	// function call is mixed with other arguments.
+	// This two lines don't compile,
+	// for the two ways can't be mixed
 	/*
-	fmt.Println("languages:", Concat(",", tokens...))
+	_ = Sum(2, []int64{3, 5}...)
+	_ = Concat(",", "Go", []string{"C", "Rust"}...)
 	*/
 }
 </code></pre>
+
+<h4>More About Function Calls</h4>
 
 The results of function calls can be ignored by assigning them
 to the blank identifier <code>_</code>.
@@ -572,7 +580,7 @@ import "fmt"
 
 // This function return a function value.
 // The returned function is called a closure.
-func fIsMultipleOfX(x int) func(int) bool {
+func funcIsMultipleOfX(x int) func(int) bool {
 	// The result function value has a property x.
 	return func(n int) bool {
 		return n%x == 0
@@ -583,8 +591,8 @@ func main() {
 	// Both types of the two function
 	// variables are "func(int) bool".
 	// The two variables are closures.
-	var isMultipleOf3 = fIsMultipleOfX(3)
-	var isMultipleOf5 = fIsMultipleOfX(5)
+	var isMultipleOf3 = funcIsMultipleOfX(3)
+	var isMultipleOf5 = funcIsMultipleOfX(5)
 
 	fmt.Println(isMultipleOf3(6))  // true
 	fmt.Println(isMultipleOf3(8))  // false
@@ -595,10 +603,8 @@ func main() {
 </div>
 
 <p>
-In fact, for the official Go compiler,
-there is no big differences between the underlying implementations for general functions and closures.
-In other words, we can think all function values, inclduding custom declared functions
-and <a href="method.html">methods</a>, are closures in Go.
+In Go programming, we can think all function values, inclduding anonymous functions,
+custom declared functions and <a href="method.html">methods</a>, are all closures.
 This is why functions in Go are as flexible and convenient as many dyanmic languages.
 </p>
 

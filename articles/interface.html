@@ -172,14 +172,14 @@ This is an important fact in Go.
 
 <div>
 The implicit implementation design makes it possible to let concreate types defined
-in other library packages, such as standard packages, implement some interface types
-needed in user packages.
+in other library packages, such as standard packages,
+passively implement some interface types declared in user packages.
 For example, if we define an interface type as the following one,
 then the type <code>DB</code> and <code>Tx</code> in the <code>database/sql</code>
 standard package will both implement the interface type automatically,
-for they both have the three corresponding methods defined in this interface.
+for they both have the three corresponding methods specified in this interface.
 
-<pre class="line-numbers"><code class="language-go">type Storer interface {
+<pre class="line-numbers"><code class="language-go">type DatabaseStorer interface {
 	Exec(query string, args ...interface{}) (Result, error)
 	Prepare(query string) (*Stmt, error)
 	Query(query string, args ...interface{}) (*Rows, error)
@@ -660,11 +660,17 @@ It can be viewed as the enhanced version of type assertion.
 </p>
 
 <p>
-In a type swtich block,
-the <code>case</code> keywords can be followed by
-<code>nil</code> identifier, type names and type literals.
-These following items can't appear multiple times in the same type swtich block.
-An optional <code>default</code> branch is also allowed.
+In a type swtich block, zero or more case branches can be present.
+An optional <code>default</code> branch is also allowed in a type swtich block.
+Like general switch blocks, if the <code>default</code> branch is present,
+it can be the last branch, the first branch, or a middle branch.
+</p>
+
+<p>
+The <code>case</code> keywords in a type swtich block can be followed by
+a <code>nil</code> identifier, one or more type names and type literals.
+None of such items can follow more than one <code>case</code> keywords
+in the same type swtich block.
 </p>
 
 <div>
@@ -679,7 +685,7 @@ func main() {
 		[]int{1, 2, 3}, map[int]bool{}, nil,
 	}
 	for _, x := range values {
-		// Here, v is declared once, but it denote
+		// Here, v is declared once, but it denotes
 		// different varialbes in different branches.
 		switch v := x.(type) {
 		case []int: // type literal
@@ -752,16 +758,13 @@ func main() {
 	}
 }
 </code></pre>
-</div>
 
-<p><i>
-(Note, <code>fallthrough</code> statement can't be used in the <code>case</code> branch blocks
-of a type swtich block.)
-</i></p>
-
-<div>
 Some details about type switch:
 <ul>
+<li>
+	<code>fallthrough</code> statement can't be used within 
+	the <code>case</code> branch blocks of a type swtich block.
+</li>
 <li>
 	the assertion return value following the <code>switch</code> keyword
 	can be ignored if we don't care about it (<code>swtich x.(type) {...}</code>).

@@ -6,11 +6,11 @@ By using the <code>go</code> keyword,
 it is intuitive and convenient and to create new green threads,
 a.k.a., goroutines.
 To avoid data races in concurrent programming,
-Go provides several technolodgies to do synchronizations among goroutines.
-These technolodgies are introduced in
+Go provides several techniques to do synchronizations among goroutines.
+These techniques are introduced in
 <a href="channel.html">Go channel concepts and rules</a>,
 <a href="channel-use-cases.html">channel use cases</a> and
-<a href="concurrent-synchronization-more.html">more concurrency synchronization technolodgies</a>.
+<a href="concurrent-synchronization-more.html">more concurrency synchronization techniques</a>.
 </p>
 
 <p>
@@ -18,133 +18,276 @@ This article will show some common mistakes in Go concurrent programming,
 including some improper uses of all kinds of synchronization methods.
 </p>
 
-<!---
-
 <h3>No Synchronizations When Synchronizations Are Needed</h3>
 
-Go <a href="memory-model.html">memory model</a>
+<div>
+The novice mistakes:
+<pre class="line-numbers"><code class="language-go">import (
+	"time"
+	"runtime"
+)
 
-var a []int = nil
-f1() {
-	a = []int{1, 2, 3}
-	b = true
+func f() {
+	var a []int = nil
+	var b bool
+
+	// goroutine 1
+	go func () {
+		a = make([]int, 3)
+		b = true
+	}()
+
+	// goroutine 2
+	go func() {
+		for !b {
+			time.Sleep(time.Second)
+			runtime.Gosched()
+		}
+		
+		a[0], a[1], a[2] = 0, 1, 2 // might panic
+	}()
+}
+</code></pre>
+
+There are two mistakes in this example.
+<ol>
+<li>
+	First, the read of <code>b</code> in goroutine 2
+	and the write of <code>b</code> in goroutine 1 might cause data race.
+</li>
+<li>
+	Second, the condition <code>b == true</code> can't assure
+	that <code>a != nil</code> in goroutine 2.
+	Compilers or CPUs may make optimizations by
+	<a href="/article/memory-model.html">reordering instructions</a> in goroutine 1,
+	so the assignment of <code>b</code> may happen
+	before the assignment of <code>a</code> at run time,
+	which makes that <code>a</code> is still <code>nil</code>
+	when modifying its elements in goroutine 2.
+</li>
+</ol>
+
+<p>
+We should use channels or the synchronization techniques provided in
+the <code>sync</code> standard package to assure the memory orders.
+</p>
+</div>
+
+<h3>Isolated Stuck Goroutines</h3>
+
+<div>
+An isolated stuck goroutine is a goroutine which will stay in blocking state for ever.
+Such as
+<ul>
+<li>
+	a straving goroutine trying to receive a value from a channel,
+	but no other goroutines will send values to the channel any more.
+</li>
+<li>
+	a goroutine trying to send a value to a channel,
+	but no other goroutines will receive values from the channel any more.
+</li>
+</ul>
+
+<p>
+Such stuck goroutines become useless since they enter blocking state.
+It is hard to detect whether or not a goroutine is stuck at run time,
+so stuck goroutines will not be garbage collected and
+they will still consume the memory resource allocated for them, for ever.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "sync"
+
+type Counter struct {
+	m sync.Mutex
+	n uint64
 }
 
-f2() {
-	if b {
-		// The assertion "a != nil" may fail,
-		// though often the condition is really true.
-		fmt.Println(a[0])
+func (c *Counter) Add(delta uint64) {
+	c.m.Lock()
+	c.n += delta
+	c.m.Unlock()
+}
+
+func (c *Counter) Value() uint64 {
+	c.m.Lock()
+	defer c.m.Unlock()
+	return c.n
+}
+
+func main() {
+	var done = make(chan struct{})
+	var c Counter
+	for i := 0; i < 100; i++ {
+		go func() {
+			c.Add(1)
+			if c.Value() == 100 {
+				done <- struct{}{}
+				
+				/*
+				select {
+				default:
+				case done <- struct{}{}:
+				}
+				*/
+			}
+		}()
 	}
+	<- done
 }
+</code></pre>
 
-The example takes two mistakes.
-Firstly, the read of <code>b</code> is goroutine <code>f2</code>
-and the write of <code>b</code> in goroutine <code>f1</code> would cause data race.
-Secondly, the condition <code>b == true</code> can't assure that <code>a != nil</code>,
-for compilers or CPU may make optimizations for function <code>f1</code> so that
-the assignment of <code>b</code> may happen before the assignment of <code>a</code>.
-
-
-
-another article: traps in Go
-* compare nil with interface values which dynamic value is nil non-interface value
-* := and scope, particully, when return results have names.
-* for i: go func() {use i} ....
-
-=========================== send values to nil channel
+<pre class="line-numbers"><code class="language-go">
+// send values to nil channel
 
 var r = chan int32
 go func() {
 	r <- longTimeRequest() // block for ever
 }()
+</code></pre>
 
-==========================
+</div>
 
-func longTimeRequest() <-chan int32 {
-	var r = make(chan int32)
+<h3>Close Channels Wihtout Acknowledging All Of Its Senders</h3>
+
+<div>
+
+<p>
+<b>A send to a closed channel will panic.</b>
+So if a sender (a goroutine) of a closed channel doesn't know the channel is already closed,
+then the sender goroutine might continue sending values to the channel,
+which will make the sender goroutine panic.
+</p>
+
+The most common case of this mistake is closing a channel from the receiver side.
+Here is one example which makes this mistake:
+<pre class="line-numbers"><code class="language-go">func f() {
+	c := make(chan int)
+	
+	// senders
+	for i := 0; i < 100; i++ {
+		i := i
+		go func() {
+			for k := 0; k < 100; k++ {
+				c <- i * k // panic if c is closed
+			}
+		}()
+	}
+	
+	// receiver
 	go func() {
-		time.Sleep(time.Second * 3)
-		r <- rand.Int31n(100)
+		sum := 0
+		for n := range c {
+			sum += n
+			if sum > 10000 {
+				close(c) // without acknowledging senders
+				break
+			}
+		}
 	}()
-	return r
 }
+</code></pre>
 
-func subSquares(a, b int32) int32 {
-	return a*a + b*b
-}
+todo: need more examples
+* non-last-sender close channel
+
+<p>
+The close in the receiver goroutine is very possible to cause panics in the sender goroutines.
+The mistake is even often made in some famous projects, such as
+<a href="https://github.com/kubernetes/kubernetes/pull/45291/files?diff=split">the</a>
+two
+<a href="https://github.com/kubernetes/kubernetes/pull/39479/files?diff=split">bugs</a>
+in the kubernetes project.
+</p>
+
+Please note, a send operation on a closed channel is viewed as non-blocking operation.
+So if such an operation is used as a <code>case</code> operation
+in a <code>select</code> code block, it may caused a panic or not.
+For example, the following program may panic or not.
+
+<pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
-	fmt.Println(subSquares(<-longTimeRequest(), <-longTimeRequest()))
-	
-	// should be this:
-	var ra = longTimeRequest()
-	var rb = longTimeRequest()
-	fmt.Println(<-ra, <-rb)
+	c := make(chan struct{})
+	close(c)
+	select {
+	case c <- struct{}{}: // panic if this case gets selected.
+	case <-c:             // not panic if this one is selected.
+	}
 }
+</code></pre>
 
+<p>
+For the readom reason, such bugs may be not found as early as possible.
+</p>
 
-===================
+<p>
+Like send to a closed channel, <b>close a closed channel will also panic</b>.
+About how to close channels safely and how to avoid sending values to closed channels,
+please read <a href="channel-closing.html">how to gracefully close channels</a>.
+</p>
+</div>
 
-* make sure every goroutine will not hang for ever
-* if a channel will never be closed, be careful when 
-  using bare <code><-ch</code> or <code>ch<-v</code> for it.
-* if a channel will never be closed, if bare <code>ch<-v</code> is used, 
-  make sure the sender will not send more and read all values out of the channel in the end.
-* it is recommended to close every channel and read every values out of channels.
+<h3>Assign Channel Values Without Syncronizations</h3>
 
+<p>
+Many channel related operations are already synchronized,
+so no further synchronizations are needed for these operations.
+but like other kinds of values, channel value assignments are also not synchronized.
+</p>
 
+<h3>Too Late To Call The <code>Add</code> Method On A <code>sync.WaitGroup</code> Value</h3>
 
-time.AfterFunc be careful memory leak
+<p>
+Each <code>sync.WaitGroup</code> value maintains a counter internally.
+We can call the <code>Add</code> method on a <code>sync.WaitGroup</code> value
+to change the value of the counter maintained by the <code>sync.WaitGroup</code> value.
+A <code>Done()</code> method call on a <code>sync.WaitGroup</code> value
+is just a shortcut of a <code>Add(-1)</code> on the <code>sync.WaitGroup</code> value.
+The counters should be never negative. If such a counter becomes negative, panic will happen.
+</p>
 
-======================
+<p>
+A goroutine can call the <code>Wait</code> method on a <code>sync.WaitGroup</code> value
+to wait the counter maintained by the <code>sync.WaitGroup</code> value becomes zero.
+If the counter is already zero when the <code>Wait</code> method is called,
+the call can be viewed as a no-op and the caller goroutine will not enter blocking state.
+</p>
 
-first return wins case: the channel should has a capacity one.
+so
+* don't miss Done calls
+* don't make abundant  Done calls
 
-============= close channels at the receiver side
+<p>
+So to make a the <code>Wait</code> method call take effect, a <code>Add</code> method call
+with a positive argument should happen before
+</p>
 
-https://github.com/kubernetes/kubernetes/pull/26558
+If the <code>Add</code> method (with a pos) on a <code>sync.WaitGroup</code> value,
 
-
-================ non-last-sender close channel
-
-
-
-================ memory leak: goroutine block for ever, lost goroutines
-
-================ atomic 64 bit, embeded, on 32-bit OS
-
-================ select case send to closed channel
-
-================= wait group wait before add.
-
-================= memory model
-
-=============== x is sunced, but fotget to sync x.y
-
-================ channel assignment is not synced
-
-================
-
-for val := range values {
+var wg sync.WaitGroup
+for i := 0; i < N; i++ {
+	i := i
+	// wg.Add(1)
 	go func() {
-		fmt.Println(val)
+		wg.Add(1)
+		values[i] = 50 + rand.Int31n(50)
+		fmt.Println("Done: ", i)
+		wg.Done() // <=> wg.Add(-1)
 	}()
 }
 
-for val := range values {
-	go val.MyMethod()
-}
+wg.Wait()
 
+<h3>Call 64-bit Atomic Functions On Possible Non-64-bit Aligned Values</h3>
 
-============================
+<h3>Block Goroutines For Ever</h3>
 
-sync.Timer, Ticker.Reset
+memory leak 
 
-===================== goroutine may be never collected.
-
+<pre class="line-numbers"><code class="language-go">
 timeout := make(chan struct{})
 go func() {
 	time.Sleep(time.Second)
@@ -155,24 +298,58 @@ select {
 case <- data:
 case <- timeout:
 }
+</code></pre>
 
-===================================
+<h3>Miss Channel Sends</h3>
 
+first return wins case: the channel should has a capacity one.
+
+<h3>Define Methods With Both Pointer And Non-Pointer Receivers For A Type</h3>
+
+This is not always a mistake/
+But synchronizations are needed to make for the values of the type,
+then it is best not to mix method definitions with pointer and non-pointer receivers for the type.
+
+receiver argument will be copied, ...
+
+<h3>Not Pay Attention To The Variable Evaludation Timing</h3>
+
+<pre class="line-numbers"><code class="language-go">
 for i := 0; i < n; i++ {
 	go func() {
 		// use i
 	}()
 }
+		
+for val := range values {
+	go func() {
+		fmt.Println(val)
+	}()
+}
 
-================== call cond.Notify and cond.Broadcase without accquiring a lock
+for val := range values {
+	go val.MyMethod()
+}
+</code></pre>
+
+<h3>Make Partial Syncrhronizations</h3>
+
+x is synced, but fotget to sync x.y
+
+<h3>Make Asymmetric Syncrhronizations</h3>
+
+<h3>Copy Values Of The Types In The <code>sync</code> Standard Package</h3>
+
+<h3>Call The <code>Notify</code> And <code>Broadcast</code> Methods Without Accquiring A Lock</h3>
 
 https://stackoverflow.com/questions/36857167/how-to-correctly-use-sync-cond
 
 it is both ok to put the cond.Notify and cond.Broadcase
 bwtween lock and unlock, or after the unlock.
 
+<h3>Deadlock Among Goroutines When Using <code>sync.Mutex</code> And <code>sync.RWMutex</code></h3>
 
-=============== RWMutex deadlock
+
 
 The lock goroutine queue
 the rlock goroutine queue
@@ -181,7 +358,8 @@ a Unlock call can unblock both a goroutine in the lock or a rlock queue,
 but rlock one has prority.
 a RUnlock call will unblock a goroutine in lock queue in priroty.
 
-package main
+
+<pre class="line-numbers"><code class="language-go">package main
 
 import (
     "sync"
@@ -224,8 +402,38 @@ func main() {
     
     select{}
 }
+</code></pre>
 
-================ copy snyc.XXX
+<h3>Not Consider Potential Panics</h3>
+
+should use defer to recover panics and write robust code.
+
+<h3>Not Pay Attention To Too Many Goroutines Created By <code>time.AfterFunc</code></h3>
+
+kind of memory leak, temp
+
+<h3>Use <code>sync.Timer</code> Incorrectly</h3>
+
+sync.Timer, Ticker.Reset
+
+
+
+<!---
+
+
+
+=========================== 
+
+==========================
+
+* make sure every goroutine will not hang for ever
+* if a channel will never be closed, be careful when 
+  using bare <code><-ch</code> or <code>ch<-v</code> for it.
+* if a channel will never be closed, if bare <code>ch<-v</code> is used, 
+  make sure the sender will not send more and read all values out of the channel in the end.
+* it is recommended to close every channel and read every values out of channels.
+
+
 
 <p>
 Some princinples:
@@ -237,7 +445,7 @@ Some princinples:
 </p>
 
 <p>
-Experienced gophers all know that there are three value synchronization technologies: 
+Experienced gophers all know that there are three value synchronization techniques: 
 mutex, atomic and channel. 
 Mutex and atomic are often used in object property getter and setter methods. 
 Althought the usage of mutex is simple, but it is not easy to use it without any mistakes.
@@ -279,6 +487,7 @@ Ok, let's change the mutex field into a pointer one:
 	*sync.RWMutex
 	a, b int
 }
+
 
 func (t T) AB() int {
 	t.RLock()

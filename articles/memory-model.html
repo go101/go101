@@ -129,11 +129,74 @@ For other irrelevant goroutines,
 the observed orders may be different from the just described.
 </p>
 
+<h4><code>init</code> Functions Related Order Guarantees</h4>
+
+<div>
+Go memory model mentions the two <code>init</code> functions related order guarantees:
+<ul>
+<li>
+	the completion of all the <code>init</code> functions in the dependency packages of a package
+	happens before the start of any <code>init</code> function in the package.
+</li>
+<li>
+	the completion of all <code>init</code> functions in a program
+	happens before the start of the program <code>main</code> entry function.
+</li>
+</ul>
+
+In fact, there is two other order guarantees:
+<ul>
+<li>
+	the completion of all package-level variable initializations in a package
+	happens before the start of any <code>init</code> function in the package.
+</li>
+<li>
+	the completion of all the <code>init</code> functions in the dependency packages of a package
+	happens before any package-level variable initialization in the package.
+</li>
+</ul>
+
+</div>
+
+<h4>The Creation Of A Goroutine Happens Before The Execution Of The Goroutine</h4>
+
+<div>
+In the following function,
+the assignment <code>x, y = 123, 789</code> will be executed before the call <code>fmt.Println(x)</code>,
+and the call <code>fmt.Println(x)</code> will be executed before the call <code>fmt.Println(y)</code>.
+
+<pre class="line-numbers"><code class="language-go">var x, y int
+func f1() {
+	x, y = 123, 789
+	go func() {
+		fmt.Println(x)
+		go func() {
+			fmt.Println(y)
+		}()
+	}()
+}
+</code></pre>
+
+However, the executon orders of the three in the following function are not deterministic.
+There are data races in this function.
+
+<pre class="line-numbers"><code class="language-go">var x, y int
+func f2() {
+	go func() {
+		fmt.Println(x) // might print 0, 123, or some others.
+	}()
+	go func() {
+		fmt.Println(y) // might print 0, 789, or some others.
+	}()
+	x, y = 123, 789
+}
+</code></pre>
+</div>
+
 <h4>Channel Related Order Guarantees</h4>
 
 <div>
-The following listed guarantees are not mentioned in
-<a href="https://golang.org/ref/mem">Go 1 memory model</a>,
+The following listed guarantees are not mentioned in Go 1 memory model,
 but I think they are obvious.
 <ul>
 <li>
@@ -150,8 +213,7 @@ but I think they are obvious.
 </li>
 </ul>
 
-<a href="https://golang.org/ref/mem">Go 1 memory model</a> lists the following three
-channel related order guarantees.
+Go 1 memory model lists the following three channel related order guarantees.
 <ol>
 <li>
 	The <b>n</b>th successful send to a channel happens before
@@ -448,19 +510,21 @@ func fxy() {
 <h4>Order Guarantees Made By <code>sync.Once</code>, <code>sync.WaitGroup</code> And <code>sync.Cond</code></h4>
 
 <p>
-About the memory order guarantees made by the other synchronization technolodgies
+About the memory order guarantees made by the other synchronization techniques
 provided in the <code>sync</code> standard package, please read the corresponding
-sections in the <a href="concurrent-synchronization-more.html">more concurrency synchronization technolodgies</a>.
+sections in the <a href="concurrent-synchronization-more.html">more concurrency synchronization techniques</a>.
 </p>
+
+todo: it is better to make some examples here.
 
 <h4>Atomic Related Order Guarantees</h4>
 
 <div>
 <p>
-All above mentioned synchronization technolodgies make some memory order guarantees.
+All above mentioned synchronization techniques make some memory order guarantees.
 These guarantees are well documented in all kinds of Go official documentations.
 However, none of Go official documentations mentions what memory order guarantees
-are made by the atomic synchronization technolodgy.
+are made by the atomic synchronization technique.
 </p>
 
 In fact, in the implementation of the official Go compiler, at least for Go 1.9,

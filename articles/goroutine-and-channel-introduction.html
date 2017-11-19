@@ -1,134 +1,190 @@
 ﻿<h1>Goroutine And Channel Introduction</h1>
 
 <p>
-Go is famous for its easy built-in concurrent programming supports.
-Two built-in features, goroutine and channel in Go,
-lower the difficulties of concurrent programming much,
-and make concurrent programming fun and enjoyable.
+Modern CPUs often have multiple cores, and some CPU cores support hyper-threading.
+In other words, moder CPUs can process multiple instruction pipelines simultaneously.
+To fully use the power of modern CPUs, we need to do concurrent programming in coding our programs.
 </p>
 
 <p>
-This article will make simple introduction for the two built-in
-concurrent programming features.
+Go is famous for its built-in concurrent programming supports.
+Two built-in features, goroutine and channel in Go,
+lower the difficulties of concurrent programming much,
+and make concurrent programming fun and enjoyable.
+This article will make simple introduction for the two built-in concurrent programming features.
 </p>
 
+<h3>What Is Concurrent Programming?</h3>
+
+<div>
+<p>
+Concurrent computing is a form of computing in which
+several computations are executed during overlapping time periods.
+The following picture depicts two concurrent computing cases.
+In the picture, A and B represent two separate computations.
+The second case is also called parallel computing, which is special concurrent computing.
+<br/>
+<img src="./res/concurrent-vs-parallel.png">
+<br/>
+</p>
+
+<p>
+Concurrent computing may happen in a program, a computer, or a network.
+In Go 101, we only talk about program-level concurrent computing.
+</p>
+
+Concurrent computations may share resources, generally memory resource.
+There are some circumstances may happen in a concurrent computing.
+<ul>
+<li>
+	In the same period of one computation is writing data to a memroy segment,
+	another computation is reading data from the same memroy segment.
+	Then the integrity of the data read by the other computation might be not preserved.
+</li>
+<li>
+	In the same period of one computation is writing data to a memroy segment,
+	another computation is also writing data to the same memroy segment.
+	Then the integrity of the data stored at the memroy segment might be not preserved.
+</li>
+</ul>
+
+<p>
+These circumstances are called data races.
+One of the duties of concurrent programming is to control resource sharing among concurrent computations,
+so that data races will not happen.                
+The ways to achieve this duty is called concurrency synchronization, or data synchronization.
+Go supports several data synchronization techniques.
+Below will introduce one of them, channel.
+</p>
+
+Other duties of concurrent programming include
+<ul>
+<li>
+	determine how many computations are needed.
+</li>
+<li>
+	determine when to start and end a computation.
+</li>
+<li>
+	determine how to distribute workload among concurrent computations.
+</li>
+</ul>
+
+<p>
+Many other programming languages implement concurrent computing
+by create a OS thread for each individual concurrent computation.
+In Go, there is not a formal way to explicitly create a OS thread.
+In Go, concurrency is achieved through goroutines.
+</p>
+</div>
+
+<p class="anchor" id="goroutine"></p>
 <h3>Goroutines</h3>
 
 <div>
 <p>
-In Go, there is not a formal way to explicitly create a system thread.
-In Go, concurrency is achieved through goroutines, which are also often
-called green threads. Green threads are maintained and scheduled by
-Go runtime instead of operation systems.
+Goroutines are also often called green threads.
+Green threads are maintained and scheduled by language runtime instead of operation systems.
 The cost, such as memory consumption and context switching,
-of a goroutine is much smaller than a system thread.
+of a goroutine is much smaller than a OS thread.
 So it is not a problem for a Go program to maintain tons of thoundsands
 goroutines at the same time, as long as the system memory is sufficient.
 </p>
 
-Creating a goroutine is super easy in Go.
-There is a special keyword, <code>go</code>, used to create goroutines.
-A function call following a <code>go</code> keyword will be executed
-in a new created goroutine.
-The created goroutine will exist along with the exit of the called function.
+<p>
+At initial, each Go program starts only one goroutine, the main goroutine.
+A goroutine can create new goroutines.
+It is super easy to create a new goroutine in Go,
+just make a function call follow a <code>go</code> keyword,
+then the function will be invoked in a new created goroutine.
+The new created goroutine will exit alongside the return of the function call.
+</p>
+
+In the following example,
+<code>Hello</code> is printed in the main goroutine,
+whereas <code>Goodbye</code> is printed in a new created goroutine.
+The new goroutine is created in the main goroutine.
+Once the new goroutine starts, it will run with the main goroutine concurrently.
 <pre class="line-numbers"><code class="language-go">package main
 
-import (
-	"log"
-	"time"
-)
-
-func John() {
-	log.Println("John: Hello.")
-	log.Println("John: I'm fine, thanks! And you?")
-}
-
-func Alice() {
-	log.Println("Alice: Hi, long time no see. How are you now?")
-	log.Println("Alice: Me too.")
-}
+import "fmt"
 
 func main() {
-	log.SetFlags(0) // avoid outputting time string in logs
-	
-	// Create two new goroutines.
-	go John()
-	go Alice()
-	
-	time.Sleep(time.Second)
+	fmt.Println("Hello")
+	go fmt.Println("Goodbye")
 }
 </code></pre>
 
 <p>
-This program will create two new goroutines at run time.
-So it is very possible that there will be at least
-three goroutines coexisting at the peak,
-including the two new created ones and the main goroutine.
+The above program is expected to print two lines.
+However, when you run it, it is very possible that the <code>Goodbye</code> line is not printed.
+Why? The cause is that <b>a program will exit if the main goroutine exits</b>.
+Although the new gorutine has started,
+the code in it, the second <code>fmt.Println</code> call,
+has not got a chance to return before the program exits.
+This is why the <code>Goodbye</code> line is not printed.
 </p>
 
-The new goroutines almost start at the same time,
-so the order of the texts ouputed by them is kind of randomized.
-One possible output result is
-<pre class="output">
-John: Hello.
-Alice: Hi, long time no see. How are you now?
-Alice: Me too.
-John: I'm fine, thank you! And you?
-</pre>
+We can let the main goroutine sleep for a while to give a chane for new goroutine to complete.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "time"
+
+func main() {
+	fmt.Println("Hello")
+	go fmt.Println("Goodbye")
+	
+	time.Sleep(time.Second) // wait a while
+}
+</code></pre>
 
 <p>
-To make the result predictable,
-we need to make some synchronizations among involoved goroutines.
-One synchronization method is through channels, which will be introduced below.
+Now, both of the two lines are printed.
+Here, the <code>time.Sleep</code> workaround can be viewed as a synchronization.
+However, the workaround is defective.
+It is a non-guaranteed way to avoid the main goroutine existing too early,
+though it often works in practice for this specified example.
+Go doesn't make the guarantee that the <code>fmt.Println("Goodbye")</code> call
+will always return before the main goroutine ends the sleeping.
 </p>
 
-Please note that,
-<ol>
-<li>
-    this program uses the print functions in the
-    <code>log</code> standard package instead of the <code>fmt</code> standard package.
-    The reason is <b>the print functions in the <code>log</code> standard package
-    are synchronized between goroutines,
-    but the ones in the <code>fmt</code> standard package are not</b>.
-    If we use the print functions in the <code>fmt</code> standard package,
-    the output texts may interlace with each other.
-</li>
-<li>
-    the line <code>time.Sleep(time.Second)</code> in the main function
-    is a non-guaranteed (defective) way to avoid the main goroutine existing too early
-    to make the texts outputted in the two new created goroutines
-    have no chances to show up,
-    for <b>if the main goroutine exits, the program will also exit</b>.
-    To make it is guaranteed that the log texts will show up before the program exit,
-    some a synchronization technology introduced in this article and other articles
-    must be exploited.
-</li>
-</ol>
+<p>
+We will use channel to make a perfect synchronization below.
+</p>
 
 </div>
 
 <p class="anchor" id="channel"></p>
-<h3>Channels</h3>
+<h3>Channel Types And Channel Values</h3>
 
 <p>
 Channel is a unique built-in feature in Go.
-It makes the synchronizations among goroutines easy and fun.
+It makes the synchronizations among goroutines easy, flexible and fun.
 </p>
+
+<p><i>
+(For detailed explainations of channels,
+please read <a href="channel.html">concepts and rules of Go channels</a>.
+Here only a simple introduction of channel will be made.)
+</i></p>
 
 <p>
 A channel value can be viewed as a FIFO (first in, first out) data queue.
 The operations, such as send data to the channel and receive data from the channel,
-are all synchronous so that we don't need to make further synchronizations for them.
+are all synchronized so that we don't need to make further synchronizations for them.
 </p>
 
 <p>
-A bidirectional channel type with element type <code>T</code> is denoted
-as <code>chan T</code>.
+A bidirectional channel type is denoted as <code>chan T</code>,
+where <code>T</code> is the element type of the channel type.
 A channel value must be initialized with the built-in <code>make</code> function.
-<code>make(chan T, N)</code> will create a channel with capacity <code>N</code>,
-where the argument integer N is optional.
+<code>make(chan T, N)</code> will create a bidirectional channel,
+where <code>N</code> is called the capacity of the channel.
+The argument <code>N</code> is an integer and it is optional.
 <code>make(chan T)</code> is equivalent to <code>make(chan T, 0)</code>.
-Channels with zero capacity are called unbuffered channels.
+Channels with zero capacity are called unbuffered channels,
+and channels with non-zero capacity are called buffered channels.
 </p>
 
 <p>
@@ -136,168 +192,86 @@ For a bidirectional channel <code>c</code> of type <code>chan T</code>
 and a value <code>v</code> of type <code>T</code>,
 we can use the channel send simple statement <code>c &lt;- v</code> to send
 <code>v</code> into channel <code>c</code>, and use the expression <code>&lt;- c</code>
-to receive a value out of channel <code>c</code>.
-The receive expression can also be used as a simple statement.
+to receive a value from channel <code>c</code>.
 </p>
 
 <div>
 For an unbuffered channel, a goroutine will be blocked when:
 <ol>
 <li>
-    the goroutine tries to receive a value from the channel but there
-    are no values queued in the channel. The goroutine will keep in
-    blocking until another goroutine sends a value to the channel.
+    the goroutine tries to receive a value from the channel but
+    there are no other (blocking) goroutines trying to send values to the channel.
+    The goroutine will keep in blocking
+    until another goroutine sends a value to the channel.
 </li>
 <li>
-    the goroutine tries to send a value to the channel but there
-    are no other (blocking) goroutines trying to receive value from
-    the channel. The goroutine will keep in blocking until another
+    the goroutine tries to send a value to the channel but
+    there are no other (blocking) goroutines trying to receive value from the channel.
+    The goroutine will keep in blocking until another
     goroutine tries to receive a value from the channel.
 </li>
 </ol>
 
-A simple example by using a channel to make synchronizations.
-In this example, the event of printing <code>Hello </code> always
-happens before the event of printing <code>world!</code> for sure.
+Here is the modified version of the last example
+by making use of a channel to do synchronization.
+Go makes the guarantee that the start of the receive operation in main goroutine
+happens after the completion of the send operation in the new created goroutine.
+So the <code>fmt.Println("Goodbye")</code> call returns before the program exits for sure.
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	c := make(chan string) // an unbuffered channel.
+	done := make(chan bool)
 	
+	fmt.Println("Hello")
 	go func() {
-		fmt.Print("Hello ")
-		c <- "world!" // send a value
+		fmt.Println("Goodbye")
+		done <- true // send a value
 	}()
-
-	w := <- c // receive a value
-	fmt.Println(w)
+	
+	<-done // receive a value (and ignore it)
 }
 </code></pre>
 
-Here is a modified version of the first example in this article.
-The modified version uses two channels to make synchronizations.
-The channel element types, <code>bool</code> and <code>struct{}</code>,
-are not important in this modified example.
+A little more complex example by using the received values.
+In this example, the main goroutine and the <code>peer</code> goroutine make a talk.
 <pre class="line-numbers"><code class="language-go">package main
 
-import "log"
+import "fmt"
 
-func John(c chan bool) {
-	log.Println("John: Hello.")
-	c <- true
-	<-c
-	log.Println("John: I'm fine, thanks! And you?")
-	c <- true
-}
-
-func Alice(c chan bool, exit chan struct{}) {
-	<-c
-	log.Println("Alice: Hi, long time no see. How are you now?")
-	c <- true
-	<-c
-	log.Println("Alice: Me too.")
-	exit <- struct{}{}
+func peer(c chan int) {
+	greeting := <-c
+	fmt.Println(greeting) // Hello
+	c <- "Goodbye"
 }
 
 func main() {
-	log.SetFlags(0) // avoid outputting time string in logs
-	
-	c, exit := make(chan bool), make(chan struct{})
-	
-	// Create two new goroutines.
-	go John(c)
-	go Alice(c, exit)
-	
-	<- exit // a better way to wait the other goroutines to end
+	c := make(chan int)
+	go peer(c)
+	c <- "Hello"
+	greeting := <-c
+	fmt.Println(greeting) // Goodbye
 }
 </code></pre>
-
-The output results are always
-<pre class="output">
-John: Hello.
-Alice: Hi, long time no see. How are you now?
-John: I'm fine, thanks! And you?
-Alice: Me too.
-</pre>
 </div>
 
-<p>
-This article will not explain channels and channel rules in detail,
-Please read <a href="channel.html">this article</a> for more on channels,
-<a href="#">this article</a> for channel usage patterns in Go,
-and <a href="#">this article</a> for common synchronization mistakes in
-Go concurrent programming.
-</p>
+<p><i>
+(There are many channel use cases/patterns, please read
+<a href="channel-use-cases.html">channel use cases</a> for details.)
+</i></p>
 
-<h3>The Cost Of Goroutines</h3>
-
-<p>
-The cost of a new goroutine is very small in Go.
-It is okay for a Go program to create thounsands of, even millions of,
-concurrent goroutines, as long as there is enough memory.
-</p>
-
-<h3>Concurrence vs. Parallel</h3>
-
-<p>
-The following picture depicts the differences between concurrence and parallel.
-<br/>
-<img src="./res/concurrent-vs-parallel.png">
-<br/>
-Simple speaking, two concurrent executions may not been processed simultaneously
-at any given time point, but two parallel executions are processed simultaneously
-at any given time point. Parallels are special concurrences.
-</p>
-
-<p>
-For example, if a Go program can use only one logical CPU,
-then it is impossilbe to make two goroutines execute in paralle.
-However it is posssilbe to make many goroutine execute concurrently
-by frequenctly switching the execution among these goroutines.
-Switching the execution among these goroutines is much similar to
-switching the execution among system threads (by operation systems),
-but the cost of each switch is much lower.
-</p>
-
-<p>
-Although a Go program can maintain thousands of concurrent goroutines,
-the max possible number of goroutines being executed in parallel depends on
-the logical CPUs the program uses.
-The <code>runtime.NumCPU</code> function can used to
-get the number of logical CPUs a program uses at run time.
-</p>
-
-<p>
-The <code>GOMAXPROCS(n int) int</code> function in the <code>runtime</code>
-standard package is used to set the maximum number of logical CPUs that
-can be executing simultaneously and returns the previous value.
-If <code>n &lt; 1</code>, it does not change the current setting.
-Since Go SDK 1.5, the default setting value is <code>runtime.NumCPU()</code>.
-</p>
-
-<p>
-Generally, the number of hyper threads claimed by a CPU model
-correponds the number of logic CPUs the model supports.
-For example, a 2-core-4-thread CPU supports four logic CPUs.
-</p>
-
-<h3>The States Of Goroutines</h3>
+<h3>Goroutine States</h3>
 
 <p>
 As the above channel examples have shown,
-a live goroutine may stay in two states, running and blocking.
+a live goroutine may stay in (and switch between) two states,
+<b>running</b> and <b>blocking</b>.
 </p>
-
-<p><i>
-(A speicfied Go runtime implementation may use more
-internal goroutine states for programming convenience.)
-</i></p>
 
 <p>
 A goroutine in sleeping (by calling <code>time.Sleep</code> function)
-or waiting the response of a syscall is viewed as a running goroutine.
+or waiting the response of a syscall is viewed as staying in running state.
 </p>
 
 <div>
@@ -313,18 +287,29 @@ A goroutine may enter blocking state when it
 	tries to acquire a mutex lock.
 </li>
 <li>
-	starts to wait a aignal from other goroutines
+	starts to wait a signal from other goroutines
 	by calling the <code>Wait()</code> method of
 	a value of the <code>WaitGroup</code> type or <code>Cond</code>
 	type in the <code>sync</code> standard package.
 </li>
 </ul>
-</div>
 
-<div>
-As a blocking goroutine can only be unblocked by another goroutine,
-if all goroutines in a Go program are in blocking states,
-then all of they will stay in blocking states for ever.
+<p><i>
+(Please read <a href="concurrent-synchronization-overview.html">concurrency synchronization overview</a>
+to get more about synchronization techniques in Go.)
+</i></p>
+
+<p>
+When a new goroutine is created, it will enter running state automatically.
+Goroutines can only exit from running state, and never from blocking state.
+If, for any reason, a goroutine stays in blokcing state for ever, then it will never exit.
+Such case should be avoided in concurrent programming,
+if it happens, it causes memory leak and should be viewed as logic bug.
+</p>
+
+As a blocking goroutine can only be unblocked by an action happens in other goroutines,
+if all goroutines in a Go program are in blocking state,
+then all of they will stay in blocking state for ever.
 This can be viewed as an overall deadlock.
 For such case, the official Go runtime will crash the program.
 For example:
@@ -337,7 +322,7 @@ func main() {
 		<- c // blocks here
 	}()
 
-	<- c // blocks here
+	<- c // also blocks here
 }
 </code></pre>
 
@@ -352,11 +337,66 @@ goroutine 1 [chan receive]:
 </pre>
 </div>
 
+<h3>Goroutine Schedule</h3>
+
+<p>
+We can call <code>runtime.NumCPU</code> to get the number of logical CPUs usable by the current running program.
+The number of live running goroutines may be much larger than the number of logical CPUs.
+Each logical CPU can only exexute one goroutine at any given time.
+Go runtime must frequently switches execution contexts among goroutines
+to let each running goroutine have chances to execute.
+This is similar to how operation systems switch execution contexts among OS threads.
+</p>
+
+<p>
+The official Go runtime adopts the
+<a href="https://docs.google.com/document/d/1TTj4T2JO42uD5ID9e89oa0sLKhJYD0Y_kqxDv3I3XMw">M-P-G model</a>
+to do the goroutine schedule job,
+where <b>M</b> represents OS threads,
+<b>P</b> represents logical/virtual processors (not logical CPUs)
+and <b>G</b> represents goroutines.
+Most the schedule work is made by logical processors (<b>P</b>s),
+which act as brokers by attach goroutines (<b>G</b>s) to OS threads (<b>M</b>s).
+Each OS thread can only be attached most one goroutine at any given time,
+and each gproutine can only be attached to most one OS thread at any given time.
+A goroutine can only get executed when it is attached to an OS thread.
+A goroutine which has been executed for a while will try to detach itself from the corresponding OS thread,
+so that other running goroutines can have chances to get attached and executed.
+</p>
+
+<p>
+At runtime. we can call <a href="https://golang.org/pkg/runtime/#GOMAXPROCS">the <code>runtime.GOMAXPROCS</code>
+function</a> to set the maximum number of logical CPUs that can be executing simultaneously.
+The initial value of the number is determined by the <code>GOMAXPROCS</code> environment variable.
+In fact, for the official Go runtime, this number determines the number of logical processors (<b>P</b>s).
+For the official Go runtime, before Go 1.5, the default value of this number is <code>1</code>,
+but since Go 1.5, the default value of this number is equal to
+the number of logical CPUs usable by the current running program.
+</p>
+
+<p><i>
+(Generally, the number of hyper threads claimed by a CPU model
+correponds the number of logic CPUs the model supports.
+For example, a 2-core-4-thread CPU supports four logic CPUs.)
+</i></p>
+
+<h3>The Cost Of Goroutines</h3>
+
+<p>
+The cost of a new goroutine is very small in Go.
+It is okay for a Go program to create thounsands of, even millions of,
+concurrent goroutines, as long as there is enough memory.
+</p>
+
 <h3>Goroutine Function Value Evaluation</h3>
 
 <div>
-If a goroutine function is evaluated to a <code>nil</code> function,
-then program will crash when trying to start the goroutine.
+<p>
+If the start function of a new goroutine to be created
+is evaluated to a <code>nil</code> function value, program will crash.
+The crash is not recoverable.
+</p>
+
 Example:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -367,16 +407,72 @@ func main() {
 </code></pre>
 </div>
 
-<!---
+<h3>The Evaluation Moment Of Goroutine Arguments</h3>
 
-====== move to panic article
+<div>
+<p>
+The arguments of the start function call of a goroutine are evaluated when the goroutine is created,
+whereas the values used in a statement within the start function body are evaluated
+when the statement is executed.
+</p>
 
-<h3>Panic In Goroutine</h3>
+For example, the following program will print three lines. Each line contains two numbers.
+Here is one possible output:
+<pre class="output">
+2 3
+0 3
+1 3
+</pre>
 
-(to write, mention unrecovered panic will make program crash)
-mention painc can be revovered
+The first number at each line will be <code>0</code>, <code>1</code> and <code>2</code> respectively,
+though the orders of the three numbers might be not constant for every run.
+However, the second number at each line will be always <code>3</code> for every run.
+The reason is the second arguments in the <code>log.Println</code> calls are all
+the iteration variable of the first loop, and the iteration variable has already become
+to <code>3</code> when the <code>log.Println</code> calls are executed.
+<pre class="line-numbers"><code class="language-go">package main
 
--->
+import "log"
+
+func main() {
+	log.SetFlags(0)
+	
+	const N = 3
+	ready, done := make(chan int), make(chan int)
+	
+	for i := 0; i < N; i++ {
+		go func(k int) {
+			<-ready
+			log.Println(k, i) // the arguments will be evaluated
+			                  // when the log function is executed.
+			done <- i
+		}(i) // the argument will be evaluated on goroutine creation.
+	}
+	
+	// The log.Println calls in the new goroutines will not executed
+	// before the second loop gets executed.
+	for i:= 0; i < N; i++ {
+		ready <- i
+	}
+	
+	// Wait until all the log.Println calls have been executed.
+	for i:= 0; i < N; i++ {
+		<-done
+	}
+}
+</code></pre>
+
+<p>
+Please note that, this program uses the print functions in the
+<code>log</code> standard package instead of the <code>fmt</code> standard package.
+The reason is <b>the print functions in the <code>log</code> standard package
+are synchronized between goroutines,
+but the ones in the <code>fmt</code> standard package are not</b>.
+If we use the print functions in the <code>fmt</code> standard package,
+the output texts may interlace with each other.
+</p>
+</div>
+
 
 
 

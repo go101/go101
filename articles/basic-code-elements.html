@@ -149,7 +149,7 @@ provided by the official Go SDK in detail.
 <p>
 The just mentioned three commands only show code syntax errors if they fail.
 They don't show code warnings (a.k.a, possible code logic errors).
-We can use <code>go vet</code> command to check and output warnings.
+We can use <code>go vet</code> command to check and report warnings.
 </p>
 
 <p>
@@ -175,7 +175,7 @@ The reason will be explained in following sections.
 <p>
 Following sections will introduce how to delare all kinds of resources,
 such as variables, constants, types and functions.
-The resources declared which are delared in the package block
+The resources declared directly in the package block
 are called package level resources, comparing to the resources
 declared in function bodies, which are called local resources correspondingly.
 </p>
@@ -609,8 +609,8 @@ func main() {
 BTW, we can run <code>go get github.com/go-sql-driver/mysql</code> to
 download the <code>mysql</code> package into the <code>src</code> folder
 under the first path specified in the <code>GOPATH</code> environment variable.
-<code>go get</code> needs the corresponding version control tool has been installed.
-For this case, <code>git</code> must be installed.
+<code>go get</code> requires the corresponding version control tool must be installed.
+For this specified case, <code>git</code> must be installed.
 </p>
 
 <p>
@@ -703,13 +703,13 @@ show up between its two operands in code.
 		<th scope="row" class="text-center" style="white-space: nowrap;">+ (binary)</th>
 		<td>
 			addition (for numeric operands)<br/>
-			concatenation (for string operands)
+			or concatenation (for string operands)
 		</td>
 		<td style="vertical-align: middle;">
-			must be values of
-			integer types,
-			floating-point types,
-			complex types or
+			must be values of numeric types
+			(integer types,
+			floating-point types and
+			complex types) or
 			string types
 		</td>
 		<td rowspan="7" style="vertical-align: middle;">the same as the operand(s)</td>
@@ -738,7 +738,7 @@ show up between its two operands in code.
 	<tr class="active">
 		<th scope="row" class="text-center" style="white-space: nowrap;">% (binary)</th>
 		<td>remainder</td>
-		<td>must be values of interger types</td>
+		<td>must be values of integer types</td>
 	</tr>
 
 	<tr>
@@ -746,7 +746,7 @@ show up between its two operands in code.
 		<td>bitwise left shift</td>
 		<td rowspan="2" style="vertical-align: middle;">
 			left operand must be an integer and
-			right operand must be an unsigned interger
+			right operand must be an unsigned integer
 		</td>
 		<td rowspan="2" style="vertical-align: middle;">the same as the left operand</td>
 	</tr>
@@ -991,7 +991,7 @@ func main() {
 	var bornYear, bornMonth, bornDay int
 
 	// If the types of the variables declared at the same
-	// line are not all the same, then their types mustn't
+	// line are not all the same, then their types must not
 	// be present in the declaration, and they must be
 	// initialized in the declartion.
 	var announceYear, static, compiled = 2007, true, true
@@ -1168,7 +1168,7 @@ func main() {
 	
 	// In this declaration, an incomplete line will
 	// be auto-completed by copying the corresponding
-	// missing part from the previous line.
+	// missing part from the last complete line.
 	const (
 		x = "Go" + "lang"
 		y
@@ -1256,6 +1256,9 @@ which is impossible to be stored in any integer variable at run time.
 
 <h3>Conversions, Assignments And Comparisons</h3>
 
+all assignment are value copying.
+argument passing is also value assignment.
+
 type inference in variable decl + assign typed source value
 
 todo:
@@ -1310,7 +1313,7 @@ These statements are not simple statements.
 <p>
 There are some other kind of flow control ways,
 such as <a href="defer.html">deferred function calls</a>
-and <a href="panic-recover-mechanism.html">panic/recover mechanism</a>.
+and <a href="panic-and-recover.html">panic/recover mechanism</a>.
 <a href="goroutine.htl">Goroutines</a> can also be viewed as a way of flow control.
 </p>
 
@@ -1344,6 +1347,11 @@ The two parts following a <code>if</code> keyword can't be enclosed in <code>()<
 <p>
 If the <code>InitSimpleStatement</code> in a <code>if-else</code> code block is present,
 it will be executed before executing other statements in the <code>if-else</code> code block.
+</p>
+
+<p>
+If the <code>InitSimpleStatement</code> in a <code>if-else</code> code block is a short variable declaration,
+then the declared variables are only visible within the <code>if-else</code> code block.
 </p>
 
 Example:
@@ -1396,7 +1404,7 @@ The full form of a <code>for</code> loop code block is
 There are three parts following the <code>for</code> keyword.
 The <code>InitSimpleStatement</code> and <code>PostSimpleStatement</code> parts
 must be simple statements, and the <code>PostSimpleStatement</code> part
-mustn't be a short variable declaration.
+must not be a short variable declaration.
 This means the <code>InitSimpleStatement</code> part can be a short variable declaration
 form or a value assignment, but can't be a standard variable declaration form.
 <code>Condition</code> must be an expression which result is a boolean value.
@@ -1405,6 +1413,11 @@ form or a value assignment, but can't be a standard variable declaration form.
 <p>
 If the <code>InitSimpleStatement</code> in a <code>for</code> loop code block is present,
 it will be executed only once before executing other statements in the <code>for</code> loop code block.
+</p>
+
+<p>
+If the <code>InitSimpleStatement</code> in a <code>for</code> loop code block is a short variable declaration,
+then the declared variables are only visible within the <code>for</code> loop code block.
 </p>
 
 <p>
@@ -1523,6 +1536,8 @@ todo: two scopes
 
 <h4><code>switch-case</code> Control Flow Blocks</h4>
 
+todo: be consistent with if and for.
+
 <div>
 The full form of the <code>switch-case</code> code block is some hard to describe clearly,
 so here just shows an example to demo the full form:
@@ -1563,13 +1578,13 @@ The <code>default</code> and <code>case</code> keywords each corresponds a neste
 </p>
 
 <p>
-There mustn't be expressions following the <code>default</code> keyword,
+There must not be expressions following the <code>default</code> keyword,
 but there must be one expression following each <code>case</code> keyword.
 </p>
 
 The values following <code>case</code> keywords can be constants, literals, variables, or any other expressions.
 Among all the boolean, numeric and string literals (including constants) following
-all <code>case</code> keywords in a <code>switch-case</code> code block, there mustn't be two duplicated ones.
+all <code>case</code> keywords in a <code>switch-case</code> code block, there must not be two duplicated ones.
 For example, the following code block is illegal, for the literal <cod>3</cod> follows two <code>case</code> keywords.
 <pre class="line-numbers"><code class="language-go">switch n := rand.Intn(100); n%9 {
 case 0:
@@ -1698,10 +1713,10 @@ Example:
 <p>
 Like many other languages, Go also supports <code>goto</code> statement.
 A <code>goto</code> keyword must be followed a label to form a statement.
-A label must be declared to be used. Labels must be declared in function bodies.
-The innermost function body containing a label use must be the same as
-the innermost function body containing the declaration of the label.
-In other words, labels can't be used crossing function bodies.
+A label is declared with the form <code>LabelName:</code>,
+where <code>LabelName</code> must be an identifier.
+A label which name is not the blank identifier must be used,
+by following a <code>goto</code> keyword, once it is declared.
 </p>
 
 <p>
@@ -1709,16 +1724,25 @@ A <code>goto</code> statement will make the execution jump to the next statement
 following the declaration of the label used in the <code>goto</code> statement.
 </p>
 
+<p>
+A label must be declared within a function body.
+A use of a label can appear before or after the declaration of the label.
+But any use of a label must appear within the innermost code block
+which contains the declaration of the label.
+</p>
+
+<p><i>
+(You can read <a href="block-and-scope.html">blocks and scopes in Go</a>
+to get more information about code blocks and identifier scopes.)
+</i></p>
+
 <div>
-The declaration of a label may appear before or after its uses.
-A label is declared with the form <code>LabelName:</code>,
-where <code>LabelName</code> must be an identifier.
 <pre class="line-numbers"><code class="language-go">func main() 
 
 </code></pre>
 
 Note, if a label is declared before the declaration of a variable,
-then the uses of the label must be out of the scope of the variable.
+then the uses of the label can't appear within the scope of the variable.
 The following code will fail to compile.
 <pre class="line-numbers"><code class="language-go">func main() 
 
@@ -1735,10 +1759,6 @@ With the new code block, the scope of the variable is from the end of its declar
 to the end of the new code block, instead of the end of the <code>main</code> function.
 </p>
 
-<p>
-You can read <a href="block-and-scope.html">blocks and scopes in Go</a>
-to get more information about code blocks and identifier scopes.
-</p>
 </div>
 
 <h4><code>break</code> Statements With Labels</h4>
@@ -1823,6 +1843,10 @@ to end the current loop step of an outer nesting loop code block.
 <p class="anchor" id="line-break-rule"></p>
 <h3>Line Break Rules</h3>
 
+todo: put in a new article?
+* "," following the last value in a sequence literal.
+* middle case last label.
+
 <div>
 <p>
 You should have found that semicolons (<code>;</code>) are seldom used in Go code.
@@ -1898,7 +1922,7 @@ A code line should be broken just after a binary operator
 or any of <code>{[(,:=</code> (six symbol letters).
 </div>
 
-todo: "," following the last value in a sequence literal.
+
 </div>
 
 

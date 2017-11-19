@@ -87,14 +87,23 @@ call <code>closed(ch)</code> returns <code>false</code>.
 One general principle of using Go channels is
 <b><i>don't close a channel from the receiver side
 and don't close a channel if the channel has multiple concurrent senders</i></b>.
-In other words, you should only close a channel in a sender goroutine if 
-the sender is the only sender or the last active sender of the channel,
-to notify the receiver(s) that there are no more values to read out.
-Holding this principle ensures sending values to (and closing) closed channels will never happen.
+In other words, you should only close a channel in a sender goroutine
+if the sender is the only sender of the channel.
 </p>
 
 <p>
 <i>(Below, we will call the above principle as <b>channel closing principle</b>.)</i>
+</p>
+
+<p>
+Surely, this is not a universal principle to close channels.
+The universal principle is <i>don't send values to (or close) closed channels</i>.
+If an arbitrary goroutine can guarantee that no goroutines will send to
+(or close) a non-closed non-nil channel any more,
+then that goroutine can close the channel safely.
+However, making such guarantees by a receiver or by one of many senders of a channel
+usually needs much effort, and often makes code complicated.
+On the contrary, it is much easy to hold the <b>channel closing principle</b> mentioned above.
 </p>
 
 <h3>Solutions Which Close Channels Rudely</h3>
