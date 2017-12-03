@@ -3,29 +3,37 @@
 <h3>Memory Ordering</h3>
 
 <p>
-Modern compilers (at compile time) and CPUs (at run time)
+Modern compilers (at compile time) and CPU processors (at run time)
 often make some optimizations by adjusting the instruction orders,
 so that the instruction execution orders may differ from the
 orders presented in code.
+</p>
+
+<p><i>
+(Instruction reordering is also often called
+<a href="https://en.wikipedia.org/wiki/Memory_ordering">memory ordering</a>.)
+</i></p>
+
+<p>
 Surely, instruction reorderings are not arbitrary.
-The basic requirement for a reordering inside a goroutine is
-the reordering must not be detectable by the gorotuine.
-However, other goroutines may observe the reordering.
-A goroutine can always think there are no instruction reorderings in it,
-even if there are really some instruction reorderings happening in it.
-</p>
-
-<p>
-In other words, a reordering must not affact the behaviors of a goroutine
+The basic requirement for a reordering inside a specified goroutine is
+the reordering must not be detectable by the gorotuine itself
 if the goroutine doesn't share data with other goroutines.
-But the reordering may affact the behaviors of a concurrent program,
-if the goroutine shares data with other goroutines and
-the program doesn't handle instruction reorderings properly.
+In other words, from the perspective of such a goroutine,
+it can think its instruction execution order is always
+the same as the order specified by code,
+even if there are really some instruction reorderings happening inside it.
 </p>
 
 <p>
-Instruction reordering is also often called
-<a href="https://en.wikipedia.org/wiki/Memory_ordering">memory ordering</a>.
+However, if some goroutines share some data, 
+instruction reorderings happen inside one of these goroutine
+may be observed by the others goroutines,
+and affact the behaviors of all these goroutines.
+Sharing data among goroutines is common in concurrent programming,
+if we ignore the results caused instruction reordering,
+the behaviors of our concurrent programs might compiler and CPU dependent,
+and often abnormal.
 </p>
 
 <div>
@@ -158,6 +166,7 @@ In fact, there is two other order guarantees:
 
 </div>
 
+<p class="anchor" id="goroutine"></p>
 <h4>The Creation Of A Goroutine Happens Before The Execution Of The Goroutine</h4>
 
 <div>
@@ -193,6 +202,7 @@ func f2() {
 </code></pre>
 </div>
 
+<p class="anchor" id="channel"></p>
 <h4>Channel Related Order Guarantees</h4>
 
 <div>
@@ -416,28 +426,30 @@ But they are not very valuable for Go programming in pratice.
 
 </div>
 
+<p class="anchor" id="mutex"></p>
 <h4>Mutex Related Order Guarantees</h4>
 
 <div>
 Followings are the mutex related order guarantees in Go.
 <ol>
 <li>
-	For a value <code>l</code> of type <code>Mutex</code> or <code>RWMutex</code>
-	in the <code>sync</code> standard package, the <b>n</b>th call of
-	<code>l.Unlock()</code> happens before the (<b>n+1</b>)th call of
+	For an addressable value <code>l</code> of type <code>Mutex</code> or <code>RWMutex</code>
+	in the <code>sync</code> standard package, the <b>n</b>th successful call of
+	<code>l.Unlock()</code> happens before the (<b>n+1</b>)th successful call of
 	<code>l.Lock()</code> returns. 
 </li>
 <li>
-	For a value <code>l</code> of type <code>RWMutex</code>,
-	if a call of <code>l.Lock()</code> has returned, then the next
-	valid call of <code>l.Unlock()</code> will happen before the return
+	For an addressable value <code>l</code> of type <code>RWMutex</code>,
+	if a call of <code>l.Lock()</code> has returned successfully, then the next
+	successful call of <code>l.Unlock()</code> will happen before the return
 	of any call of <code>l.RLock()</code> which has not started or returned yet.
 </li>
 <li>
-	For a value <code>l</code> of type <code>RWMutex</code>,
-	if a call of <code>l.RLock()</code> has returned, then the next
-	valid call of <code>l.RUnlock()</code> will happen before the return
-	of any call of <code>l.Lock()</code> which has not started or returned yet.
+	For an addressable value <code>l</code> of type <code>RWMutex</code>,
+	if the <b>n</b>th successful call of <code>l.RLock()</code> has returned,
+	then the <b>m</b>th successful call of <code>l.RUnlock()</code>,
+	where <code>m &lt;= n</code>, happens before the return of any call of
+	<code>l.Lock()</code> which has not started or returned yet.
 </li>
 </ol>
 
@@ -507,16 +519,60 @@ func fxy() {
 </code></pre>
 </div>
 
-<h4>Order Guarantees Made By <code>sync.Once</code>, <code>sync.WaitGroup</code> And <code>sync.Cond</code></h4>
+
+<h4>Order Guarantees Made By <code>sync.WaitGroup</code> Values</h4>
 
 <p>
-About the memory order guarantees made by the other synchronization techniques
-provided in the <code>sync</code> standard package, please read the corresponding
-sections in the <a href="concurrent-synchronization-more.html">more concurrency synchronization techniques</a>.
+Assume at a given time, the counter maintained by
+an addressable <code>sync.WaitGroup</code> value <code>wg</code> is not zero,
+and after the given time, a <code>wg.Add</code> (or <code>wg.Done</code>) method call
+and a <code>wg.Wait</code> method call are made.
+As long as we can confirm that the counter never becomes to zero
+before the <code>wg.Add</code> (or <code>wg.Done</code>) method call returns
+(and after the given time),
+the <code>wg.Add</code> (or <code>wg.Done</code>) method call
+is guaranteed to happen before
+any <code>wg.Wait</code> method call made after the given time returns.
 </p>
 
-todo: it is better to make some examples here.
+<p>
+Please read <a href="concurrent-synchronization-more.html#waitgroup">the explainations
+for sync.WaitGroup</a> to get how to use <code>sync.WaitGroup</code> values.
+</p>
 
+<h4>Order Guarantees Made By <code>sync.Once</code> Values</h4>
+
+<p>
+For an addressable <code>sync.Once</code> value <code>o</code>,
+among all the <code>o.Do</code> calls, only exact one argument function will be invoked.
+The invoked argument function is guaranteed to return before
+any <code>o.Do</code> method call returns.
+In other words, the code in the invoked argument function
+is guaranteed to be executed before any <code>o.Do</code> method call returns.
+</p>
+
+<p>
+Please read <a href="concurrent-synchronization-more.html#once">the explainations
+for sync.Once</a> to get how to use <code>sync.Once</code> values.
+</p>
+
+<h4>Order Guarantees Made By <code>sync.Cond</code> Values</h4>
+
+<p>
+It is some hard to make a clear discription for
+the order guarantees made by an addressable <code>sync.Cond</code> value <code>c</code>.
+Simply put, if a <code>c.Wait()</code> call is guaranteed to be resumed
+by a <code>c.Notify</code> (or <code>c.Broadcast</code>) call,
+then the <code>c.Notify</code> (or <code>c.Broadcast</code>) call is guaranteed to
+happen before the <code>c.Wait()</code> call returns.
+</p>
+
+<p>
+Please read <a href="concurrent-synchronization-more.html#cond">the explainations
+for sync.Cond</a> to get how to use <code>sync.Cond</code> values.
+</p>
+
+<p class="anchor" id="atomic"></p>
 <h4>Atomic Related Order Guarantees</h4>
 
 <div>
@@ -572,9 +628,23 @@ There is <a href="https://github.com/golang/go/issues/5045">an issue</a>
 on how these guarantees should be written down.
 But, up to now (Go 1.9), the decision has not been made.
 </p>
+
+<p>
+Please read <a href="concurrent-atomic-operation.html">this article</a>
+to get how to use atomic operations.
+</p>
 </div>
 
 <!--
+
+https://groups.google.com/forum/#!msg/golang-nuts/mSD7u1oEhSk/NFkQTOM5AwAJ
+
+https://github.com/golang/go/issues/19182
+https://news.ycombinator.com/item?id=13686863
+For the complexity and subtlety of properly using atomic functions, atomic functions are not recommanded
+to synchronize values. Mutexes are more preferred.
+Some Go team members are regreted that the atomic package is expose as a public standard package
+and think the atomic package should only be used inside standard pckages and runtime code.
 
 https://github.com/golang/go/issues/5045
 https://bartoszmilewski.com/2008/12/01/c-atomics-and-memory-ordering/
@@ -584,4 +654,21 @@ https://en.wikipedia.org/wiki/Memory_barrier
 https://groups.google.com/forum/#!topic/golang-nuts/AoO3aivfA_E
 https://peeterjoot.wordpress.com/2009/12/04/intel-memory-ordering-fence-instructions-and-atomic-operations/
 
+https://github.com/golang/go/issues/5045#issuecomment-292673178
+C++ atomics and memory ordering 
+https://bartoszmilewski.com/2008/12/01/c-atomics-and-memory-ordering/
+Memory ordering
+https://en.wikipedia.org/wiki/Memory_ordering
+Cmd/compile: Go 1.8 regression: sync/atomic loop elided
+https://news.ycombinator.com/item?id=13686863
+
+https://groups.google.com/forum/#!msg/golang-nuts/AoO3aivfA_E/zFjhu8XvngMJ
+We generally don’t want sync/atomic to be used at all
+Experience has shown us again and again that
+very very few people are capable of writing correct code
+that uses atomic operations…If we had thought of internal packages
+when we added the sync/atomic package, perhaps we would have used that.
+Now we can’t remove the package because of the Go 1 guarantee.
+
+https://groups.google.com/forum/#!topic/golang-nuts/AoO3aivfA_E
 -->
