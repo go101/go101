@@ -1,0 +1,507 @@
+﻿<h1>Code Packages And Package Imports</h1>
+
+<h3>About Code Package</h3>
+
+<p>
+For a formal package, all source files contained in the package folder
+must all belong to the package. In other words, one folder shouldn't
+contain multiple code packages.
+</p>
+
+<p>
+The name of a package is not required to be the same as the package folder.
+But for most packages, it is recommended to keep the two names identical.
+The reason will be explained in following sections.
+</p>
+
+<p>
+Below, a resource can be a variable, constant, type or function.
+</p>
+
+<p>
+The next section will introduce package import.
+When a package is imported to other packages,
+only the <a href="keywords-and-identifiers.html">exported (or public) resources</a>
+are visible to (and can be used by) importing source files.
+</p>
+
+<p>
+Non-exported (protected) package level resources declared in a package
+are only visible to all the source files under the folder of the package.
+</p>
+
+<h3>Package Import</h3>
+
+<div>
+Let's check a small program which is a little more complex than the last one.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Go has", 25, "keywords.")
+}
+</code></pre>
+
+This program appends two new lines on the last one. Some Explainations:
+<ul>
+<li>
+	The third line imports another package, the standard <code>fmt</code> package.
+	There are many format functions declared in this package for other pacakges to use.
+	The <code>Println</code> function is one of them.
+	It will print the string representations of a sequence of values to standard output.
+	A space character is inserted between each two consecutive string representations
+	and a newline character is printed at the end.
+	A call to the <code>Println</code> function can take arbitrary number of arguments.
+</li>
+<li>
+	The sixth line calls the <code>Println</code> function.
+	Note that the function name is prefixed a <code>fmt.</code> in the call,
+	where <code>fmt</code> is the name of the package which contains the called function.
+	The form <code>fmt.Println</code> is called a
+	<a href="https://golang.org/ref/spec#Qualified_identifiers">qualified identifier</a>.
+</li>
+<li>
+	Go compiler will deduce the type of a value by its literal.
+	In the above example, the second argument of the <code>fmt.Println</code>
+	function call will be viewed as a value of the built-in <code>int</code> type,
+	and the two other two arguments will be viewed as of
+	the built-in <code>string</code> type.
+</li>
+</ul>
+
+Assume the solo source file of this program is <code>simple-import-demo.go</code>,
+run this program will get the following output:
+<pre class="output">
+$ go run simple-import-demo.go
+Go has 25 keywords.
+</pre>
+
+<p>
+Note that the first charactor of the identifier <code>Println</code> is an upper case letter.
+So it can exported from the <code>fmt</code> standard pacakge
+and used in other packages.
+</p>
+
+<p>
+There are two built-in functions, <code>print</code> and <code>println</code>,
+which have similar functionalites as the corresponding functions in the
+<code>fmt</code> standard package.
+Built-in functions can be used without importing any packages.
+However, the two functions are not recommended to be used in production enviroments,
+for they are not guaranteed to stay in the future Go versions.
+</p>
+
+<p>
+All standard packages are listed <a href="https://golang.org/pkg/">here</a>.
+We can also <a href="go-sdk.html#doc">run a local server</a>
+to view Go documentations.
+</p>
+
+<p>
+A package import is also called an import declaration formally in Go.
+An import declaraton is only visible to the source file which contains the import declaration.
+It is not visible to other source files in the same package.
+</p>
+
+Let's view another example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "math/rand"
+
+func main() {
+	fmt.Printf("Next pseudo-random number is always %d.\n", rand.Uint32())
+}
+</code></pre>
+
+<p>
+This example imports one more standard package, the <code>math/rand</code> package,
+which is a sub-package in the the <code>math</code> package.
+This package provides some functions to produce pseudo-random number.
+</p>
+
+Some explainations:
+<ul>
+<li>
+	the last token in an import path will be used as the first part in a qualified identifier.
+	In this example, <code>rand.</code> instead of <code>math/rand.</code> is used
+	as the prefix of the <code>Int</code> function call.
+	A <code>rand.Uint32()</code> call will return
+	a random <code>uint32</code> integer number.
+</li>
+<li>
+	<code>Printf</code> is another common used function
+	in the <code>fmt</code> standard package.
+	A call to the <code>Printf</code> function must take at least one arguments.
+	The first argument of a <code>Printf</code> function call must be a string value,
+	which specifies the format of the printed result.
+	The <code>%d</code> in the first argument is called a format verb.
+	It expects the second argument to be an integer and will 
+	be repaced with the digital string representation of the integer argument.
+	The <code>\n</code> in a double-quoted style string literal
+	will be escaped as a newline character.
+</li>
+</ul>
+
+The above program will always output:
+<pre class="output">
+Next pseudo-random number is always 2596996162.
+</pre>
+
+<p>
+For more <code>Printf</code> format verbs, please read
+the online <a href="https://golang.org/pkg/fmt/"><code>fmt</code> package documentation</a>,
+or view the same documentation by run the <code>go doc</code> command.
+For example, here, we can run <code>go doc fmt</code> to view the documentation of the <code>fmt</code> standard package,
+and run <code>go doc fmt.Printf</code> to view the documentation of the <code>fmt.Printf</code> function.
+</p>
+
+<p>
+If we expect the above program to produce a different random number at each run,
+we should set a different seed by call the <code>rand.Seed</code> function
+when the program just starts.
+</p>
+
+<p>
+If multiple packages are imported into a source file,
+we can group them in one import declaration by enclosing
+them in a <code>()</code>.
+</p>
+
+<p>
+Like many other languages, the texts following two slashes
+<code>//</code> are short comments, 
+and long comments can be emclosed between a pair of <code>/*</code> and <code>*/</code>. 
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+// Group multiple imports together.
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	/*
+	Set the random seed, so that the program will not always print
+	the same pseudo-random number.
+	*/
+	rand.Seed(time.Now().UnixNano()) // 
+	fmt.Printf("Next pseudo-random number is %d.\n", rand.Uint32())
+}
+</code></pre>
+
+Some explainations:
+<ul>
+<li>
+	this example imports more one package, the <code>time</code> standard package,
+	which provides many time realated utilities.
+</li>
+<li>
+	function <code>time.Now()</code> returns the current time,
+	as a value of type <code>time.Time</code>.
+<li>
+	<code>UnixNano</code> is a method of the <code>time.Time</code> type.
+	The method call <code>aTime.UnixNano()</code> returns the number of nanoseconds
+	elapsed since January 1, 1970 UTC to the time denoted by <code>aTime</code>.
+	The result nanoseconds is an <code>int64</code> value.
+	(Methods are special functions.
+	Please read <a href="method.html">methods in Go</a> for details.)
+</li>
+</ul>
+
+</div>
+
+<h3>About Package Folder Names</h3>
+
+<p>
+The official Go tools recommend, and often require, the folder
+containing a third-party package to be put int the <code>src</code>
+folder under any path specified in the <code>GOPATH</code> environment variable.
+The import path of the third-party package is the relative path of
+the package folder to the <code>src</code> folder.
+The seperators in the path must be always <code>/</code> and can't be <code>\</code>.
+For example, if the path of a package is <code>aGoPath/src/a/b/pkg</code>
+(or <code>aGoPath\src\a\b\pkg</code> on Windows),
+then its import path is <code>/a/b/pkg</code>.
+</p>
+
+<p>
+A standard package has a higher import priority than a third-party package
+if their import paths are identical.
+So please try to avoid using the import path of a standarad package
+as the import path of a third-party package.
+</p>
+
+<p>
+As above has mentioned, the name of folder containing a package
+is not required to be the same as the package name.
+However, for library packages, it will make package users confused if the name
+of a package is different from the name of the package folder.
+For example, if the name of a package is <code>foo</code> but its import path is
+<code>x/y/bar</code>, then to call a function <code>F</code> in the package,
+people may expect to use the qualified identifier <code>bar.F</code>.
+However, in fact the correct qualified identifier is <code>foo.F</code>.
+Package users must open the package source files to check what
+the real package name is.
+So please try to make the two names identical for every library package,
+</p>
+
+<p>
+Packages named <code>main</code> are not recommended to be imported as library packages.
+Although Go specification doesn't forbid importing <code>main</code> packages,
+the official Go tools do (at least for Go SDK 1.9).
+In practice, to avoid confusions,
+it is best never to use <code>main</code> packages as library packages.
+Package named as <code>main</code> should be program entry packages.
+</p>
+
+<p>
+For program entry packages,
+it is recommended to give each <code>main</code> package folder a meaningful name,
+instead of the boring folder name <code>main</code>.
+</p>
+
+<div>
+The official Go SDK will view package folders named as <code>internal</code>
+and <code>vendor</code> as special package folders.
+<ul>
+<li>
+	An <code>internal</code> package can only be imported by the packages
+	which folders are the containing folders (inlcuding indirect ones) of the
+	<code>internal</code> package folder.
+	In other words, a package can't import an <code>internal</code> package
+	which is not in the subtree of the importing package folder.
+</li>
+<li>
+	The <code>vendor</code> folder under a package folder is used to
+	store the dependency packages of the package.
+</li>
+</ul>
+
+</div>
+
+<h3>Package Load Order</h3>
+
+<p>
+Go doesn't support circular dependency.
+If package <code>a</code> imports package <code>b</code>
+and package <code>b</code> imports package <code>c</code>,
+then package <code>c</code> can't import package <code>a</code> and <code>b</code>,
+package <code>b</code> also can't import package <code>a</code>.
+</p>
+
+<p>
+A package also can't import itself.
+</p>
+
+<p>
+At run time, packages are loaded by their dependency orders.
+A pacakge will be loaded before all the packages which import it.
+For a Go program, the entry pacakge is the last package to be loaded.
+</p>
+
+<h3>The <code>init</code> Functions</h3>
+
+<p>
+There can be multiple functions named as <code>init</code> declared in one package,
+even in one source code file.
+The functions named as <code>init</code> must have no any
+input parameters and output results.
+</p>
+
+<p>
+The <code>init</code> functions in a package will be called
+once and only once sequentially when the package is loaded.
+However, the invocation order of these <code>init</code> functions
+is not specified in Go specification.
+So there shouldn't be dependency relations between the
+<code>init</code> functions in one package.
+</p>
+
+<p>
+An <code>init</code> function in an importing package
+will be called after all the <code>init</code> functions
+declared in the packages imported by the importing package for sure.
+</p>
+
+<p>
+All <code>init</code> functions in all involved packages in a program
+will also be called sequentially, and all of them will be called
+before invoking the <code>main</code> entry function.
+</p>
+
+<p>
+The invocation order of the <code>init</code> functions in a package
+is not specified in Go specification.
+So there shouldn't be dependency relations between the
+<code>init</code> functions in a certain package.
+</p>
+
+<p>
+For the official Go compiler, the <code>init</code> functions in a source file
+will be called from top to down.
+</p>
+
+<div>
+Here is a simple example which contains two <code>init</code> functions:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func init() {
+	fmt.Println("hi")
+}
+
+func main() {
+	fmt.Println("bye")
+}
+
+func init() {
+	fmt.Println("hello")
+}
+</code></pre>
+
+The output of this program:
+<pre class="output">
+hi
+hello
+bye
+</pre>
+</div>
+
+<h3>Full Package Import Form</h3>
+
+<p>
+In fact, the full form of an import declaration is
+<code>import importname "path/to/package"</code>,
+where <code>importname</code> is optional,
+its default value is the real name of the imported package.
+In fact, the prefix token used in qualified identifiers is the <code>importname</code>.
+</p>
+
+<p>
+The full import declaration form is not used widely.
+However, sometimes we must use it.
+For example, if a source file imports two packages with the same name,
+to avoid making compiler confused, we must use the full import form
+to set a custom <code>importname</code> for at least one package in the two.
+</p>
+
+<div>
+Here is an example of using full import declaration forms.
+Please note that green texts are comments.
+<pre class="line-numbers"><code class="language-go">package main
+
+// import declarations don't need to be grouped together.
+import (
+	format "fmt"
+	random "math/rand"
+	"time"
+)
+
+func main() {
+	random.Seed(time.Now().UnixNano()) // set the random seed
+	format.Print("A pseudo-random number: ", random.Uint32(), "\n")
+	
+	// The following two lines fail to compile.
+	/*
+	rand.Seed(time.Now().UnixNano()) // set the random seed
+	fmt.Print("A pseudo-random number: ", rand.Uint32(), "\n")
+	*/
+}
+</code></pre>
+
+Some explainations:
+<ul>
+<li>
+	we must use <code>format</code> and <code>random</code> as the
+	prefix token in qualified identifiers, instead of the real package names.
+</li>
+<li>
+	<code>Print</code> is another function in the <code>fmt</code> standard package.
+	Like <code>Println</code> function calls,
+	a <code>Print</code> function call can take arbitrary number of arguments.
+	It will print the string representations of the passed arguments, one by one.
+	If two consecutive arguments are both string values,
+	then a space will be automatically inserted between them in the print result.
+</li>
+</ul>
+
+<p>
+The <code>importname</code> in the full form import declaration can be a dot
+(<code>.</code>). Such imports are called dot imports.
+To use the exported elements in the packages being dot imported,
+the prefix part in qualified identifiers must be omitted.
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	. "fmt"
+	. "time"
+)
+
+func main() {
+	Println("Current time:", Now())
+}
+</code></pre>
+
+<p>
+In the above example, <code>Println</code> instead of <code>fmt.Println</code>,
+and <code>Now</code> instead of <code>time.Now</code> must be used.
+</p>
+
+<p>
+Generally, dot imports are not recommended to use in formal projects.
+</p>
+
+<p>
+The <code>importname</code> in the full form import declaration can be blank identifier
+(<code>_</code>). Such imports are called anonymous imports.
+The importing source files can't use the exported resources in anonymously imported packages.
+The purpose of anonymous imports is to initialize the imported packages
+(each of <code>init</code> functions in the anonymously imported packages will be called once).
+</p>
+
+In the following example, all <code>init</code> functions declared in
+<a href="https://golang.org/pkg/net/http/pprof/">the
+<code>net/http/pprof</code> standard package</a> will be called before the
+<code>main</code> entry function is called.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import _ "net/http/pprof"
+
+func main() {
+	... // do somethings
+}
+</code></pre>
+</div>
+
+<h3>Each Non-anonymous Import Must Be Used Once</h3>
+
+<div>
+Except anonymous imports, at least one exported elements in
+other imports must be used at once.
+For example, the following example fails to compile.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "net/http"    // error: imported and not used
+import . "time"      // error: imported and not used
+import format "fmt"  // okay: used once below
+import _ "math/rand" // okay: anonymous packages are not required to be used
+
+func main() {
+	format.Println() // use the imported "fmt" package
+}
+</code></pre>
+
+</div>
