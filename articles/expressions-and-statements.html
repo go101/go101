@@ -6,7 +6,7 @@ This article will introduce expressions and statements in Go.
 
 <p>
 Simply speaking, expressions represent values and statements represent operations.
-However, in fact, some special expressions each may represent several values,
+However, in fact, some special expressions each may be composed of and represent several values,
 and some statements may be composed of several sub operations/statements.
 And some expressions can also be used as statements.
 </p>
@@ -53,11 +53,16 @@ Constant expressions are evaluated at compile time instead of run time.
 If a function returns exact one result,
 then its calls (without the assignment parts) are expressions.
 Calls of functions without results are not expressions.
-Calls of functions with more than one results can are expressions,
-but such expressions can used be used at some specific senarios.
+Calls of functions with more than one results are also expressions,
+such expressions each present multiple values and can only be be used at some specific senarios.
 Go functions will explained detailedly in the article
 <a href="function.html">functions in Go</a> later.
 <p>
+
+<p><i>
+(Note, later, unless otherwise specified, when an expression is mentioned,
+the expression only presents one single value.)
+</i></p>
 
 <p>
 Methods can be viewed as special functions.
@@ -74,7 +79,7 @@ Channel operations will be explained in the article
 channel introduction</a> later.
 </p>
 
-<h3>Some Simple Statement Cases</h3>
+<h3>Simple Statement Cases</h3>
 
 <div>
 There are six kinds of simple statements.
@@ -84,10 +89,12 @@ There are six kinds of simple statements.
 	short variable declaration forms
 </li>
 <li>
-	pure value assignments (not mixing with variable declarations)
+	pure value assignments (not mixing with variable declarations),
+	including <code>x op= y</code> operations.
 </li>
 <li>
 	function/method calls and channel receive operations without the assignment parts.
+	Some of these simple statements can also be used as expressions.
 </li>
 <li>
 	channel send operations.
@@ -111,7 +118,8 @@ Yes, Go supports the two syntaxes.
 However, the two forms can't be used as values.
 In other words, they are not expressions.
 <code>x++</code> is equivalent to <code>x = x + 1</code>,
-and <code>x--</code> is equivalent to <code>x = x - 1</code>.
+and <code>x--</code> is equivalent to <code>x = x - 1</code>,
+where expression <code>x</code> will only be evaludated once.
 Go doesn't support the <code>++x</code> and <code>--x</code> syntaxes.
 </p>
 
@@ -119,17 +127,110 @@ Go doesn't support the <code>++x</code> and <code>--x</code> syntaxes.
 
 <h3>Some Non-Simple Statement Cases</h3>
 
-<p>
-The standard variable declaration forms are statements but not simple statements.
-</p>
+<div>
+An incomplete non-simple statements list:
 
-<p>
-Constant, type and function declarations are non-simple statements.
-A function declaration statement may contains many sub statements.
-</p>
+<ul>
+<li>
+	standard variable declaration forms. Yes, short variable declarations are simple statements, but standard ones are not.
+</li>
+<li>
+	name constant declarations.
+</li>
+<li>
+	custom type declarations.
+</li>
+<li>
+	package import declarations.
+</li>
+<li>
+	explicit code blocks.
+	An explicit code block starts with a <code>{</code> and ends with a <code>}</code>.
+	A code block may contains many sub statements.
+</li>
+<li>
+	function declarations. 
+	A function declaration may contains many sub statements.
+</li>
+<li>
+	control flows and code execution jumps.
+	Each control flow is composed of many sub statements.
+	The next article <a href="basic-control-flows.html">basic control flows</a>
+	will introduce the basic control flows in Go.
+</li>
+<li>
+	<code>return</code> lines in function declarations.
+</li>
+<li>
+	deferred function calls and goroutine creations.
+	The two will be introudced in other Go 101 articles later.
+</li>
+</ul>
 
-<p>
-All the control flows introduced in the next article
-<a href="basic-control-flows.html">basic control flows</a>
-are also non-simple statements.
-</p>
+A resource declared in a code block is invisible outside the code block.
+For example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	{
+		var a = 123
+		{
+			const C = 789
+			var b = C // okay
+			a = b     // okay
+		}
+		a = C // error: C is undefined
+		a = b // error: b is undefined
+	}
+	_, _, _ = a, b, C // error: a, b and C are undefined
+}
+</code></pre>
+
+</div>
+
+<h3>Examples Of Expressions And Statements</h3>
+
+<div>
+
+<pre class="line-numbers"><code class="language-go">// Some non-Simple Statements.
+import "time"
+var a = 123
+const B = "Go"
+type Choice bool
+func f() int {
+	for a < 10 {
+		break
+	}
+
+	// This is an solo explicit code block.
+	{
+		// ...
+	}
+	return 567
+}
+
+// Some simple Statements.
+c := make(chan bool) // c is a a channel value of type "chan bool".
+a = 789
+a += 5
+f()     // here f() is a simple statement.
+a = f() // here f() is used as the source value of a pure assignment.
+a++
+a--
+c <- true // a channel send operation (a simple statement).
+<-c       // a channel receive operation (used as a simple statement).
+z := <-c  // a channel receive operation is used as an expression.
+
+// Some expressions.
+123
+true
+B
+B + " language"
+a - 789
+a > 0
+f() // an expression which can be viewed as an int value.
+f   // an function value of type "func ()".
+<-c // an expression which can be viewed as a bool value.
+</code></pre>
+
+</div>
