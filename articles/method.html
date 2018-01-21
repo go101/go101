@@ -1,19 +1,9 @@
 ﻿<h1>Methods In Go</h1>
 
-<!---
-
-need a article: builtin generic: type and functions.
-
-for type declartions, need to clarify:
-* the methods are not copied, 
-* but the methods axauried by embedding otehr types will be copied.
-
--->
-
-
 <p>
 Go has some object-orient programming elements.
 Method is one of these elements.
+A method is a special functions which has a receiver parameter (see below).
 This article will explain method related concepts in Go.
 </p>
 
@@ -37,8 +27,10 @@ for both type <code>T</code> and <code>*T</code>.
 </p>
 
 <p>
-We can also declare methods for alias types of the <code>T</code> <code>*T</code> types specified above,
-the effect is the same as declaring methods for the <code>T</code> <code>*T</code> types themselves.
+We can also declare methods for alias types of the <code>T</code>
+and <code>*T</code> types specified above.
+The effect is the same as declaring methods for the <code>T</code>
+and <code>*T</code> types themselves.
 </p>
 
 <p>
@@ -46,21 +38,21 @@ If a method is declared for a type, we can say the type has (own) the method.
 </p>
 
 From the above listed conditions, we will get the conclusion that
-we can never (explicitly) define method for
+we can never (explicitly) declare method for
 <ul>
 <li>
 	built-in basic types, such as <code>int</code> and <code>string</code>,
-	for we can't define methods in the <code>builtin</code> standard package.
+	for we can't declare methods in the <code>builtin</code> standard package.
 </li>
 <li>
 	interface types. But an interface type can own methods.
 	Please read <a href="type-embedding.html">Interfaces In Go</a> for details.
 </li>
 <li>
-	unnamed types except the pointer types as <code>*T</code> described above,
+	unnamed types except the pointer types <code>*T</code> which are described above,
 	including unnamed array, map, slice, function, channel and struct types.
 	However, if an unnamed struct type embeds other types which have methods,
-	then compiler will implicitly define some methods for the unnamed struct type
+	then compiler will implicitly declare some methods for the unnamed struct type
 	and the unnamed pointer type whose base type is the unnamed struct type.
 	Please read <a href="type-embedding.html">Type Embedding</a> for details.
 </li>
@@ -78,7 +70,7 @@ The type of the receiver parameter is called the receiver type of that method.
 
 Here are some method declaration examples:
 <pre class="line-numbers"><code class="language-go">// Age and int are two distinct types.
-// We can't define methods for int, but can for Age.
+// We can't declare methods for int, but can for Age.
 type Age int
 func (age Age) LargerThan(a Age) bool {
 	return age > a
@@ -87,13 +79,13 @@ func (age *Age) Increase() {
 	*age++
 }
 
-// Receiver of defined function type.
+// Receiver of custom defined function type.
 type FilterFunc func(in int) bool
 func (ff FilterFunc) Filte(in int) bool {
 	return ff(in)
 }
 
-// Receiver of defined map type.
+// Receiver of custom defined map type.
 type StringSet map[string]struct{}
 func (ss StringSet) Has(key string) bool {
 	_, present := ss[key]
@@ -106,7 +98,7 @@ func (ss StringSet) Remove(key string) {
 	delete(ss, key)
 }
 
-// Receiver of defined struct type.
+// Receiver of custom defined struct type.
 type Book struct {
 	pages int
 }
@@ -114,7 +106,7 @@ func (b Book) Pages() int {
 	return b.pages
 }
 func (b *Book) SetPages(pages int) {
-	b.pages = pages 
+	b.pages = pages
 }
 </code></pre>
 
@@ -134,7 +126,7 @@ The two receiver parameter names are not recommended in Go programming.
 
 <p>
 The receiver of type <code>*T</code> are called <b><i>pointer receiver</i></b>,
-non-pointer reveivers are called <b><i>value receivers</i></b>.
+non-pointer receivers are called <b><i>value receivers</i></b>.
 Personally, I don't recommand to view the terminology <b><i>pointer</i></b>
 as an oppoiste of the terminology <b><i>value</i></b>,
 for pointer values are just special values.
@@ -153,42 +145,38 @@ But such methods can never be called.)
 
 <div>
 For each method declaration, compiler will declare a corresponding implicit function for it.
-By the example of the last two methods whose receiver base types
-are <code>Book</code> listed in the last section,
-two following functions are implicitly declared by compiler:
+For the last two methods declared for type <code>Book</code> and type <code>*Book</code>
+in the last example in the last section, 
+two following two functions are implicitly declared by compiler:
 
-<!---
 <pre class="line-numbers"><code class="language-go">func Book.Pages(b Book) int {
-	return b.pages
+	return b.pages // the body is the same as the Pages method
 }
 
 func (*Book).SetPages(b *Book, pages int) {
-	b.pages = pages
-}
-</code></pre>
--->
-
-<pre class="line-numbers"><code class="language-go">func Book.Pages(b Book) int {
-	return b.Pages() // call the corresponding method
-}
-
-func (*Book).SetPages(b *Book, pages int) {
-	b.SetPages(pages) // call the corresponding method
+	b.pages = pages // the body is the same as the SetPages method
 }
 </code></pre>
 
 <p>
 In each of the two implicit function declarations, the receiver parameter
-is removed from its correponding method declaration and insert
-the receiver parameter into the normal parameter list as the first one.
+is removed from its correponding method declaration and inserted
+into the normal parameter list as the first one.
+</p>
+
+<p>
+You can find that the function bodies of the two implicitly declared functions
+are the the same as their corresponding method bodies.
+In fact, compiler will translate a call of a method into a call
+of the corresponding implicitly declared function for the method.
 </p>
 
 The implict method names, <code>Book.Pages</code> and <code>(*Book).SetPages</code>,
 are both of the form <code>TypeLiteral.MethodName</code>.
 As identifiers in Go can't contain the period special characters,
 the two implict function names are not legal identifiers,
-so the two function can't be dclared explicitly.
-They can only be declared by compiler implicitly, and they really can be called:
+so the two functions can't be dclared explicitly.
+They can only be declared by compiler implicitly, but they can be called in user code:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -226,7 +214,7 @@ func (b *Book) SetPages(pages int) {
 </div>
 
 <p class="anchor" id="implicit-pointer-methods"></p>
-<h3>Implicit Methods With Pointer Reveivers</h3>
+<h3>Implicit Methods With Pointer Receivers</h3>
 
 <div>
 For each method declared for value receiver type <code>T</code>,
@@ -237,7 +225,7 @@ so compiler will implicitly declare a method with the same name <code>Pages</cod
 for type <code>*Book</code>. The same name method only contain one line of code,
 which is a call to the implicit function <code>Book.Pages</code>:
 <pre class="line-numbers"><code class="language-go">func (b *Book) Pages() int {
-	return (*b).Pages() // call the value method
+	return (*b).Pages() // call the correponding value method
 }
 </code></pre>
 
@@ -249,8 +237,10 @@ in fact two methods are declared, the explicit one for the non-pointer type,
 the other implicit one is for the corresponding pointer type.
 </p>
 
-As the last section has mentioned, for each of the implicitly decalred methods,
-compiler will also declare a correponding implicit function for it:
+As the last section has mentioned, for each declared method,
+compiler will also declare a correponding implicit function for it.
+So for the just mentioned implicitly declared method,
+the following implicit function is declared by compiler:
 <pre class="line-numbers"><code class="language-go">func (*Book).Pages(b *Book) int {
 	return b.Pages() // call the pointer method
 }
@@ -258,7 +248,7 @@ compiler will also declare a correponding implicit function for it:
 
 <p>
 In other words, for each explicitly declared method with a value receiver,
-two implicit functions and one implicit method will also be declared correspondingly.
+two implicit functions and one implicit method will also be declared at the same time.
 </p>
 </div>
 
@@ -304,7 +294,7 @@ When a method is declared for a type, then each value of the type
 will own an immutable member of an function type.
 The member name is the same as the method name.
 The function type is the same as the function declared
-with the form of the method declaration but without the reveiver part.
+with the form of the method declaration but without the receiver part.
 The member is often called called a member function.
 The member function can also be called the method of its corresponding value.
 </p>
@@ -521,7 +511,7 @@ func main () {
 }
 </code></pre>
 
-Sone off topic, if the two lines in the orders of
+Some off topic, if the two lines in the orders of
 the above <code>Modify</code> method are exchanged, then both of the modifications
 will not be reflected to outside of the method body.
 <pre class="line-numbers"><code class="language-go">func (books Books) Modify() {
@@ -556,16 +546,16 @@ func main () {
 </code></pre>
 </div>
 
-<h3>Declare A Methods With Pointer Receiver Or Value Reveiver?</h3>
+<h3>Should A Method Be Declared With Pointer Receiver Or Value Receiver?</h3>
 
 <p>
 Firstly, from the last section,
-we know that sometimes we must define methods with pointer receivers.
+we know that sometimes we must declare methods with pointer receivers.
 </p>
 
 <p>
-In fact, we can always define methods with pointer recievers without any logic problems.
-It is just a matter of program performance that sometimes if is better to define methods
+In fact, we can always declare methods with pointer recievers without any logic problems.
+It is just a matter of program performance that sometimes if is better to declare methods
 with value receivers.
 </p>
 
@@ -594,7 +584,7 @@ here are some factors needed to be considered to make decisions:
 </li>
 <li>
 	mixing value receivers and pointer receivers for the same base type,
-	is more likely to cause data races if the defined methods
+	is more likely to cause data races if the declared methods
 	are called across multiple goroutines.
 </li>
 <li>

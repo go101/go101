@@ -7,7 +7,7 @@ Same as C, Go also supports struct and pointer types.
 This article will introduce the basic kwowledges of struct types in Go.
 </p>
 
-<h3>Struct Types And Their Literals</h3>
+<h3>Struct Types And Struct Type Literals</h3>
 
 <div>
 Each unnamed struct type literal starts with a <code>struct</code> keyword
@@ -56,10 +56,10 @@ Here is an example showing non-default filed tags.
 </code></pre>
 
 <p>
-The purpose of specified field tags is application dependent.
+The purpose of each field tag is application dependent.
 In the above example, the filed tags can help the functions in the
 <code>encoding/json</code> standard package to determine the field names in JSON texts,
-when encoding struct values into JSON texts or decoding JSON texts into struct values.
+in the process of encoding struct values into JSON texts or decoding JSON texts into struct values.
 The functions in the <code>encoding/json</code> standard package will
 only encode and decode the exported struct fields, which is why
 the first letters of the field names in the above example are all upper cased.
@@ -69,11 +69,11 @@ will be same as the field names in code.
 
 <p><i>
 (BTW, the <code>omitempty</code> word in a field tag means the field can be absent
-from the JSON texts if the value of the field is a zero value, or a blank container value.)
+from the JSON texts if the value of the field is a zero value or a blank container value.)
 </i></p>
 
 <p>
-Please don't use field tags as comments.
+It is not good idea to use field tags as comments.
 </p>
 
 <p>
@@ -82,69 +82,81 @@ interpreted string literals (<code>"..."</code>) for field tags in practice.
 </p>
 
 <p>
-Only exported fields of exported struct types declared in a package
-are visible to the external of the package.
+Unlike C language, Go structs don't support union.
 </p>
 
-The order of the field declaraions and field tags matter for a struct type.
-Two unnamed struct types are identical if they have the same sequence of fields, 
+<p>
+Only exported fields of exported struct types declared in a package
+can be used in other packages by importing the pacakge.
+</p>
+
+<p>
+Please note, non-exported field names of struct types from
+different packages are always viewed as different names.
+</p>
+
+The field tags and the orders of the field declaraions matter for a struct type.
+Two non-defined struct types are identical if they have the same sequence of fields, 
 and if corresponding fields have the same names, and identical types, and identical tags. 
-Non-exported field names from different packages are always different.
-In other words, two unnamed struct types are two distinct types even if they have
-the same set of field declarations but if any of the following ones is true
+In other words, two non-defined struct types are two distinct types even if they have
+the same set of field declarations but if any of the following ones is true:
 <ul>
 <li>
 	the field declaration orders are different.
 </li>
 <li>
-	at least one pair of the field tags are different.
+	at least one pair of the corresponding field tags are different.
 </li>
 <li>
-	the two struct types are from two different package and
-	at least one name of their fields starts with a lower cased letter.
+	the two struct types are from two different package and at least
+	one name of their fields is non-exported.
 </li>
 </ul>
 
 <p>
 All above shown struct types are unnamed, or called anonymous struct types.
-In practice, named (defined) struct types are used more popular.
-A defined struct type has the same field set as the source struct type.
+In practice, named (defined or alias) struct types are used more popular.
 </p>
 
-<p>
-A field of struct type <code>S</code> may be also of another struct type.
-All the fields of the struct field can be called indirect fields of type <code>S</code>.
-None fields, either direct ones or indirect ones,
-of type <code>S</code> can the of type <code>S</code>.
-</p>
+<!---
+A struct type can't have a field of the struct type itself,
+either directly or recursively.
 
-<p>
-Unlike C language, Go structs don't support union.
-</p>
+https://github.com/golang/go/issues/18640
+-->
 
 </div>
 
 <h3>Struct Value Literals And Struct Value Manipulations</h3>
 
+<p>
+In Go, the form <code>T{...}</code>,
+where <code>T</code> must be a type literal or a type name,
+is called as a composite literal and
+is used as the value literals of some kinds of types,
+including struct types and the container types introduced later.
+</p>
+
 <div>
-Given a struct type <code>S</code>, its value can be used composite literals to represent.
-Assume type <code>S</code> has two fields, <code>x int</code> and <code>y bool</code> in order,
-then the zero values of <code>S</code> can be represented by the following
+Given a struct type <code>S</code> and assume it has two fields,
+<code>x int</code> and <code>y bool</code> in order,
+then the zero value of <code>S</code> can be represented by the following
 two variants of struct composite literal forms:
-<ul>
+<ol>
 <li>
 	<code>S{0, false}</code>.
 	In this form, none field names are present but all filed values must be present
-	by the field declaration order.
+	by the field declaration orders.
 </li>
 <li>
-	<code>S{x: 0, y: false}, S{y: false, x: 0}, S{x: 0}, S{y: false} and S{}</code>.
+	<code>S{x: 0, y: false}</code>, <code>S{y: false, x: 0}</code>,
+	<code>S{x: 0}</code>, <code>S{y: false}</code> and <code>S{}</code>.
 	In this form, each field is optional to be present.
-	The values of the absent fields are zero values of their corresponding types.
+	The values of the absent fields will be set as the zero values of their corresponding types.
 	But if a field is present, it must be with the <code>FieldName: FieldValue</code> form.
 	The order of the fields in this form doesn't matter.
 </li>
-</ul>
+</ol>
 
 <p>
 For a value <code>v</code> of type <code>S</code>, we can use
@@ -168,9 +180,10 @@ func main() {
 	book := Book{"Go 101", "Tapir", 256}
 	fmt.Println(book.pages) // 256
 	
-	book = Book{title: "Go 101"}
-	book.author = "Tapir"
-	book.pages = 256
+	// Create a book value with another form.
+	book = Book{} // title and author are both "", pages is 0
+	book = Book{author: "Tapir"} // title is "" and pages is 0
+	book = Book{author: "Tapir", pages: 256, title: "Go 101"}
 
 	// Initialize a struct value without
 	// using composite literals.
@@ -178,6 +191,23 @@ func main() {
 	book2.title = "Go 202"
 }
 </code></pre>
+
+<p></p>
+
+The last <code>,</code> in a compoiste literal is optional
+if the last item in the literal and the closing <code>}</code>
+are at the same line.
+Otherwise, the last <code>,</code> is required.
+<pre class="line-numbers"><code class="language-go">var _ = Book {
+	author: "Go 101",
+	pages: 256,
+	title: "Go 101", // here, the "," can't be ommitted.
+}
+
+// The last "," in the following line can be ommitted.
+var _ = Book{author: "Go 101", pages: 256, title: "Go 101",} 
+</code></pre>
+
 </div>
 
 <h3>About Struct Value Assignments</h3>
@@ -185,54 +215,66 @@ func main() {
 <div>
 When a struct value is assigned to another sturct value,
 the effect is the same as assigning each field one by one.
-<pre class="line-numbers"><code class="language-go">package main
-
-import (
-	"fmt"
-)
-
-type Book struct {
-	title, author string
-	pages         int
-}
-
-func main() {
+<pre class="line-numbers"><code class="language-go">func f() {
 	book1 := Book{pages: 300}
 	book2 := Book{"Go 101", "Tapir", 256}
 	
 	book2 = book1
-	// <=>
-	/*
+	// The above line is equivalent to the following three lines.
 	book2.title = book1.title
 	book2.author = book1.author
 	book2.pages = book1.pages
-	*/
-	
-	fmt.Println(book2) // {  300}
+}
 
 </code></pre>
 
 <p>
 Two struct values can be assigned to each other only if
-the types of two struct values must have the identical underlying type (considering field tags)
-and at least one of the struct types must be an unnamed type.
+the types of the two struct values have the identical underlying type (considering field tags)
+and at least one of the struct types is an
+<a href="type-system-overview.html#non-defined-type">non-defined type</a>.
 </p>
 </div>
 
 <h3>About Struct Value Conversions</h3>
 
+<div>
 <p>
-In Go, if a value <code>v</code> can be converted to type <code>T</code>,
-then the conversion can be represented with <code>(T)(v)</code>,
-in particular, if <code>T</code> is an identifier, it can be simplified as <code>T(v)</code>.
+Values of two struct types <code>S1</code> and <code>S2</code> can be converted
+to each other's types, if <code>S1</code> and <code>S2</code> share
+the identical underlying type (by ignoring field tags).
+In particular if either <code>S1</code> or <code>S2</code> is a
+<a href="type-system-overview.html#non-defined-type">non-defined type</a>
+and their underlying types are identical (considering field tags),
+then the conversions between the values of them can be implicit.
 </p>
 
-<div>
-A struct value of type <code>S1</code> can be converted to another struct type <code>S2</code>
-if <code>S1</code> and <code>S2</code> share the identical underlying type (ignoring field tags),
-in particular if either <code>S1</code> or <code>S2</code> is an unnamed type
-and they underlying types are identical (considering struct tags),
-then the struct value can be implicitly converted to type <code>S2</code>.
+Given struct types <code>S0</code>, <code>S1</code>, <code>S2</code>
+<code>S3</code> and <code>S4</code> in the following code snippet,
+<ul>
+<li>
+	values of type <code>S0</code> can't be converted to
+	the other four types, and vice versa,
+	for the corresponding field names are different.
+</li>
+<li>
+	two values of two different types among <code>S1</code>,
+	<code>S2</code>, <code>S3</code> and <code>S4</code>
+	can be converted to each other's type.
+	In particular, 
+	<ul>
+	<li>
+		values of type <code>S2</code> can be implicitly converted
+		to type <code>S3</code>, and vice versa.
+	</li>
+	<li>
+		values of type <code>S2</code> can be implicitly converted
+		to type <code>S4</code>, and vice versa.
+	</li>
+	</ul>
+</li>
+</ul>
+
 <pre class="line-numbers"><code class="language-go">package main
 
 type S0 struct {
@@ -240,93 +282,64 @@ type S0 struct {
 	x bool
 }
 
-type S1 struct {
+type S1 struct { // S1 is a defined type
 	x int "foo"
 	y bool
 }
 
-type S2 struct {
+type S2 = struct { // S2 is a type alias (a non-defined type)
 	x int "bar"
 	y bool
 }
+type S3 S2 // S3 is a defined type
+type S4 S3 // S4 is a defined type
 
-type S3 struct {
-	x int "bar"
-	y bool
-}
-
-func main() {
-	v0, v1, v2, v3 := S0{}, S1{}, S2{}, S3{}
-	v4 := struct {
-		x int "bar"
-		y bool
-	}{}
-	
-	// None of the conversions are legal,
-	// for field names don't match.
-	/*
-	_, _, _ = S1(v0), S2(v0), S3(v0) // 
-	
-	*/
-	
-	// The two conversions must be explicit,
-	// for the two involved types are both named.
-	var _ S3 = S3(v2)
-	var _ S2 = S2(v3)
-	
-	// The two conversions must be explicit,
-	// for field tags are not the same.
-	var _ S2 = S2(v1)
-	var _ S1 = S1(v2)
-	var _ S1 = S1(v4)
-	
-	// These conversions can be implicit.
-	var _ S3 = v4
-	var _ struct {
-		x int "bar"
-		y bool
-	} = v3
-	
-	// All local variables must be used at least once.
-	_ = v0
+var v0, v1, v2, v3, v4 = S0{}, S1{}, S2{}, S3{}, S4{}
+func f() {
+	v1 = S1(v2); v2 = S2(v1)
+	v1 = S1(v3); v3 = S3(v1)
+	v1 = S1(v4); v4 = S4(v1)
+	v2 = v3; v3 = v2 // the conversions can be implicit
+	v2 = v4; v4 = v2 // the conversions can be implicit
+	v3 = S3(v4); v4 = S4(v3)
 }
 </code></pre>
+
 </div>
 
-<h3>Pointers To Struct Values</h3>
+<h3>Annoymous Structs</h3>
 
 <div>
-<p>
-The article <a href="pointer.html">Pointers in Go</a> explains pointers in detail.
-If you haven't got what are pointers yet, please read that article firstly, then go back here.
-</p>
 
-<p>
-If a struct value is addressable, then all of its fields are also addressable.
-</p>
-
-For a pointer <code>p</code> of struct value <code>v</code> which has field called <code>x</code>,
-we can use <code>p.x</code> as a shorthand of <code>(*p).x</code> to access the <code>x</code> field.
-Different from C language, there is not the <code>-&gt;</code> operator in Go.
-<pre class="line-numbers"><code class="language-go">package main
-
-func main() {
-	type Book struct {
-		title, author string
-		pages         int
+An annoymous struct type are allowed used as the types of the fields
+of another struct type.
+Annoymous struct type literals are also allowed to be used
+in compisite literals.
+Example:
+<pre class="line-numbers"><code class="language-go">var aBook = struct {
+	author struct {
+		firstName, lastName string
+		gender              bool
 	}
-	
-	var book Book
-	pbook := &book
-	pbook.title = "Go 101"
-	
-	// This is a sugar to create a struct pointer.
-	pbook = &Book{author: "Tapir"}
-	pbook.pages = 256
+	title string
+	pages int
+}{
+	author: struct {
+		firstName, lastName string
+		gender              bool
+	}{
+		firstName: "Mark",
+		lastName: "Twain",
+	},
+	title: "The Million Pound Note",
+	pages: 96,
 }
 </code></pre>
 
-todo: named pointer types selector rules.
+<p>
+Generally, it is not recommended to
+use annoymous struct type literals in compisite literals.
+</p>
 
 </div>
 

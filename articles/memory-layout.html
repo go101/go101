@@ -96,7 +96,7 @@ on 32-bit architectures and 8-byte sized on 64-bit architectures.
 </p>
 
 <!---
-todo: above assertion may be not correct for any architectures?
+todo: above assertion may be not correct for some architectures?
 -->
 </div>
 
@@ -131,13 +131,13 @@ On non-Linux ARM, the 64-bit functions use instructions unavailable before the A
 <br/><br/>
 On both ARM and x86-32, it is the caller's responsibility to
 arrange for 64-bit alignment of 64-bit words accessed atomically.
-The first (64-bit) word in a global variable or in an allocated struct
-or slice can be relied upon to be 8-byte aligned.
+The first word in a variable or in an allocated struct, array,
+or slice can be relied upon to be 64-bit aligned.
 </small>
 </blockquote>
 
 <p><i>
-(Here, <Code>(64-bit)</Code> in the last sentence is appended by context.
+(Here, <code>64-bit</code> in the last sentence is appended by context.
 Although the above quoted texts shown in the bug zone of that documentation,
 what they describe are not bugs.)
 </i></p>
@@ -168,18 +168,21 @@ are not 8-byte aligned may panic at run time.
 
 <p>
 However, on the not-very-old 32-bit architectures,
-the documentation guarantees that
-<b><i>the first 64-bit word in a global variable or in an allocated struct
-or slice can be relied upon to be 8-byte aligned</i></b>.
+the official documentation guarantees that
+<b><i>the first word in a variable or in an allocated struct,
+array, or slice can be relied upon to be 64-bit aligned</i></b>.
 </p>
 
+<!---
 <p>
 In my honest opinion, the wording is very vague.
 And it is very conservative.
+
 In fact, Ian, one of the core member of Go team,
 <a href="https://groups.google.com/forum/#!topic/golang-nuts/_nHK6P8_lhw">clarified</a> that
 local declared 64-bit word variables can also be relied upon to be 8-byte aligned.
 </p>
+-->
 
 <p>
 What does the word <b><i>allocated</i></b> mean?
@@ -192,25 +195,33 @@ then the slice value can also be viewed as an alloacted value.
 </p>
 
 <p>
-By common sense, a qualified compiler should promise that
-all elements in an array/slice can also be accessed atomically
-if any element in the array/slice can be accessed atomically
-and the element type is a 64-bit word type.
+The guarantees made by the official documentation is very conservative.
+In fact, if a value is located at the start address of
+a <a href="memory-block.html">memory block</a> allocated on heap,
+then the first word in the value can be relied upon to be 64-bit aligned.
 </p>
 
 <p>
 And <b><i>be relied upon to be 8-byte aligned</i></b> doesn't mean the address of
 the first 64-bit word in a global variable or in an allocated struct or array
 is always 8-byte aligned on 32-bit architectures.
-It just means if the first 64-bit word of such a value is ever accessed atomically,
+It just means if the first 64-bit word in such a value is ever accessed atomically,
 then compilers must guarantee the memory address of that value is 8-byte aligned at run time.
-If it is never accessed atomically, its address may be not 8-byte aligned.
+If it is never accessed atomically, its address is not guaranteed to be 8-byte aligned.
 </p>
 
 <p>
-There are more other 64-bit words can also be accessed atomically.
-It is just some subtle and verbose to make a simple clear definition in wording.
-So the official documentation makes conservative guarantees.
+There are more other 64-bit words which can also be accessed atomically.
+It is just some subtle and verbose to make a simple clear definition in wording,
+so official documentations just makes conservative guarantees.
+</p>
+
+<p>
+By common sense, a qualified compiler should promise that
+all elements in an array/slice can also be accessed atomically
+if the element type of the array/slice is a 64-bit word type
+and there is one element in the array/slice could be accessed atomically,
+though official documentations doesn't make this guarantee.
 </p>
 
 <div>
@@ -242,7 +253,7 @@ var b T1       // b.v is safe
 var c [6]int64 // c[0] is safe
 
 var d T2 // d.x.v is unsafe
-var e T3 // e.x.v[0] is unsafe
+var e T3 // e.x[0] is unsafe
 
 func f() {
 	var f int64           // f is safe
@@ -250,7 +261,7 @@ func f() {
 	
 	var h = e.x[:] // h[0] is unsafe
 	
-	// here, d.y and e.y are safe, for they are both allocated.
+	// here, d.y.v and e.y[0] are both safe, for they are allocated.
 	d.y = new(T1)
 	e.y = &[6]int64{}
 	
@@ -258,7 +269,7 @@ func f() {
 }
 
 // In fact, all elements in c, g and e.y.v are safe to be accessed
-// atomically, though the official documentation doesn't make the
+// atomically, though the official documentations don't make the
 // guarantees.
 </code></pre>
 
@@ -353,7 +364,7 @@ The full list of value sizes of different types settled by the official Go compi
 </div>
 
 <p>
-The official Go compiler will assure the size of values of a type
+The official Go compiler will ensure the size of values of a type
 is a multiple of the alignment guarantee of the type.
 </p>
 

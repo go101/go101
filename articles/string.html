@@ -1,95 +1,82 @@
 ﻿<h1>Strings In Go</h1>
 
-<!--
-https://github.com/golang/go/issues/18424
-https://github.com/golang/go/issues/14232
-
-https://tiancaiamao.gitbooks.io/go-internals/content/zh/02.1.html
--->
-
 <p>
-Like many programming languages, <code>string</code> type is also an important built-in type in Go.
-This article will list all the facts of strings in Go.
+Like many programming languages, string is also one important kind of types in Go.
+This article will list all the facts of strings.
 </p>
 
 <h3>The Internal Structure Of String</h3>
 
 <div>
-The internal structure of <code>string</code> type is declared as:
+The internal structure of any string type is declared like:
 <pre class="line-numbers"><code class="language-go">type stringStruct struct {
 	str *byte
 	len int
 }
 </code></pre>
 <p>
-From the declaration, we know that the a string is actually a <code>byte</code> sequence wrapper.
+From the declaration, we know that the a string is actually
+a <code>byte</code> sequence wrapper.
 </p>
 </div>
 
 <p><i>
-(NOTE: in Go, <code>byte</code> and <code>uint8</code> are the same type.)
+(Note, in Go, <code>byte</code> is a built-in alias of type <code>uint8</code>.)
 </i></p>
 
-<h3>Some Simple Facts</h3>
+<h3>Some Simple Facts About Strings</h3>
 
 <div>
-Here are some simple facts about <code>string</code> type and values in Goalng:
+Here are some simple facts about string types and values in Go.
 <ul>
-<li>like Java, <code>string</code> values are immutable.
-	Once created, their content can't be modified.
+<li>Like Java, the contents of string values are immutable.
+	Once created, their contents can't be modified.
 	The lengths of string values are also immutable.
 	A string value can only be overwritten as a whole by assigning another string value to it.
 </li>
-<li>string values can be used as constants (along with bool and all kinds of nummeric values).</li>
 <li>
-	<code>aString[i]</code> represents the <b>i</b><i>th</i> byte value stored in aString.
-	<code>aString[i]</code> is not addressable.
+	<code>aString[i]</code> represents the <b>i</b><i>th</i> byte value stored in <code>aString</code>.
+	The expression <code>aString[i]</code> is not addressable.
 	In other words, value <code>aString[i]</code> can't be modified.
 	In fact, for this reason, string values can be viewed as immutable <code>[]byte</code> values.
 </li>
 <li>
-	Go supports <a href="https://golang.org/ref/spec#raw_string_lit">two styles of
-	string literals</a>, the double-quote style (or raw interpreted literals)
-	and the back-quote style (or raw string literals).
-	<ul>
-	<li>
-		Double-quote style string literals can't cross multiple lines,
-		but back-quote style ones can.
-		To avoid platform compatibility problems, 
-		carriage return characters (with ASCII code 14, represented by
-		rune literal <code>'\r'</code>) inside back-quote style string literals
-		will be discarded. 
-	</li>
-	<li>
-		A backslash and some a special charactor following the backslash
-		inside a dobule-quote style string literal will be escaped to
-		(interpreted as) a single charactor.
-		The most common cases are <cod>\n</cod> will be escaped to a newline
-		character (with ASCII code <code>10</code>) and <code>\t</code>
-		will be escaped to horizontal tab character (with ASCII code <code>9</code>).
-		Two consecutive <code>\</code> inside dobule-quote style string literals
-		will be escaped to one <code>\</code> character.
-		<a href="https://golang.org/ref/spec#Rune_literals">All escape sequences</a>
-		are listed in the rune literal section in Go specification.
-	</li>
-	</ul>
+	String values can be used as constants (along with boolean and all kinds of nummeric values).
 </li>
 <li>
-	the zero values of string type are blank string, which can be represented
-	with <code>""</code> or <code>``</code> literally.
+	Go supports <a href="basic-types-and-value-literals.html#string-literals">two styles of
+	string literals</a>, the double-quote style (or raw interpreted literals)
+	and the back-quote style (or raw string literals).
+</li>
+<li>
+	The zero values of string types are blank strings, which can be represented
+	with <code>""</code> or <code>``</code> in literal.
 	Zero string values can't be represented by <code>nil</code>.
 </li>
-<li>strings can be concatenated with <code>+</code> and <code>+=</code> operators.</li>
-<li>two string values can be compared with all comparison operators (<code>==</code>, <code>!=</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>).</li>
-<li>string type has no methods (just like most other built-in types in Go), but</li>
-  <ul>
-  <li>the <a href="https://golang.org/pkg/strings/">strings standard package</a> contains many string util functions.</li>
-  <li>the built-in function <code>len</code> can be used to get the length of a string (number of bytes).</li>
-  <li>the syntax <code>aString[start:end]</code> is used to get a substring of <code>aString</code> (start and end are byte indexes).</li>
-  </ul>
-<li>for the official Go compiler,
+<li>
+	Strings can be concatenated with <code>+</code> and <code>+=</code> operators.
+</li>
+<li>
+	String types are all comparable (by using the <code>==</code> and <code>!=</code> operators).
+</li>
+<li>
+	Like integer and floating-point values, two values of the same string type can also be compared with
+	<code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code> and <code>&lt;=</code> operators.
+</li>
+<li>
+	String type has no methods (just like most other built-in types in Go), but</li>
+	<ul>
+	<li>the <a href="https://golang.org/pkg/strings/">strings standard package</a> contains many string utility functions.</li>
+	<li>the built-in function <code>len</code> can be used to get the length of a string (number of bytes).</li>
+	<li>the syntax <code>aString[start:end]</code> is used to get a substring of <code>aString</code> (<code>start</code> and <code>end</code> are byte indexes).</li>
+	</ul>
+<li>
+	For the official Go compiler,
 	the destination string variable and source string value in a string assignment will
-	share the same underlying byte sequence pointer in memory.
+	share the same underlying byte sequence in memory.
+	The result of a substring expression <code>aString[start:end]</code>
+	also share the same underlying byte sequence with the original string
+	<code>aString</code> in memory.
 </li>
 </ul>
 
@@ -107,9 +94,9 @@ const World = "world"
 func main() {
 	var hello = "hello"
 	
-	// 104 is the ascii code of char 'h'
+	// 104 is the ascii code (and Unicode) of char 'h'
 	fmt.Println(hello[0]) // 104
-	fmt.Println(reflect.TypeOf(hello[0])) // uint8 (byte)
+	fmt.Println(reflect.TypeOf(hello[0])) // uint8
 	
 	// strings are immutable
 	// hello[0] = 'H' // error: cannot assign to hello[0]
@@ -165,6 +152,8 @@ NOTE: <code>rune</code> is a built-in type alias of <code>int32</code> in Go.
 </p>
 
 <h3>Conversions</h3>
+
+todo: custom byte slices and string types are also ok ...
 
 <div>
 String related conversions in Go:
@@ -384,22 +373,23 @@ import "fmt"
 func main() {
 	s := "éक्षिaπ汉字"
 	for i, rn := range s {
-		fmt.Printf("%d: 0x%xd %s \n", i, rn, string(rn))
+		fmt.Printf("%v: 0x%x %v \n", i, rn, string(rn))
 	}
 }
 </code></pre>
-The outputs:
+
+The output of the above program:
 <pre>
-0: 0x65d e
-1: 0x301d ́
-3: 0x915d क
-6: 0x94dd ्
-9: 0x937d ष
-12: 0x93fd ि
-15: 0x61d a
-16: 0x3c0d π
-18: 0x6c49d 汉
-21: 0x5b57d 字
+0: 0x65 e
+1: 0x301 ́
+3: 0x915 क
+6: 0x94d ्
+9: 0x937 ष
+12: 0x93f ि
+15: 0x61 a
+16: 0x3c0 π
+18: 0x6c49 汉
+21: 0x5b57 字
 </pre>
 Please note:
 <ol>
@@ -421,7 +411,7 @@ import "fmt"
 func main() {
 	s := "éक्षिaπ汉字"
 	for i := 0; i < len(s); i++ {
-		fmt.Printf("The byte at index %d: 0x%xd \n", i, s[i])
+		fmt.Printf("The byte at index %v: 0x%x \n", i, s[i])
 	}
 }
 </code></pre>
@@ -447,7 +437,7 @@ import "fmt"
 func main() {
 	s := "éक्षिaπ汉字"
 	for i, b := range []byte(s) { // here, the underlying bytes are not copied.
-		fmt.Printf("The byte at index %d: 0x%xd \n", i, b)
+		fmt.Printf("The byte at index %v: 0x%x \n", i, b)
 	}
 }
 </code></pre>
@@ -514,10 +504,12 @@ func main() {
 	s0 = string([]byte(s0))
 	
 	runtime.GC()
-	// now, the 1M memory block is GCed.
+	// now, the 1M memory block is garbage collected.
 }
 </code></pre>
 </div>
+
+todo: use strings.Builder to avoid one allocation.
 
 <h3>Sugar: Use <code>string</code> As <code>[]byte</code></h3>
 

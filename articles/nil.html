@@ -4,12 +4,14 @@
 <code>nil</code> is a familiar and important predeclared identifier in Go.
 It is the literal representation of zero values of many kinds of types.
 Many new Go programmers with experiences of some other popular languages
-may view <code>nil</code> is the counterpart of <code>null</code>
-or <code>NULL</code> in other languages.
+may view <code>nil</code> is the counterpart of
+<code>null</code> (or <code>NULL</code>) in other languages.
 This is partly right, but there are many differences between <code>nil</code>
-and its counterparts in other languages.
-This article will list the differences.
-All kinds of facts and details related to <code>nil</code> will also be listed.
+and <code>null</code> (or <code>NULL</code>) in other languages.
+</p>
+
+<p>
+This article will list all kinds of facts and details related to <code>nil</code>.
 </p>
 
 <h3><code>nil</code> Is A Predeclared Identifier In Go</h3>
@@ -218,14 +220,14 @@ var _ = (chan int)(nil) == (<-chan int)(nil)
 <div>
 In Go, map. slice and function types don't support comparison.
 So comparing two <code>nil</code> identifiers specified with any type of
-the incomparable types is illegal.
+the uncomparable types is illegal.
 <pre class="line-numbers"><code class="language-go">// The following lines fail to compile.
 var _ = ([]int)(nil) == ([]int)(nil)
 var _ = (map[string]int)(nil) == (map[string]int)(nil)
 var _ = (func())(nil) == (func())(nil)
 </code></pre>
 
-But any values of the above mentioned incomparable types can
+But any values of the above mentioned uncomparable types can
 be compared with a bare <code>nil</code> identifier.
 <pre class="line-numbers"><code class="language-go">// The following lines compile okay.
 var _ = ([]int)(nil) == nil
@@ -268,7 +270,7 @@ fmt.Println( (map[int]*int64)(nil)[123] )   // &lt;nil&gt;
 </code></pre>
 </div>
 
-<h3>It Is Okay To Range Over <code>nil</code> Channels, Maps, Slices, And Array Pointers</h3>
+<h3>It Is Legal To Range Over <code>nil</code> Channels, Maps, Slices, And Array Pointers</h3>
 
 <div>
 <p>
@@ -278,13 +280,18 @@ The number of loops steps by iterate <code>nil</code> maps and slices is zero.
 <p>
 The number of loops steps by iterate a <code>nil</code> array pointer
 is the length of its corresponding array type.
+(However, if the length of the corresponding array type is not zero,
+and the second iteration is neither ignored nor omitted,
+the iteration will panic at run time.)
 </p>
 
 <p>
 Ranging over a <code>nil</code> channel will block for ever.
 </p>
 
-For example:
+For example, the following code will print <code>0</code>, <code>1</code>,
+<code>2</code>, <code>3</code> and <code>4</code>, then block for ever.
+<code>Hello</code>, <code>world</code> and <code>Bye</code> will never be printed.
 <pre class="line-numbers"><code class="language-go">for range []int(nil) {
 	fmt.Println("Hello")
 }
@@ -297,14 +304,10 @@ for i := range (*[5]int)(nil) {
 	fmt.Println(i)
 }
 
-for range chan bool(nil) {
+for range chan bool(nil) { // block here
 	fmt.Println("Bye")
 }
 </code></pre>
-will print <code>0</code>, <code>1</code>, <code>2</code>, <code>3</code> and <code>4</code>,
-then block for ever.
-
-<code>Hello</code>, <code>world</code> and <code>Bye</code> will never be printed.
 </div>
 
 <h3>Call Methods Through <code>nil</code> Arguments Will Not Panic</h3>

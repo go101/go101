@@ -10,9 +10,9 @@ Index
 <li>compiler and runtime
 	<ul>
 	<li><a href="#error-non-name">What does the compile error message <code>non-name *** on left side of :=</code> mean?</a></li>
-	<li><a href="#error-missing-left-brace">What does the compile error message <code>syntax error: missing { after for clause</code> mean?</a></li>
+	<li><a href="#error-missing-left-brace">What does the compile error message <code>unexpected newline, expecting { after if clause</code> mean?</a></li>
 	<li><a href="#map-iteration-order">Does Go runtime maintain the iteration orders for maps?</a></li>
-	<li><a href="#compiler-field-padding">Will Go compilers do padding to assure field alignments for struct types?</a></li>
+	<li><a href="#compiler-field-padding">Will Go compilers do padding to ensure field alignments for struct types?</a></li>
 	<li><a href="#final-zero-size-field">Why does the final field of a zero-sized type in a struct contribute to the size of the struct sometimes?</a></li>
 	<li><a href="#new-function">Is <code>new(T)</code> a sugar of <code>var t T; (&t)</code>?</a></li>
 	<li><a href="#fatal-error-deadlock">What does the runtime error message <code>all goroutines are asleep - deadlock</code> mean?</a></li>
@@ -38,7 +38,7 @@ Index
 
 <li>type system
 	<ul>
-	<li><a href="#incomparable-types">Which types don't support comparisons?</a></li>
+	<li><a href="#uncomparable-types">Which types don't support comparisons?</a></li>
 	<li><a href="#nil-equality">Why aren't two <code>nil</code> values equal sometimes?</a></li>
 	<li><a href="#slice-conversion">Why don't type <code>[]T1</code> and <code>[]T2</code> share the same underlying type
 		even if <code>T1</code> and <code>T2</code> share the same underlying type?</a></li>
@@ -81,7 +81,8 @@ All items at the left side of <code>:=</code> must be pure
 <a href="https://golang.org/ref/spec#Identifiers">identifiers</a> and at least one of them must be a new variable name.
 </div>
 This means container elements (<code>x[i]</code>),
-struct fields (<code>x.f</code>), and pointer dereferences etc, can't appear at the left side of <code>:=</code>.
+struct fields (<code>x.f</code>), pointer dereferences and qualified identifiers
+can't appear at the left side of <code>:=</code>.
 </p>
 
 <p>
@@ -91,13 +92,13 @@ for this problem. It looks Go authors want to leave this problem unresolved unti
 </p>
 
 <p class="anchor" id="error-missing-left-brace"></p><h3>
-	What does the compile error message <code>syntax error: missing { after for clause</code> mean?
+	What does the compile error message <code>unexpected newline, expecting { after if clause</code> mean?
 </h3>
 
 <p>
-In Go, we can't break a code line arbitrarily. The rules are
-<a href="https://golang.org/ref/spec#Semicolons">defined in Go spec</a>.
-By the rules, generally, it is not ok to break a code line just before the open bracket <code>{</code>
+In Go, we can't break a code line at an arbitrary position.
+Please read <a href="https://golang.org/ref/spec#Semicolons">the rules defined in Go spec</a> for details.
+By the rules, generally, it is not okay to break code lines just before the open bracket <code>{</code>
 of <code>if</code>, <code>switch</code> and <code>for</code> blocks.
 </p>
 
@@ -116,10 +117,10 @@ var a = 1
 </code></pre>
 will be interpreted as
 <pre class="line-numbers"><code class="language-go">if true;
-{ // missing condition in if statement
+{ // unexpected newline, expecting { after if clause
 }
 
-for i := 0; i < 10; i++; // syntax error: missing { after for clause
+for i := 0; i < 10; i++; // unexpected newline, expecting { after for clause
 {
 }
 
@@ -128,6 +129,15 @@ var a = 1;
 </code></pre>
 </div>
 
+<p><i>
+(Before Go SDK 1.9, the error message may be <code>syntax error: missing { after for clause</code>.)
+</i></p>
+
+<p>
+Please read <a href="semicolon.html">semicolon insertion and line break</a> for more information.
+</p>
+
+<!---
 <div>
 The line break rules defined in Go spec is some academic and hard to grasp fully.
 Here is a simple and clear alternative for this rule.
@@ -136,11 +146,13 @@ It is not equivalent to but it also doesn't collide with the official one:
 The last effective token of each incomplete code line should be a binary operator
 or any of <code>{[(,:=</code> (six symbol letters).
 </div>
+
 </div>
 
 <p>
 Personally I don't like the limitations made by this rule.
 </p>
+-->
 
 <p class="anchor" id="map-iteration-order"></p><h3>
 	Does Go runtime maintain the iteration orders for maps?
@@ -156,7 +168,7 @@ Please read <a href="https://blog.golang.org/go-maps-in-action#TOC_7.">Go maps i
 </p>
 
 <p class="anchor" id="compiler-field-padding"></p><h3>
-	Will Go compilers do padding to assure field alignments for struct types?
+	Will Go compilers do padding to ensure field alignments for struct types?
 </h3>
 
 <p>
@@ -192,7 +204,7 @@ Go specification makes <a href="https://golang.org/ref/spec#Size_and_alignment_g
 One of them is the alignment of a struct type is its largest alignment of its field types.
 So <code>T1</code> is also 8-byte aligned on AMD64 OS and 4-byte aligned on i386
 (same as type of <code>T1.b</code>, <code>int64</code>),
-and the official Go compiler will assure the size of values of a type is a multiple of the alignment guarantee of the type,
+and the official Go compiler will ensure the size of values of a type is a multiple of the alignment guarantee of the type,
 this is why there will be 6 bytes padded on AMD64 OS and 2 bytes
 padded on i386 OS at the end of <code>T1</code> values.
 </p>
@@ -238,7 +250,7 @@ for the struct value. The returned address may
 </p>
 
 <p>
-To avoid the problems, the Go official compiler will assure that taking the address of
+To avoid the problems, the Go official compiler will ensure that taking the address of
 the final field in a non-zero-sized struct will never return an address which beyonds
 the allocated memory block for the struct.
 The Go official compiler implements this by padding some bytes before the final zero-sized field
@@ -701,7 +713,7 @@ The two functions will both write a newline character in the end.
 
 <!--- type system -->
 
-<p class="anchor" id="incomparable-types"></p><h3>
+<p class="anchor" id="uncomparable-types"></p><h3>
 	Which types don't support comparisons?
 </h3>
 
@@ -714,10 +726,10 @@ Following types don't support comparisons:
 <li>function</li>
 </li>
 <li>
-struct types containing incomparable fields
+struct types containing uncomparable fields
 </li>
 <li>
-array types with incomparable elements
+array types with uncomparable elements
 </li>
 </ul>
 <p>
@@ -733,8 +745,9 @@ although map, slice and function types don't support comparisons,
 their values can be compared to the bare <code>nil</code> identifier.
 </li>
 <li>
-<a href="interface.html#comparison">comparing interface values</a>
-with incomparable dynamic types may panic at run time.
+<a href="interface.html#comparison">comparing two interface values</a>
+with will panic at run time if the two dynamic types of the two interface values
+are identical and uncomparable.
 </li>
 </ul>
 
@@ -1204,7 +1217,9 @@ difference between math/rand and crypto/rand
 * math/rand will create determinstic random sequence, good for games.
 * crypto/rand ..., good for auth, ...
 
-print/println vs fmt.Print/fmt.Println
+print/println vs fmt.Print/fmt.Println (merged into log.PrintXXX)
+=> compare print / fmt.Print / log.Print
+
 * print doesn't support some types
 * print doesn't exscape variable. Good to print addresses.
 * print may be not exist in later Go versions.
@@ -1267,7 +1282,7 @@ todo: need a full faq index page, for both official and unofficial faq.
 
 
 
-* incomparable types, why?
+* uncomparable types, why?
 
 	https://groups.google.com/forum/#!topic/golang-nuts/ajXzEM6lqJI
 
@@ -1360,5 +1375,9 @@ why isn't there a math.Round function?
 why Go doesn't support loop import like C++?
 just a tradeoff, one of many in Go.
 
+Why json marshal no output
+	fileds are not exported.
+
+Why are Go programmers often called gophers?
 -->
 

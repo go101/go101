@@ -435,6 +435,32 @@ And type compositions with all kinds of composite types in Go is kinda of generi
 
 </div>
 
+<h3>Function Names In One Package</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Names of declared functions can't be duplicated in one pacakge.
+</div>
+
+Exception:
+<div class="alert alert-success">
+There can be multiple functions declared with names as <code>init</code>.
+</div>
+
+<h3>Function Calls</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Functions can be called by user code.
+</div>
+
+Exception:
+<div class="alert alert-success">
+<code>init</code> functions can't be called by user code.
+</div>
+
 <h3>Functions Being Used As Values</h3>
 
 <div>
@@ -443,11 +469,16 @@ The basic rule:
 Declard functions can be used as function values.
 </div>
 
-Exception:
+Exception 1:
 <div class="alert alert-success">
 None of the built-in functions, which declared in the <code>builtin</code> and <code>unsafe</code>
 standard packages, can be used as function values,
 including the non-generic <code>panic</code> and <code>recover</code> functions.
+</div>
+
+Exception 2:
+<div class="alert alert-success">
+<code>init</code> functions can not be used as function values.
 </div>
 
 Example:
@@ -593,14 +624,14 @@ func main() {
 <div>
 The basic rule:
 <div class="alert alert-info">
-Comparing interface values with incomparable dynamic values will panic.
+Comparing interface values with uncomparable dynamic values will panic.
 </div>
 
 Exception:
 <div class="alert alert-success">
 If the dynamic types of two interface values are not the same one,
 then comparing them will never panic,
-even if either of the two dynamic values are incomparable.
+even if either of the two dynamic values are uncomparable.
 </div>
 
 Example:
@@ -612,7 +643,7 @@ func main() {
 	var x interface{} = s
 	var y interface{} = m
 	var z interface{} = nil
-	// The dynamic values of x and y are both incomparable.
+	// The dynamic values of x and y are both uncomparable.
 	//_ = x == x // will panic
 	//_ = y == y // will panic
 	_ = x == z // false, will not panic
@@ -677,7 +708,7 @@ Exception 2:
 The element index (order) will not be returned alongside of each iterated element when iterating channels.
 </div>
 
-Sugar:
+Exception 3:
 <div class="alert alert-success">
 Array pointers can also be ranged to iterate array elements.
 </div>
@@ -738,8 +769,7 @@ of interface values, it doesn't implement any interface type.
 import "fmt"
 
 func main() {
-	const x = 123 // for untyped constant x, its default type
-	              // is int, and it has many potential types.
+	const x = 123 // for untyped constant x, its default type is int.
 	
 	fmt.Printf("type of %v is %T \n", x, x) // type of 123 is int
 	
@@ -764,20 +794,23 @@ func main() {
 The basic rule:
 <div class="alert alert-info">
 Constant values never change.
+Constant can be assigned to variables.
 </div>
 
 Exception:
 <div class="alert alert-success">
-<code>iota</code> is a predeclared constant, its value will start from <code>0</code>
-and increase one line by line in a constant declaration group.
-</div>
-
+<code>iota</code> is a built-in constant predeclared as <code>0</code>,
+but its value is not constant. Its value will start from <code>0</code>
+and increase one line by line in a constant declaration group,
+though the increasements happen at compile time.
 And <code>iota</code> can only be used in constant declarations.
 It can't be used in variable declarations and many other places where
 general constants can show up.
 </div>
 
-<h3>Behavior Of Missing The OK Optional Return Value</h3>
+</div>
+
+<h3>Behaviors Of Missing The OK Optional Return Values</h3>
 
 <div>
 The basic rule:

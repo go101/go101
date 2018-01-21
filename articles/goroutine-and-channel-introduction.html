@@ -102,7 +102,7 @@ The new created goroutine will exit alongside the return of the function call.
 
 In the following example,
 <code>Hello</code> is printed in the main goroutine,
-whereas <code>Goodbye</code> is printed in a new created goroutine.
+meanwhile <code>Goodbye</code> is printed in a new created goroutine.
 The new goroutine is created in the main goroutine.
 Once the new goroutine starts, it will run with the main goroutine concurrently.
 <pre class="line-numbers"><code class="language-go">package main
@@ -263,6 +263,15 @@ func main() {
 
 <h3>Goroutine States</h3>
 
+<!---
+goroutine states
+* runnable
+  * running
+  * queuing
+* blocking
+not good, a sleeping is in queuing or running?
+-->
+
 <p>
 As the above channel examples have shown,
 a live goroutine may stay in (and switch between) two states,
@@ -311,7 +320,7 @@ As a blocking goroutine can only be unblocked by an action happens in other goro
 if all goroutines in a Go program are in blocking state,
 then all of they will stay in blocking state for ever.
 This can be viewed as an overall deadlock.
-For such case, the official Go runtime will crash the program.
+For such cases, the official Go runtime will crash the program.
 For example:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -329,12 +338,11 @@ func main() {
 The two goroutines both try to receive value from a channel,
 but no one sends values to the channel.
 so the program will crash with the following output:
-<pre class="output">
-fatal error: all goroutines are asleep - deadlock!
+<pre class="output"><code>fatal error: all goroutines are asleep - deadlock!
 
 goroutine 1 [chan receive]:
 ...
-</pre>
+</code></pre>
 </div>
 
 <h3>Goroutine Schedule</h3>
@@ -372,13 +380,8 @@ In fact, for the official Go runtime, this number determines the number of logic
 For the official Go runtime, before Go 1.5, the default value of this number is <code>1</code>,
 but since Go 1.5, the default value of this number is equal to
 the number of logical CPUs usable by the current running program.
+The default value (the number of logical CPUs) is the best choice for most programs.
 </p>
-
-<p><i>
-(Generally, the number of hyper threads claimed by a CPU model
-correponds the number of logic CPUs the model supports.
-For example, a 2-core-4-thread CPU supports four logic CPUs.)
-</i></p>
 
 <h3>The Cost Of Goroutines</h3>
 
@@ -418,11 +421,10 @@ when the statement is executed.
 
 For example, the following program will print three lines. Each line contains two numbers.
 Here is one possible output:
-<pre class="output">
-2 3
+<pre class="output"><code>2 3
 0 3
 1 3
-</pre>
+</code></pre>
 
 The first number at each line will be <code>0</code>, <code>1</code> and <code>2</code> respectively,
 though the orders of the three numbers might be not constant for every run.

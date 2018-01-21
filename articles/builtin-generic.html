@@ -67,23 +67,6 @@ func main() {
 
 <div>
 
-<pre class="line-numbers"><code class="language-go">**stuct{x bool}
-</code></pre>
-
-<p>
-The left <code>*</code> sign on the left indicates that this type is a pointer type.
-The whole right part <code>*stuct{x bool}</code> following the first <code>*</code>
-sign denotes another pointer type, which is the element type
-is a struct type <code>stuct{x bool}</code>.
-The struct type has one field with <code>bool</code> type.
-</p>
-
-</div>
-
-<h4>Example 3</h4>
-
-<div>
-
 <pre class="line-numbers"><code class="language-go">chan *[16]byte
 </code></pre>
 
@@ -140,6 +123,25 @@ func main() {
 
 </div>
 
+<h4>Example 3</h4>
+
+<div>
+
+<pre class="line-numbers"><code class="language-go">**struct{x map[string]int; y []int16; z func(int)(string, bool)}
+</code></pre>
+
+<p>
+The left <code>*</code> sign on the left indicates that this type is a pointer type.
+The whole right part <code>*stuct{x bool}</code> following the first <code>*</code>
+sign denotes another pointer type, which base type is a struct type.
+The struct type has three fields.
+The first field <code>x</code> is of a map type <code>map[string]int</code>,
+the second field <code>y</code> is of a slice type <code>[]int16</code>,
+and the third field <code>z</code> is of a function type <code>func(int)(string, bool)</code>.
+</p>
+
+</div>
+
 <h4>Example 4</h4>
 
 <div>
@@ -186,7 +188,7 @@ func main() {
 			for _, xfer := range transfers {
 				result = xfer(result)
 			}
-			fmt.Printf("   %s: %d \n", name, result)
+			fmt.Printf("   %v: %v \n", name, result)
 		}
 	}
 }
@@ -200,27 +202,39 @@ func main() {
 
 <pre class="line-numbers"><code class="language-go">type T []map[struct {
 	a int
-	b bool
+	b struct {
+		x string
+		y bool
+	}
 }]interface {
-	Build([]byte, struct{a int; b bool}) error
+	Build([]byte, struct{a int; b struct {x string; y bool}}) error
 	Update(dt float64)
 	Destroy()
 }
 </code></pre>
 
 <p>
-The startfing <code>[]</code> at the left most indicates this type is a slice type.
+The starting <code>[]</code> at the left most indicates this type is a slice type.
 The following <code>map</code> keyword shows the element type of the slice type is a map type.
-The <code>struct{a int; b bool}</code> literal enclosed in the <code>[]</code> following
-the <code>map</code> keyword is the key type, a struct type with two fields, of the map type.
+The struct type denoted by the struct literal enclosed in the <code>[]</code> following
+the <code>map</code> keyword is the key type of the map type.
 The element type of the map type is an interface type which specifies three methods.
+The key type, a struct type, has two field,
+one field <code>a</code> is of <code>int</code> type,
+and the other filed <code>b</code> is of another struct type
+<code>struct {x string; y bool}</code>.
 </p>
 
-To get a better readibility, we often use type declarations to composite
-a complex type in multiple steps.
-<pre class="line-numbers"><code class="language-go">type K = struct {
+To get a better readibility, we often decomposite such a type
+into multiple type declarations:
+<pre class="line-numbers"><code class="language-go">type B = struct {
+	x string
+	y bool
+}
+
+type K = struct {
 	a int
-	b bool
+	b B
 }
 
 type E = interface {
@@ -229,7 +243,7 @@ type E = interface {
 	Destroy()
 }
 
-type M map[K]E
+type T = []map[K]E
 </code></pre>
 
 </div>
@@ -268,4 +282,12 @@ it is just that they <a href="https://github.com/golang/go/issues/15292">haven't
 which will keep Go simple and clean yet.
 So, it is possible that Go 2 will support custom generic.
 </p>
+
+<!---
+type composition examples
+* chan chan chan in
+* func() func() func()
+* ....
+-->
+
 

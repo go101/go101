@@ -89,48 +89,75 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // pages
 //==================================================
 
+type Article struct {
+	Content, Title   template.HTML
+	TitleWithoutTags string
+	FileWithoutExt   string
+}
+
 var articleTemplate = parseTemplate("base", "article")
-var articleContents = func() map[string]template.HTML {
+
+var articleContents = func() map[string]Article {
 	path := rootPath + "articles/"
 	if files, err := filepath.Glob(path + "*.html"); err != nil {
 		log.Fatal(err)
 		return nil
 	} else {
-		contents := make(map[string]template.HTML, len(files))
+		contents := make(map[string]Article, len(files))
 		for _, f := range files {
-			contents[strings.TrimPrefix(f, path)] = ""
+			contents[strings.TrimPrefix(f, path)] = Article{}
 		}
 		return contents
 	}
 }()
 
-func retrieveArticleContent(article string, cachedIt bool) (template.HTML, error) {
-	html, present := articleContents[article]
+func retrieveArticleContent(file string, cachedIt bool) (Article, error) {
+	article, present := articleContents[file]
 	if !present {
-		return "", nil
+		return Article{}, nil
 	}
-	if html == "" {
-		content, err := ioutil.ReadFile(rootPath + "articles/" + article)
+	if article.Content == "" {
+		content, err := ioutil.ReadFile(rootPath + "articles/" + file)
 		if err != nil {
-			return "", err
+			return Article{}, err
 		}
-		html = template.HTML(content)
+		article.Content = template.HTML(content)
+		article.FileWithoutExt = strings.TrimSuffix(file, ".html")
+		retrieveTitlesForArticle(&article)
 		if cachedIt {
-			articleContents[article] = html
+			articleContents[file] = article
 		}
 	}
-	return html, nil
+	return article, nil
+}
+
+func retrieveTitlesForArticle(article *Article) {
+	const H1, _H1, MaxLen = "<h1>", "</h1>", 128
+	i := strings.Index(string(article.Content), H1)
+	if i >= 0 {
+		i += len(H1)
+		j := strings.Index(string(article.Content[i:i+MaxLen]), _H1)
+		if j >= 0 {
+			article.Title = article.Content[i:i+j]
+			k, tags, s := 0, [2]rune{'<', '>'}, make([]rune, 0, MaxLen)
+			for _, r := range article.Title {
+				if r == tags[k] {
+					k = (k+1) & 1
+				} else if k == 0 {
+					s = append(s, r)
+				}
+			}
+			article.TitleWithoutTags = string(s)
+		}
+	}
 }
 
 func (*Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file string) bool {
-	content, err := retrieveArticleContent(file, !isLocalRequest(r))
+	article, err := retrieveArticleContent(file, !isLocalRequest(r))
 	if err == nil {
-		article := map[string]interface{}{
-			"Content": content,
-			"File":    strings.TrimSuffix(file, ".html"),
-		}
 		page := map[string]interface{}{
 			"Article": article,
+			"Title":   article.TitleWithoutTags,
 		}
 		if err = articleTemplate.Execute(w, page); err == nil {
 			return true

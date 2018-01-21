@@ -51,7 +51,7 @@ where
 <li>
 	<code>K</code> is an arbitrary comparable type.
 	It specifies the key type of a map type.
-	Most types in Go are comparable, incomparable types are
+	Most types in Go are comparable, uncomparable types are
 	<a href="conversions-assignments-and-comparisons.html#comparison-rules">listed here</a>.
 </li>
 </ul>
@@ -154,7 +154,7 @@ are zero values of the element type of the array type.
 </p>
 
 <p>
-Zero values of all slice and map types are represented by <code>nil</code> literally.
+Zero values of all slice and map types are represented by the predeclared <code>nil</code>.
 </p>
 
 <p><i>
@@ -209,8 +209,8 @@ func main() {
 </div>
 
 <p><i>
-(BTW, function types are also incomparable types.
-About more incomparable types, please read
+(BTW, function types are also uncomparable types.
+About more uncomparable types, please read
 <a href="conversions-assignments-and-comparisons.html#comparison-rules">this article</a>.)
 </i></p>
 
@@ -565,6 +565,10 @@ func main() {
 }	
 </code></pre>
 
+<p>
+todo: in fact []T{} is a shorthand of tmp := T{}; tmp[:]
+</p>
+
 Please note, the derived slice may be not a subslice of the source slice.
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -908,195 +912,6 @@ The address of the first element of an array must be
 the same as the address of the array, this is not true for slices.
 </p>
 
-<h3>Copy Slice Element Segments</h3>
-
-<p>
-The built-in <code>copy</code> is used to copy some consecutive elements
-from one slice to another.
-The two slice arguments passed to a <code>copy</code> call
-should be of the same slice type.
-The first argument is the destination slice, the second is the source slice.
-The destination and soure slices can share a segment of elements.
-The return value is the number of copied elements,
-which will be the minimum of lengths of the destination and soure slices.
-</p>
-
-<div>
-Example:
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	src := []int{5, 6, 7, 8}
-	dest := make([]int, 6)
-	n := copy(dest, src)
-	fmt.Println(dest, n) // [5 6 7 8 0 0] 4
-	n = copy(dest[4:], dest)
-	fmt.Println(dest, n) // [5 6 7 8 5 6] 2
-	
-	// We can make use of array dericed slices
-	// to copy array elements.
-	a0 := [4]int{5, 6, 7, 8}
-	a1 := [6]int{}
-	copy(a1[:], a0[:])
-	copy(a1[4:], a1[:])
-	fmt.Println(a1) // [5 6 7 8 5 6]
-}
-</code></pre>
-</div>
-
-<p><i>
-(If the first argument passed to a <code>copy</code> call is of type <code>[]byte</code>,
-then the second argument can be a string.
-Please read <a href="string.html">Strings In Go</a> for details.)
-</i></p>
-
-<h3>Modify The Length And Capacity Of A Slice Individually</h3>
-
-<p>
-Generally, the length and capacity of a slice value can't be modified individually.
-A slice value can only be overwritten as a whole by assigning another slice value to it.
-However we can modify the length and capacity of a slice individually by using reflections.
-</p>
-
-<div>
-Example:
-<pre class="line-numbers"><code class="language-go">package main
-
-import (
-	"fmt"
-	"reflect"
-)
-
-func main() {
-	s := make([]int, 2, 6)
-	fmt.Println(len(s), cap(s)) // 2 6
-	
-	// The argument passed to SetLen must be in
-	// range from 0 to cap(s) inclusive.
-	reflect.ValueOf(&s).Elem().SetLen(3) // 3 6
-	fmt.Println(len(s), cap(s))
-	
-	// The argument passed to SetCap must be in
-	// range from len(s) to cap(s) inclusive.
-	reflect.ValueOf(&s).Elem().SetCap(5)
-	fmt.Println(len(s), cap(s)) // 3 5
-}
-</code></pre>
-<p>
-The argument passed to <code>SetLen</code> must not be larger than
-the current capacity of the slice <code>s</code>.
-The argument passed to <code>SetCap</code> must not be smaller than
-the current length of the slice <code>s</code> and larger than
-the current capacity of the slice <code>s</code>.
-</p>
-</div>
-
-<h3>Slice Manipulations (Delete And Insert)</h3>
-
-todo: this section depends on range, so need to move down some sections.
-
-<p>
-Above has mentioned that we can remove a key-element pair from a map
-by calling the <code>delete</code> function,
-but how to remove an element from a slice?
-There is not a built-in function to do this.
-But it is not very verbose to implement it from scratch.
-</p>
-
-<div>
-Above here mentioned that slice elements must be stored continuously in memroy
-and there must not be gaps between any two adjacent elements of a slice.
-So when a slice element is removed,
-<ul>
-<li>
-	if the element orders must be preserved,
-	then each of the subsequent elements followed the removed element must be moved forwards.
-</li>
-<li>
-	if the element orders don't need to be preserved,
-	then we can move the last element in the slice to the removed index.
-</li>
-</ul>
-
-<p><i>
-(In following examples, assume <code>s</code> is the talked slice,
-<code>T</code> is the element type and <code>t0</code> is a zero value of <code>T</code>.)
-</i></p>
-
-Here are possible implementaions (
-assume <code>i</code> the index of the element to be removed and <code>i</code> is a valid index):
-<pre class="line-numbers"><code class="language-go">// Preserve index orders.
-s = append(s[:i], s[i+1:]...) // <=> s = s[:i + copy(s[i:], s[i+1:])]
-s[len(s):len(s)+1][0] = t0 // This line is to avoid memory leaking.
-                   // It is not essentail if the last element
-                   // of s doesn't contain pointers.
-
-// Index orders are not preserve.
-s[i] = s[len(s)-1]
-s[len(s)-1] = t0 // not essentail if s[len(s)-1] doesn't contain pointers.
-s = s[:len(s)-1]
-</code></pre>
-<p>
-</p>
-</div>
-
-<div>
-How to delete a segment of elements from a slice? One implementation:
-<pre class="line-numbers"><code class="language-go">// Assume both from and to index are valid.
-// (The to index is exclusive.)
-s = append(s[:from], s[to:]...)
-// If elements contain pointers, more work needs to be done,
-// to avoid potential memory leaking.
-s2 := s[len(s):len(s)+to-from]
-for i := range s2 {
-	s2[i] = t0
-}
-// The above loop will be optmized as a memclr call
-// by the officail Go compiler.
-</code></pre>
-<p>
-</p>
-</div>
-
-<div>
-Clone a slice (also shown in one of above example):
-<pre class="line-numbers"><code class="language-go">sClone := append([]T(nil), s...)
-</code></pre>
-<p>
-</p>
-</div>
-
-<div>
-Insert all elements of a slice (assume it is called <code>elements</code>) into another one:
-<pre class="line-numbers"><code class="language-go">// Assume elements are inserted before the <b>i</b><i>th</i> element.
-// The simple way (but may be not efficient).
-s = append(s[:i], append(elements, s[i:]...)...)
-
-// The efficient way.
-if len(s) + len(elements) < cap(s) {
-	copy(s[i:cap(s)][len(elements):], s[i:])
-	copy(s[i:], elements...)
-} else {
-	newS := make([]T, len(s) + len(elements))
-	copy(newS, s[:i])
-	copy(newS[i:], elements)
-	copy(newS[i+len(elements):], s[i:])
-	s = newS
-}
-</code></pre>
-
-If only one elemen, then the following way is preferred:
-<pre class="line-numbers"><code class="language-go">// Assume the inserted element is e.
-s = append(s, t0)
-copy(s[i+1:], s[i:])
-s[i] = e
-</code></pre>
-<p>
-</p>
-</div>
-
 <h3>Container Element Iterations</h3>
 
 <!---
@@ -1129,17 +944,17 @@ import "fmt"
 func main() {
 	m := map[string]int{"C": 1972, "C++": 1983, "Go": 2009}
 	for lang, year := range m {
-		fmt.Printf("%s: %d \n", lang, year)
+		fmt.Printf("%v: %v \n", lang, year)
 	}
 	
 	a := [...]int{2, 3, 5, 7, 11}
 	for i, prime := range a {
-		fmt.Printf("%d: %d \n", i, prime)
+		fmt.Printf("%v: %v \n", i, prime)
 	}
 	
 	s := []string{"go", "defer", "goto", "var"}
 	for i, keyword := range s {
-		fmt.Printf("%d: %s \n", i, keyword)
+		fmt.Printf("%v: %v \n", i, keyword)
 	}
 }
 </code></pre>
@@ -1396,6 +1211,245 @@ func main() {
 	fmt.Println(M) // 7
 }
 </code></pre>
+</div>
+
+<h3>Copy Slice Element Segments</h3>
+
+<p>
+The built-in <code>copy</code> is used to copy some consecutive elements
+from one slice to another.
+The two slice arguments passed to a <code>copy</code> call
+should be of the same slice type.
+The first argument is the destination slice, the second is the source slice.
+The destination and soure slices can share a segment of elements.
+The return value is the number of copied elements,
+which will be the minimum of lengths of the destination and soure slices.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	src := []int{5, 6, 7, 8}
+	dest := make([]int, 6)
+	n := copy(dest, src)
+	fmt.Println(dest, n) // [5 6 7 8 0 0] 4
+	n = copy(dest[4:], dest)
+	fmt.Println(dest, n) // [5 6 7 8 5 6] 2
+	
+	// We can make use of array dericed slices
+	// to copy array elements.
+	a0 := [4]int{5, 6, 7, 8}
+	a1 := [6]int{}
+	copy(a1[:], a0[:])
+	copy(a1[4:], a1[:])
+	fmt.Println(a1) // [5 6 7 8 5 6]
+}
+</code></pre>
+</div>
+
+<p><i>
+(If the first argument passed to a <code>copy</code> call is of type <code>[]byte</code>,
+then the second argument can be a string.
+Please read <a href="string.html">Strings In Go</a> for details.)
+</i></p>
+
+<h3>Modify The Length And Capacity Of A Slice Individually</h3>
+
+<p>
+Generally, the length and capacity of a slice value can't be modified individually.
+A slice value can only be overwritten as a whole by assigning another slice value to it.
+However we can modify the length and capacity of a slice individually by using reflections.
+</p>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	s := make([]int, 2, 6)
+	fmt.Println(len(s), cap(s)) // 2 6
+	
+	// The argument passed to SetLen must be in
+	// range from 0 to cap(s) inclusive.
+	reflect.ValueOf(&s).Elem().SetLen(3) // 3 6
+	fmt.Println(len(s), cap(s))
+	
+	// The argument passed to SetCap must be in
+	// range from len(s) to cap(s) inclusive.
+	reflect.ValueOf(&s).Elem().SetCap(5)
+	fmt.Println(len(s), cap(s)) // 3 5
+}
+</code></pre>
+<p>
+The argument passed to <code>SetLen</code> must not be larger than
+the current capacity of the slice <code>s</code>.
+The argument passed to <code>SetCap</code> must not be smaller than
+the current length of the slice <code>s</code> and larger than
+the current capacity of the slice <code>s</code>.
+</p>
+</div>
+
+<h3>More Slice Manipulations</h3>
+
+<p><i>
+(In the following examples in the current section, assume <code>s</code> is the talked slice,
+<code>T</code> is the element type and <code>t0</code> is a zero value of <code>T</code>.)
+</i></p>
+
+<h4>Delete Slice Elements</h4>
+
+<p>
+Above has mentioned that we can remove a key-element pair from a map
+by calling the <code>delete</code> function,
+but how to remove an element from a slice?
+There is not a built-in function to do this.
+But it is not very verbose to implement it from scratch.
+</p>
+
+<div>
+Above here mentioned that slice elements must be stored continuously in memroy
+and there must not be gaps between any two adjacent elements of a slice.
+So when a slice element is removed,
+<ul>
+<li>
+	if the element orders must be preserved,
+	then each of the subsequent elements followed the removed element
+	must be moved forwards.
+</li>
+<li>
+	if the element orders don't need to be preserved,
+	then we can move the last element in the slice to the removed index.
+</li>
+</ul>
+
+Here is two implementaions to preserve element orders
+(assume <code>i</code> the index of the element to be removed
+and <code>i</code> is a valid index):
+
+<pre class="line-numbers"><code class="language-go">// way 1:
+s = append(s[:i], s[i+1:]...)
+
+// way 2
+s = s[:i + copy(s[i:], s[i+1:])]
+</code></pre>
+
+<p>
+There will be <code>len(s)-i-1</code> elements being copied
+in either of the two implementaions.
+</p>
+
+If the element orders don't need to be preserved,
+we can use the following implementaion,
+which only copies one element.
+<pre class="line-numbers"><code class="language-go">s[i] = s[len(s)-1]
+s = s[:len(s)-1]
+</code></pre>
+
+If the slice elements contain pointers, after the deletion action,
+we should reset the last element of the old slice value
+to avoid memory leaking:
+<pre class="line-numbers"><code class="language-go">s[len(s):][0] = t0
+</code></pre>
+
+Deleting a segment of elements is alike
+(assume both <code>from</code> and <code>to</code> index are valid,
+<code>from</code> is not larger than <code>to</code>,
+<code>from</code> index is inclusive, and <code>to</code> index is exclusive):
+<pre class="line-numbers"><code class="language-go">// way 1 (preserve element orders):
+s = append(s[:from], s[to:]...)
+
+// way 2 (preserve element orders):
+s = s[:from + copy(s[from:], s[to:])]
+
+// Don't preserve element orders:
+copy(s[from:to], s[len(s)+from-to:])
+s = s[:len(s)+from-to]
+
+// If the slice elements contain pointers, we should reset
+// tail elements in the old slice to avoid memory leaking.
+// "len(s)+to-from" is the old length of s before the deletion.
+temp := s[len(s):len(s)+to-from]
+for i := range temp {
+	temp[i] = t0
+}
+</code></pre>
+
+<p>
+The <code>for-range</code> loop code block will be optmized as
+a <code>memclr</code> call by the officail Go compiler (see below).
+</p>
+
+<p>
+todo: how to removed elements in an iteration:
+* bad example: https://groups.google.com/forum/#!topic/Golang-nuts/QHfTKWvDsuA
+</p>
+
+<h4>Clone Slices</h4>
+
+The best way to clone a slice:
+<pre class="line-numbers"><code class="language-go">sClone := append([]T(nil), s...)
+</code></pre>
+
+The above way is much more efficient than
+<pre class="line-numbers"><code class="language-go">sClone := make([]T, len(s))
+copy(sClone, s)
+</code></pre>
+
+<h4>Insert Slice Elements</h4>
+
+If only one element will be inserted,
+here is an one-line implementation
+(assume the insertion postion is <code>i</code>
+and the inserted element is <code>e</code>):
+<pre class="line-numbers"><code class="language-go">s = append(s[:i], append([]T{e}, s[i:]...)...)
+</code></pre>
+
+The one-line implementation is much less efficient than the following one.
+The following one makes one less memory allocation than the above one-line implementation.
+<pre class="line-numbers"><code class="language-go">s = append(s, e) // or: s = append(s, t0)
+copy(s[i+1:], s[i:])
+s[i] = e
+</code></pre>
+
+If the insertion position is <code>0</code> (a.k.a., unshift or push front),
+we can use the one-line way:
+<pre class="line-numbers"><code class="language-go">s = append([]T{e}, s...)
+</code></pre>
+
+If the insertion position is at the end of the slice (a.k.a., push),
+then it is just a simple <code>append</code> call:
+<pre class="line-numbers"><code class="language-go">s = append(s, e)
+</code></pre>
+
+Inserting another slice (assume it is called <code>elements</code>) is alike:
+<pre class="line-numbers"><code class="language-go">// One-line (inefficient) implementation:
+s = append(s[:i], append(elements, s[i:]...)...)
+
+// The more efficient way:
+if len(s) + len(elements) <= cap(s) {
+	s = s[:len(s) + len(elements)]
+} else {
+	s = append(s, elements...)
+}
+copy(s[i+len(elements):], s[i:])
+copy(s[i:], elements)
+
+// Unshift:
+s = append(elements, s...)
+
+// Push:
+s = append(s, elements...)
+</code></pre>
+
 </div>
 
 <h3>Container Releated Opetaions Are Not Synchronized Interally</h3>

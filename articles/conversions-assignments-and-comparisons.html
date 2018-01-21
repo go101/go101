@@ -102,7 +102,8 @@ Given a non-interface value <code>x</code> and a non-interface type <code>T</cod
 </li>
 <li>
 	if <code>Tx</code> and <code>T</code> have different underlying types,
-	but both <code>Tx</code> and <code>T</code> are not defined pointer types
+	but both <code>Tx</code> and <code>T</code> are
+	<a href="type-system-overview.html#non-defined-type">non-defined</a> pointer types
 	and their base types share the same underlying type (ignoring struct tags),
 	then <code>x</code> can (and must) be explicitly converted to <code>T</code>.
 </li>
@@ -178,7 +179,7 @@ func main() {
 </code></pre>
 </div>
 
-<h4>2. Channel Specified Conversion Rule</h4>
+<h4>2. Channel Specific Conversion Rule</h4>
 
 <div class="well">
 If <code>Tx</code> is a bidirectional channel type, <code>T</code> is a channel type,
@@ -219,7 +220,7 @@ func main() {
 <h4>3. Implementation Related Conversion Rules</h4>
 
 <div class="well">
-Given a value <code>x</code> and an interface type <code>I</code>, assume the type of <code>x</code> is <code>Tx</code>, 
+Given a value <code>x</code> and an interface type <code>I</code>, assume the type (or the defaut type) of <code>x</code> is <code>Tx</code>, 
 if <code>Tx</code> implements <code>I</code>, then <code>x</code> can be <b>implicitly</b> converted to type <code>I</code>.
 The conversion result is an interface value (of type <code>I</code>), which stores
 <ul>
@@ -358,7 +359,8 @@ func main() {
 <h4>5. Untyped Value Conversion Rule</h4>
 
 <div class="well">
-An untyped value can be <b>implicitly</b> converted to any of its potential types.
+An untyped value can be <b>implicitly</b> converted to type <code>T</code>,
+if the untyped value can represent as values of type <code>T</code>.
 </div>
 
 <div>
@@ -373,9 +375,10 @@ func main() {
 	var _ *bool = nil
 	var _ interface{} = nil
 
-	var _ int = 123
+	var _ int = 123.0
 	var _ float64 = 123
-	var _ int32 = 123
+	var _ int32 = 1.23e2
+	var _ int8 = 1 + 0i
 }
 </code></pre>
 </div>
@@ -431,7 +434,7 @@ converted to any floating-point and integer types.
 </div>
 
 <div class="well">
-Complex non-constant values can be explicitly converted to any complex types.
+Non-constant complex values can be explicitly converted to any complex types.
 </div>
 
 <div>
@@ -469,7 +472,8 @@ and integer types means the types whose underlying types are the built-in intege
 </p>
 
 <div class="well">
-Values of integer types can be explicitly converted to string types.
+If the type (or default type) of a value is an interger type,
+then the value can be explicitly converted to string types.
 </div>
 
 <div class="well">
@@ -536,8 +540,9 @@ if one can be implicitly converted to the type of the other.
 </div>
 
 <div>
+The above rule doesn't cover all circumstances.
 What about if both of the two operands in a comparison are untyped constant values?
-The rules are simple:
+The additional rules are simple:
 <ul>
 <li>
 untyped bool values can be compared with untyped bool values;
@@ -560,22 +565,22 @@ Any comparison in Go results an untyped bool value.
 
 <p class="anchor" id="comparisons-restrictions"></p>
 <div>
-Besides the above rules, currently (Go 1.9), there are some restrictions for comparisons:
+Currently (Go 1.9), there are some restrictions for the above comparison rules:
 <ul>
 <li>
 map, slice and function types don't support comparison
 (but values of these types can be compared to the bare <code>nil</code> identifier).
 </li>
 <li>
-any struct type with a field whose type is incomparable
-and any array type which element type is incomparable also doesn't support comparison.
+any struct type with a field whose type is uncomparable
+and any array type which element type is uncomparable also doesn't support comparison.
 </li>
 <li>
-bare <code>nil</code> identifiers can't be compared with each other. 
+bare <code>nil</code> identifiers (untyped <code>nil</code> values) can't be compared with each other. 
 </li>
 <li>
 if the dynamic types of the two interface values
-are the same type, and the same dynamic type is incomparable,
+are the same type, and the same dynamic type is uncomparable,
 then comparing the two interface values will panic at run time.
 </li>
 </ul>
@@ -604,7 +609,7 @@ func main() {
 	_ = f == nil
 
 	// Type T also doesn't support comparison,
-	// for it contains one incomparable field.
+	// for it contains one uncomparable field.
 	type T struct {
 		s []int
 		n int

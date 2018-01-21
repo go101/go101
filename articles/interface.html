@@ -9,7 +9,7 @@ https://books.google.com.sg/books?id=oowq_6bAgloC&pg=PA586&lpg=PA586&dq=golang+c
 Interface types are one special kind of types in Go.
 Interface kind plays several important roles in Go.
 Firstly, interface types make Go support value boxing.
-Consequently, through value boxing, reflection and polymorphism get supported by Go.
+Consequently, through value boxing, reflection and polymorphism get supported.
 </p>
 
 <p>
@@ -36,7 +36,7 @@ The order of the method signatures in a method set is not important for the meth
 </p>
 
 <div>
-Some examples of method signarutes:
+Some examples of method signatures:
 <pre class="line-numbers"><code class="language-go">About() string
 DoFilte([]int) []int
 IsEqualTo(Comparable) bool // Comparable is a custom type.
@@ -46,8 +46,8 @@ IsEqualTo(Comparable) bool // Comparable is a custom type.
 <h3>What Are Interface Types?</h3>
 
 <p>
-Each interface type specifies a collection of method signatures.
-In other words, each interface type defines as a method set.
+An interface type specifies a collection of method signatures.
+In other words, each interface type is defined (and can be viewed) as a method set.
 For any of the method signature specified by an interface type,
 its name can't be the blank identifier <code>_</code>.
 </p>
@@ -74,7 +74,7 @@ type Comparable interface {
 Please note that the <code>error</code> result type in the method signatures
 declared by the <code>ReadWriter</code> type is
 <a href="https://golang.org/pkg/builtin/#error">a built-in interface type</a>.
-It is decalred as
+It is defined as
 <pre class="line-numbers"><code class="language-go">type error interface {
         Error() string
 }
@@ -100,7 +100,7 @@ Each type has a method set associated with it.
 </li>
 <li>
 	For a non-interface type, its method set is the signature collection of
-	all the methods defined, either explicitly or implicitly, for the non-interface type.
+	all the methods declared, either explicitly or implicitly, for the non-interface type.
 </li>
 </ul>
 </div>
@@ -228,7 +228,7 @@ and it is immutable.
 </p>
 
 <p>
-In Go, the zero values of any interface type are represented by <code>nil</code> literally.
+In Go, the zero values of any interface type are represented by the predeclared <code>nil</code>.
 Nothing is boxed in <code>nil</code> interface values.
 Assign <code>nil</code> to an interface value will clear the dynamic value
 boxed in the interface value.
@@ -392,7 +392,7 @@ func (UniqueFilter) Process(inputs []int) []int {
 // multiples of the MultipleFilter as an integer.
 type MultipleFilter int
 func (mf MultipleFilter) About() string {
-	return fmt.Sprintf("keep multiples of %d", mf)
+	return fmt.Sprintf("keep multiples of %v", mf)
 }
 func (mf MultipleFilter) Process(inputs []int) []int {
 	var outs = make([]int, 0, len(inputs))
@@ -436,8 +436,7 @@ func main() {
 </code></pre>
 
 The output:
-<pre class="output">
-before filtering:
+<pre class="output"><code>before filtering:
 	 [12 7 21 12 12 26 25 21 30]
 remove diplicated numbers:
 	 [12 7 21 26 25 30]
@@ -445,7 +444,7 @@ keep multiples of 2:
 	 [12 26 30]
 keep multiples of 3:
 	 [12 30]
-</pre>
+</code></pre>
 
 <p>
 In the above example, polymorphism makes it is unnecessary to
@@ -652,28 +651,38 @@ which dynamic type is <code>T</code> is equivalent to the method call of <code>i
 <div>
 </div>
 
-<h4>Type Switch</h4>
+<h4>Type Switch Control Flow Block</h4>
 
-<p>
+<div>
+
 The type swtich syntax may be the weirdest syntax in Go.
 It can be viewed as the enhanced version of type assertion.
-</p>
-
-<p>
-In a type swtich block, zero or more case branches can be present.
-An optional <code>default</code> branch is also allowed in a type swtich block.
-Like general switch blocks, if the <code>default</code> branch is present,
-it can be the last branch, the first branch, or a middle branch.
-</p>
+A type switch block looks like:
+<pre class="line-numbers"><code class="language-go">switch v := x.(type) {
+case TypeA:
+	...
+case TypeB, TypeC:
+	...
+case nil:
+	...
+default:
+	...
+}
+</code></pre>
 
 <p>
 The <code>case</code> keywords in a type swtich block can be followed by
 a <code>nil</code> identifier, one or more type names and type literals.
 None of such items can follow more than one <code>case</code> keywords
-in the same type swtich block.
+at the same time in the same type swtich block.
 </p>
 
-<div>
+<p>
+If the type denoted by a type name or type literal following a <code>case</code> keyword
+in a type swtich block is not an interface type, then it
+must implement the interface type of the interface value followed by <code>.(type)</code>.
+</p>
+
 Here is an example of type switch:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -714,8 +723,7 @@ func main() {
 </code></pre>
 
 The output:
-<pre class="output">
-number: 456
+<pre class="output"><code>number: 456
 string: abc
 others: true
 number: 0.33
@@ -723,7 +731,7 @@ number: 789
 int slice: [1 2 3]
 others: map[]
 &lt;nil&gt;
-</pre>
+</code></pre>
 
 The above example is equalenvent to the following one:
 <pre class="line-numbers"><code class="language-go">package main
@@ -762,17 +770,12 @@ func main() {
 Some details about type switch:
 <ul>
 <li>
-	<code>fallthrough</code> statement can't be used within 
-	the <code>case</code> branch blocks of a type swtich block.
+	unlike general switch blocks, <code>fallthrough</code> statement can't be used within 
+	branch blocks of a type swtich block.
 </li>
 <li>
-	the assertion return value following the <code>switch</code> keyword
-	can be ignored if we don't care about it (<code>swtich x.(type) {...}</code>).
-</li>
-<li>
-	unlike general type assertions, the type assertion following
-	the <code>switch</code> keyword can return most one value.
-	The form <code>swtich v, ok := x.(type) {...}</code> is illegal.
+	like general switch blocks, if the <code>default</code> branch is present,
+	it can be the last branch, the first branch, or a middle branch.
 </li>
 <li>
 	like general switch blocks,
@@ -781,10 +784,14 @@ Some details about type switch:
 	For example, <code>switch x := f(); v := x.(type) {...}</code>.
 </li>
 <li>
-	the form <code>switch v := v.(type) {...}</code> is common used in Go programming.
-	Here, the first <code>v</code> is a new declared variable in the type switch
-	code block, it shadows the second <code>v</code>, which is an interface variable
-	declared before entering the type switch code block.
+	if we don't care about the assertion value in a type switch,
+	we can use the short form <code>swtich x.(type) {...}</code> instead.
+</li>
+<li>
+	like general switch blocks,
+	zero or more branches can be present in a type swtich block.
+	A type switch block without branches, <code>switch a.(type) {}</code>,
+	is a no-op at run time.
 </li>
 </ul>
 </div>
@@ -796,9 +803,9 @@ Some details about type switch:
 
 <div>
 In Go, an interface type can embed another named interface type.
-The final effect is the same as unfolding the method signarutes
-specified by the embedded interface type into definition body of
-the embedding interface type.
+The final effect is the same as unfolding the method signatures
+specified by the embedded interface type into the definition body
+of the embedding interface type.
 For example, given the following two named interface types:
 <pre class="line-numbers"><code class="language-go">type Ia interface {
 	fa()
@@ -877,7 +884,7 @@ The steps of comparing two interface values (with the <code>==</code> operator).
 	<ul>
 	<li>
 		if the same dynamic type is an
-		<a href="conversions-assignments-and-comparisons.html#comparison-rules">incomparable type</a>,
+		<a href="conversions-assignments-and-comparisons.html#comparison-rules">uncomparable type</a>,
 		then panic.
 	</li>
 	<li>
@@ -967,6 +974,48 @@ func main() {
 		iw = append(iw, w)
 	}
 	fmt.Println(iw...) // compiles okay
+}
+</code></pre>
+</div>
+
+<h4>Each Method Specified In An Interface Type Corresponds An Implicit Function</h4>
+
+<div>
+
+<p>
+For each method with name <code>m</code>
+in the method set defined by an interface type <code>I</code>,
+compiler will implicitly declare a function named <code>I.m</code>,
+which has one more input parameter, of type <code>I</code>, than method <code>m</code>.
+The extra parameter is the first input parameter of function <code>I.m</code>.
+A call to the function <code>I.m(i, ...)</code>
+is equivalent to the method call <code>i.m(...)</code>.
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type I interface {
+	m(int)bool
+}
+
+type T string
+func (t T) m(n int) bool {
+	return len(t) > n
+}
+
+func main() {
+	var i I = T("gopher")
+	fmt.Println (i.m(5))                         // true
+	fmt.Println (I.m(i, 5))                      // true
+	fmt.Println (interface {m(int)bool}.m(i, 5)) // true
+	
+	// The following lines compile okay, but will panic at run time.
+	I(nil).m(5)
+	I.m(nil, 5)
+	interface {m(int)bool}.m(nil, 5)
 }
 </code></pre>
 </div>

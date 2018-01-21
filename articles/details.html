@@ -379,7 +379,7 @@ excluding the <code>nil</code> interface value but including the interface value
 
 func main() {
 	var i interface{} = []int{} // slice types doesn't support comparison
-	_ = i == i // panic: runtime error: comparing incomparable type []int
+	_ = i == i // panic: runtime error: comparing uncomparable type []int
 }
 </code></pre>
 <p>
@@ -1341,7 +1341,7 @@ embed c code in Go
 		#include <stdio.h>
 
 		void foo(int x) {
-		printf("x: %d\n", x);
+		printf("x: %v\n", x);
 		}
 		*/
 		import "C"
@@ -1382,6 +1382,7 @@ https://groups.google.com/forum/#!topic/golang-nuts/J3kXXZivlHA
 
 https://github.com/golang/go/issues/21256#issuecomment-321322952
 a Go program without main entry function can run okay.
+may not okay since 1.10: https://github.com/golang/go/issues/21256#event-1354711695
 
 
 type D = d
@@ -1402,4 +1403,56 @@ but struct{x D} and struct{x d} are two identical types.
 
 
 https://github.com/golang/go/issues/22619
+
+Sometimes, () us required.
+	func main() {
+		type T struct{}
+		var t T
+		if (T{}) == t {
+		}
+		if t == (T{}) {
+		}
+	}
+	more ...
+
+named pointer types selector rules.
+* https://github.com/golang/go/issues/21738
+
+two value created by erros.New() are not equal.
+
+https://github.com/golang/go/issues/22974
+	the results of constant operations are still constants
+
+https://github.com/golang/go/issues/22961
+	boolean flag is some different
+
+it is ok to import a package multiple times.
+
+    type B bool
+    var b B
+    func f() {
+	    switch { // typed "bool"
+	    case b: // invalid case b in switch (mismatched types B and bool)
+	    }
+    }
+    type B bool
+    var i interface{} = B(true)
+    func main() {
+	    switch { // typed "bool"
+	    case i: println("case")
+	    default: println("default")
+	    }
+    }
+    
+    https://github.com/golang/go/issues/18424
+    package main
+    import "fmt"
+    func main() {
+        s := "a"
+        x := []rune(s)
+        fmt.Println(cap([]rune(s))) // 32
+        fmt.Println(cap(x))         // 2
+        fmt.Println(x) // if no this line, the outputs of the above two line are same.
+                       // The reason is x is this line makes x escap to heap.
+    }
 -->

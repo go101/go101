@@ -18,6 +18,8 @@ show which code lines still need checking bounds.
 </p>
 
 <h3>Example 1</h3>
+
+<div>
 <pre class="line-numbers"><code class="language-go">// example1.go
 package main
 
@@ -57,13 +59,13 @@ $ go build -gcflags="-d=ssa/check_bce/debug=1" example1.go
 
 <p>
 We can see that there is no needs to do bounds check for line 12 and line 13 in function f2, 
-for the bounds check at line 11 assures that the indexes in line 12 and line 13 will not be out of range.
+for the bounds check at line 11 ensures that the indexes in line 12 and line 13 will not be out of range.
 </p>
 
 <p>
 But in function f1, bounds check must be performed for all three lines.
-The bounds check at line 5 can't assure line 6 and line 7 are safe, 
-and the bounds check at line 6 can't assure line 7 is safe.
+The bounds check at line 5 can't ensure line 6 and line 7 are safe, 
+and the bounds check at line 6 can't ensure line 7 is safe.
 </p>
 
 <p>
@@ -73,8 +75,11 @@ For function f3, Go 1.7+ compiler knows the second s[index] is absolutely safe i
 <p>
 Go 1.7+ compiler also correctly thinks the only line (line 22) in function f4 is safe.
 </p>
+</div>
 
 <h3>Example 2</h3>
+
+<div>
 <pre class="line-numbers"><code class="language-go">// example2.go
 package main
 
@@ -134,8 +139,11 @@ Go 1.7+ compiler is so smart to make the conclusion that all lines in function f
 <p>
 Aha, maybe it is still not smart enough as human being, it looks line 22 is also safe.
 </p>
+</div>
 
 <h3>Example 3</h3>
+
+<div>
 <pre class="line-numbers"><code class="language-go">// example3.go
 package main
 
@@ -179,7 +187,7 @@ Oh, so many places still need to do bounds check!
 </p>
 
 <p>
-But wait, why does the Go 1.7+ compiler think line 10 is safe but line 15 and line 23 are not?
+But wait, why does the Go official compiler 1.7+ think line 10 is safe but line 15 and line 23 are not?
 Is the compiler still not smart enough or is it a bug?
 </p>
 
@@ -202,7 +210,7 @@ func main() {
 	
 	// So, this line is no problem.
 	_ = s0[:index]
-	// But, above line is safe can't assure the following line is also safe.
+	// But, above line is safe can't ensure the following line is also safe.
 	// In fact, it will panic.
 	_ = s0[index:] // panic: runtime error: slice bounds out of range
 }
@@ -213,38 +221,31 @@ So the statement <b>if s[:index] is safe then s[index:] is also safe</b> is only
 This is why the code lines in function fb and fc of example 3 still need to do bounds check.
 </p>
 <p>
-Go 1.7+ compiler successfully detects len(s) == cap(s) in function fa.
+Go official compiler 1.7+ successfully detects <code>len(s) == cap(s)</code> in function fa.
 Great work! Go team!
 </p>
 
-<p>
-However, it looks the statement <b>if s[index:] is safe then s[:index] is also safe</b> is always true.
-</p>
+</div>
 
 <h3>Example 4</h3>
+
+<div>
 <pre class="line-numbers"><code class="language-go">// example4.go
 package main
 
 import "math/rand"
 
-func fa2() {
-	s := []int{0, 1, 2, 3, 4, 5, 6}
-	index := rand.Intn(7)
-	_ = s[index:] // line 9: bounds check 
-	_ = s[:index] // line 10: bounds check eliminatd!
-}
-
 func fb2(s []int, index int) {
-	_ = s[index:] // line 14: bounds check
-	_ = s[:index] // line 15: bounds check // not smart enough?
+	_ = s[index:] // line 7: bounds check
+	_ = s[:index] // line 8: bounds check // not smart enough?
 }
 
 func fc2() {
 	s := []int{0, 1, 2, 3, 4, 5, 6}
 	s = s[:4]
 	index := rand.Intn(7)
-	_ = s[index:] // line 22: bounds check 
-	_ = s[:index] // line 23: bounds check eliminatd!
+	_ = s[index:] // line 15 bounds check 
+	_ = s[:index] // line 16: bounds check eliminatd!
 }
 
 func main() {}
@@ -253,19 +254,30 @@ func main() {}
 <pre>
 $ go build -gcflags="-d=ssa/check_bce/debug=1" example4.go
 # command-line-arguments
-./11.go:9: Found IsSliceInBounds
-./11.go:14: Found IsSliceInBounds
-./11.go:15: Found IsSliceInBounds
-./11.go:22: Found IsSliceInBounds
+./a.go:7:7: Found IsSliceInBounds
+./a.go:15:7: Found IsSliceInBounds
 </pre>
 
-<p>
-In this example, The official Go compiler successfully concludes line 23 is also safe if line 22 is safe in function fc2,
-but fails to conclude line 15 is also safe if line 14 is safe in function fb2.
-</p>
+In this example, The official Go compiler successfully concludes
+<ul>
+<li>
+	line 8 is also safe if line 8 is safe in function fc2.
+</li>
+<li>
+	line 16 is also safe if line 15 is safe in function fc1.
+</li>
+</ul>
+
+<p><i>
+(Before Go SDK 1.9, the official Go compiler failed to
+detect line 16 doesn't need bounds check.)
+</i></p>
+
+</div>
 
 <h3>Example 5</h3>
 
+<div>
 Although the current version of the official Go compiler is still not smart enough to eliminate some unneccessary bounds checkings, 
 but we can make some hints to help the compiler eliminate these unneccessary bounds checkings.
 
@@ -282,7 +294,7 @@ func fd(is []int, bs []byte) {
 
 func fd2(is []int, bs []byte) {
 	if len(is) >= 256 {
-		is = is[:256] // line 14: bounds check. A hint for the compiler.
+		is = is[:256] // line 14: a trick to avoid bounds check at line 16.
 		for _, n := range bs {
 			_ = is[n] // line 16: bounds check eliminatd! 
 		}
@@ -299,7 +311,7 @@ func fe(isa []int, isb []int) {
 
 func fe2(isa []int, isb []int) {
 	if len(isa) > 0xFFF {
-		isa = isa[:0xFFF+1] // line 31: bounds check. A hint for the compiler.
+		isa = isa[:0xFFF+1] // line 31: a trick to avoid bounds check at line 33.
 		for _, n := range isb {
 			_ = isa[n & 0xFFF] // line 33: bounds check eliminatd! 
 		}
@@ -316,7 +328,7 @@ func ff(s []int) []int {
 
 func ff2(s []int) []int {
 	s2 := make([]int, len(s))
-	s2 = s2[:len(s)] // line 48: bounds check. A hint for the compiler.
+	s2 = s2[:len(s)] // line 48: bounds check. (To avoid bounds check at line 50.)
 	for i := range s {
 		s2[i] = -s[i] // line 50: bounds check eliminatd! 
 	}
@@ -330,12 +342,11 @@ func main() {}
 $ go build -gcflags="-d=ssa/check_bce/debug=1" example5.go
 # command-line-arguments
 ./11.go:7: Found IsInBounds
-./11.go:14: Found IsSliceInBounds
 ./11.go:24: Found IsInBounds
-./11.go:31: Found IsSliceInBounds
 ./11.go:41: Found IsInBounds
 ./11.go:48: Found IsSliceInBounds
 </pre>
+</div>
 
 <h3>Summary</h3>
 

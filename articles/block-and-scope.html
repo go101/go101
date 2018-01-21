@@ -32,7 +32,7 @@ In a Go project, there are four kinds of code blocks:
 </li>
 </ul>
 
-There are some exceptions and details for local blocks:
+Some keywords will open some implicit code blocks.
 <ul>
 <li>
 	the input parameters and output results of a function are viewed as being
@@ -41,16 +41,18 @@ There are some exceptions and details for local blocks:
 	the pair of braces.
 </li>
 <li>
-	each <code>if</code>, <code>switch</code> and <code>for</code> keyword
+	an <code>if</code>, <code>switch</code> or <code>for</code> keyword
 	will open two nested local blocks. One is implicit, the other is explicit.
 	The explicit one is nested in the implicit one.
-	The variables declared with short declaration forms in the statements closely
-	following the <code>if</code>, <code>switch</code> and <code>for</code> keywords
-	are declared in the implicit block.
+	The variables declared with short declaration forms in the simple statements closely
+	following the <code>if</code>, <code>switch</code> or <code>for</code> keyword
+	is declared in the implicit block.
 </li>
 <li>
-	an <code>else</code> keyword will open one explicit block, which is nested
-	in the implicit block opened by its <code>if</code> counterpart keyword.
+	an <code>else</code> keyword will open one explicit or implicit block,
+	which is nested in the implicit block opened by its <code>if</code> counterpart keyword.
+	If the <code>else</code> keyword is followed by another <code>if</code> keyword,
+	then the code block opened by the <code>else</code> keyword is implicit.
 </li>
 <li>
 	each <code>case</code> and <code>default</code> keyword opens one implicit block,
@@ -60,7 +62,8 @@ There are some exceptions and details for local blocks:
 </ul>
 
 <p>
-The local blocks which aren't nested in any other local blocks are called top level local blocks.
+The local blocks which aren't nested in any other local blocks are called top level
+(or package level) local blocks.
 Top level local blocks are all function bodies.
 </p>
 </div>
@@ -219,11 +222,11 @@ some special protions in all kinds of implicit local blocks have special require
 	</ul>
 </li>
 <li>
-if the innermost function blocks of two label declarations are the same one,
+if the innermost containing function blocks of the two label declarations are the same one,
 then the names of two labels can't be duplicated.
 </li>
 <li>
-except labels, if the innermost blocks of two declared identifiers are the same one,
+except labels, if the innermost containing blocks of two declared identifiers are the same one,
 then the two identifiers can't be identical.
 </li>
 </ul>
@@ -392,7 +395,7 @@ the <code>x</code>s declared in shallower blocks.
 
 import "fmt"
 
-var p0, p1, p2, p3 *int
+var p0, p1, p2, p3, p4, p5 *int
 var x = 9999 // x#0
 
 func main() {
@@ -403,9 +406,14 @@ func main() {
 		p2 = &x
 		x := x - 70 //  // x#3
 		p3 = &x
+		if x := x - 3; x > 0 { // x#4
+			p4 = &x
+			x := -x // x#5
+			p5 = &x
+		}
 	}
 	
-	fmt.Println(*p0, *p1, *p2, *p3) // 9999 888 77 6
+	fmt.Println(*p0, *p1, *p2, *p3, *p4, *p5) // 9999 888 77 6 3 -3
 }
 </code></pre>
 
@@ -432,7 +440,8 @@ func parseInt(s string) (int, error) {
 		}
 		// If exection goes here, a nil error is expected to be
 		// returned. But in fact, the outer non-nil error will be
-		// returned.
+		// returned. The scope of the inner "err" ends at the end
+		// of the if clause.
 		if b {
 			n = 1
 		}
@@ -445,6 +454,11 @@ func main() {
 	fmt.Println(parseInt("TRUE"))
 }
 </code></pre>
+
+<p>
+Sometimes, some variables might be shadowed unexpectedly.
+We can use the <code>go vet -shadow</code> command to list possible mis-shadowings.
+</p>
 
 Go only has <a href="keywords-and-identifiers.html#keyword">25 keywords</a>.
 Keywords can't be used as identifiers.

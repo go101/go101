@@ -28,7 +28,7 @@ and is 2<sup>34</sup>GB (16 exibytes) on 64-bit architectures.
 </p>
 
 <p>
-Memory addresses are often represented with hex number form literally,
+Memory addresses are often represented with hex number form in literal,
 such as <code>0x1234CDEF</code>.
 </p>
 
@@ -37,7 +37,7 @@ such as <code>0x1234CDEF</code>.
 At run time, many values are stored somewhere in memory.
 Each of such values has a direct part, some of them have indirect parts.
 Each value part will occupy a continuous memory segment.
-<b>The address of such a value</b> means the start memory address of
+The address of a value means the start memory address of
 the memory segment occupied by the direct part of the value.
 </p>
 
@@ -65,10 +65,9 @@ In daily programming, we often call an address as a pointer, and vice versa.
 Unlike C, Go is a type safe language.
 However, it is possible to do some type unsafe operations in Go,
 through the mechanisms provided by the <code>unsafe</code> standard package.
-This article will not explain the unsafe mechanisms,
-<a href="unsafe.html">this article</a> will.
+The current article will not explain the unsafe mechanisms.
 Here just to make a clarification that the remainder of this article
-assumes no unsafe ways are involved unless otherwise indicated.
+assumes no unsafe ways are involved, unless otherwise indicated.
 </p>
 
 <h3>Go Pointer Types And Values</h3>
@@ -88,6 +87,9 @@ then they are the same type.
 We can define named pointer types,
 but generally this is not recommended.
 Unnamed pointer types have better readabilities than named ones.
+</p>
+
+<p>
 If the underlying type of a named pointer type is <code>*T</code>,
 then the base type of the named pointer tyoe is <code>T</code>.
 About what is underlying type,
@@ -96,7 +98,7 @@ please read <a href="type-system.html#underlying-type">this article</a>.
 
 <p>
 The value of a pointer type is called a pointer value,
-particularly a value of a type whose underlying type is <code>*T</code>
+in particular, a value of a type whose underlying type is <code>*T</code>
 can be called a <code>T</code> pointer.
 </p>
 
@@ -107,12 +109,8 @@ a value of type <code>T</code> by compilers.
 </p>
 
 <p>
-Zero values of any pointer types are represented with <code>nil</code> literally.
+Zero values of any pointer types are represented with the predeclared <code>nil</code>.
 No addresses are stored in <code>nil</code> pointer values.
-</p>
-
-<p>
-Pointer types are all comparable types.
 </p>
 
 <div>
@@ -124,32 +122,55 @@ type IntPtr *int // IntPtr is a pointer type whose underlying type is *int.
 </code></pre>
 </div>
 
-<h3>How To Get A Pointer Value?</h3>
+<h3>How To Get A Pointer Value And What Are Addressable Values?</h3>
+
+<div>
+There are two ways to get a non-nil pointer value.
+<ol>
+<li>
+	The built-in <code>new</code> function can be used to allocate memory for a value
+	of any type. <code>new(T)</code> will allocate memory for a <code>T</code> value
+	and return the address of the <code>T</code> value.
+	The allocated value is a zero value of type <code>T</code>.
+	The returned address can be viewed as a pointer value of type <code>*T</code>.
+</li>
+<li>
+	We can also take the addresses of some values in Go.
+	Values can be taken addresses are called addressable values.
+	For an addressable value <code>t</code> of type <code>T</code>,
+	we can use the expression <code>&amp;t</code> to
+	take the address of <code>t</code>,
+	where <code>&amp;</code> is the operator to take value addresses.
+	The type of <code>&amp;t</code> can be viewed
+	as a pointer value of type <code>*T</code>.
+</li>
+</ol>
+</div>
 
 <p>
-The built-in <code>new</code> function can be used to allocate memory for a value
-of any type. <code>new(T)</code> will allocate memory for a <code>T</code> value
-and return the address of the <code>T</code> value.
-The allocated value is a zero value of type <code>T</code>.
-The returned address can be viewed as a pointer value of type <code>*T</code>.
+All variables are addressable and all constants are unaddressable.
+The fields of an addressable struct value are also addressable.
+Not all values stored in memory at run time are addressable in Go.
+We can learn other adressable and unadressable values from other articles later.
+If you have already been familar with Go, you can read 
+<a href="summaries.html#not-addressable">this summary</a> to get
+the lists of adressable and unadressable values in Go.
 </p>
 
 <p>
-We can also take the address of an addressable value <code>t</code> of type <code>T</code>
-with the expression <code>&amp;t</code>,
-where <code>&amp;</code> is an operator to take value addresses.
-The type of <code>&amp;t</code> can be viewed as a pointer value of type <code>*T</code>.
+Although addressable values can be modified, their addressess are immutable.
 </p>
 
 <p>
-All variable values are addressable, and their addressess are immutable.
-</p>
-
-<p>
-Examples of how to get pointer values will be shown in the next section.
+The next section will show an example which demos
+how to get pointer values.
 </p>
 
 <h3>Pointer Dereference</h3>
+
+<p>
+Pointer dereference is the inverse process of address taking.
+</p>
 
 <p>
 Given a pointer value <code>p</code> of type <code>T<sub>p</sub></code>,
@@ -179,8 +200,11 @@ func main() {
 	p2 := &x // also take address of x
 	fmt.Println(p1 == p2) // true
 	
-	p3 := &*p0
+	p3 := &*p0 // same as: &(*p0)
 	fmt.Println(p0 == p3) // true
+	
+	y := *&x // same as : *(&x)
+	fmt.Println(y == x) // true
 }
 </code></pre>
 </div>
@@ -227,6 +251,9 @@ each parernt node needs to be referenced by its two children nodes
 }
 </code></pre>
 
+<p>
+</p>
+
 Each argument in a function call will be assigned (copied) to its correspinding parameter.
 That argument and its correspinding parameter are two different values located at different addresses.
 So any modifications on the parameter will not be reflected on that passed argument.
@@ -237,39 +264,62 @@ then we can pass the address (a.k.a, a pointer) of the value to a pointer parame
 
 import "fmt"
 
-func DoubleA(x int) {
-	// The modification on the parameter will not be
-	// reflected to the outside of the function.
-	x = 2 * x
+type Book struct {
+	Pages int
 }
 
-func DoubleB(x *int) {
-	// The modification on the referenced value will be
+func DoublePageA(book Book) {
+	// The modification on the parameter will not be
 	// reflected to the outside of the function.
-	*x = 2 * (*x)
+	book.Pages *= 2
+}
+
+func DoublePageB(book *Book) {
+	// The modification on the value referenced by the parameter
+	// will be reflected to the outside of the function.
+	book.Pages *= 2
 
 	// However, the modification on the parameter itself
 	// will not be reflected to the outside of the function.
-	x = new(int)
+	book = nil
 }
 
 func main () {
-	a := 3
-	DoubleA(a)
-	fmt.Println(a) // 3
-	p := &a
-	DoubleB(p)
-	fmt.Println(a) // 6
-	fmt.Println(p == &a) // print true. 
-	                     // p is not modified by the call to DoubleB.
+	book := Book{Pages: 100}
+	DoublePageA(book)
+	fmt.Println(book.Pages) // still 100
+	p := &book
+	DoublePageB(p)
+	fmt.Println(book.Pages) // 200
+	fmt.Println(p == nil)   // print false. p is not modified.
 }
 </code></pre>
 </div>
 
 <p>
-Some popular languages have not the pointer concept.
-However, pointers are just hidden under other concepts (such as reference) in those languages.
+Some popular languages have no the pointer concept.
+However, pointers are just hidden under other concepts in those languages.
 </p>
+
+<h3>Compisite Literals Are Unaddressable But Can Be Taken Addresses</h3>
+
+<div>
+Generally, only addressable values can be taken addresses.
+But there is a syntax sugar in Go, which allows us to
+take addesses on compisite literals.
+A syntax sugar is an exception in syntax to make programming convinient.
+For example,
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	type Book struct {
+		Pages int
+	}
+	p := &Book{100} // Book{100} is unaddressable but can be taken address
+	p.Pages = 200
+}
+</code></pre>
+</div>
 
 <h3>Return Pointers Of Local Variables Is Safe In Go</h3>
 
@@ -443,7 +493,8 @@ which are listed above.
 
 <p>
 As the start of this article has mentioned,
-the mechanisms provided by the <code>unsafe</code> standard package
+the mechanisms provided by <a href="unsafe.html">the
+<code>unsafe</code> standard package</a>
 can be used to break the restrictions made for pointers in Go.
 But, generally, the unsafe ways are not recommended.
 </p>
