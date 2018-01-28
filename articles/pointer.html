@@ -15,7 +15,8 @@ This artcile will list all kinds of concepts and details related to pointers in 
 <h3>Memory Addresses</h3>
 
 <p>
-A memory address means a distance (number of bytes) from the start point of the whole memory.
+A memory address means an offset (number of bytes) from the start point of
+the whole memory managed by a system (generally, operation system).
 </p>
 
 <p>
@@ -28,84 +29,73 @@ and is 2<sup>34</sup>GB (16 exibytes) on 64-bit architectures.
 </p>
 
 <p>
-Memory addresses are often represented with hex number form in literal,
+Memory addresses are often represented with hex integer literals,
 such as <code>0x1234CDEF</code>.
 </p>
 
-<h3>The Address Of A Value</h3>
+<h3>Value Addresses</h3>
+
 <p>
-At run time, many values are stored somewhere in memory.
-Each of such values has a direct part, some of them have indirect parts.
-Each value part will occupy a continuous memory segment.
-The address of a value means the start memory address of
-the memory segment occupied by the direct part of the value.
+The address of a value means the start address of the memory segment
+occupied by the <a href="type-system-overview.html#value-part">direct part</a>
+of the value.
 </p>
 
-<p><i>
-(About which values may have indirect parts, you can read
-<a href="underlying-values.html">Underlying Values In Go</a> for details later.)
-</i></p>
+<p>
+The next article, <a href="value-part.html">value parts</a>,
+will introduce values of which kinds of types may
+have indirect underlying parts.
+</p>
 
 <h3>What Are Pointers?</h3>
 
 <p>
-A pointer is a special value, which can storage a memory address,
-Generally, the stored memory address is an address of another value.
-In Go, for safety reason, there are some restrictions made for pointers.
+A pointer is a special value, which can storage a memory address.
+In fact, we often call a memory address as a pointer, and vice versa.
+</p>
+
+<p>
+Generally, the stored memory address in a pointer
+is the address of another value.
+Unlike C language, for safety reason,
+there are some restrictions made for Go pointers.
 Please read the following sections for details.
-</p>
-
-<p>
-In daily programming, we often call an address as a pointer, and vice versa.
-</p>
-
-<h3>About The <code>unsafe</code> Standard Package</h3>
-
-<p>
-Unlike C, Go is a type safe language.
-However, it is possible to do some type unsafe operations in Go,
-through the mechanisms provided by the <code>unsafe</code> standard package.
-The current article will not explain the unsafe mechanisms.
-Here just to make a clarification that the remainder of this article
-assumes no unsafe ways are involved, unless otherwise indicated.
 </p>
 
 <h3>Go Pointer Types And Values</h3>
 
+<div>
 <p>
-Same as C langauge, a pointer type can be represented with <code>*T</code>,
-where <code>T</code> is an arbitrary type.
+Same as C langauge, an unnamed pointer type can be represented with <code>*T</code>,
+where <code>T</code> can be an arbitrary type.
 Type <code>T</code> is called the base type of pointer type <code>*T</code>.
 </p>
 
 <p>
-If two unnamed pointer types have the same base type,
-then they are the same type.
-</p>
-
-<p>
-We can define named pointer types,
+We can declare named pointer types,
 but generally this is not recommended.
 Unnamed pointer types have better readabilities than named ones.
 </p>
 
 <p>
-If the underlying type of a named pointer type is <code>*T</code>,
-then the base type of the named pointer tyoe is <code>T</code>.
-About what is underlying type,
-please read <a href="type-system.html#underlying-type">this article</a>.
+If the <a href="type-system.html#underlying-type">underlying type</a>
+of a defined pointer type is <code>*T</code>,
+then the base type of the defined pointer type is <code>T</code>.
 </p>
 
 <p>
-The value of a pointer type is called a pointer value,
-in particular, a value of a type whose underlying type is <code>*T</code>
-can be called a <code>T</code> pointer.
+Two non-defined pointer types with the same base type are the same type.
 </p>
 
+Example:
+<pre class="line-numbers"><code class="language-go">*int  // A unnamed pointer type whose base type is int.
+**int // A multi-level unnamed pointer type whose base type is *int.
+
+type Ptr *int // Ptr is a defined pointer type whose base type is int.
+type PP *Ptr  // PP is a defined pointer type whose base type is Ptr.
+</code></pre>
+
 <p>
-The value located at the address stored in a pointer value of a type
-whose underlying type is <code>*T</code> will be always viewed as
-a value of type <code>T</code> by compilers.
 </p>
 
 <p>
@@ -113,13 +103,14 @@ Zero values of any pointer types are represented with the predeclared <code>nil<
 No addresses are stored in <code>nil</code> pointer values.
 </p>
 
-<div>
-Example:
-<pre class="line-numbers"><code class="language-go">*int  // A pointer type whose base type is int.
-**int // A multi-level pointer type whose base type is a pointer type *int.
-type IntPtr *int // IntPtr is a pointer type whose underlying type is *int.
-                 // Its base type is int.
-</code></pre>
+<p>
+A pointer value of a pointer type whose base type is <code>T</code>
+can be called a <code>T</code> pointer.
+The value located at (the address stored in) a non-nil
+<code>T</code> pointer will be always viewed as
+a value of type <code>T</code> by compilers.
+</p>
+
 </div>
 
 <h3>How To Get A Pointer Value And What Are Addressable Values?</h3>
@@ -132,7 +123,7 @@ There are two ways to get a non-nil pointer value.
 	of any type. <code>new(T)</code> will allocate memory for a <code>T</code> value
 	and return the address of the <code>T</code> value.
 	The allocated value is a zero value of type <code>T</code>.
-	The returned address can be viewed as a pointer value of type <code>*T</code>.
+	The returned address is viewed as a pointer value of type <code>*T</code>.
 </li>
 <li>
 	We can also take the addresses of some values in Go.
@@ -141,8 +132,7 @@ There are two ways to get a non-nil pointer value.
 	we can use the expression <code>&amp;t</code> to
 	take the address of <code>t</code>,
 	where <code>&amp;</code> is the operator to take value addresses.
-	The type of <code>&amp;t</code> can be viewed
-	as a pointer value of type <code>*T</code>.
+	The type of <code>&amp;t</code> is viewed as <code>*T</code>.
 </li>
 </ol>
 </div>
@@ -158,18 +148,18 @@ the lists of adressable and unadressable values in Go.
 </p>
 
 <p>
-Although addressable values can be modified, their addressess are immutable.
+Although addressable values can be modified,
+their addressess are immutable in their respective lifetime.
 </p>
 
 <p>
-The next section will show an example which demos
-how to get pointer values.
+The next section will show how to get pointer values.
 </p>
 
 <h3>Pointer Dereference</h3>
 
 <p>
-Pointer dereference is the inverse process of address taking.
+
 </p>
 
 <p>
@@ -177,11 +167,13 @@ Given a pointer value <code>p</code> of type <code>T<sub>p</sub></code>,
 how to get the value at the address stored in the pointer?
 Just use the expression <code>*p</code>, where <code>*</code> is called dereference operator.
 <code>*p</code> is call the dereference of poiner <code>p</code>.
+Pointer dereference is the inverse process of address taking.
 The result of <code>*p</code> is a value of the base type of <code>T<sub>p</sub></code>.
 </p>
 
 <div>
-Example:
+The following programm shows some address taking
+and pointer dereference examples:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -212,20 +204,11 @@ func main() {
 <h3>About The Word "Reference"</h3>
 
 <p>
-The word <b><i>reference</i></b> in Go world is a big mess.
-It brings many confusions to Go community.
-Here this article tries to clarify the definition of this word.
-</p>
-
-<p>
-In Go specification, the word <b><i>reference</i></b> indicates a relation.
-It is either a verb or an action noun, instead of a qualifier.
+In Go 101, the word "reference" means indicates a relation.
 For example, if a pointer value storages the address of another value,
 then we can say the pointer value (directly) references the other value,
 and the other value has at least one reference.
-If a <a href="struct">struct</a>/<a href="golang-container.html">container</a>
-value has a pointer field/element which references another value,
-then we can also say the struct/container value (indirectly) references the other value.
+The uses of the word "reference" in Go 101 are consistent with Go specification.
 </p>
 
 <h3>Why Do We Need Pointers?</h3>
@@ -254,10 +237,10 @@ each parernt node needs to be referenced by its two children nodes
 <p>
 </p>
 
-Each argument in a function call will be assigned (copied) to its correspinding parameter.
-That argument and its correspinding parameter are two different values located at different addresses.
+Each argument in a function call will be assigned (copied)
+to the correspinding parameter of the function.
 So any modifications on the parameter will not be reflected on that passed argument.
-Sometimes we expect the modifications made by a function on a value
+Sometimes we expect the modifications made in a function on a value
 to be reflected to the outside of the function body,
 then we can pass the address (a.k.a, a pointer) of the value to a pointer parameter of the function.
 <pre class="line-numbers"><code class="language-go">package main
@@ -287,17 +270,17 @@ func DoublePageB(book *Book) {
 func main () {
 	book := Book{Pages: 100}
 	DoublePageA(book)
-	fmt.Println(book.Pages) // still 100
+	fmt.Println(book.Pages) // still 100. (book is not modified in DoublePageA)
 	p := &book
 	DoublePageB(p)
-	fmt.Println(book.Pages) // 200
-	fmt.Println(p == nil)   // print false. p is not modified.
+	fmt.Println(book.Pages) // print 200. (book is modified in DoublePageB)
+	fmt.Println(p == nil)   // print false. (p is not modified in DoublePageB)
 }
 </code></pre>
 </div>
 
 <p>
-Some popular languages have no the pointer concept.
+Some popular languages have not the pointer concept.
 However, pointers are just hidden under other concepts in those languages.
 </p>
 

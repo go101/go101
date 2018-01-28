@@ -1,0 +1,372 @@
+﻿<h1>Value Parts</h1>
+
+<p>
+The articles following the currrent one will introduce more kinds of Go types.
+Before reading those articles, 
+To easily and deeply understand those articles, it is best to read
+the following content in the currrent article firstly
+before reading those articles.
+In other words, we should know there are two categories of Go types.
+</p>
+
+<h3>Two Categories Of Go Types</h3>
+
+<p>
+Go is a C-family language, which can be confirmed from
+the two previous articles <a href="struct.html">structs in Go</a>
+and <a href="pointer.html">pointers in Go</a>.
+Struct types and pointer types in Go and C are much alike.
+The main characteristic of C types is the memory layouts of their values
+are transparent. Each C value in memory occupies one continuous memory segment.
+</p>
+
+<p>
+One the other hand, Go can also be viewed as C language framework.
+This is mainly reflected in the fact that Go supports sone kinds of types
+whose value memory layouts are not totally transparent.
+Each values of the these kinds of types is often composed of one direct part
+and one or several underlying indirect parts.
+These kinds of types bring much convenience to Go programming 
+by encapsulating many implementation details.
+Different Go compilers may adopt different internal implementations
+for these types, but the external behaviors of values of these types
+must satisfy the requirements specified in Go specification.
+</p>
+
+<p>
+The above two paragraphs describe two categories of Go types.
+Types in the two categories are listed in the following two paragraphs.
+</p>
+
+<p>
+Up to now, except string types,
+all other kinds of types introduced in the previous artciles are C alike.
+These types include boolean types, numeric types, struct types and pointer types.
+The other two kinds of C alike types are
+array types and unsafe pointer types.
+Array types will be explained in the next article
+and unsafe pointer types will be explained in the article
+<a href="unsafe.html">the <code>unsafe</code> standard package</a> later.
+</p>
+
+<div>
+Values of all other kinds of types not mentioned in the last paragraph
+may contain underlying parts.
+Specifically speaking, these kinds of types include
+<ul>
+<li>slice types,</li>
+<li>map types,</li>
+<li>channel types,</li>
+<li>function types,</li>
+<li>interface types,</li>
+<li>string types.</li>
+</ul>
+</div>
+
+<p><i>
+(Note, whether or not interface and string values may contain underlying parts
+is compiler dependent. For the official Go compiler, interface and string
+values may contain underlying parts.)
+</i></p>
+
+<p>
+The types in the second category are not fundamental types for a langauge,
+we can implement them from scratch by using the types in the first category.
+However, the implementations would be quite verbose and sometimes boring. 
+By encapsulating some common or unique functionalities and
+supporting these types as the first-level citizens in Go,
+the experiences of Go programming become enjoyable and productive.
+</p>
+
+<p>
+On the other hand, these encapsulations of implementations of the types
+in the second category hide many internal definitions of these types.
+This prevents Go programmers from viewing the whole pictures of these types,
+and makes some obstables to understanding Go better sometimes.
+</p>
+
+<p>
+The following content of this article will introduce the internal
+structure definitions of the kinds of types in the second category.
+Knowing these internal structures is very helpful in understanding Go values.
+The detailed implementations of these types will not be explained here.
+The explanations in this article are based on, but not exactly same as,
+the implementations by the official Go compiler.
+</p>
+
+<h3>Two Kinds Of Pointer Types In Go</h3>
+
+<p>
+Before showing the internal structure definitions of the kinds of types
+in the second category, let's clarify more on pointers and references.
+</p>
+
+<p>
+We have learned <a href="pointer.html">Go pointers</a> in the last article.
+The pointer types in that article are type-safe pointer types.
+In fact, Go also supports type-unsafe pointer types.
+The <code>unsafe.Pointer</code> type provided in the <code>unsafe</code>
+standard package is like <code>void*</code> in C language.
+Types whose underlying types are <code>unsafe.Pointer</code>
+are called unsafe pointer types in Go 101.
+</p>
+
+<p>
+In other articles in Go 101, if not special specified,
+when a pointer type is mentioned, it means a type-safe pointer type.
+However, iIn the following parts of the current article,
+when a pointer type is mentioned,
+it may be either a type-safe pointer type or a type-unsafe pointer type.
+</p>
+
+<div>
+A pointer value stores a memory address of another value,
+unless the pointer value is a <code>nil</code> pointer.
+We can say the pointer value references the other value,
+or the other value is referenced by the pointer value.
+Values can also be referenced indirectly.
+<ul>
+<li>
+	If a struct value <code>a</code> has a pointer field <code>b</code>
+	which references a value <code>c</code>, then we can say the struct
+	value <code>a</code> also (indirectly) references value <code>c</code>.
+</li>
+<li>
+	If a value <code>x</code> references (either directly or indirectly)
+	a value <code>y</code>, and the value <code>y</code> references
+	(either directly or indirectly) a value <code>z</code>,
+	then we can also say the value <code>x</code> (indirectly)
+	references value <code>z</code>.
+</li>
+</ul>
+</div>
+
+<p>
+A struct type with fields of pointer types
+can be called a <b>pointer wrapper type</b>.
+A struct type with fields of pointer wrapper type
+call also be called a pointer wrapper type.
+</p>
+
+<h3>Internal Definitions Of The Types In The Second Category</h3>
+
+<p>
+The internal definitions of the types in the second category are shown below.
+</p>
+
+<h4>Internal Definitions Of Map, Channel And Function Types</h4>
+
+<div>
+The internal definitions of map, channel and function types are similar:
+<pre class="line-numbers"><code class="language-go">// map types
+type _map *hashtableImpl // currently, for the official Go compiler,
+                         // Go maps are hashtables actually.
+
+// channel types
+type _channel *channelImpl
+
+// function types
+type _function *functionImpl
+</code></pre>
+<p>
+So, internally, types of the three families are just pointer types.
+The zero values of these types are all represented
+by the predeclared <code>nil</code> identifier.
+For any non-nil value of these types,
+its direct part (a pointer) references
+its indirect underlying implementation part.
+</p>
+
+<p>
+In fact, the indirect underlying part of a value of any channel or function type
+may also reference deeper indirect underlying parts.
+But this article views the deeper ones and first level indirect one
+as one whole indirect part.
+</p>
+
+</div>
+
+<h4>Internal Definition Of Slice Types</h4>
+
+<div>
+The internal definition of slice types is like:
+<pre class="line-numbers"><code class="language-go">// slice types
+type _slice struct {
+	elements unsafe.Pointer // underlying elements
+	len      int            // number of elements
+	cap      int            // capacity
+}
+</code></pre>
+
+<p>
+So, internally, slice types are pointer wrapper struct types.
+The zero values of slice types are also represented
+by the predeclared <code>nil</code> identifier.
+Each non-nil slice value has an indirect underlying part
+which stores the element values of the slice value.
+The <code>elements</code> field of the direct part references
+the indirect underlying part of the slice value.
+</p>
+</div>
+
+<h4>Internal Definition Of String Types</h4>
+
+<div>
+Below is the internal definition for string types:
+<pre class="line-numbers"><code class="language-go">// string types
+type _string struct {
+	elements *byte // underlying bytes
+	len      int   // number of bytes
+}
+</code></pre>
+<p>
+So string types are also pointer wrapper struct types internally.
+The zero values of string types are blank strings, which are represented by
+<code>""</code> or <code>``</code> in literal.
+Each string value has an indirect underlying part storing
+the bytes of the string value, the indirect part is referenced
+by the <code>elements</code> field of that string value.
+</p>
+</div>
+
+<p class="anchor" id="interface-structure"></p>
+<h4>Internal Definition Of Interface Types</h4>
+
+<div>
+Below is the internal definition for general interface types:
+<pre class="line-numbers"><code class="language-go">// general interface types
+type _interface struct {
+	dynamicType  *_type         // the dynamic type
+	dynamicValue unsafe.Pointer // the dynamic value
+}
+</code></pre>
+
+<p>
+Internally, interface types are also pointer wrapper struct types.
+The internal definition of an interface type has two pointer fields.
+The zero values of interface types are also represented
+by the predeclared <code>nil</code> identifier.
+Each non-nil interface value has two indirect underlying parts
+which store the dynamic type and dynamic value of that interface value.
+The two indirect parts are referenced by the <code>dynamicType</code>
+and <code>dynamicValue</code> fields of that interface value.
+</p>
+
+In fact, for the official Go compiler, the above definition is only used
+for blank interface types.
+Blank interface types are the interface types which don't specify any methods.
+We can learn more about interfaces in the article
+<a href="interface.html">interfaces in Go</a> later.
+For non-blank interface types, a definition like the following one is used.
+
+<pre class="line-numbers"><code class="language-go">// general interface types
+type _interface struct {
+	dynamicTypeInfo *struct {
+		dynamicType *_type       // the dynamic type
+		methods     []*_function // implemented methods
+	}
+	dynamicValue unsafe.Pointer // the dynamic value
+}
+</code></pre>
+
+<p>
+The <code>methods</code> field of the <code>dynamicTypeInfo</code> field
+of an interface value stores the implemented methods of the dynamic type
+of the interface value for the (interface) type of the interface value.
+Go runtime will create most one dynamic type information struct for
+each interface type and dynamic type pair.
+For the official Go runtime, the dynamic type information struct values
+will be never garbaged collected once it is created.
+</p>
+
+</div>
+
+<h3>Underlying Value Parts Are Not Copied In Value Assignments</h3>
+
+<p>
+Now we have learned that the internal definitions of the types
+in the second category are either pointer types or struct types.
+Certainly, Go compilers will never view the types in the second category
+as pointer types or struct types in user programs.
+These definitions are just used internally by Go runtimes.
+They are the types of the direct parts of multi-part values in Go.
+</p>
+
+<p>
+In Go, each value assignment (including parameter passing, etc) is
+a shallow value copy if the involved destination and source values
+have the same type (if their types are different, the source value will be
+implicitly converted to the destination type before doing that assignment).
+In other words, only the direct part of the soruce value is copied
+in an value assignment.
+This means in a pointer or pointer wrapper value assignment,
+only the memory address(es) of the referenced value part(s) are copied,
+the indirect referenced value part(s) themselves are not copied.
+In other words, the destination pointer or pointer wrapper value will
+reference the same indirect value part(s) referenced by
+the source pointer or pointer wrapper value after the assignment.
+</p>
+
+<p>
+In fact, the above description is not 100% correct in theory.
+The <a href="https://golang.org/doc/faq#pass_by_value">official Go FAQ</a> says
+the underlying dynamic value part of an interface value should be copied
+as well when the interface value is copied.
+However, as the dynamic value of an interface value is read only,
+the official Go compiler/runtime doesn't copy the underlying
+dynamic value parts in copying interface values.
+This can be viewed as a compiler optimization.
+The same situation is for string values and the same optimization is made for
+copying string values, by the official Go compiler/runtime.
+In other words, for the official Go compiler/runtime,
+the indirect underlying parts will never be copied in copying any value.
+</p>
+
+<p>
+Since an indirect underlying part may not belong to any value exclusively,
+it doesn't contribute to the size returned by the <code>unsafe.Sizeof</code> function.
+</p>
+
+<p class="anchor" id="more=about-reference"></p>
+<h3>About The "Reference Type" And "Reference Value" Terminologies</h3>
+
+<div>
+The word <b><i>reference</i></b> in Go world is a big mess.
+It brings many confusions to Go community.
+Some articles, including some <a href="https://golang.org/doc/faq#references">official ones</a>,
+use <b><i>reference</i></b> as qualifiers of types and values,
+or treat <b><i>reference</i></b> as the opposite of <b><i>value</i></b>.
+This is strongly not recommended in Go 101.
+I really don't want to dispute on this point.
+Here I just list some absolutely misuses of <b><i>reference</i></b>:
+<ul>
+<li>
+	only slice, map, channel and function types are reference types in Go.
+	(If we do need the <b><i>reference type</i></b> terminology in Go,
+	then we shouldn't exclude any custom pointer and pointer wrapper types
+	from reference types).
+</li>
+<li>
+	references are opposites of values.
+	(If we do need the <b><i>reference value</i></b> terminology in Go,
+	then please view reference values as special values, instead of
+	opposites of values.)
+</li>
+<li>
+	some parameters are passed by reference.
+	(Sorry, all parameters are passed by copy in Go.)
+</li>
+</ul>
+
+<p>
+I don't mean the <b><i>reference type</i></b> or <b><i>reference value</i></b>
+terminologies are totally useless for Go,
+I just think they are not very essential.
+If we do need these terminologies, I prefer to define them as
+pointers and pointer wrappers.
+However, my personal opinion is it is best to limit the <b><i>reference</i></b>
+word to only representing relations, and never use it as qualifiers.
+This will avoid many confusions in leaning, teaching and using Go.
+</p>
+</div>
+

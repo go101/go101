@@ -98,7 +98,7 @@ chan<- T
 <p>
 Each of above mentioned basic and composite types corresponds
 one kind of type. Besides these type kinds,
-the type <code>unsafe.Pointer</code> introduced in the
+the type type-unsafe <code>unsafe.Pointer</code> type introduced in the
 <a href="https://golang.org/pkg/unsafe"><code>unsafe</code>
 standard package</a> is also one kind of type in Go.
 </p>
@@ -131,7 +131,7 @@ type (
 </code></pre>
 
 <p>
-New type names must be identifiers, 
+New type names must be identifiers,
 so a new defined type must be a named type,
 except the new type name is the blank identifier <code>_</code>.
 </p>
@@ -149,7 +149,7 @@ Note,
 	are two distinct types.
 </li>
 <li>
-	two different defined named types are always two distinct types. 
+	two different defined named types are always two distinct types.
 </li>
 <li>
 	the new defined type and the source type will share the same
@@ -256,7 +256,7 @@ So a named type must be either a defined type or an alias type.
 
 <p>
 By the above declarations, <code>Ta</code> and <code>Tb</code> are both
-aliases of type <code>[]int</code>. 
+aliases of type <code>[]int</code>.
 In other words, they and <code>[]int</code> denote the same type.
 The same relations are for <code>map[string]int</code>, <code>tc</code> and <code>Td</code>.
 </p>
@@ -285,7 +285,7 @@ Type alias declarations are much useful in refactoring large Go projects.
 <h3>Concept: Named Types vs. Unnamed Types</h3>
 
 <div>
-In Go, 
+In Go,
 <ul>
 <li>
 	if a type has a name, which must be an identifier, and its name is not
@@ -359,7 +359,7 @@ Examples:
 <pre class="line-numbers"><code class="language-go">// The underlying types of the following ones are all int.
 type (
 	MyInt int
-	Age   MyInt // for the underlying type of MyInt is int, 
+	Age   MyInt // for the underlying type of MyInt is int,
 	            // the underlying type of Age is also int.
 )
 
@@ -374,8 +374,8 @@ type (
 type Ages AgeSlice
 </code></pre>
 
-How to trace to the underlying type for a given user defined type? 
-The rule is when a built-in basic type, <code>unsafe.Pointer</code> or an unnamed type is met, 
+How to trace to the underlying type for a given user defined type?
+The rule is when a built-in basic type, <code>unsafe.Pointer</code> or an unnamed type is met,
 the tracing will be stopped.
 Take the declarations above for example:
 <pre>
@@ -414,7 +414,8 @@ Values of the same type share some common properties.
 <p>
 Each type has a zero value, which can be viewed as the defualt value of the type.
 The predeclared <code>nil</code> identifier can used to represent as
-zero values of slice, map, function, channel, pointer and interface types.
+zero values of slice, map, function, channel,
+pointer (including type-unsafe pointer) and interface types.
 About more on <code>nil</code>, please read <a href="nil.html">nil in Go</a> later.
 </p>
 
@@ -436,29 +437,9 @@ Untyped values are all basic values or the predeclared <code>nil</code>.
 </p>
 
 <p>
-When a value is stored in memory,
-the number of bytes the value occupies is called the size of the value.
-Values of the same type have the same value size.
-The size of values of a type is often called as the value size of the type.
-We can use the <code>Sizeof</code> function in the <code>unsafe</code>
-standard package to get the size of any value.
-Please note that, values of some kinds of types
-may be composed of two parts each.
-The size of such a value means the size of the direct part of that value.
-Please read the article <a href="underlying-values.html">underlying values</a>
-for details later.
-</p>
-
-<p>
-Go specification doesn't specify values size requirements for non-numric types.
-The requirements for value sizes of all kinds of basic numeric types
-are listed in <a href="basic-types-and-value-literals.html">this article</a>.
-</p>
-
-<p>
-All kinds of basic value literals has been introduced before.
-there are two more kinds of literals in Go,
-composite literals and function literals.
+All kinds of basic value literals has been introduced in in the article
+<a href="basic-types-and-value-literals.html">basic Types and basic value literals</a>.
+There are two more kinds of literals in Go, composite literals and function literals.
 </p>
 
 <p>
@@ -485,11 +466,52 @@ There are no literals to represent
 values of pointer, channel and interface types.
 </p>
 
+<p class="anchor" id="value-part"></p>
+<h3>Concept: Value Parts</h3>
+
+<p>
+At run time, many values are stored somewhere in memory.
+In Go, each of such values has a direct part,
+however, some of them each has several indirect parts.
+Each value part occupies a continuous memory segment.
+The indirect underlying parts of a value are referenced
+by its direct part through pointers.
+</p>
+
+<p>
+The terminology <b>value part</b> is not defined in Go specification.
+It is just used in Go 101 to make some explainations simpler
+and help Go programmers understand Go types and values better.
+Please read the article <a href="value-part.html">value parts</a>
+for more information on value parts.
+</p>
+
+<p class="anchor" id="value-size"></p>
+<h3>Concept: Value Sizes</h3>
+
+<p>
+When a value is stored in memory,
+the number of bytes the value occupies is called the size of the value.
+Values of the same type have the same value size.
+The size of values of a type is often called as the value size of the type.
+We can use the <code>Sizeof</code> function in the <code>unsafe</code>
+standard package to get the size of any value.
+The size of a value means the size of the direct part of that value.
+</p>
+
+<p>
+Go specification doesn't specify values size requirements for non-numeric types.
+The requirements for value sizes of all kinds of basic numeric types
+are listed in the article
+<a href="basic-types-and-value-literals.html">basic Types and basic value
+literals</a>.
+</p>
+
 <h3>Concept: Dynamic Type And Dynamic Value Of An Interface Value</h3>
 
 <p>
-Interface values are the values whose types are interface types. 
-</p> 
+Interface values are the values whose types are interface types.
+</p>
 
 <p>
 Each interface value can box a non-interface value in it.
@@ -506,8 +528,8 @@ please read <a href="interface.html">this article</a>.
 <h3>Concept: Signature Of Function Types</h3>
 
 <p>
-The signature of a function type is composed of 
-the input parameter definition list and 
+The signature of a function type is composed of
+the input parameter definition list and
 the output result definition list of the function.
 </p>
 
@@ -653,7 +675,7 @@ and channel introduction</a> and <a href="channel.html">channel rules in Go</a>.
 <div>
 Currently (Go 1.9), following types don't support comparisons
 (with the <code>==</code> and <code>!=</code> operators):
-<ul> 
+<ul>
 <li>slice types</li>
 <li>map types</li>
 <li>function types</li>
