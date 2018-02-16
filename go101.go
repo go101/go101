@@ -39,8 +39,8 @@ func main() {
 var (
 	rootPath              = findGo101ProjectRoot()
 	go101    http.Handler = &Go101{
-		staticHandler:     http.StripPrefix("/static/", http.FileServer(http.Dir(rootPath + "static"))),
-		articleResHandler: http.StripPrefix("/article/res/", http.FileServer(http.Dir(rootPath + "articles/res"))),
+		staticHandler:     http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.ToSlash(rootPath + "static")))),
+		articleResHandler: http.StripPrefix("/article/res/", http.FileServer(http.Dir(filepath.ToSlash(rootPath + "articles/res")))),
 	}
 )
 
@@ -98,7 +98,7 @@ type Article struct {
 var articleTemplate = parseTemplate("base", "article")
 
 var articleContents = func() map[string]Article {
-	path := rootPath + "articles/"
+	path := filepath.ToSlash(rootPath + "articles/")
 	if files, err := filepath.Glob(path + "*.html"); err != nil {
 		log.Fatal(err)
 		return nil
@@ -117,7 +117,7 @@ func retrieveArticleContent(file string, cachedIt bool) (Article, error) {
 		return Article{}, nil
 	}
 	if article.Content == "" {
-		content, err := ioutil.ReadFile(rootPath + "articles/" + file)
+		content, err := ioutil.ReadFile(filepath.ToSlash(rootPath + "articles/" + file))
 		if err != nil {
 			return Article{}, err
 		}
@@ -175,7 +175,7 @@ func (*Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file str
 func parseTemplate(files ...string) *template.Template {
 	ts := make([]string, len(files))
 	for i, f := range files {
-		ts[i] = rootPath + "templates/" + f
+		ts[i] = filepath.ToSlash(rootPath + "templates/" + f)
 	}
 	return template.Must(template.ParseFiles(ts...))
 }
@@ -197,7 +197,7 @@ func openBrowser(url string) error {
 }
 
 func findGo101ProjectRoot() string {
-	if _, err := os.Stat("./go101.go"); err == nil {
+	if _, err := os.Stat(filepath.ToSlash("./go101.go")); err == nil {
 		return ""
 	}
 
@@ -206,7 +206,7 @@ func findGo101ProjectRoot() string {
 		log.Fatal("Can't find pacakge: github.com/go101/go101")
 		return ""
 	}
-	return pkg.Dir + "/"
+	return filepath.ToSlash(pkg.Dir + "/")
 }
 
 func isLocalRequest(r *http.Request) bool {

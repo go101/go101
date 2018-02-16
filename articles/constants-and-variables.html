@@ -103,9 +103,11 @@ there are two senarios where <code>T(v)</code> is legal.
 	The result of <code>T(v)</code> is a string of type <code>T</code>
 	and contains the UTF-8 representation of the integer.
 	Integer values outside the range of valid Unicode code points
-	result a string represented by <code>"\uFFFD"</code>.
+	result a string represented by <code>"\uFFFD"</code>
+	(a.k.a., <code>"\xef\xbf\xbd"</code>).
+	<code>0xFFFD</code> is the code point for the Unicode replacement character.
 	Note, in fact,
-	this senario doesn't require <code>v</code> must be a constant.
+	the second senario doesn't require <code>v</code> must be a constant.
 	If <code>v</code> is a constant, then the result is also a constant,
 	otherwise, the result is not a constant.
 </li>
@@ -247,7 +249,7 @@ In the above example,
 the <code>*</code> symbol is the multiplication operator
 and the <code>!</code> symbol is the boolean-not operator.
 Operators will be introduced in the next article,
-<a href="operators-and-functions.html">operators and functions</a>.
+<a href="operators.html">common operators</a>.
 </p>
 
 <p>
@@ -286,8 +288,6 @@ The constants declared in function bodies are called local constants.
 The variables declared out of any function body
 are called package-level constants.
 We also often call package-level constants as global constants.
-Exported package-level constants can be used in other packages
-if the package
 </p>
 
 <p>
@@ -473,6 +473,7 @@ Both of the two operators will be introudced in the next article.
 <p class="anchor" id="variable"></p>
 <h3>Variables, Variable Declarations And Value Assigments</h3>
 
+<div>
 <p>
 Variables are named values.
 Variables are stored in memory at run time.
@@ -486,131 +487,189 @@ for compilers to deduce the type of the variable.
 </p>
 
 <p>
-The variables declared in function bodies are called local variables.
+The variables declared within function bodies are called local variables.
 The variables declared out of any function body
 are called package-level variables.
 We also often call package-level variables as global variables.
 </p>
 
-<div>
+<p>
 There are two basic variable declaration forms,
 the standard one and the short one.
-The standard declaration form has several variants.
-Please read the comments in the following program to learn
-how to declare variables, and do value assignments, in Go programming.
+The short form can only be used to delcared local variables.
+</p>
+
+<h4>Standard Variable Declarations Forms</h4>
+
+<p>
+Each standard declaration starts with the <code>var</code> keyword,
+which is followed by the declared variable name.
+Variable names must be <a href="keywords-and-identifiers.html#identifier">identifiers</a>.
+</p>
+
+The following are some full standard declaration forms.
+In these declarations,
+the types and initial values of the decalred variables are all specified.
+<pre class="line-numbers"><code class="language-go">var lang, website string = "Go", "https://golang.org"
+var compiled, dynamic bool = true, false
+var announceYear int = 2008
+</code></pre>
+
+<p>
+As we have found, multiple variables can be declared together
+in one variable declaration.
+Please note, there can be most one type specified in a variable declaration.
+So the types of the multiple variables declared in the same declaration line must be identical.
+</p>
+
+<p>
+Full standard variable declaration forms are seldom used in practice, for they are some verbose.
+In practice, the two standard variable declaration variant forms introduced
+below are used more often.
+In the two variants, either the types or the initial values of
+the declared variables are absent.
+</p>
+
+The following are some standard variable declarations without specifying variable types.
+Compilers will deduce the types of the decalred variables as the types
+(or default types) of their respective initial values.
+The following declarations are equivalent to the above ones in fact.
+Please note, in the following declarations, the types of the multiple variables
+declared in the same declaration line can be different.
+<pre class="line-numbers"><code class="language-go">// The types of the lang and dynamic variables will be
+// deduced as "string" and "bool" by compilers, respectively.
+var lang, dynamic = "Go", false
+
+// The types of the compiled and announceYear variables will
+// be deduced as "bool" and "int" by compilers, respectively.
+var compiled, announceYear = true, 2009
+
+// The types of the website variable will be deduced
+// as "string" by compilers.
+var website = "https://golang.org"
+</code></pre>
+
+<p>
+The type deductions in the above example can be viewed as implicit conversions.
+</p>
+
+The following are some standard declarations without specifying variable initial values.
+In these declarations, all declared variables are initialized
+as the zero values of their respective types.
+<pre class="line-numbers"><code class="language-go">var lang, website string      // both are initialized as blank strings.
+var interpreted, dynamic bool // both are initialized as false.
+var n int                     // is initialized as 0.
+</code></pre>
+
+<p>
+</p>
+
+Multiple variables can be grouped into one standard form declaration
+by using <code>()</code>. For example:
+<pre class="line-numbers"><code class="language-go">var (
+	lang, bornYear, compiled     = "Go", 2007, true
+	announceAt, releaseAt    int = 2009, 2012
+	createdBy, website       string
+)
+</code></pre>
+
+<p>
+The above example is formatted by using the <code>go fmt</code> command
+in the official Go SDK.
+</p>
+
+<p>
+Generally, declaring related variables together will
+make code get a better readability.
+</p>
+
+</div>
+
+<h4>Pure Value Assignments</h4>
+
+<div>
+<p>
+In the above variable declarations, the sign <Code>=</code> means assignment.
+Once a variable is declared, we can modify its value by using pure value assignments.
+Like variable declarations, multiple values can be assigned in a pure assignment.
+In a pure assignment, each source value must be of the same type of its
+corresponding destination value, or that source value must be able to
+implicitly converted to the type of its corresponding destination value.
+<p>
+
+<p>
+Constants can be assigned to variables, but not vice versa.
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">const N = 123
+var x int
+var y, z float32
+
+N = 789 // error: constant N is not modifiable
+y = N   // okay: N is implicitly converted to (deduced as a) float32
+x = y   // error: type mismatch
+x = N   // okay: N is implicitly converted to (deduced as an) int
+y = x   // error: type mismatch
+z = y   // okay
+
+x, y = 69, 1.23           // okay
+x, y = y, x               // error: type mismatch
+z, y = y, z               // okay
+x, y = int(y), float32(x) // okay
+</code></pre>
+
+<p>
+The last line in the above example uses explicit conversions to
+make the corresponding destination and soruce values matched.
+The explicit conversion rules for non-constant numeric values
+are introduced below.
+</p>
+
+</div>
+
+<h4>Short Variable Declarations Forms</h4>
+
+<div>
+We can also use short variable declaration forms to declare variables.
+Short variable declarations can only be used to delcare local variables.
+Let's view an example which uses some short variable declarations.
 
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	// This is the full standard variable declaration form.
-	// A variable named "website" is declared and inialized.
-	// Its type, string, is specified explicitly.
-	// "var" is a keyword used to declare variables.
-	var website string = "https://golang.org"
+	// Both lang and year are two new declared variables.
+	lang, year := "Go langauge", 2007
 	
-	// This is a variant of the standard form. In this form,
-	// variable type is not specified. Compiler will deduce
-	// its type as the default type of the literal "Go".
-	// So the type of "name" is also string.
-	var name = "Go"
+	// Only createdBy is a new declared variable.
+	// The year variable has already been declared before,
+	// so here its value is just modified.
+	year, createdBy := 2009, "Google Research"
 	
-	// This is another variant of the standard form. In this
-	// form, the variable initial value is not specified.
-	// Its initial value is the zero value of its type, "".
-	var currentVersion string
+	// This is a pure assignment.
+	lang, year = "Go", 2012
 	
-	// Multiple variables can be decalred at the same line.
-	// If no initial values are provided, they must share
-	// the same type and their types must be specified.
-	// Their initial values are the zero value of the
-	// specified type, here the zero value is 0.
-	var bornYear, bornMonth, bornDay int
+	print(lang, " is created by ", createdBy)
+	println(", and released at year", year)
+}
+</code></pre>
 
-	// If the types of the variables declared at the same line
-	// are not all the same, then their types must not be present
-	// in the declaration, but their initial values must be all
-	// specified. Compilers will deduce their types as the respective
-	// type or default type of the specified initial values. Here,
-	// the types of the three variables are int, bool, bool.
-	var announceYear, static, compiled = 2009, true, true
-	
-	/*
-	In the above standard variable declarations, all variables
-	at the left of the assignment sign "=" must be new ones.
-	*/
-	
-	// This is a pure assignment. Multiple values can be modified
-	// at the same code line. All variables at the left of the
-	// assignment sign "=" in an assignment must be ever declared.
-	bornYear, bornMonth, bornDay = 2007, 11, 10
+<p>
+</p>
 
-	// We can exchange the two variables values in one line.
-	static, compiled = compiled, static
-	
-	/*
-	The following is a short variable declaration form.
-
+There are several differences between short and standard variable declarations.
+<ol>
+<li>
 	In a short delcaration form, the "var" keyword and
 	variable types must be omitted. And the assignment sign
-	must be ":=" instead of "=".
-
+	must be <code>:=</code> instead of <code>=</code>.
+</li>
+<li>
 	In a short variable delcaration, old variables and new
-	variables can mix at the left of ":=". But there must be
+	variables can mix at the left of <code>:=</code>. But there must be
 	at least one new variable at the left.
-	
-	In the following short variable declaration, the "name"
-	variable is an old variable which has been declared earlier
-	and the "numKeywords" variable is a new one. So here the
-	"name" variable is modified by an assignment but the
-	"numKeywords" variable is declared and initialized.
-	*/
-	name, numKeywords := "Go", 25
-	
-	// Use some of the declared variables above.
-	println(name, "was born at year", bornYear)
-	println(name, "was announced at year", announceYear)
-	// releaseAt is a package-level variable declared below.
-	println(name, "1.0 was released at year",  releaseAt)
-	
-	// In Go, local declared variables must be used,
-	// otherwise, compiler will report errors for
-	// unused declared local variables.
-	// We can assign the unused variables to the
-	// blank identifier to make them used.
-	_, _, _ = static, compiled, currentVersion
-	_, _, _, _ = website, numKeywords, bornMonth, bornDay
-}
-
-// Above declared variables are called local variables, which
-// are declared within function bodies.
-// Variables can also be declared outside of any function bodies.
-// Such variables are calld package-level variables.
-// Package-level variables are often also called global variables.
-
-// Package-level variables must be declared with standard
-// variable declaration forms. They can't be declared with
-// the short variable declaration form.
-var createdBy, releaseAt = "Google Research", 2012
-
-// Unlike local variables, package-level variables can be
-// decalred but never used. Here the above declared "createdBy"
-// variable is never used in the program. This is allowed.
-</code></pre>
-
-<p>
-All the <code>=</code> symbols in the above example mean "assign".
-Multiple variables can be assigned in one assignment.
-</p>
-
-The output of the above example:
-<pre class="output"><code>Go was born at year 2007
-Go was announced at year 2009
-Go 1.0 was released at year 2012
-</code></pre>
-
-<p>
-The full standard variable declaration form is seldom used in practice.
-</p>
+</li>
+</ol>
 
 <p>
 Please note, there is a limition for short variable delcarations.
@@ -621,103 +680,79 @@ which will be introduced in other articles,
 can't appear at the left of <code>:=</code>.
 These items include qualified identifiers, container elements,
 pointer dereferences and struct field selectors.
-Pure assignments have no this limition.
+Pure assignments have no such limition.
 </p>
 
-<p>
-As shown in the above example, the type deduction feature allows us
-not to always specify the variable types in variable declarations.
-This brings much convenience to Go programming
-and makes Go code look very clean.
-</p>
-
-From the above explainations, we know that the following ways are equivalent
-to declare a local <code>int</code> variable with initial value <code>0</code>.
-The first three ones are equivalent to declare a global (package-level) variable.
-
-<pre class="line-numbers"><code class="language-go">var a int = 0
-var a int
-var a = 0
-a := 0
-</code></pre>
-
-Multiple variables can be grouped into one standard form declaration
-by using <code>()</code>.
-For example, the following variable declarations
-<pre class="line-numbers"><code class="language-go">var a, b bool
-var m int8 = 123
-var x, y = 3.2, 5.6
-</code></pre>
-
-can be rewritten to
-<pre class="line-numbers"><code class="language-go">var (
-	a, b bool
-	m    int8 = 123
-	x, y      = 3.2, 5.6
-)
-</code></pre>
-
-<p>
-Generally, declaring related variables together will
-make code get a better readability.
-</p>
-
-Constants can be assigned to variables, but not vice versa.
-
-<pre class="line-numbers"><code class="language-go">const N = 100.0
-const K int64 = N
-
-var x = N   // the type of x is the default type of N, float64.
-var y = K   // the type of y is the type of K, int64.
-var z = 100 // the type of x is the default type of literal 100, int.
-var w = y   // the type w is the same as y (int64).
-
-// The following line fails to compile.
-const M = x // error: variables can't be assigned to constants.
-</code></pre>
-
-<p></p>
 
 </div>
 
-<h3>About Assignments In Go</h3>
+<h4>More About Variable Declarations</h4>
 
 <div>
-In a pure assignment, it requires that
-<ol>
-<li>
-	each destination value must be a modifiable value, 
-	such as an already declared variable.
-</li>
-<li>
-	each source value must have the same type
-	as its corresponding destination,
-	or can be implicitly converted to
-	the type of its corresponding destination.
-	Above introudced type deduction rules can also be viewed as
-	some implicit conversion rules,
-	We will learn more implicit conversion rules in Go
-	from other articles later.
-</li>
-</ol>
+<p>
+Please note, for the official Go compiler,
+local variables are not allowed declared but unused.
+Package-level variables have no such limit.
+</p>
 
-Example:
-<pre class="line-numbers"><code class="language-go">const a = 123
-var x int
-var y float32
+<p>
+If a local variable is only ever used as destination values,
+it will also be viewed as unused.
+</p>
 
-a = 789 // error: a is not modifiable
-y = a   // okay: a is implicitly converted to (deduced as a) float32
-x = y   // error: type mismatch
-x = a   // okay: a is implicitly converted to (deduced as an) int
-y = x   // error: type mismatch
+For example, compiler the following program
 
-x, y = 69, 1.23           // okay
-x, y = y, x               // error: type mismatch
-x, y = int(y), float32(x) // okay
+<pre class="line-numbers"><code class="language-go">package main
+
+var x, y, z = 123, true, "foo" // package-level variables.
+
+func main() {
+	var q, r = 789, false
+	r, s := true, "bar"
+	r = y // r is unused.
+	x = q // q is used.
+}
+</code></pre>
+
+will result to the following compilation errors
+(assume the source file is name <code>example-unused.go</code>):
+
+<pre class="output"><code>./example-unused.go:6:6: r declared and not used
+./example-unused.go:7:16: s declared and not used
+</code></pre>
+
+<p>
+</p>
+
+The fix is easy, we can assign <code>r</code> and <code>s</code>
+to blank identifiers to avoid compilation errors.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+var x, y, z = 123, true, "foo"
+
+func main() {
+	var q, r = 789, false
+	r, s := true, "bar"
+	r = y
+	x = q
+	
+	_, _ = r, s // make r and s used.
+}
 </code></pre>
 
 </div>
+
+<h3>Value Addressability</h3>
+
+<p>
+In Go, some values are addressable.
+Addressable values can be taken addresses.
+All variables are addressable and all constants are unaddressable.
+We can learn more about addresses and pointers from the article
+<a href="pointer.html">pointers in Go</a>
+and learn other adressable and unadressable values from other articles later.
+</p>
 
 <h3>Explicit Conversions On Non-Constant Numeric Values</h3>
 
@@ -778,36 +813,68 @@ We can view the type deductions happen at line <i>2</i>
 and line <i>9</i> are two implicit conversions,
 where <code>a</code> and <code>k</code> are both converted to
 their respective default type.
-More implicit conversion rules will be introduced in the next article
-<a href="operators-and-functions.html">operators and functions</a>
-and other articles.
+More implicit conversion rules will be introduced in other articles later.
 </p>
 
 </div>
 
 <h3>Scopes Of Variables And Named Constants</h3>
 
+<div>
+
+In Go, we can use a pair of <code>{</code> and <code>}</code> to form a code block.
+A code block can nest other code blocks.
+A variable or a named constant declared in an inner code block will shadow
+the variables and constants declared with the same name in outer code blocks.
+For examples, the following program declares three distinct varialbes,
+all of them are called <code>x</code>.
+An inner <code>x</code> shadows an outer one.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+const y = 789
+var x int = 123
+
+func main() {
+	// The x variable shadows the package-level variable x.
+	var x = true
+	
+	// A nested code block.
+	{
+		x, y := x, y // Here, the left x and y are both
+		             // new declared variable. The right
+		             // ones are declared in outer blocks.
+		// In this code block, the just new declared x and y
+		// shadow the outer declared same-name identifiers.
+		x, z := !x, y/10 // only z is new declared.
+		y /= 100
+		println(x, y, z) // false 7 78
+	}
+	println(x) // true
+	println(z) // error: z is undefined.
+}
+</code></pre>
+
+<p>
+Declared types and functions can also be shadowed.
+</p>
+
 <p>
 The scope (visibility range in code) of a package-level variable
 (or a named constant) is the whole package of the variable
 (or the named constant) is declared in.
 The scope of a local variable (or a named constant) begins at the end of
-its declaration and ends at the end of the innermost its containing block.
-Code blocks and identifier scopes will be explained detailedly in
-<a href="block-and-scope.html">blocks and scopes</a>.
+its declaration and ends at the end of its innermost containing code block.
+This is why the last line in the <code>main</code> function
+of the above example doesn't compile.
 </p>
-
-<h3>Value Addressability</h3>
 
 <p>
-In Go, some values are addressable.
-Addressable values can be taken addresses.
-All variables are addressable and all constants are unaddressable.
-We can learn more about addresses and pointers from the article
-<a href="pointer.html">pointers in Go</a>
-and learn other adressable and unadressable values from other articles later.
+Code blocks and identifier scopes will be explained detailedly in
+<a href="blocks-and-scopes.html">blocks and scopes</a> later.
 </p>
 
+</div>
 
 <h3>More About Constant Declarations</h3>
 
@@ -822,7 +889,7 @@ it represents at compile time.
 If the two operands of an operator operation are both constants,
 then the opeartion will be evaluated at compile time.
 (Please read the next article
-<a href="operators-and-functions.html">operators and functions</a> for details.)
+<a href="operators.html">common operators</a> for details.)
 </p>
 
 <div>
@@ -858,7 +925,7 @@ func main() {
 
 <p>
 There are still some other details on constants, please read
-<a href="more-about-constant-and-type-deduction.html">more about
+<a href="more-about-constants-and-type-deductions.html">more about
 constants and type deduction</a> for details.
 </p>
 

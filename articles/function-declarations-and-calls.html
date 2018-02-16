@@ -1,0 +1,319 @@
+
+﻿<h1>Function Declarations And Function Calls</h1>
+
+<p>
+Except the operator operations introduced in the last article,
+function operations are another kind of popular operations in programming.
+Function operations are often called function calls.
+This article will introduce how to declare functions and call functions.
+</p>
+
+<p class="anchor" id="declaration"></p>
+<h3>Function Declarations</h3>
+
+<div>
+Let's view a function declaration.
+<pre class="line-numbers"><code class="language-go">func SquaresOfSumAndDiff(a int64, b int64) (s int64, d int64) {
+	x, y := a + b, a - b
+	s = x * x
+	d = y * y
+	return
+}
+</code></pre>
+
+We can find that, a function declaration is composed of several portions.
+From left to right,
+
+<ol>
+<li>
+	the first portion is the <code>func</code> keyword.
+</li>
+<li>
+	the next portion is the function name, which must be an identifier.
+	Here the function name is <code>SquareOfSumAndDiff</code>.
+</li>
+<li>
+	the third portion is the input parameter declaration list,
+	which is enclosed in a <code>()</code>.
+</li>
+<li>
+	the fourth portion is the output (or return) result declaration list.
+	Go functions can return multiple results.
+	For this specified example,
+	the result definition list is also enclosed in a <code>()</code>.
+</li>
+<li>
+	the last portion is the function body,
+	which is enclosed in <code>{}</code>.
+	In a function body,
+	the <code>return</code> keyword is used to end the normal forward
+	execution flow and enter the exiting phase (see the next section).
+</li>
+</ol>
+
+
+<p>
+In the above example, each parameter and result declaration is composed of
+a name and a type (the type follows the name).
+We can view parameter and result declarations as standard variable declarations
+without the <code>var</code> keywords.
+The above declared function has two parameters, <code>a</code> and <code>b</code>,
+and has two results, <code>x</code> and <code>y</code>.
+All the types of the parameters and results are <code>int64</code>.
+Parameters and results are treated as local variables within
+their corresponding function bodies.
+</p>
+
+<p>
+The names in the result declaration list of a function declaration can be
+present or absent all together. Either case is used common in practice.
+If a result is defined with a name, then then result is called a named result,
+otherwise, it is called an unnamed result.
+</p>
+
+When all the results in a function declaration are unnamed,
+then, within the corresponding function body,
+the <code>return</code> keyword must be followed by a sequence of return values, 
+each of them corresponds a result declaration of the function declaration.
+For example, the following function declaration is equivalent to the above one.
+<pre class="line-numbers"><code class="language-go">func SquaresOfSumAndDiff(a int64, b int64) (int64, int64) {
+	return (a+b) * (a+b), (a-b) * (a-b)
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+In fact, the names in the parameter declaration list of a function declaration
+can be also be omitted all together,
+if all the the prameters are never used within the corresponding function body.
+However, such circumstance is very rare in practice.
+</p>
+
+If the types of some successive parameters or results in a function declaration
+are the same one, then the types of the former parameters or results can be absent.
+For example, the above two function declarations are equivalent to
+<pre class="line-numbers"><code class="language-go">func SquaresOfSumAndDiff(a, b int64) (s, d int64) {
+	return (a+b) * (a+b), (a-b) * (a-b)
+}
+</code></pre>
+
+<p>
+Here, the type of the parameter <code>a</code> is not specified,
+for its type is the same as the parameter <code>b</code>.
+The same situation for the result <code>s</code>.
+And please note, even of both the two results are named,
+the <code>return</code> keyword can be followed with return values.
+</p>
+
+<p>
+If the result declaration list in a function declaration only contains
+one unnamed result declaration, then the result declaration list doesn't
+need to be enclosed in a <code>()</code>.
+In particular, if the function declaration has no return results,
+then the result declaration list can be omitted totally.
+Ihe parameter declaration list can never be omitted,
+even if the number of parameters of the decalred function is zero.
+</p>
+
+Here are more function declaration examples.
+<pre class="line-numbers"><code class="language-go">func CompareLower4bits(m, n uint32) (r bool) {
+	// The following two lines <=> return m&0xFF > n&0xff
+	r = m&0xF > n&0xf
+	return 
+}
+
+// This function has no parameters.
+func versionString() string {
+	return "go1.10"
+}
+
+// This function has no results. And the parameter names
+// are all amitted for we don't care about them.
+func doNothing(string, int) {
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+One fact we have learned from the earlier articles in Go 101 is that
+the <code>main</code> entry function in each Go program is declared
+wothout parameters and results.
+</p>
+
+<p>
+Please note that, functions must be declared at package level.
+In other words, a function can't be declared within the body of another function.
+</p>
+</div>
+
+<p class="anchor" id="call"></p>
+<h3>Function Calls</h3>
+
+<div>
+
+<p>
+A declared function can be called through its name plus an argument list.
+The argument list must be enclosed in a <code>()</code>.
+Each argument corresponds a parameter definition.
+</p>
+
+
+The following is a full example to show how to call other declared functions
+in the <code>main</code> entry function.
+<pre class="line-numbers"><code class="language-go">package main
+
+func SquaresOfSumAndDiff(a int64, b int64) (int64, int64) {
+	return (a+b) * (a+b), (a-b) * (a-b)
+}
+
+func CompareLower4bits(m, n uint32) (r bool) {
+	r = m&0xF > n&0xf
+	return 
+}
+
+func versionString() string {
+	return "go1.10"
+}
+
+func doNothing(string, int) {
+}
+
+// Initialize a package-level variable with a function call.
+var v = versionString()
+
+func main() {
+	println(v) // go1.10
+	x, y := SquaresOfSumAndDiff(3, 6)
+	println(x, y) // 81 9
+	b := CompareLower4bits(uint32(x), uint32(y))
+	println(b) // false
+	doNothing("Go", 1)
+}
+</code></pre>
+
+<p></p>
+</div>
+
+<p>
+Function calls can be deferred and invoked in new goroutines
+(green threads) in Go.
+Please read the next article
+<a href="deferred-calls-and-goroutines.html">deferred function calls
+and goroutines</a> for details.
+</p>
+
+<p>
+In Go, each function call has an exiting phase. The exiting phase of
+a function call starts when the called function is returned.
+In other words, when a function is returned,
+it is possible it still hasn't exited yet.
+The just mentioned deferred calls in the called function
+will be executed in the exiting phase.
+</p>
+
+<p>
+Beside natually returns and returns by using the <code>return</code> keyword,
+there are several ways to make function returns.
+We will learn these ways in other Go 101 articles later.
+</p>
+
+<h3>Anonymous Functions</h3>
+
+<div>
+<p>
+Go support anonymous functions.
+The definition of an anonymous function is almost the same as a function
+declaration, except there is no the function name portion in
+the anonymous function definition.
+</p>
+
+An anonymous function can be called right after it is defined.
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	// This anonymous fucntion has no parameters.
+	x, y := func() (int, int) {
+		println("This fucntion has no parameters.")
+		return 3, 4
+	}() // no arguments are needed.
+	
+	// This anonymous fucntion has no results.
+	func(a, b int) {
+		println("a*a + b*b =", a*a + b*b)
+	}(x, y) // pass arguments.
+	
+	// This anonymous fucntion has no parameters and results.
+	func() {
+		println("x*x + y*y =", x*x + y*y)
+	}() // no arguments are needed.
+}
+</code></pre>
+
+<p>
+Please note that, for the last anonymous function is in the scope of
+the <code>x</code> and <code>y</code> variables declared above,
+it can use the two variable directly.
+Such functions are called closures.
+In fact, all custom functions in Go can be viewed as closures.
+This is why Go functions are as flexible as many dynamic languages.
+</p>
+
+<p>
+Later, we will learn that an anonymous function can be assigned
+to a function value and call it at any time.
+</p>
+
+</div>
+
+<h3>Built-in Functions</h3>
+
+<div>
+<p>
+There are some built-in functions in Go,
+for example, the <code>println</code> and <code>print</code> functions.
+We can call these functions without importing any packages.
+</p>
+
+<p>
+We can use the built-in <code>real</code> and <code>imag</code> functions
+to get the real and imaginary parts of a complex value. 
+We can use the built-in <code>complex</code> function to produce a complex value.
+Please note, if any of the arguments of a call to any of the three functions
+are all constants, then the result value is also a constant.
+In particular, if any of the arguments is an untype constant,
+then the result value is also an untyped constant.
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">const c = complex(1.6, 3.3) // c is a untyped complex constant.
+
+// The results of real(c) and imag(c) are both untyped floating-point values.
+
+var a, b float32 = real(c), imag(c)
+var d = complex(a, b) // d is deduced as a typed value of type complex64.
+var e = c             // e is deduced as a typed value of type complex128.
+
+// The results of real(d) and imag(d) are both typed values of type float32.
+// The results of real(e) and imag(e) are both typed values of type float64.
+</code></pre>
+
+<p>
+More built-in functions will be introduced in other Go 101 articles later.
+</p>
+</div>
+
+<h3>More About Functions</h3>
+
+<p>
+There are more about function related concepts and details
+which are not touched in the current article.
+We can learn those concepts and details in the article
+<a href="function.html">function types and values</a> later.
+</p>
+
+

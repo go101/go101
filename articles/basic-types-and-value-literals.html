@@ -291,8 +291,7 @@ func main() {
 
 <p>
 Note, the two <code>==</code> are the equal-to comparison operator,
-which will be introduced in <a href="operators-and-functions.html">operators
-and functions</a>.
+which will be introduced in <a href="operators.html">common operators</a>.
 </p>
 
 <p>
@@ -336,9 +335,9 @@ by rune values between two single quotes. For example
 The rune literal has several variant forms.
 For example, the following run literals are equivalent to <code>'a'</code>
 (the Unicode value of character "a" is 97).
-<pre><code class="language-go">'\141'  // 141 is the octal representation of decimal number 97
+<pre><code class="language-go">'\141'   // 141 is the octal representation of decimal number 97
 '\x61'   // 61 is the hex representation of decimal number 97
-'\u0061' // the hex representation of the Unicode value of character "a" is 61
+'\u0061'
 '\U00000061'
 </code></pre>
 
@@ -353,9 +352,11 @@ Please note, <code>\</code> must be followed be exact three octal digits,
 <code>\x</code> must be followed be exact two hex digits,
 <code>\u</code> must be followed be exact four hex digits,
 and <code>\U</code> must be followed be exact eight hex digits.
+Each such an octal or hex digit sequence must represent an legal Unicode code point,
+otherwise it fails to compile.
 </p>
 
-The following program will print six <code>true</code> texts.
+The following program will print 7 <code>true</code> texts.
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
@@ -365,6 +366,7 @@ func main() {
 	println('a' == '\u0061')
 	println('a' == '\U00000061')
 	println(0x61 == '\x61')
+	println('\u4f17' == '众')
 }
 </code></pre>
 
@@ -438,30 +440,44 @@ world!
 </code></pre>
 
 <p>
-In an interpreted string literal, the escaped charater pairs
-(except <code>\'</code>) listed in the rune literal section (the last section)
-also be escaped to their corresponding charaters.
-And the charater pair <code>\"</code> in an interpreted string literal
-will be escaped to a single double quote.
-So the two <code>\n</code> in the above interpreted string literal example
-will be escaped to two new lines and each of the two <code>\"</code> will
-be escaped to a double quote.
+In the above interpreted string literal, each <code>\n</code> charater pair
+will be escaped as one newline character, and each <code>\"</code> charater pair
+will be escaped as one double quote character.
+Most of such escape charater pairs are the same as the escape charater pairs
+used in rune literals introduced above, except that <code>\"</code> is only
+legal in interpreted string literals and <code>\`</code> is only legal in
+rune literals.
 </p>
 
+The charactor sequence of <code>\</code>, <code>\x</code>,
+<code>\u</code> and <code>\U</code> followed by several octal or hex digits
+introduced in the last section can also be used in interpreted string literals.
+Please note that, in interpreted string literals,
+the octal or hex values following <code>\</code> and <code>\x</code>
+will be viewed as byte values instead of Unicode code points.
+A Unicode code point may be represented with 1-4 bytes.
+
+<pre class="line-numbers"><code class="language-go">// The following interpreted string literals are equivalent.
+"\141\142\143"
+"\x61\x62\x63"
+"abc"
+
+// The following interpreted string literals are equivalent.
+"\xe4\xbc\x97\u4eba"
+"\u4f17\xe4\xba\xba"
+"众人"
+</code></pre>
+
 <p>
-The character sequence of <code>\</code>, <code>\x</code>,
-<code>\u</code> and <code>\U</code> followed by several hex digits
-introduced in the last section will also be escaped
-in interpreted string literals.
-For example, <code>"\141\142\143"</code> and <code>"\x61\x62\x63"</code>
-are both equivalent to <code>"abc"</code>.
+Please note that each English character (code point) is represented with one byte,
+but each Chinese character (code point) is represented with three bytes.
 </p>
 
 <p>
 In a raw string literal, no character sequences will be escaped.
 The back quote character is not allowed to appear in a raw string literal.
-Carriage return characters (Unicode value <code>0x0D</code>)
-inside raw string literals will be discarded.
+To get better cross-platform compatibility, carriage return characters
+(Unicode code point <code>0x0D</code>) inside raw string literals will be discarded.
 </p>
 
 <p>
@@ -487,8 +503,7 @@ But again, we should know that the two are not literals in the strict sense.
 <p>
 From the above section, we have learned that the zero value of a numeric type
 can be represented by several kinds of literals.
-In fact, values other than the zero value of a numeric type
-can be also represented by several kinds of literals.
+In fact, many other values can be also represented by several kinds of literals.
 The following table lists some basic numeric literals
 and the types which values can be represented by each of these literals.
 </p>
