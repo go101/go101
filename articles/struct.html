@@ -1,9 +1,7 @@
 ﻿<h1>Structs In Go</h1>
 
 <p>
-Although Go absorbs many features from all kinds of other languages,
-Go is often viewed as a C family language.
-Same as C, Go also supports struct and pointer types.
+Same as C, Go also supports struct types.
 This article will introduce the basic kwowledges of struct types in Go.
 </p>
 
@@ -11,9 +9,9 @@ This article will introduce the basic kwowledges of struct types in Go.
 
 <div>
 Each unnamed struct type literal starts with a <code>struct</code> keyword
-which is following by a sequence of variable declarations enclosed in a <code>{}</code>.
-These variable declarations are a variant of the standard variable declaration form
-by omitting the <code>var</code> keyword.
+which is following by a sequence of field definitions enclosed in a <code>{}</code>.
+Each field definition is composed of a name and a type.
+The number of fields of a struct type can be zero.
 <pre class="line-numbers"><code class="language-go">struct {
 	title  string
 	author string
@@ -22,20 +20,13 @@ by omitting the <code>var</code> keyword.
 </code></pre>
 
 <p>
-Each of the declared variables is called a field of the struct type.
-Some articles also call fields as member variables.
-The number of fields in a struct type can be zero.
+The above strict has three fields. The types of the two fields
+<code>title</code> and <code>author</code> are both <code>string</code>.
+The type of the <code>pages</code> field is <code>int</code>.
 </p>
 
-Multiple field declarations can be place in the same line,
-seperated by using the code line terminators (<code>;</code>),
-such as
-<pre class="line-numbers"><code class="language-go">struct {
-	title string; author string; pages int
-}
-</code></pre>
 <p>
-But the above coding style is not recommended to use in Go.
+Some articles also call fields as member variables.
 </p>
 
 Consecutive fields with the same type can be declared together.
@@ -44,6 +35,11 @@ Consecutive fields with the same type can be declared together.
 	pages         int
 }
 </code></pre>
+
+<p>
+The size of a struct type is the sum of the sizes of all its field types.
+The size of a zero-field struct type is zero.
+</p>
 
 Each struct field can be bound with a tag when it is declared.
 Field tags are optional, the default value of field tags are blank strings.
@@ -132,7 +128,7 @@ https://github.com/golang/go/issues/18640
 <p>
 In Go, the form <code>T{...}</code>,
 where <code>T</code> must be a type literal or a type name,
-is called as a composite literal and
+is called as a <b>composite literal</b> and
 is used as the value literals of some kinds of types,
 including struct types and the container types introduced later.
 </p>
@@ -155,6 +151,7 @@ two variants of struct composite literal forms:
 	The values of the absent fields will be set as the zero values of their corresponding types.
 	But if a field is present, it must be with the <code>FieldName: FieldValue</code> form.
 	The order of the fields in this form doesn't matter.
+	The form <code>S{}</code> is used most often in practice.
 </li>
 </ol>
 
@@ -230,7 +227,6 @@ the effect is the same as assigning each field one by one.
 	book2.author = book1.author
 	book2.pages = book1.pages
 }
-
 </code></pre>
 
 <p>
@@ -240,6 +236,103 @@ and at least one of the struct types is an
 <a href="type-system-overview.html#non-defined-type">non-defined type</a>.
 </p>
 </div>
+
+<p class="anchor" id="field-addressability"></p>
+<h3>Struct Field Addressability</h3>
+
+<div>
+<p>
+The fields of an addressable struct value are also addressable.
+The fields of an unaddressable struct value are also unaddressable.
+The fields of unaddressable struct values can't be modified.
+All composite Literals, including struct composite literal are unaddressable.
+<p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	type Book struct {
+		Pages int
+	}
+	var book = Book{} // book is addressable
+	p := &book.Pages  // take the address of the "Pages" field
+	*p = 123
+	fmt.Println(book) // {123}
+	
+	/*
+	Book{}.Pages = 123 // This line doesn't compile,
+	                   // for "Book{}" is unaddressable.
+	*/
+}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+<p class="anchor" id="take-composite-literal-address"></p>
+<h3>Composite Literals Are Unaddressable But Can Be Taken Addresses</h3>
+
+<div>
+Generally, only addressable values can be taken addresses.
+But there is a syntax sugar in Go, which allows us to
+take addesses on compisite literals.
+A syntax sugar is an exception in syntax to make programming convinient.
+For example,
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	type Book struct {
+		Pages int
+	}
+	// Book{100} is unaddressable but can be taken address
+	p := &Book{100}
+	p.Pages = 200
+}
+</code></pre>
+</div>
+
+<h3>Use Struct Pointers Like Struct Values</h3>
+
+<div>
+<p>
+Unlike C, in Go, there is not the <code>-&gt;</code> operator for accessing
+struct fields through struct pointers.
+In Go, the struct field acceessment operator for struct fields is also
+the dot sign <code>.</code>.
+</p>
+
+For example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	type Book struct {
+		pages int
+	}
+	book1 := &Book{100} // book1 is a poiner.
+	book2 := new(Book)  // book2 is another pointer.
+	book2.pages = book1.pages
+}
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
+<p class="anchor" id="comparison"></p>
+<h3>About Struct Value Comparisons</h3>
+
+<p>
+Most struct types are comparable types, except the ones who have fields of
+<a href="type-system-overview.html#types-not-support-comparison">uncomparable types</a>.
+When comparing two struct values of the same type,
+each pair of their corresponding fields will be compared.
+The two struct values are equal only if all of their corresponding fields are equal.
+</p>
 
 <h3>About Struct Value Conversions</h3>
 

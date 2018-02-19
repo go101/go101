@@ -1,14 +1,11 @@
 ﻿<h1>Pointers In Go</h1>
 
-<!--
-https://dave.cheney.net/2014/03/17/pointers-in-go
-https://golangbot.com/pointers/
--->
-
 <p>
-Same as C language, Go also supports pointer values.
-Go pointers and C pointers are much similar in may aspects,
-but there are also some differences of pointers between Go and C.
+Although Go absorbs many features from all kinds of other languages,
+Go is mainly viewed as a C family language.
+One evidence is Go also supports pointers.
+Go pointers and C pointers are much similar in many aspects,
+but there are also some differences between Go pointers and C pointers.
 This artcile will list all kinds of concepts and details related to pointers in Go.
 </p>
 
@@ -100,7 +97,7 @@ type PP *Ptr  // PP is a defined pointer type whose base type is Ptr.
 
 <p>
 Zero values of any pointer types are represented with the predeclared <code>nil</code>.
-No addresses are stored in <code>nil</code> pointer values.
+No addresses are stored in nil pointer values.
 </p>
 
 <p>
@@ -139,7 +136,6 @@ There are two ways to get a non-nil pointer value.
 
 <p>
 All variables are addressable and all constants are unaddressable.
-The fields of an addressable struct value are also addressable.
 Not all values stored in memory at run time are addressable in Go.
 We can learn other adressable and unadressable values from other articles later.
 If you have already been familar with Go, you can read 
@@ -179,26 +175,35 @@ and pointer dereference examples:
 import "fmt"
 
 func main() {
-	p0 := new(int)   // allocate memory
-	fmt.Println(p0)  // a hex integer string
-	fmt.Println(*p0) // dereference. Print 0.
+	p0 := new(int)   // p0 points to a zero int value.
+	fmt.Println(p0)  // (a hex address string)
+	fmt.Println(*p0) // 0
 	
 	// x is a copy of the value at the address stored in p0.
 	x := *p0
-	p1 := &x // take address of x
-	fmt.Printf("%T, %T \n", p0, p1) // *int, *int 
-	fmt.Println(p0 == p1) // false
-	
-	p2 := &x // also take address of x
+	p1, p2 := &x, &x      // both take address of x.
 	fmt.Println(p1 == p2) // true
-	
-	p3 := &*p0 // same as: &(*p0)
+	fmt.Println(p0 == p1) // false
+	p3 := &*p0            // <=> p3 := &(*p0)
 	fmt.Println(p0 == p3) // true
+	*p0, *p1 = 123, 789
+	fmt.Println(*p2, x, *p3) // 789 789 123
 	
-	y := *&x // same as : *(&x)
-	fmt.Println(y == x) // true
+	fmt.Printf("%T, %T \n", *p0, x) // int, int
+	fmt.Printf("%T, %T \n", p0, p1) // *int, *int
 }
 </code></pre>
+
+<p>
+<p>
+
+<p>
+The following picture depicts the relations of the values
+used in the above program.
+<br/>
+<img src="res/pointer.png">
+<br/>
+</p>
 </div>
 
 <h3>About The Word "Reference"</h3>
@@ -213,102 +218,85 @@ The uses of the word "reference" in Go 101 are consistent with Go specification.
 
 <h3>Why Do We Need Pointers?</h3>
 
-<p>
-All value assignments in Go are value copying.
-Sometimes, we don't want to copy a value in assignments,
-then we can copy the poitner to the value instead.
-Followings are two specified cases.
-</p>
-
 <div>
-Sometimes, a value needs to be referenced by multiple values simultaneously.
-For example, for a binary tree data structure,
-to perform all kinds of tree operations,
-each parernt node needs to be referenced by its two children nodes
-(and the two children nodes also needs to be referenced by that parent node).
-<pre class="line-numbers"><code class="language-go">type TreeNode struct {
-	parent *TreeNode
-	left   *TreeNode
-	right  *TreeNode
-	// other data ...
-}
-</code></pre>
+Let's view an example firstly.
 
-<p>
-</p>
-
-Each argument in a function call will be assigned (copied)
-to the correspinding parameter of the function.
-So any modifications on the parameter will not be reflected on that passed argument.
-Sometimes we expect the modifications made in a function on a value
-to be reflected to the outside of the function body,
-then we can pass the address (a.k.a, a pointer) of the value to a pointer parameter of the function.
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
-type Book struct {
-	Pages int
+func double(a int) {
+	a += a
 }
-
-func DoublePageA(book Book) {
-	// The modification on the parameter will not be
-	// reflected to the outside of the function.
-	book.Pages *= 2
-}
-
-func DoublePageB(book *Book) {
-	// The modification on the value referenced by the parameter
-	// will be reflected to the outside of the function.
-	book.Pages *= 2
-
-	// However, the modification on the parameter itself
-	// will not be reflected to the outside of the function.
-	book = nil
-}
-
-func main () {
-	book := Book{Pages: 100}
-	DoublePageA(book)
-	fmt.Println(book.Pages) // still 100. (book is not modified in DoublePageA)
-	p := &book
-	DoublePageB(p)
-	fmt.Println(book.Pages) // print 200. (book is modified in DoublePageB)
-	fmt.Println(p == nil)   // print false. (p is not modified in DoublePageB)
-}
-</code></pre>
-</div>
-
-<p>
-Some popular languages have not the pointer concept.
-However, pointers are just hidden under other concepts in those languages.
-</p>
-
-<h3>Compisite Literals Are Unaddressable But Can Be Taken Addresses</h3>
-
-<div>
-Generally, only addressable values can be taken addresses.
-But there is a syntax sugar in Go, which allows us to
-take addesses on compisite literals.
-A syntax sugar is an exception in syntax to make programming convinient.
-For example,
-<pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	type Book struct {
-		Pages int
-	}
-	p := &Book{100} // Book{100} is unaddressable but can be taken address
-	p.Pages = 200
+	var a = 3
+	double(a)
+	fmt.Println(a) // 3
 }
 </code></pre>
+
+<p>
+The <code>double</code> function is the above example is expected to modify
+the input argument by doubling it. However, it fails. Why?
+Because all value assignments, including function argument passing,
+are value copying in Go.
+What the <code>double</code> function modified is a copy of the input argument.
+Modifications on (the direct part of) a copy of an original value
+don't affect the original value.
+</p>
+
+One solution to fix the above <code>double</code> function is let it return
+the modification result. This solution doesn't always work for all scenarios.
+The following example shows another solution, by using a pointer parameter.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func double(a *int) {
+	*a += *a
+	a = nil // This line is just for education purpose.
+}
+
+func main() {
+	var a = 3
+	double(&a)
+	fmt.Println(a) // 6
+	p := &a
+	double(p)
+	fmt.Println(a, p == nil) // 12 false
+}
+</code></pre>
+
+<p>
+We can find that, by changing the parameter to a pointer type,
+the passed pointer argument and its copy reference the same same,
+so the modification on the referenced value, the local variable
+<code>a</code>, can be reflected out of the <code>double</code> function.
+</p>
+
+<p>
+Surely, the modification of the copy of the passed pointer argument itself
+still can't be reflected on the passed pointer argument.
+After the second <code>double</code> function call, the local pointer
+<code>p</code> doesn't get modified to <code>nil</code>.
+</p>
+
+<p>
+In short, pointers provide indirect ways to access some values
+so that these values can be avoided being copied.
+Many languages have not the pointer concept,
+however, pointers are just hidden under other concepts in those languages.
+</p>
+ 
 </div>
 
 <h3>Return Pointers Of Local Variables Is Safe In Go</h3>
 
 <div>
 Unlike C language, Go is a language supporting garbage collection,
-so return an address of local allocated memory is absolutely safe in Go.
+so return the address of a local variable is absolutely safe in Go.
 <pre class="line-numbers"><code class="language-go">func newInt() *int {
 	a := 3
 	return &a
@@ -369,6 +357,8 @@ is get satisfied.
 	in particular if either <code>T1</code> and <code>T2</code> is an unnamed type
 	and they underlying types are identical (considering struct tags),
 	then the conversion can be implicit.
+	(Struct types and values will be explained in
+	<a href="struct.html">the next article</a>.)
 </li>
 <li>
 	Type <code>T1</code> and <code>T2</code> are both unnamed pointer types and
@@ -462,13 +452,15 @@ func main() {
 	*/
 }
 </code></pre>
+<p>
+</p>
 </div>
 
-<h4>A Poiner Value Can't Be Assigned To Another Value Of An Arbitrary Pointer Type</h4>
+<h4>A Poiner Value Can't Be Assigned To Pointer Values Of Other Pointer Types</h4>
 
 <p>
-The conditions to assign a pointer value to another pointer value are the same as
-the conditions to compare a pointer value to another pointer value,
+The conditions to assign a pointer value to another pointer value are the
+same as the conditions to compare a pointer value to another pointer value,
 which are listed above.
 </p>
 
@@ -476,10 +468,12 @@ which are listed above.
 
 <p>
 As the start of this article has mentioned,
-the mechanisms provided by <a href="unsafe.html">the
-<code>unsafe</code> standard package</a>
+the mechanisms (specifically, the <code>unsafe.Pointer</code> type)
+provided by <a href="unsafe.html">the <code>unsafe</code> standard package</a>
 can be used to break the restrictions made for pointers in Go.
-But, generally, the unsafe ways are not recommended.
+The <code>unsafe.Pointer</code> type is like the <code>void*</code> in C.
+However, generally, the unsafe ways are not recommended to
+be used in general Go programming.
 </p>
 
 

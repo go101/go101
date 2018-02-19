@@ -5,41 +5,33 @@ Like many programming languages, string is also one important kind of types in G
 This article will list all the facts of strings.
 </p>
 
-<h3>The Internal Structure Of String</h3>
+<h3>The Internal Structure Of String Types</h3>
 
 <div>
-The internal structure of any string type is declared like:
-<pre class="line-numbers"><code class="language-go">type stringStruct struct {
-	str *byte
-	len int
+For the official Go compiler,
+the internal structure of any string type is declared like:
+<pre class="line-numbers"><code class="language-go">type _string struct {
+	elements *byte // underlying bytes
+	len      int   // number of bytes
 }
 </code></pre>
 <p>
 From the declaration, we know that the a string is actually
-a <code>byte</code> sequence wrapper.
+a <code>byte</code> sequence wrapper
+(or a container which elements are bytes).
 </p>
 </div>
 
-<p><i>
-(Note, in Go, <code>byte</code> is a built-in alias of type <code>uint8</code>.)
-</i></p>
+<p>
+Note, in Go, <code>byte</code> is a built-in alias of type <code>uint8</code>.
+</p>
 
 <h3>Some Simple Facts About Strings</h3>
 
 <div>
-Here are some simple facts about string types and values in Go.
+
+We have learned the following facts about strings from previous articles.
 <ul>
-<li>Like Java, the contents of string values are immutable.
-	Once created, their contents can't be modified.
-	The lengths of string values are also immutable.
-	A string value can only be overwritten as a whole by assigning another string value to it.
-</li>
-<li>
-	<code>aString[i]</code> represents the <b>i</b><i>th</i> byte value stored in <code>aString</code>.
-	The expression <code>aString[i]</code> is not addressable.
-	In other words, value <code>aString[i]</code> can't be modified.
-	In fact, for this reason, string values can be viewed as immutable <code>[]byte</code> values.
-</li>
 <li>
 	String values can be used as constants (along with boolean and all kinds of nummeric values).
 </li>
@@ -51,31 +43,89 @@ Here are some simple facts about string types and values in Go.
 <li>
 	The zero values of string types are blank strings, which can be represented
 	with <code>""</code> or <code>``</code> in literal.
-	Zero string values can't be represented by <code>nil</code>.
 </li>
 <li>
 	Strings can be concatenated with <code>+</code> and <code>+=</code> operators.
 </li>
 <li>
 	String types are all comparable (by using the <code>==</code> and <code>!=</code> operators).
-</li>
-<li>
-	Like integer and floating-point values, two values of the same string type can also be compared with
+	And like integer and floating-point values, two values of the same string type can also be compared with
 	<code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code> and <code>&lt;=</code> operators.
+	When comparing two strings, their underlying bytes will be compared, one byte by one byte.
+	If one string is a prefix of the other one and the other one is longer,
+	then the other one will be viewed as the larger one. 
+</li>
+</ul>
+
+<p>
+When comparing two strings, their underlying bytes will be compared,
+one byte by one byte.
+If one string is a prefix of the other one and the other one is longer,
+then the other one will be viewed as the larger one. 
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	const World = "world"
+	var hello = "hello"
+	
+	// Concat strings.
+	var helloWorld = hello + " " + World
+	helloWorld += "!"
+	fmt.Println(helloWorld) // hello world!
+	
+	// Compare strings.
+	fmt.Println(hello == "hello")   // true
+	fmt.Println(hello > helloWorld) // false
+}
+</code></pre>
+
+<p>
+</p>
+
+More facts about string types and values in Go.
+<ul>
+<li>
+	Like Java, the contents of string values are immutable.
+	Once created, their contents can't be modified.
+	The lengths of string values are also immutable.
+	A string value can only be overwritten as a whole by assigning another string value to it.
 </li>
 <li>
-	String type has no methods (just like most other built-in types in Go), but</li>
+	String type has no methods (just like most other built-in types in Go), but
 	<ul>
-	<li>the <a href="https://golang.org/pkg/strings/">strings standard package</a> contains many string utility functions.</li>
-	<li>the built-in function <code>len</code> can be used to get the length of a string (number of bytes).</li>
-	<li>the syntax <code>aString[start:end]</code> is used to get a substring of <code>aString</code> (<code>start</code> and <code>end</code> are byte indexes).</li>
+	<li>
+		the <a href="https://golang.org/pkg/strings/"><code>strings</code> standard package</a> contains many string utility functions.
+	</li>
+	<li>
+		the built-in function <code>len</code> can be used to get the length of a string (number of bytes stored in the string).
+	</li>
+	<li>
+		like <a href="container.html#element-accessment">element
+		accessments of arrays, slices and maps</a>,
+		the syntax <code>aString[i]</code> is also used to get the
+		<b>i</b><i>th</i> <code>byte</code> value stored in <code>aString</code>.
+		The expression <code>aString[i]</code> is not addressable.
+		In other words, value <code>aString[i]</code> can't be modified.
+	</li>
+	<li>
+		like <a href="container.html#subslice">the subslice
+		syntax</a> for arrays, slices and maps,
+		the syntax <code>aString[start:end]</code> is used to get a substring of <code>aString</code>.
+		Here, <code>start</code> and <code>end</code> are both indexes of bytes stored in <code>aString</code>.
+	</li>
 	</ul>
+</li>
 <li>
 	For the official Go compiler,
 	the destination string variable and source string value in a string assignment will
 	share the same underlying byte sequence in memory.
 	The result of a substring expression <code>aString[start:end]</code>
-	also share the same underlying byte sequence with the original string
+	also shares the same underlying byte sequence with the original string
 	<code>aString</code> in memory.
 </li>
 </ul>
@@ -86,227 +136,224 @@ Example:
 import (
 	"fmt"
 	"strings"
-	"reflect"
 )
 
-const World = "world"
-
 func main() {
-	var hello = "hello"
+	var helloWorld = "hello world!"
 	
+	var hello = helloWorld[:5] // substring
 	// 104 is the ascii code (and Unicode) of char 'h'
-	fmt.Println(hello[0]) // 104
-	fmt.Println(reflect.TypeOf(hello[0])) // uint8
+	fmt.Println(hello[0])         // 104
+	fmt.Printf("%T \n", hello[0]) // uint8
+	// hello[0] = 'H'             // error: hello[0] is immutable
+	// fmt.Println(&hello[0])     // error: hello[0] is not addressable
 	
-	// strings are immutable
-	// hello[0] = 'H' // error: cannot assign to hello[0]
-	
-	// variables are addressable, strings has no exception.
-	fmt.Println(&hello)
-	
-	// bytes in string are not addressable
-	// fmt.Println(&hello[0]) // compile error
-	
-	// string concatenation
-	var helloWorld = hello + " " + World
-	helloWorld += "!"
-	fmt.Println(helloWorld) // hello world!
-	
-	// substring. The start index is 0.
-	var hello2 = helloWorld[:len(hello)]
-	
-	// comparisons
-	fmt.Println(hello == hello2)    // true
-	fmt.Println(hello > helloWorld) // false
-	
-	// get string length
-	fmt.Println(len(hello), len(helloWorld)) // 5 12
-	
-	// strings util functions
+	fmt.Println(len(hello), len(helloWorld))          // 5 12
 	fmt.Println(strings.HasPrefix(helloWorld, hello)) // true
 }
 </code></pre>
 </div>
 
-<h3>Encoding</h3>
+<h3>String Encoding And Runes</h3>
 
 <p>
-At compile time, Go compiler will think the string literals in code are UTF-8 encoded.
-Illegal UTF-8 runes (see below for what are runes) in string literals will make compilation fail.
+In Go, all strings are viewed as UTF-8 encoded.
+The basic units in UTF-8 encoded strings are called code points.
+Most code points can be viewed as the charators we speak of in daily life.
+But for a few charators, each of them is composed of several code points.
 </p>
 
 <p>
-At run time, Go runtime will also treat the bytes stored in strings are UTF-8 encoded.
-However, Go runtime can't prevent some bytes stored in a string from being UTF-8 illegal.
+Code points are represented as rune values in Go.
+The built-in <code>rune</code> type is an alias of type <code>int32</code>.
 </p>
 
 <p>
-A Unicode code point may be composed of one or more bytes (up to four bytes).
-In Go, the value of Unicode code points is called rune.
-For most cases, a rune is a Unicode character, but some
-<a href="http://unicode.org/reports/tr29/">special characters</a> are composed of multiple runes.
-But for most cases, runes can be viewed as characters.
-
-<br/>
-NOTE: <code>rune</code> is a built-in type alias of <code>int32</code> in Go.
+At compile time, illegal UTF-8 runes in string literals (and rune literals) will make compilation fail.
+At run time, Go runtime can't prevent some bytes stored in a string from being UTF-8 illegal.
+In other words, a string at run time may be ill UTF-8 encoded.
 </p>
 
-<h3>Conversions</h3>
+<p>
+As the above has mentioned, each string is actually a byte sequence wrapper.
+So each rune in a string will be stored as one or more bytes (up to four bytes).
+For example, each English code point stores as one byte in Go strings,
+however each Chinese code point stores as three bytes in Go strings.
+</p>
 
-todo: custom byte slices and string types are also ok ...
+<p class="anchor" id="conversions"></p>
+<h3>String Related Conversions</h3>
 
 <div>
-String related conversions in Go:
-<table class="table table-bordered">
-<thead>
-	<tr>
-	<th>Conversion</th>
-	<th>Is bi-directional?</th>
-	<th>Must be explicit?</th>
-	<th>Share the same underlying bytes?</th>
-	</tr>
-</thead>
-<tbody>
-	<tr>
-	<th scope="row"><code>[]byte</code> &lt;-&gt; <code>string</code></th>
-	<td>Yes</td>
-	<td>Yes</td>
-	<td>No<sup>(1)</sup></td>
-	</tr>
-	<tr>
-	<th scope="row"><code>[]rune</code> &lt;-&gt; <code>string</code></th>
-	<td>Yes</td>
-	<td>Yes</td>
-	<td></td>
-	</tr>
-	<tr>
-	<th scope="row">integers -&gt; <code>string</code></th>
-	<td>No</td>
-	<td>Yes</td>
-	<td></td>
-	</tr>
-	<tr>
-	<th scope="row"><code>string</code> &lt;-&gt; types which underlying type is <code>string</code></th>
-	<td>Yes</td>
-	<td>Yes</td>
-	<td>Yes</td>
-	</tr>
-	<tr>
-	<th scope="row"><code>string</code> &lt;-&gt; <code>interface</code></th>
-	<td>Yes (type assertion on interface value to get string value)</td>
-	<td>No (for converting strings to interface types)</td>
-	<td>Yes (for the official Go compiler)</sup></td>
-	</tr>
-</tbody>
-</table>
-
-<p>
-<sup>(1)</sup> generally, conversions between a <code>[]byte</code> value and a <code>string</code> value
-will make a simple direct copy of the underlying bytes,
-but the official Go compiler will make optimizations for some cases. See next section for details.
-</p>
-
-Conversions between values of <code>[]byte</code> and <code>[]runes</code> are not supported directly in Go,
-the following ways can be used to achieve the purpose:
-<ul>
-<li>use string values as a hop. This way is convenient but not very efficient.</li>
-<li>use the functions in <a href="https://golang.org/pkg/unicode/utf8/">unicode/utf8</a> standard package.</li>
-<li>we can use the <code>Runes</code> function in the <a href="https://golang.org/pkg/unicode/utf8/">bytes</a> standard package to convert a <code>[]byte</code> value to a <code>[]rune</code> value.</li>
-</ul>
-</div>
-
-<p class="anchor" id="comparison"></p><h3>String Comparisons</h3>
-
-<p>
-The result of comparing two strings is the same as the result of
-comparing their underlying bytes one by one.
-If a string <code>a</code> is a prefix of, and shorter than another string <code>b</code>,
-then string <code>a</code> is smaller than string <code>b</code>.
-</p>
-
-<div>
-Some optimizations will be made for checking if two strings are equal.
-<ul>
+In the article <a href="constants-and-variables.html#explicit-conversion">constants and variables</a>,
+we have learned that intergers can be explicitly converted to strings (but not vice versa).
+Here introduces two more string related conversions rules in Go:
+<ol>
 <li>
-	if the lengths of the compared two strings are not equal,
-	then the two strings must be also not equal.
+	a string value can be explicitly converted to a byte slice, and vice versa.
+	A byte slice is a slice whose underlying type is <code>[]byte</code>
+	(a.k.a, <code>[]uint8</code>).
 </li>
 <li>
-	if the compared two strings have the length
-	and their underlying byte sequence pointers are also equal,
-	then the two strings must be also equal.
-	It is just two word comparisons for the two fields of two compared strings,
-	<code>str</code> and <code>len</code>.
+	a string value can be explicitly converted to a rune slice, and vice versa.
+	A rune slice is a slice whose underlying type is <code>[]rune</code>
+	(a.k.a, <code>[]int32</code>).
+</li>
+</ol>
+
+<p>
+In the conversions from rune slices to strings,
+each slice element (a rune value) will be converted to its respective
+UTF-8 encoding byte sequence representation.
+If a slice element values is outside the range of valid Unicode code points,
+the it will be viewed as <code>0xFFFD</code>,
+the code point for the Unicode replacement character.
+<code>0xFFFD</code> is represented with three bytes in UTF-8 encoding
+(<code>"\uFFFD" == "\xef\xbf\xbd"</code>).
+<p>
+
+<p>
+When a string is converted to a rune slice, the bytes stored in the string
+will be viewed as successive UTF-8 encoding byte sequence representations
+of many Unicode code points. Bad UTF-8 encoding representations will be
+converted to a rune value <code>0xFFFD</code>.
+</p>
+
+<p>
+When a string is converted to a byte slice,
+the result byte slice is just a deep copy of
+the underlying byte sequence of the string.
+When a byte slice is converted to a string,
+the underlying byte sequence of the result string
+is also just a deep copy of the byte slice.
+A memory allocation is needed to store the deep copy
+in each of such conversions.
+The reason why a deep copy is essential is slice elements are mutable
+but the bytes stored in strings are immutable,
+so a byte slice and a string can't share byte elements.
+</p>
+
+
+Please note, for conversions between strings and byte slices,
+<ul>
+<li>
+	illegal UTF-8 encoded bytes are allowed and will keep unchanged.
+</li>
+<li>
+	the official Go compiler makes some optimiazations
+	for some special cases of such conversions,
+	so that the deep copies are not made.
+	Such optimiazations will be introduced below.
 </li>
 </ul>
 
-<p>
-So for two equal strings, the time complexity of comparing them
-depends on whether or not their underlying byte sequence pointers are equal.
-If the two equal string values don't share the same underlying bytes,
-then the time complexity of comparing the two values is <code>O(n)</code>,
-where <code>n</code> is the length of the two strings,
-otherwise, the time complexity is <code>O(1)</code>.
-</p>
-</div>
+Conversions between byte slices and rune slices are not supported directly in Go,
+We can use the following ways to achieve this purpose:
+<ul>
+<li>
+	use string values as a hop. This way is convenient but not very efficient.
+</li>
+<li>
+	use the functions in <a href="https://golang.org/pkg/unicode/utf8/">unicode/utf8</a> standard package.
+</li>
+<li>
+	we can use <a href="https://golang.org/pkg/bytes/#Runes">the
+	<code>Runes</code> function in the bytes standard package</a>
+	to convert a <code>[]byte</code> value to a <code>[]rune</code> value.</li>
+</ul>
 
-<div>
-<p>
-As above mentioned, in a string value assignment,
-the destination string value and the source string value will
-share the same underlying byte sequence pointer in memory.
-So after the assignment, the cost of comparing
-the destination value and the source value will become very small.
-</p>
 
-For example:
+
+Example:
 <pre class="line-numbers"><code class="language-go">package main
 
-import "fmt"
-import "time"
+import (
+	"bytes"
+	"unicode/utf8"
+)
+
+func Runes2Bytes(rs []rune) []byte {
+	n := 0
+	for _, r := range rs {
+		n += utf8.RuneLen(r)
+	}
+	n, bs := 0, make([]byte, n)
+	for _, r := range rs {
+		n += utf8.EncodeRune(bs[n:], r)
+	}
+	return bs
+}
 
 func main() {
-	bs := make([]byte, 1<<26)
-	
-	// s0, s1 and s2 are three equivalent strings.
-	s0 := string(bs) // the underlying bytes of s0 is a copy of bs.
-	s1 := string(bs) // the underlying bytes of s1 is also a copy of bs.
-	                 // NOTE: the underlying bytes of s0 and s1 are
-	                 // two different copies of bs.
-	s2 := s1 // s2 shares the same underlying bytes with s1.
-
-	startTime := time.Now()
-	_ = s0 == s1
-	duration := time.Now().Sub(startTime)
-	fmt.Println("duration for (s0 == s1):", duration)
-	
-	startTime = time.Now()
-	_ = s1 == s2
-	duration = time.Now().Sub(startTime)
-	fmt.Println("duration for (s1 == s2):", duration)
+	s := "Color Infection is a good game."
+	bs := []byte(s) // string -> []byte
+	s = string(bs)  // []byte -> string
+	rs := []rune(s) // string -> []rune
+	s = string(rs)  // []rune -> string
+	rs = bytes.Runes(bs) // []byte -> []rune
+	bs = Runes2Bytes(rs) // []rune -> []byte
 }
 </code></pre>
+
+<p>
+<p>
+
+<!---
+https://github.com/golang/go/issues/23536
+todo: if later the meaning of "byte slice" is changed.
+      The beginning of this article may be also
+      need changed. "a <code>byte</code> sequence" should be changed
+      to "a byte sequence".
+-->
+
+Maybe it is not intentional, for the official Go compiler,
+it looks a string can also be converted to a slice type whose
+element type's underlying type is <code>byte</code>,
+but not versa.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	type MyByte byte
+	str := "hello"
+	bs := []MyByte(str) // compile okay
+	str = string(bs)    // error: cannot use []B as []byte
+}
+</code></pre>
+
+
+<p>
+</p>
 </div>
-Output:
-<pre>
-duration for (s0 == s1): 10.462075ms
-duration for (s1 == s2): 136ns
-</pre>
-1ms == 1000000ns! So please be careful when comparing two long strings
-if they don't share the same underlying byte sequence pointer.
-</a>
 
 <p class="anchor" id="conversion-optimizations"></p>
-<h3>Compiler Optimizations: <code>[]byte</code> &lt;-&gt; <code>string</code> Conversions</h3>
+<h3>Compiler Optimizations For Conversions Between Strings And Byte Slices</h3>
+
+<p>
+todo: verify these optimizations on Go 1.10.
+</p>
 
 <div>
-The official Go compiler (v1.9) will make some optimizations for some special cases:
+Above has mentioned that the underlying bytes in the conversions
+between strings and byte slices will be copied.
+The current official Go compiler (v1.9) will make some optimizations
+for some special scenarios to avoid the duplicate copies.
+These scenarios include:
 <ul>
-<li>when the <code>[]byte</code> result of the conversion from a <code>string</code> to <code>[]byte</code> follows the range keyword in a <code>for</code> loop.</li>
-<li>when the conversion result from a <code>[]byte</code> to <code>string</code> is used as a <code>map</code> key.</li>
-<li>when the conversion result from a <code>[]byte</code> to <code>string</code> is used in a comparison.</li>
-<li>when the conversion result from a <code>[]byte</code> to <code>string</code> is used in a string concatenation,
-	and at least one of concatenated values is a non-blank string constant.
+<li>
+	a conversion (from string to byte slice) which
+	follows the <Code>range</code> keyword in a <code>for-range</code> loop.
+</li>
+<li>
+	a conversion (from byte slice to string) which is used as a map key.
+</li>
+<li>
+	a conversion (from byte slice to string) which is used in a comparison.
+</li>
+<li>
+	a conversion (from byte slice to string) which is used in
+	a string concatenation, and at least one of concatenated
+	string values is a non-blank string constant.
 </li>
 </ul>
 
@@ -314,18 +361,15 @@ Example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
-import "testing"
 
-func fa() {
+func main() {
 	var str = "world"
-	// Here, the []byte(str) conversion will not copy the
-	// underlying bytes of str.
+	// Here, the []byte(str) conversion will not copy
+	// the underlying bytes of str.
 	for i, b := range []byte(str) {
 		fmt.Println(i, ":", b)
 	}
-}
-
-func fb() {
+	
 	key := []byte{'k', 'e', 'y'}
 	m := map[string]string{}
 	// Here, the string(key) conversion will not copy the bytes
@@ -334,35 +378,50 @@ func fb() {
 	m[string(key)] = "value"
 	fmt.Println(m[string(key)]) // value
 }
+</code></pre>
+
+Another example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "testing"
 
 var s string
 var x = []byte{1024: 'x'}
 var y = []byte{1024: 'y'}
+
 func fc() {
 	// None of the below 4 conversions will
-	// copy the underlying byte sequences.
+	// copy the underlying bytes of x and y.
 	if string(x) != string(y) {
 		s = (" " + string(x) + string(y))[1:]
 	}
 }
 
+func fd() {
+	// Only the two conversions in the comparison
+	// will not copy the underlying bytes of x and y.
+	if string(x) != string(y) {
+		s = string(x) + string(y)
+	}
+}
+
 func main() {
-	fa()
-	fb()
 	fmt.Println(testing.AllocsPerRun(1, fc)) // 1
+	fmt.Println(testing.AllocsPerRun(1, fd)) // 3
 }
 </code></pre>
 </div>
 
-<h3>For-Range on Strings</h3>
+<h3><code>for-range</code> On Strings</h3>
 
 <div>
 <p>
 The <code>for-range</code> loop control flow applies to strings.
-But please note, <code>for-range</code> will iterate the runes, instead of bytes, in a string.
-For speaking more accurately, <code>for-range</code> will treat the underlying bytes of a string
-as a Unicode code point sequence and iterate the code points.
-Illegal UTF-8 bytes will be interpreted as <code>rune</code> value <code>0xfffd</code>.
+But please note, <code>for-range</code> will iterate the Unicode code points
+(as <code>rune</code> values), instead of bytes, in a string.
+Bad UTF-8 encoding representations in the string will be
+interpreted as <code>rune</code> value <code>0xFFFD</code>.
 </p>
 
 Example:
@@ -416,14 +475,14 @@ func main() {
 }
 </code></pre>
 <p>
-As you have seen, <code>len(s)</code> will return number of bytes in strings.
-The time complexity of <code>len(s)</code> is O(1).
+As you have seen, <code>len(s)</code> will return the number of bytes in strings.
+The time complexity of <code>len(s)</code> is <code><i>O</i>(1)</code>.
 How to get the number of runes in a string?
 Using <code>for-range</code> to iterate and count all runes is a way, and using the
 <a href="https://golang.org/pkg/unicode/utf8/#RuneCountInString">RuneCountInString</a>
 function in the <code>unicode/utf8</code> standard package is another way.
 The efficiencies of the two ways are almost the same.
-Please note that the time complexities of both ways are O(n).
+Please note that the time complexities of both ways are <code><i>O</i>(n)</code>.
 </p>
 </div>
 
@@ -448,112 +507,153 @@ func main() {
 <h3>More String Concatenation Methods</h3>
 
 <div>
-Besides using the <code>+</code> operator to concatenate strings, you can also use following methods to concatenation strings:
+Besides using the <code>+</code> operator to concatenate strings, you can also use following methods to concatenation strings.
 <ul>
-<li>the <code>Sprintf</code>/<code>Sprint</code>/<code>Sprintln</code> functions in <a href="https://golang.org/pkg/fmt/">fmt standard package</a> can be used to concatenate values of any types, including <code>string</code> type.</li>
-<li>the <code>Buffer</code> type in <a href="https://golang.org/pkg/bytes/">bytes standard package</a> (or the built-in <code>copy</code> function) can be used to build <code>byte</code> slices, which afterwards can be converted to <code>string</code> values.</li>
-<li>use the <a href="https://golang.org/pkg/strings/#Join">Join</a> function in <code>strings</code> standard package.</li>
+<li>
+	The <code>Sprintf</code>/<code>Sprint</code>/<code>Sprintln</code> functions
+	in the <code>fmt</code> standard package
+	can be used to concatenate values of any types, including string types.
+</li>
+<li>
+	Use the <code>Join</code> function in the <code>strings</code> standard package.
+</li>
+<li>
+	The <code>Buffer</code> type in the <code>bytes</code> standard package
+	(or the built-in <code>copy</code> function) can be used to build byte slices,
+	which afterwards can be converted to string values.
+</li>
+<li>
+	Since Go 1.10, the <code>Builder</code> type in the <code>strings</code> standard package
+	can be used to build strings. Generally, the method is more efficient than the above three ones,
+	for it avoids making a duplicate copy of underlying bytes of the result string.
+</li>
 </ul>
-The Go official compiler will make optimizations when using the <code>+</code> operator to concatenate strings.
-So generally, using <code>+</code> operator is more convenient and performant than other methods.
+
+<p>
+The Go official compiler makes optimizations for string concatenations by using the <code>+</code> operator.
+So generally, using <code>+</code> operator to concatenate strings is convenient and efficient
+if the number of the concatenated strings is knwon.
+</p>
 </div>
 
-<h3>More About Substrings</h3>
+<p class="anchor" id="use-string-as-byte-slice"></p>
+<h3>Sugar: Use Strings As Byte Slices</h3>
 
 <div>
+
 <p>
-In the official Go implementation,
-when creating a substring from another string,
-the substring and the other string will share the same underlying allocated memory block,
-even if the substring only use a samll portion of the memory block.
-Assume the memory block is only used by the two strings,
-it will be garbaged collected only if both of the two strings are not reachable any more.
+From the article <a href="container.html">arrays, slices and maps</a>,
+we have leanred that we can use the built-in <code>copy</code> and
+<code>append</code> functions to copy and append slice elements.
+In fact, as a special case, 
+if the type of the first argument of a call to either of the two
+functions is a byte slice, then the second argument can be a string
+(if the call is an <code>append</code> call, then the string argument
+must be followed by three dots <code>...</code>).
+In other words, a string can be used as a byte slice for the special case.
 </p>
-Example:
-<pre class="line-numbers"><code class="language-go">package main
 
-import (
-	"runtime"
-	"strings"
-)
-
-var s0 string // package level variable
-
-func f1() {
-	bs := make([]byte, 1 << 20) // (1 << 20) is 1M
-	
-	s1 := string(bs) // The underlying byte sequence of s1 is
-	                 // a copy of the underlying bytes of bs.
-	s0 = s1[:1] // s0 only contains the first byte in s1.
-	            // s0 and s1 share the same underlying bytes.
-		     // In fact, even if len(s0) == 0, s0 will still
-	            // share the same underlying bytes with s1.
-}
-
-func main() {
-	f1()
-	runtime.GC()
-
-	// Up to now, the 1M bytes memory block alloced in f1 is
-	// still not be GCed. The reason is the package level
-	// variable s0 is still alive now, even if it only actually
-	// uses one byte in the 1M memory block.
-	
-	// use any of these methods to avoid "memory leaking".
-	s0 = strings.Repeat(s0, 1)
-	s0 = string([]byte(s0))
-	
-	runtime.GC()
-	// now, the 1M memory block is garbage collected.
-}
-</code></pre>
-</div>
-
-todo: use strings.Builder to avoid one allocation.
-
-<h3>Sugar: Use <code>string</code> As <code>[]byte</code></h3>
-
-<div>
-The signatures of the built-in <code>copy</code> and <code>append</code> functions are:
-<pre class="line-numbers"><code class="language-go">func copy(dst, src []Type) int
-
-func append(slice []Type, elems ...Type) []Type
-</code></pre>
-<p>
-Generally, for both the two functions, the element value type of their two parameters must be the same one.
-But, if the type of the first parameter is <code>[]byte</code>, then the second parameter can be a string.
-</p>
 Example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	hello := []byte{'h', 'e', 'l', 'l', 'o', ' '}
+	hello := []byte("Hello ")
 	world := "world!"
 	
-	// no need to convert world to []byte value
-	// helloWorld := append(hello, []byte(world)...)
-	helloWorld := append(hello, world...) // use string as []byte
-	fmt.Println(string(helloWorld)) // hello world!
+	// helloWorld := append(hello, []byte(world)...) // the normal way
+	helloWorld := append(hello, world...)            // the sugar way
+	fmt.Println(string(helloWorld))
 	
 	helloWorld2 := make([]byte, len(hello) + len(world))
 	copy(helloWorld2, hello)
-	// no need to convert world to []byte value
-	// copy(helloWorld2[len(hello):], []byte(world
-	copy(helloWorld2[len(hello):], world) // use string as []byte
-	fmt.Println(string(helloWorld2)) // hello world!
+	// copy(helloWorld2[len(hello):], []byte(world)) // the normal way
+	copy(helloWorld2[len(hello):], world)            // the sugar way
+	fmt.Println(string(helloWorld2))
 }
 </code></pre>
 </div>
 
-<!---
-<h3>References:</h3>
+<p class="anchor" id="comparison"></p>
+<h3>More About String Comparisons</h3>
+
 <div>
-<ol>
-<li><a href="https://github.com/golang/go/issues/17526">go-issues: runtime: Release one copy of underlying data if the comparing result of two strings or two interfaces is true</a></li>
-<li><a href="https://groups.google.com/forum/#!topic/golang-nuts/naMCI9Jt6Qg">go-nuts: the best way to copy a string in go</a></li>
-</ol>
+Above has mentioned that comparing two strings is comparing their underlying bytes in fact.
+Most compilers will made some optimizations for string comparisons.
+<ul>
+<li>
+	If the lengths of the compared two strings are not equal,
+	then the two strings must be also not equal.
+</li>
+<li>
+	If their underlying byte sequence pointers of
+	the compared two strings are equal,
+	then the comparison result is the same as
+	comparing the lengths of the two strings.
+</li>
+</ul>
+
+<p>
+So for two equal strings, the time complexity of comparing them
+depends on whether or not their underlying byte sequence pointers are equal.
+If the two equal string values don't share the same underlying bytes,
+then the time complexity of comparing the two values is <code><i>O</i>(n)</code>,
+where <code>n</code> is the length of the two strings,
+otherwise, the time complexity is <code><i>O</i>(1)</code>.
+</p>
 </div>
--->
+
+<div>
+<p>
+As above mentioned, for the official Go compiler, in a string value assignment,
+the destination string value and the source string value will
+share the same underlying byte sequence in memory.
+So after the assignment, the cost of comparing
+the two strings becomes very small.
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	bs := make([]byte, 1<<26)
+	s0 := string(bs)
+	s1 := string(bs)
+	s2 := s1
+	
+	// s0, s1 and s2 are three equal strings.
+	// The underlying bytes of s0 is a copy of bs.
+	// The underlying bytes of s1 is also a copy of bs.
+	// The underlying bytes of s0 and s1 are two different copies of bs.
+	// s2 shares the same underlying bytes with s1.
+
+	startTime := time.Now()
+	_ = s0 == s1
+	duration := time.Now().Sub(startTime)
+	fmt.Println("duration for (s0 == s1):", duration)
+	
+	startTime = time.Now()
+	_ = s1 == s2
+	duration = time.Now().Sub(startTime)
+	fmt.Println("duration for (s1 == s2):", duration)
+}
+</code></pre>
+
+Output:
+<pre class="output"><code>duration for (s0 == s1): 10.462075ms
+duration for (s1 == s2): 136ns
+</code></pre>
+
+<p>
+1ms is 1000000ns! So please try to avoid comparing two long strings
+if they don't share the same underlying byte sequence.
+</p>
+</div>
+
 

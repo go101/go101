@@ -17,20 +17,22 @@ the two previous articles <a href="struct.html">structs in Go</a>
 and <a href="pointer.html">pointers in Go</a>.
 Struct types and pointer types in Go and C are much alike.
 The main characteristic of C types is the memory layouts of their values
-are transparent. Each C value in memory occupies one continuous memory segment.
+are transparent.
+Each C value in memory occupies one continuous memory segment.
+Below, such a continuous memory segment will be called a value part.
 </p>
 
 <p>
 One the other hand, Go can also be viewed as C language framework.
-This is mainly reflected in the fact that Go supports sone kinds of types
+This is mainly reflected in the fact that Go supports several kinds of types
 whose value memory layouts are not totally transparent.
 Each values of the these kinds of types is often composed of one direct part
-and one or several underlying indirect parts.
-These kinds of types bring much convenience to Go programming 
-by encapsulating many implementation details.
-Different Go compilers may adopt different internal implementations
-for these types, but the external behaviors of values of these types
-must satisfy the requirements specified in Go specification.
+and one or several underlying indirect parts, and the underlying value part
+is referenced by the direct value part.
+The following picture dipicts a mult-part value.
+<br/>
+<img src="res/value-parts.png">
+<br/>
 </p>
 
 <p>
@@ -47,6 +49,7 @@ array types and unsafe pointer types.
 Array types will be explained in the next article
 and unsafe pointer types will be explained in the article
 <a href="unsafe.html">the <code>unsafe</code> standard package</a> later.
+Each C alike value is only composed of one direct value part.
 </p>
 
 <div>
@@ -61,13 +64,22 @@ Specifically speaking, these kinds of types include
 <li>interface types,</li>
 <li>string types.</li>
 </ul>
+
+<p>
+These kinds of types bring much convenience to Go programming
+by encapsulating many implementation details.
+Different Go compilers may adopt different internal implementations
+for these types, but the external behaviors of values of these types
+must satisfy the requirements specified in Go specification.
+These types will be explained detailedly in the following articles.
+</p>
 </div>
 
-<p><i>
-(Note, whether or not interface and string values may contain underlying parts
-is compiler dependent. For the official Go compiler, interface and string
-values may contain underlying parts.)
-</i></p>
+<p>
+Note, whether or not interface and string values may contain underlying parts
+is compiler dependent. For the official Go compiler implementation,
+interface and string values may contain underlying parts.
+</p>
 
 <p>
 The types in the second category are not fundamental types for a langauge,
@@ -86,9 +98,9 @@ and makes some obstables to understanding Go better sometimes.
 </p>
 
 <p>
-The following content of this article will introduce the internal
-structure definitions of the kinds of types in the second category.
-Knowing these internal structures is very helpful in understanding Go values.
+To help gophers better understand the types in the second category
+and their values, the following content of this article will introduce
+the internal structure definitions of these kinds of types.
 The detailed implementations of these types will not be explained here.
 The explanations in this article are based on, but not exactly same as,
 the implementations by the official Go compiler.
@@ -121,7 +133,7 @@ it may be either a type-safe pointer type or a type-unsafe pointer type.
 
 <div>
 A pointer value stores a memory address of another value,
-unless the pointer value is a <code>nil</code> pointer.
+unless the pointer value is a nil pointer.
 We can say the pointer value references the other value,
 or the other value is referenced by the pointer value.
 Values can also be referenced indirectly.
@@ -178,10 +190,10 @@ its indirect underlying implementation part.
 </p>
 
 <p>
-In fact, the indirect underlying part of a value of any channel or function type
+In fact, the indirect underlying part of a value of the three kinds of types
 may also reference deeper indirect underlying parts.
-But this article views the deeper ones and first level indirect one
-as one whole indirect part.
+But the current article will ignore the deeper ones
+and first level indirect ones.
 </p>
 
 </div>
@@ -273,14 +285,25 @@ type _interface struct {
 The <code>methods</code> field of the <code>dynamicTypeInfo</code> field
 of an interface value stores the implemented methods of the dynamic type
 of the interface value for the (interface) type of the interface value.
-Go runtime will create most one dynamic type information struct for
-each interface type and dynamic type pair.
-For the official Go runtime, the dynamic type information struct values
+</p>
+
+<p>
+Go runtime will create most one dynamic type information struct for 
+each interface type and dynamic type pair
+and store the struct value in the global zone.
+For the official Go runtime, a dynamic type information struct value
 will be never garbaged collected once it is created.
+All <code>_type</code> values are also stored in the global zone.
+In other words, the <code>_type</code> values and dynamic type information
+struct values are not one interface value exclusive.
+For this reason, the current article will view each interface value may
+has most one underlying value,
+which is referenced by the <code>dynamicValue</code> filed.
 </p>
 
 </div>
 
+<p class="anchor" id="about-value-copy"></p>
 <h3>Underlying Value Parts Are Not Copied In Value Assignments</h3>
 
 <p>
@@ -289,26 +312,29 @@ in the second category are either pointer types or struct types.
 Certainly, Go compilers will never view the types in the second category
 as pointer types or struct types in user programs.
 These definitions are just used internally by Go runtimes.
-They are the types of the direct parts of multi-part values in Go.
 </p>
 
 <p>
 In Go, each value assignment (including parameter passing, etc) is
 a shallow value copy if the involved destination and source values
-have the same type (if their types are different, the source value will be
-implicitly converted to the destination type before doing that assignment).
+have the same type (if their types are different, we can think that
+the source value will be implicitly converted to the destination type
+before doing that assignment).
 In other words, only the direct part of the soruce value is copied
-in an value assignment.
-This means in a pointer or pointer wrapper value assignment,
-only the memory address(es) of the referenced value part(s) are copied,
-the indirect referenced value part(s) themselves are not copied.
-In other words, the destination pointer or pointer wrapper value will
-reference the same indirect value part(s) referenced by
-the source pointer or pointer wrapper value after the assignment.
+to the destination value in an value assignment.
+If the source value has underlying value part(s),
+then the direct parts of the destination and source values
+will reference the same underlying value part(s),
+in other words, the destination and source values will
+share the same underlying value part(s).
+<br/>
+<img src="res/value-parts-copy.png">
+<br/>
+
 </p>
 
 <p>
-In fact, the above description is not 100% correct in theory.
+In fact, the above descriptions are not 100% correct in theory, for strings and interfaces.
 The <a href="https://golang.org/doc/faq#pass_by_value">official Go FAQ</a> says
 the underlying dynamic value part of an interface value should be copied
 as well when the interface value is copied.
@@ -316,15 +342,24 @@ However, as the dynamic value of an interface value is read only,
 the official Go compiler/runtime doesn't copy the underlying
 dynamic value parts in copying interface values.
 This can be viewed as a compiler optimization.
-The same situation is for string values and the same optimization is made for
-copying string values, by the official Go compiler/runtime.
-In other words, for the official Go compiler/runtime,
-the indirect underlying parts will never be copied in copying any value.
+The same situation is for string values and the same optimization
+(made by the official Go compiler/runtime) is made for copying string values.
+So, for the official Go compiler/runtime, the descriptions in the last section
+are 100% correct, for values of any type.
 </p>
 
 <p>
 Since an indirect underlying part may not belong to any value exclusively,
 it doesn't contribute to the size returned by the <code>unsafe.Sizeof</code> function.
+</p>
+
+<p>
+As above mentioned, Go map values are hashtables internally.
+When an interface or a string value is used as a map key, its underlying part(s)
+are counted in calculating its hash.
+When a channel is used as a map key, its underlying part(s) are not counted
+in calculating its hash.
+Slice, map and function values can't be used as map keys.
 </p>
 
 <p class="anchor" id="more=about-reference"></p>
