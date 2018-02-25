@@ -1,0 +1,659 @@
+﻿<h1>Goroutines, Deferred Function Calls And Panic/Recover</h1>
+
+<p>
+This article will introduce goroutines and deferred function calls.
+Goroutine and deferred function call are two unique features in Go.
+Panic and recover mechanism will also be simply explained in this article.
+Not all knowledges relating to the these features are convered in the
+current article, other ones will be introduced in other articles later.
+</p>
+
+<h3>Goroutines</h3>
+
+<p>
+Goroutines are also often called green threads.
+Green threads are maintained and scheduled by
+language runtime instead of operation systems.
+The cost, such as memory consumption and context switching,
+of a goroutine is much smaller than an OS thread.
+So it is not a problem for a Go program to maintain tons of thoundsands
+goroutines at the same time, as long as the system memory is sufficient.
+</p>
+
+<p>
+Go doesn't support creating system threads in user code.
+So using goroutines is the only way to do concurrent programing
+(program scope) in Go.
+</p>
+
+<p>
+Each Go program starts with only one goroutine,
+we call it the main goroutine, at the beginning.
+A goroutine can create new goroutines.
+It is super easy to create a new goroutine in Go,
+just make a function call follow a <code>go</code> keyword,
+then the function call will be executed in a new created goroutine.
+The new created goroutine will exit alongside the exit of the called function.
+</p>
+
+<div>
+All the result values of a goroutine function call
+(if the called function has return results)
+must be discarded in the function call statement.
+The following is an example which creates two new goroutines
+in the main goroutine.
+In the example, <code>time.Duration</code> is a custom type defined
+in the <code>time</code> standard package.
+It is defined as the built-in type <code>int64</code>.
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"log"
+	"math/rand"
+	"time"
+)
+
+func SayGreetings(greeting string, times int) {
+	for i := 0; i < 10; i++ {
+		log.Println(greeting)
+		d := time.Second * time.Duration(rand.Intn(5)) / 2
+		time.Sleep(d)
+	}
+}
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	log.SetFlags(0)
+	go SayGreetings("hi!", 10)
+	go SayGreetings("hello!", 10)
+	time.Sleep(2 * time.Second)
+}
+</code></pre>
+
+Quite easy. Right? We do concurrent programming now!
+The above program will have three user created goroutines running
+simultaneously at its peak at run time.
+Let's run it. One possible output result:
+
+<pre class="output"><code>hi!
+hello!
+hello!
+hello!
+hello!
+hi!
+</code></pre>
+
+<p>
+</p>
+
+<p>
+When the main goroutine exits, the whole program also exits.
+</p>
+
+<p>
+Unlike previous articles, this program uses the <code>Println</code>
+function in the <code>log</code> standard package instead of the
+corresponding function in the <code>fmt</code> standard package.
+The reason is the print functions in the <code>log</code> standard
+package are synchronized, so the texts printed by the two goroutines
+will not be messed up in one line (though the chance the printed texts
+being messed up by using the print functions in the <code>fmt</code>
+standard package is low for this specified program).
+</p>
+
+</div>
+
+<h3>Concurrency Synchronization</h3>
+
+<div>
+<p>
+The above program is not perfect.
+The two new goroutines are intended to print ten greetings each.
+However, the main goroutine will exit in two seconds,
+so many greatings have not a chance to get printed.
+How to let the main goroutine know when the two new goroutines
+have both finished their tasks?
+We must use some a concurrency synchronization technique.
+</p>
+
+<p>
+Go supports several
+<a href="concurrent-synchronization-overview.html">concurrency synchronization
+techniques</a>. Among these techniques,
+<a href="channel.html">channel</a> is the most unique and popularly used one.
+However, here will use one another technique,
+the <code>WaitGroup</code> type in the <code>sync</code> standard package,
+to do synchronizations between the two new goroutines and the main goroutine.
+</p>
+
+<p>
+The <code>WaitGroup</code> type has three methods, <code>Add</code>,
+<code>Done</code> and <code>Wait</code>.
+This type will be explained detailedly later in another article.
+Here we can simply think the <code>Add</code> method is used to register
+number of new tasks, the <code>Done</code> method is used to notify
+that a task is finished, and the <code>Wait</code> method makes the caller
+goroutine become blocking until all registered tasks are finished.
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"log"
+	"math/rand"
+	"time"
+	"sync"
+)
+
+var wg sync.WaitGroup
+
+func SayGreetings(greeting string, times int) {
+	for i := 0; i < 10; i++ {
+		log.Println(greeting)
+		d := time.Second * time.Duration(rand.Intn(5)) / 2
+		time.Sleep(d)
+	}
+	wg.Done() // notify a task is finished.
+}
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	log.SetFlags(0)
+	wg.Add(2) // register two tasks.
+	go SayGreetings("hi!", 10)
+	go SayGreetings("hello!", 10)
+	wg.Wait() // block until all tasks are finished.
+}
+</code></pre>
+
+<p>
+Run it, we can find that, before the program exits,
+each of the two new goroutines prints ten greetings.
+</p>
+
+</div>
+
+<h3>Goroutine States</h3>
+
+<div>
+<p>
+The last example shows that a live goroutine may stay in (and switch between)
+two states, <b>running</b> and <b>blocking</b>.
+In that example, the main goroutine enters the blocking state when the
+<code>wg.Wait</code> method is called, and enter running state again
+when the other two goroutines both finish their respective tasks.
+</p>
+
+<p>
+A goroutine in sleeping (by calling <code>time.Sleep</code> function)
+or waiting the response of a syscall or a netword connnection
+is viewed as staying in running state.
+</p>
+
+<p>
+When a new goroutine is created, it will enter running state automatically.
+Goroutines can only exit from running state, and never from blocking state.
+If, for any reason, a goroutine stays in blokcing state for ever,
+then it will never exit.
+Such case should be avoided in concurrent programming,
+if it happens, it causes memory leak and should be viewed as a logic bug.
+</p>
+
+<p>
+A blocking goroutine can only be unblocked by
+an operation made in another goroutine.
+If all goroutines in a Go program are in blocking state,
+then all of they will stay in blocking state for ever.
+This can be viewed as an overall deadlock.
+For such cases, the official Go runtime will crash the program.
+</p>
+
+The following program will ctash, after two seconds:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"sync"
+	"time"
+)
+
+var wg sync.WaitGroup
+
+func main() {
+	wg.Add(1)
+	go func() {
+		time.Sleep(time.Second * 2)
+		wg.Wait()
+	}()
+	wg.Wait()
+}
+</code></pre>
+
+The output:
+<pre class="output"><code>fatal error: all goroutines are asleep - deadlock!
+
+...
+</code></pre>
+
+<p>
+Later, we will learn more operations which will make goroutines
+enter blocking state.
+</p>
+
+</div>
+
+<h3>Goroutine Schedule</h3>
+
+<p>
+We can call the <a href="https://golang.org/pkg/runtime/#NumCPU"><code>runtime.NumCPU</code></a>
+function to get the number of logical CPUs avaliable for the current running program.
+The number of live running goroutines may be much larger than the number of logical CPUs.
+Each logical CPU can only exexute one goroutine at any given time.
+Go runtime must frequently switches execution contexts between goroutines
+to let each running goroutine have chances to execute.
+This is similar to how operation systems switch execution contexts between OS threads.
+</p>
+
+<p>
+The official Go runtime adopts the
+<a href="https://docs.google.com/document/d/1TTj4T2JO42uD5ID9e89oa0sLKhJYD0Y_kqxDv3I3XMw">M-P-G model</a>
+to do the goroutine schedule job,
+where <b>M</b> represents OS threads,
+<b>P</b> represents logical/virtual processors (not logical CPUs)
+and <b>G</b> represents goroutines.
+Most the schedule work is made by logical processors (<b>P</b>s),
+which act as brokers by attach goroutines (<b>G</b>s) to OS threads (<b>M</b>s).
+Each OS thread can only be attached most one goroutine at any given time,
+and each gproutine can only be attached to most one OS thread at any given time.
+A goroutine can only get executed when it is attached to an OS thread.
+A goroutine which has been executed for a while will try to detach itself from the corresponding OS thread,
+so that other running goroutines can have chances to get attached and executed.
+</p>
+
+<p>
+At runtime. we can call the <a href="https://golang.org/pkg/runtime/#GOMAXPROCS"><code>runtime.GOMAXPROCS</code></a>
+function to get and set the maximum number of logical CPUs that can be executing simultaneously.
+In fact, for the official Go runtime, this number determines the number of logical processors (<b>P</b>s).
+For the official Go runtime, before Go 1.5, the default value of this number is <code>1</code>,
+but since Go 1.5, the default value of this number is equal to
+the number of logical CPUs avaiable for the current running program.
+The default value (the number of logical CPUs) is the best choice for most programs.
+The default value can be changed through the <code>GOMAXPROCS</code> environment variable.
+</p>
+
+<h3>Deferred Function Calls</h3>
+
+<div>
+<p>
+A deferred function call is a function call which follows a <code>defer</code> keyword.
+Like goroutine function calls,
+all the result values of the function call (if the called function has return results)
+must be discarded in the function call statement.
+</p>
+
+<p>
+When a function call is deferred, it is not executed immediately.
+It will be push into a defer-call stack maintained by its caller goroutine.
+When a function call <code>fc</code> returns and enters its exiting phase,
+all the deferred function calls pushed in the function call (<code>fc</code>)
+(which has not exited yet) will be executed,
+by their inverse orders being pushed into the defer-call stack.
+Once all these deferred calls are executed,
+the function call <code>fc</code> exits.
+</p>
+
+Here is a simple example to show how to use deferred function calls.
+In the example, <code>defer</code> are keywords.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	defer fmt.Println("The third line.")
+	defer fmt.Println("The second line.")
+	fmt.Println("The first line.")
+}
+</code></pre>
+
+The output:
+<pre class="output"><code>The first line.
+The second line.
+The third line.
+</code></pre>
+
+<p>
+</p>
+
+Each goroutine maintain two call stacks,
+the normal-call stack and defer-call stack.
+<ul>
+<li>
+	For two adjacent function calls in the normal-call stack of a goroutine,
+	The later pushed one is called by the earlier pushed one.
+	The bottom function call in the normal-call stack is the function call
+	following the <code>go</code> keyword.
+</li>
+<li>
+	The functions calls in the defer-call stack have no calling relations.
+</li>
+</ul>
+
+Here is another example which is a little more complex.
+The example will print <code>0</code> to <code>9</code>,
+each per line, by their natural order.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	defer fmt.Println("9")
+	fmt.Println("0")
+	defer fmt.Println("8")
+	fmt.Println("1")
+	if false {
+		defer fmt.Println("not reachable")
+	}
+	defer func() {
+		defer fmt.Println("7")
+		fmt.Println("3")
+		defer func() {
+			fmt.Println("5")
+			fmt.Println("6")
+		}()
+		fmt.Println("4")
+	}()
+	fmt.Println("2")
+	return
+	defer fmt.Println("not reachable")
+}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+<h3>Deferred Anonymous Functions Can Modify The Named Return Results Of Nesting Functions</h3>
+
+<div>
+For example,
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func Triple(n int) (r int) {
+	defer func() {
+		r += n // modify the return value
+	}()
+	
+	return n + n // <=> r = n + n; return
+}
+
+func main() {
+	fmt.Println(Triple(5)) // 15
+}
+</code></pre>
+</div>
+
+<h3>The Necessary And Benefits Of The Defered Function Feature</h3>
+
+<p>
+In the above examples, the deferred function calls are not absolutely necessary.
+However, the deferred function call feature is a necessary feature for the
+panic and recover mechanism which will be introduced below.
+</p>
+
+<p>
+Deferred function calls can also help us write more clean and robust code.
+We can read more code examples by using deferred functtion calls
+and learn more details on deferred function cals in the article
+<a href="defer-more.html">more about deferred functions</a> later.
+</p>
+
+<h3>The Evaluation Moment Of The Arguments Of Deferred And Goroutine Function Calls</h3>
+
+<div>
+The arguments of a deferred function call or a goroutine function call are all
+evaluated at the moment when the function call is invoked.
+<ul>
+<li>
+	For a deferred function call, the invocation moment is the moment
+	when it is pushed into the defer-call stack of its caller goroutine.
+</li>
+<li>
+	For a goroutine function call, the invocation moment is
+	the moment when the corresponding goroutine is created.
+</li>
+</ul>
+
+<p>
+The arguments of each function call nested in a deferred function call
+or a goroutine function call are evaluated at the moment when that nested
+function call is invoked.
+</p>
+
+Here is an example.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	func() {
+		for i := 0; i < 3; i++ {
+			defer fmt.Println("a:", i)
+		}
+	}()
+	fmt.Println()
+	func() {
+		for i := 0; i < 3; i++ {
+			defer func() {
+				fmt.Println("b:", i)
+			}()
+		}
+	}()
+}
+</code></pre>
+
+Run it. The output:
+<pre class="output"><code>a: 2
+a: 1
+a: 0
+
+b: 3
+b: 3
+b: 3
+</code></pre>
+
+<p>
+The first loop prints <code>i</code> as <code>2</code>, <code>1</code> and <code>0</code> as a sequence.
+The second loop always prints <code>i</code> as <code>3</code>,
+for when the three <code>fmt.Println</code> calls in the deferred anonymous calls are invoked,
+the value of the loop variable <code>i</code> has become to <code>3</code>.
+</p>
+
+The same argument valuation moment rules for goroutine function calls.
+The following program will output <code>123 789</code>.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "time"
+
+func main() {
+	var a = 123
+	go func(x int) {
+		time.Sleep(time.Second)
+		fmt.Println(x, a) // 123 789
+	}(a)
+	
+	a = 789
+	
+	time.Sleep(2 * time.Second)
+}
+</code></pre>
+
+<p>
+By the way, it is not a good idea to do synchronizations by using
+<code>time.Sleep</code> calls.
+If the program runs on a computor which CPUs are occupied by many other
+programs running on the computer, the new created goroutine may never
+get chances to execute before the program exits.
+We should use the concurrency synchronization techniques introduced in the article
+<a href="concurrent-synchronization-overview.html">concurrency synchronization overview</a>
+to do synchronizations in formal projects.
+</p>
+
+</div>
+
+<h3>Panic And Recover</h3>
+
+<p>
+Go doesn't support exception throwing, instead,
+explicit error handling is preferred to use in Go programming.
+However, in fact, Go supports an exception throw/catch alike mechanism.
+The mechanism is called panic/recover.
+</p>
+
+<p>
+We can call the built-in <code>panic</code> function to create a panic
+to make the current goroutine enter panicking status.
+The panic is only alive within the current goroutine.
+There may be multiple panics coexisting in a goroutine.
+</p>
+
+<p>
+Panics can be recovered by using the built-in <code>recover</code> function.
+Once all panics in a goroutine are recovered,
+the goroutine will enter normal calm status again.
+<p>
+
+<p>
+Panicking is another way to make a function return.
+One a panic shows in a function call, the function call returns immediately
+and enter its exiting phase. The deferred function calls pushed in the
+function call will get executed, by their inverse orders being pushed.
+A <code>recover</code> function can only recover the panic
+if it is called in one of the deferred function call.
+</p>
+
+<p>
+If a panicking goroutine exits without being recovered,
+it will make the whole program crash.
+</p>
+
+The built-in <code>panic</code> and <code>recover</code> functions are
+declared as
+<pre class="line-numbers"><code class="language-go">func panic(v interface{})
+func recover() interface{}
+</code></pre>
+
+<p>
+Interface types and values will be explained in the article
+<a href="interface.html">interfaces in Go</a> later.
+Here, we just need to know that the blank interface type
+<code>interface{}</code> can be viewed as the <code>any</code> type
+or the <code>Object</code> type in many other languages. In other words,
+we can pass a value of any type to a <code>panic</code> function call.
+</p>
+
+<p>
+The value returned by a <code>recover</code> function call is the value
+a <code>panic</code> function call consumed.
+</p>
+
+Here is an example shows how to create a panic and how to recover the panic.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("hi!")
+	defer func() {
+		v := recover()
+		fmt.Println("recovered:", v)
+	}()
+	panic("bye!")
+	fmt.Println("unreachable")
+}
+</code></pre>
+
+The output:
+
+<pre class="output"><code>hi!
+recovered: bye!
+</code></pre>
+
+<p>
+</p>
+
+Here is another example shows a panicking goroutine exits without being recovered.
+So the whole program crashes.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	fmt.Println("hi!")
+	
+	go func() {
+		time.Sleep(time.Second)
+		panic(123)
+	}()
+	
+	for {
+		time.Sleep(time.Second)
+	}
+}
+</code></pre>
+
+The output:
+
+<pre class="output"><code>hi!
+panic: 123
+
+goroutine 5 [running]:
+...
+</code></pre>
+
+<p>
+</p>
+
+Go runtime will create panics for many circumstances,
+such as dividing an integer by zero. For example,
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	a, b := 1, 0
+	_ = a/b
+}
+</code></pre>
+
+The output:
+
+<pre class="output"><code>panic: runtime error: integer divide by zero
+
+goroutine 1 [running]:
+...
+</code></pre>
+
+<p>
+</p>
+
+<p>
+More runtime panic circumstances will be mentioned
+in other ;ater Go 101 articles.
+</p>
+
+<p>
+Panic and recover will be explained more in the article
+<a href="panic-and-recover-more.html">more about panic and recover</a> later.
+</p>
+
+
+
+

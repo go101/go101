@@ -93,7 +93,6 @@ func (a int, b string)
 </code></pre>
 
 <p>
-The zero values of function types are represented with the predeclared <code>nil</code>.
 </p>
 </div>
 
@@ -380,8 +379,10 @@ func fb() bool {
 <p>
 The return results of a custom function call can be all discarded together.
 The return results of calls to built-in functions, except <code>recover</code>
-and <code>copy</code>, cann't be discarded,
+and <code>copy</code>, can't be discarded,
 though they can be ignored by assigning them to some blank identifiers.
+Function calls whose results can't be discarded can't be used as deferred
+function calls or goroutine calls.
 </p>
 
 <h4>Use Function Calls As Expressions</h4>
@@ -472,6 +473,8 @@ its direct part is copied</a>.
 <p>
 As above has mentioned, function types are one kind of types in Go.
 A value of a function type is called a function value.
+The zero values of function types are represented with
+\the predeclared <code>nil</code>.
 </p>
 
 <p>
@@ -486,8 +489,24 @@ Note, built-in functions can't be used as values.
 <code>init</code> functions also can't be used as values.
 </p>
 
+<p>
 Any function values can be invoked just like a declared function.
-Invoke a nil function value will panic. An example:
+It is fatal error to call a nil function to start a new goroutine.
+The fatal error is not recoverable and will make the whole program crash.
+For other situations, calls to nil function values will produce
+recoverable panics, including deferred function calls.
+</p>
+
+<p>
+From the article <a href="value-part.html">value parts</a>,
+we know that non-nil function values are multi-part values.
+After one function value is assigned to another,
+the two functions share the same undrelying parts(s).
+In other words, the two functions represent the same internal function object.
+The effects of invoking two functions are the same.
+</p>
+
+An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -516,10 +535,6 @@ func main() {
 </code></pre>
 
 <p>
-</p>
-
-<p>
-Call a nil function will produce a panic.
 </p>
 
 In practice, we often assign anonymous functtions to function variables,

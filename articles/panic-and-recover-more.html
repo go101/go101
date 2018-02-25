@@ -117,52 +117,39 @@ Firstly, let's learn some concepts and facts.
 </p>
 </div>
 
-<h3>Concept: Deferred Function Call</h3>
-
-<p>
-Deferred function calls have been explained in <a href="defer.html">this article</a>.
-Here will not make more explainations.
-</p>
-
-<h3>Concept: Function Call Depth, Goroutine Execution Depth &amp; Panic Depth</h3>
+<h3>Concept: Function Call Level, Goroutine Execution Level &amp; Panic Level</h3>
 
 <div>
 <p>
-Each function call corresponds a call depth, which is related
+Each function call corresponds a call level, which is related
 the entry function of a goroutine.
 The main gorotuine is also not an exception of this definition,
 but here we treat the main goroutine specially.
-For a function call in the main goroutine, its call depth
+For a function call in the main goroutine, its call level
 is related to the program <b><i>main</i></b> entry function.
 </p>
 
 Example:
 <pre class="line-numbers"><code class="language-go">package main
 
-func main() { // depth 0
-	go func() { // depth 0
-		func() { // depth 1
-			
+func main() { // level 0
+	go func() { // level 0
+		func() { // level 1
 		}()
 		
-		func() { // depth 1			
-			func() { // depth 2
-				
+		func() { // level 1			
+			func() { // level 2
 			}()
 		}()
 	}()
 	
-	func () { // depth 1
-		func() { // depth 2
-		
-			go func() { // depth 0
-				
+	func () { // level 1
+		func() { // level 2
+			go func() { // level 0
 			}()
-			
 		}()
 		
-		go func() { // depth 0
-			
+		go func() { // level 0
 		}()
 	}()
 }
@@ -170,12 +157,12 @@ func main() { // depth 0
 </div>
 
 <p>
-The call depth of the function containing the current execution point
-of a goroutine is called the execution depth of the goroutine.
+The call level of the function containing the current execution point
+of a goroutine is called the execution level of the goroutine.
 </p>
 
 <p>
-The depth of a panic is the functon call depth the panic has propagated to.
+The level of a panic is the functon call level the panic has propagated to.
 Please read the next section for a better understanding.
 </p>
 
@@ -189,36 +176,25 @@ Panics never propagate downwards into a deeper function call.
 
 import "fmt"
 
-func main() { // call depth 0
-	defer func() { // call depth 1
-		
-		fmt.Println("Now, the panic is still in call depth 0")
-		
-		func() { // call depth 2
-			
-			fmt.Println("Now, the panic is still in call depth 0")
-			
-			func() { // call depth 3
-				
-				fmt.Println("Now, the panic is still in call depth 0")
+func main() { // call level 0
+	defer func() { // call level 1
+		fmt.Println("Now, the panic is still in call level 0")
+		func() { // call level 2
+			fmt.Println("Now, the panic is still in call level 0")
+			func() { // call level 3
+				fmt.Println("Now, the panic is still in call level 0")
 			}()
 		}()
 	}()
 	
-	defer fmt.Println("Now, the panic is in call depth 0")
+	defer fmt.Println("Now, the panic is in call level 0")
 	
-	func() { // call depth 1
-		
-		defer fmt.Println("Now, the panic is in call depth 1")
-		
-		func() { // call depth 2
-			
-			defer fmt.Println("Now, the panic is in call depth 2")
-			
-			func() { // call depth 3
-				
-				defer fmt.Println("Now, the panic is in call depth 3")
-				
+	func() { // call level 1
+		defer fmt.Println("Now, the panic is in call level 1")
+		func() { // call level 2
+			defer fmt.Println("Now, the panic is in call level 2")
+			func() { // call level 3
+				defer fmt.Println("Now, the panic is in call level 3")
 				panic(1)
 			}()
 		}()
@@ -227,13 +203,13 @@ func main() { // call depth 0
 </code></pre>
 
 The output:
-<pre class="output"><code>Now, the panic is in call depth 3
-Now, the panic is in call depth 2
-Now, the panic is in call depth 1
-Now, the panic is in call depth 0
-Now, the panic is still in call depth 0
-Now, the panic is still in call depth 0
-Now, the panic is still in call depth 0
+<pre class="output"><code>Now, the panic is in call level 3
+Now, the panic is in call level 2
+Now, the panic is in call level 1
+Now, the panic is in call level 0
+Now, the panic is still in call level 0
+Now, the panic is still in call level 0
+Now, the panic is still in call level 0
 panic: 1
 
 goroutine 1 [running]:
@@ -243,12 +219,12 @@ goroutine 1 [running]:
 </div>
 
 <p>
-So the depth of a panic is monotone decreasing, it never increases.
-And, the depth of an alive panic will never
-be larger than the execution depth of the goroutine.
+So the level of a panic is monotone decreasing, it never increases.
+And, the level of an alive panic will never
+be larger than the execution level of the goroutine.
 </p>
 
-<h3>Fact: Panics Will Suppress Old Panics At The Same Depth</h3>
+<h3>Fact: Panics Will Suppress Old Panics At The Same Level</h3>
 
 <div>
 Example:
@@ -264,13 +240,9 @@ func main() {
 	}()
 	
 	defer fmt.Println("now, panic 3 suppresses panic 2")
-	
 	defer panic(3)
-	
 	defer fmt.Println("now, panic 2 suppresses panic 1")
-	
 	defer panic(2)
-	
 	panic(1)
 }
 </code></pre>
@@ -291,8 +263,8 @@ Panic 3 is recovered, hence the program will not crash.
 </p>
 
 <p>
-In one goroutine, there will be at most one active panic at the same call depth at any time,
-especially when the execution point runs at the call depth 0 of a goroutine,
+In one goroutine, there will be at most one active panic at the same call level at any time,
+especially when the execution point runs at the call level 0 of a goroutine,
 there will be at most one active panic in the goroutine.
 </p>
 
@@ -304,28 +276,24 @@ Example:
 
 import "fmt"
 
-func main() { // call depth 0
+func main() { // call level 0
 	defer fmt.Println("program will crash, for panic 3 is stll active")
 	
-	defer func() { // call depth 1
-		
-		defer func() { // call depth 2
-
+	defer func() { // call level 1
+		defer func() { // call level 2
 			fmt.Println( recover() ) // 6
 		}()
 		
-		// The depth of panic 3 is 0, and the depth of panic 6 is 1.
+		// The level of panic 3 is 0, and the level of panic 6 is 1.
 		defer fmt.Println("now, there are two active panics: 3 and 6")
-		
 		defer panic(6) // will suppress panic 5
 		defer panic(5) // will suppress panic 4
-		panic(4) // will not suppress panic 3, for they have differrent depths. 
-		         // the depth of panic 3 is 0.
-		         // the depth of panic 4 is 1.
+		panic(4) // will not suppress panic 3, for they have differrent levels. 
+		         // the level of panic 3 is 0.
+		         // the level of panic 4 is 1.
 	}()
 	
 	defer fmt.Println("now, only panic 3 is active")
-	
 	defer panic(3) // will suppress panic 2
 	defer panic(2) // will suppress panic 1
 	panic(1)
@@ -352,7 +320,7 @@ goroutine 1 [running]:
 </code></pre>
 </div>
 
-<h3>Fact: Low Tepth Panics May Be Recovered At First</h3>
+<h3>Fact: Highest Level Panics May Be Recovered At First Or Not</h3>
 
 <div>
 Example:
@@ -360,27 +328,42 @@ Example:
 
 import "fmt"
 
-func main() {
+func demo(recoverHighestPanicAtFirst bool) {
+	fmt.Println("====================")
 	defer func() {
+		if !recoverHighestPanicAtFirst{
+			// recover panic 1
+			defer fmt.Println("panic", recover(), "is recovered")
+		}
 		defer func() {
-			fmt.Println("panic", recover(), "is recovered") // panic 2 is recovered
+			// recover panic 2
+			fmt.Println("panic", recover(), "is recovered")
 		}()
-		
-		defer fmt.Println("panic", recover(), "is recovered") // panic 1 is recovered
-		
+		if recoverHighestPanicAtFirst {
+			// recover panic 1
+			defer fmt.Println("panic", recover(), "is recovered")
+		}
 		defer fmt.Println("now, two active panics coexist")
-		
 		panic(2)
 	}()
-	
 	panic(1)
+}
+
+func main() {
+	demo(true)
+	demo(false)
 }
 </code></pre>
 
 The output:
-<pre class="output"><code>now, two active panics coexist
+<pre class="output"><code>====================
+now, two active panics coexist
 panic 1 is recovered
 panic 2 is recovered
+====================
+now, two active panics coexist
+panic 2 is recovered
+panic 1 is recovered
 </code></pre>
 </div>
 
@@ -388,18 +371,18 @@ panic 2 is recovered
 
 <div>
 The rule is simple:
-<div class="alert alert-success text-center"><big>
+<div class="alert alert-info">
 in a goroutine,
 if the caller function of a <code>recover</code> call is <code>f</code>
-and the depth of the <code>f</code> call is <code>d</code>,
+and the level of the <code>f</code> call is <code>d</code>,
 then, to make the <code>recover</code> call take effect,
 the <code>f</code> call must be a deferred call and
-there must be an active panic at depth <code>d-1</code>.
-</big></div>
+there must be an active panic at level <code>d-1</code>.
+</div>
 
 <p>
 That is it. It is a better description than Go specification.
-Now you can page back to check why the 6th recover call in the first example 
+Now you can page up to check why the 6th recover call in the first example 
 doesn't take effect, and some others do in some other examples.
 </p>
 </div>

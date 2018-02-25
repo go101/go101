@@ -38,7 +38,7 @@ If a panicking goroutine exits without being recovered, the whole program will c
 <p>
 The <code>panic</code> function is declared as <code>func panic(v interface{})</code>,
 so a <code>panic</code> function call can takes an argument of any type.
-The passed argument can also be a <code>nil</code> interface value.
+The passed argument can also be a nil interface value.
 </p>
 
 <div>
@@ -81,41 +81,34 @@ main.doSomething()
 <p>
 After the new created goroutine panics in the <code>doSomething</code> function,
 the two already deferred <code>fmt.Println</code> calls will be executed eventaully,
-but the other two <code>fmt.Println</code> calls have no any chances to get executed.
+but the other two <code>fmt.Println</code> calls have not any chances to get executed.
 </p>
 
-There are many situations the official Go runtime and standard packages would create panics,
-such as
+Beside creating a panic by call the <code>panic</code> functions,
+there are many scenarios Go runtime and standard packages
+would create panics, such as
 <ul>
 <li>
 	divide an integer by zero.
 </li>
 <li>
-	dereference a <code>nil</code> pointer.
+	dereference a nil pointer.
 </li>
 <li>
-	call a <code>nil</code> function value.
+	call a nil function value.
 </li>
 <li>
-	access elements of <code>nil</code> slices.
+	access elements of nil slices.
 </li>
 <li>
-	put elements into <code>nil</code> maps.
+	put elements into nil maps.
 </li>
 <li>
 	close (or send values to) a closed channel.
 	(Please read <a href="channel.html">channels in Go</a> for details.)
 </li>
-<li>
-	..., etc.
-</li>
 </ul>
 </div>
-
-<p>
-There can be multiple active panics coexisting in the same goroutine.
-Please read <a href="panic-and-recover-more.html">this article</a> for details.
-</p>
 
 <h3>Recover</h3>
 
@@ -142,9 +135,9 @@ import "fmt"
 
 func doSomething() {
 	defer func() {
-		// recover the panic
-		v := recover()
-		fmt.Println("Recovered:", v) // Recovered: Bye!
+		v := recover() // recover the panic.
+		fmt.Println("Recover:", v)
+		fmt.Println("Recovered, move on!")
 	}()
 	
 	defer fmt.Println("Hello!")
@@ -168,7 +161,8 @@ func main() {
 
 The output:
 <pre class="output"><code>Hello!
-Recovered: Bye!
+Recover: Bye!
+Recovered, move on!
 Reachable now.
 Hi!
 </code></pre>
@@ -192,24 +186,20 @@ panicking client session goorutine crashing the whole program.
 
 <pre class="line-numbers"><code class="language-go">package main
 
-import (
-	"net"
-	"log"
-	"errors"
-)
+import "net"
+import "log"
+import "errors"
 
 func main() {
 	listener, err := net.Listen("tcp", ":12345")
 	if err != nil {
 		log.Fatalln(err)
 	}
-
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Println(err)
 		}
-		
 		go ClientHandler(conn)
 	}
 }
@@ -221,12 +211,10 @@ func ClientHandler(c net.Conn) {
 		if v := recover(); v != nil {
 			log.Println("client handler panic:", v)
 		}
-
 		c.Close()
 	}()
 	
-	// Create a demo-purpose panic.
-	panic(errors.New("just a demo."))
+	panic(errors.New("just a demo.")) // a demo-purpose panic
 }
 </code></pre>
 
@@ -240,25 +228,15 @@ by catching/recovering the panics.
 
 <pre class="line-numbers"><code class="language-go">package main
 
-import (
-	"log"
-	"math/rand"
-	"time"
-)
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-	log.SetFlags(0)
-}
+import "log"
+import "time"
 
 func shouldNotExit() {
 	for {
-		// Do something ...
-		time.Sleep(time.Second)
-
+		time.Sleep(time.Second) // simulate a workload
 		// Simultate an unexpected panic.
-		if rand.Intn(5) == 0 {
-			panic("0 is unexpected")
+		if time.Now().UnixNano() & 0x3 == 0 {
+			panic("unexpected situation")
 		}
 	}
 }
@@ -270,11 +248,11 @@ func NeverExit(name string, f func()) {
 			go NeverExit(name, f) // restart
 		}
 	}()
-	
 	f()
 }
 
 func main() {
+	log.SetFlags(0)
 	go NeverExit("job#A", shouldNotExit)
 	go NeverExit("job#B", shouldNotExit)
 	select{} // blocks here for ever
@@ -346,18 +324,10 @@ In other words, they are errors happening in reality.
 Such errors should be handled properly to avoid crashing down programs.
 </p>
 
-<p>
-However, the standard of panicking and returning errors depends on specified projects.
-For long running programs, returning errors is more preferred to panicking
-to avoid crashing down the programs.
-Some short lived programs may prefer panicking to returning errors
-to avoid making much effort to handle all kinds of noises.
-</p>
-
 <h3>More About Panic And Recover</h3>
 
 <p>
-Generally, the idiomatic usages introduced in this article
+Generally, the usages introduced in this article
 is enough for using the panic and recover mechenism in daily Go programming.
 To understand the panic and recover mechanism thoroughly,
 please read <a href="panic-and-recover-more.html">the right places

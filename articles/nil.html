@@ -23,15 +23,19 @@ You can use <code>nil</code> without declaring it.
 <h3><code>nil</code> Can Represent Zero Values Of Many Types</h3>
 
 <div>
-In Go, <code>nil</code> can represent zero value of the following kinds of types:
+In Go, <code>nil</code> can represent zero values of the following kinds of types:
 <ul>
-<li>pointer types.</li>
+<li>pointer types (including type-unsafe ones).</li>
 <li>map types.</li>
 <li>slice types.</li>
 <li>function types.</li>
 <li>channel types.</li>
 <li>interface types.</li>
 </ul>
+
+<p>
+In other words, in Go, <code>nil</code> may be many values, of different types.
+</p>
 </div>
 
 <h3><code>nil</code> Has Not A Default Type</h3>
@@ -255,11 +259,11 @@ Example:
 </code></pre>
 </div>
 
-<h3>Retrieving Elements From <code>nil</code> Maps Will Not Panic</h3>
+<h3>Retrieving Elements From Nil Maps Will Not Panic</h3>
 
 <div>
 <p>
-Retrieving element from a <code>nil</code> map value will always return
+Retrieving element from a nil map value will always return
 a zero element value.
 </p>
 
@@ -270,11 +274,11 @@ fmt.Println( (map[int]*int64)(nil)[123] )   // &lt;nil&gt;
 </code></pre>
 </div>
 
-<h3>It Is Legal To Range Over <code>nil</code> Channels, Maps, Slices, And Array Pointers</h3>
+<h3>It Is Legal To Range Over Nil Channels, Maps, Slices, And Array Pointers</h3>
 
 <div>
 <p>
-The number of loops steps by iterate <code>nil</code> maps and slices is zero.
+The number of loops steps by iterate nil maps and slices is zero.
 </p>
 
 <p>
@@ -286,7 +290,7 @@ the iteration will panic at run time.)
 </p>
 
 <p>
-Ranging over a <code>nil</code> channel will block for ever.
+Ranging over a nil channel will block for ever.
 </p>
 
 For example, the following code will print <code>0</code>, <code>1</code>,
@@ -311,7 +315,6 @@ for range chan bool(nil) { // block here
 </div>
 
 <h3>Call Methods Through <code>nil</code> Arguments Will Not Panic</h3>
-
 
 <div>
 <p>
@@ -360,3 +363,23 @@ func main() {
 }
 </code></pre>
 </div>
+
+<h3><code>*new(T)</code> Is Equal To <code>nil</code> If The Zero Value Of Type <code>T</code> Is Represented With <code>nil</code></h3>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	fmt.Println(*new(*int) == nil)         // true
+	fmt.Println(*new([]int) == nil)        // true
+	fmt.Println(*new(map[int]bool) == nil) // true
+	fmt.Println(*new(chan string) == nil)  // true
+	fmt.Println(*new(func()) == nil)       // true
+	fmt.Println(*new(interface{}) == nil)  // true
+}
+</code></pre>
+</div>
+

@@ -1,0 +1,148 @@
+﻿<h1>Memory Leaking</h1>
+
+for a GC langauge, generally, there shouldn't be memory leaking.
+But ...
+
+
+<h3>Finalizers</h3>
+
+<h3>Subslice</h3>
+
+
+<h3>Delete Slice Elements</h3>
+
+delete elements and elements contains pointers ...
+
+<h3>More About Substrings</h3>
+
+<p>
+todo: moved to a seperated article (memory leaking problems, with subslice, ...)
+</p>
+
+<div>
+<p>
+We have learned that the syntax <code>aString[start:end]</code> to create a substring of <code>aString</code>.
+In the official Go implementation,
+when creating a substring from another string,
+the substring and the other string will share the same underlying memory block allocated for underlying bytes,
+even if the substring only use a small portion of the memory block.
+Assume the memory block is only used by the two strings,
+it will be only garbaged collected if both of the two strings are not reachable any more.
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"runtime"
+	"strings"
+)
+
+var s0 string // package level variable
+
+func f1() {
+	bs := make([]byte, 1 << 20) // (1 << 20) is 1M
+	
+	s1 := string(bs) // The underlying byte sequence of s1 is
+	                 // a copy of the underlying bytes of bs.
+	s0 = s1[:1] // s0 only contains the first byte in s1.
+	            // s0 and s1 share the same underlying bytes.
+		     // In fact, even if len(s0) == 0, s0 will still
+	            // share the same underlying bytes with s1.
+}
+
+func main() {
+	f1()
+	runtime.GC()
+
+	// Up to now, the 1M bytes memory block allocated in f1 is
+	// still not be GCed. The reason is the package level
+	// variable s0 is still alive now, even if it only actually
+	// uses one byte in the 1M memory block.
+	
+	// use any of these methods to avoid "memory leaking".
+	s0 = strings.Repeat(s0, 1)
+	s0 = string([]byte(s0))
+	
+	// todo: use strings.Builder to avoid one allocation.
+	
+	runtime.GC()
+	// now, the 1M memory block is garbage collected.
+}
+</code></pre>
+</div>
+
+
+
+
+<h3>Memory Leaking</h3>
+
+<div>
+Sometimes, a value only occupying a small portion of a memory block,
+which prevents the memory block from being collected.
+An example:
+<pre class="line-numbers"><code class="language-go">package main
+
+var smallStr string
+
+func f1(smallLen int) {
+	longStr := string(make([]byte, 1 << 20))
+	smallStr = longStr[0:smallLen]
+	// For the offcial Go compiler, now smallStr shares
+	// the same underlying byte sequence memory block
+	// with longStr. After exiting this function, this
+	// memory block is still referenced by smallStr, 
+	// even if smallLen is zero. This will prevent the
+	// memory block being collected,
+}
+
+var aSlice []int
+
+func f2(sliceLen int) {
+	anArray := [10000]int{}
+	aSlice = anArray[0:sliceLen]
+	// anArray and the underlying element sequence are
+	// hosted on the same memory block, so even if
+	// there is no elements in aSlice, after exiting
+	// this functions, the memory block hosting
+	// anArray still can't be collected.
+}
+
+func main() {
+	f1(0)
+	f2(0)
+	
+	// ...
+}
+</code></pre>
+<p>
+These are kind of memory leaking, not real memory leaking.
+</p>
+</div>
+
+<div>
+Setting a finalizer for a value which is a member of a cyclic reference group may
+<a href="https://golang.org/pkg/runtime/#SetFinalizer">prevent all memory blocks allocated
+for the cyclic reference group from being collected</a>.
+This is real memory leaking, not kind of.
+For example:
+<pre class="line-numbers"><code class="language-go">func memoryLeaking() {
+	type T struct {
+		v [1<<20]int
+		t *T
+	}
+
+	var finalizer = func(t *T) {
+		 fmt.Println("finalizer called")
+	}
+	
+	var x, y T
+	// SetFinalizer will make x escape to heap.
+	// Following two lines combined will make
+	// x and y not collectable.
+	x.t, y.t = &y, &x // y also escapes to heap.
+	runtime.SetFinalizer(&x, finalizer)
+}
+</code></pre>
+</div>
+

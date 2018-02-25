@@ -10,7 +10,7 @@ conversion and comparison rules in Go.
 </p>
 
 <p>
-NOTE: the definition of conversion in this article is not exactly the same as Go spec. 
+Note, the definition of conversion in this article is not exactly the same as Go spec. 
 The conversion in Go spec means explicit conversion.
 The conversions in this article include both explicit and implicit conversions.
 </p>
@@ -43,7 +43,7 @@ Implicit conversion rules are listed among the conversion rules in the next sect
 </p>
 
 <p>
-NOTE: in Go, all value assignments, including parameter passings etc, 
+Note, in Go, all value assignments, including parameter passings etc, 
 are shallow value copyings (the values referenced by pointers will not be copied).
 </p>
 
@@ -313,13 +313,13 @@ assume the interface type of <code>x</code> is <code>Ix</code>,
 then <code>x</code> can be converted to <code>I</code> with type assertion syntax,
 whether <code>I</code> implements <code>Ix</code> or not:
 <ul>
-<li>if <code>x</code> is not a <code>nil</code> interface and
+<li>if <code>x</code> is not a nil interface and
 	the dynamic type of <code>x</code> implements <code>I</code>, 
 	then the conversion result (a value of <code>I</code>)
 	stores (a copy of) the dynamic value of <code>x</code>.
 	If the ok result value is present, its value is <code>true</code>.
 </li>
-<li>otherwise, the conversion result is the <code>nil</code> interface
+<li>otherwise, the conversion result is the nil interface
 	if the ok result value is present (the returned ok value is <code>false</code>).
 	The conversion will panic if the ok result value is not present.
 </li>
@@ -400,7 +400,7 @@ or its type is also <code>T</code>, then <code>x</code> can be <b>implicitly</b>
 </div>
 
 <p>
-NOTE: in case of <code>x</code> is a floating-point constant and <code>T</code> is a floating-point type, 
+Note, in case of <code>x</code> is a floating-point constant and <code>T</code> is a floating-point type, 
 the conversion result <code>T(x)</code> is the rounded value of <code>x</code> by using IEEE 754 round-to-even rules, 
 but with an IEEE <code>-0.0</code> further rounded to an unsigned <code>0.0</code>. 
 </p>
@@ -438,7 +438,7 @@ Non-constant complex values can be explicitly converted to any complex types.
 </div>
 
 <div>
-NOTE:
+Note,
 <ul>
 <li>Complex non-constant values can't be converted to floating-point and integer types.</li>
 <li>Floating-point and integer non-constant values can't be converted to complex types.</li>
@@ -477,118 +477,151 @@ then the value can be explicitly converted to string types.
 </div>
 
 <div class="well">
-Values of string types can be explicitly converted to 
-types whose underlying types are <code>[]byte</code>, and vice versa.
+A string value can be explicitly converted to a slice type
+whose underlying type is <code>[]byte</code> (a.k.a, <code>[]uint8</code>),
+and vice versa.
 </div>
 
 <div class="well">
-Values of string types can be explicitly converted to 
-types whose underlying types are <code>[]rune</code>, and vice versa.
+A string value can be explicitly converted to a slice type
+whose underlying type is <code>[]rune</code> (a.k.a, <code>[]int32</code>),
+and vice versa.
 </div>
 
-<div>
-Please read <a href="string.html">Strings in Go</a> for details and examples.
-</div>
+<p>
+Please read <a href="string.html#conversions">strings in Go</a> for details and examples.
+</p>
 
 <h4>9. unsafe.Pointer Related Conversion Rules</h4>
 
 <p>
-Above conversion rules can be broken by unsafe.Pointer related conversion rules.
+Above conversion rules can be broken by <code>unsafe.Pointer</code> related conversion rules.
 </p>
 
 <div class="well">
-A pointer value of any type can be converted to an unsafe.Pointer, and vice versa.
+A pointer value of any type can be converted to a type whose underlying type is <code>unsafe.Pointer</code>, and vice versa.
 </div>
 
 <div class="well">
-An <code>uintptr</code> value can be converted to a unsafe.Pointer, and vice versa.
+An <code>uintptr</code> value can be converted to a type whose underlying type is <code>unsafe.Pointer</code>, and vice versa.
 </div>
 
-<div>
-Please read <a href="unsafe.html">The unsafe Package in Go</a> for details and examples.
-</div>
+<p>
+Please read <a href="unsafe.html">the <code>unsafe</code> package in Go</a> for details and examples.
+</p>
 
 <p class="anchor" id="comparison-rules"></p>
 <h3>Comparison Rules</h3>
 
-<!---
-The equalities of channel values are simple defined as
-the equalities of their direct part values.
-
-The equality of two string values
-is defined as two string values 
-
-The equality of two values of the same interface type
-one interface
-
-Go specification doesn't specify the equalities of map, slice and function values,
-for there is no universal accpeted equality definitions for these values.
--->
-
 <div>
 The go language specification 
 <a href="https://golang.org/ref/spec#Comparison_operators">states</a>
-<div class="well">
+<div class="alert alert-success">
 in any comparison, the first operand must be assignable to 
 the type of the second operand, or vice versa.
 </div>
+
 <p>
 So, the comparison rule is much like the assignment rule.
 In other words, two values are comparable 
 if one can be implicitly converted to the type of the other.
 </p>
-</div>
 
-<div>
 The above rule doesn't cover all circumstances.
 What about if both of the two operands in a comparison are untyped constant values?
 The additional rules are simple:
 <ul>
 <li>
-untyped bool values can be compared with untyped bool values;
+	untyped boolean values can be compared with untyped boolean values;
 </li>
 <li>
-untyped numeric values can be compared with untyped numeric values;
+	untyped numeric values can be compared with untyped numeric values;
 </li>
 <li>
-untyped string values can be compared with untyped string values,
+	untyped string values can be compared with untyped string values,
 </li>
 </ul>
+
 <p>
 The result of comparing two untyped constant values obeys intuition.
 </p>
-</div>
 
 <p>
-Any comparison in Go results an untyped bool value.
+Any comparison in Go results an untyped boolean value.
 </p>
 
-<p class="anchor" id="comparisons-restrictions"></p>
+</div>
+
+<p class="anchor" id="comparison-restrictions"></p>
+<h4>Comparison Restrictions</h4>
+
 <div>
 Currently (Go 1.9), there are some restrictions for the above comparison rules:
 <ul>
 <li>
-map, slice and function types don't support comparison
-(but values of these types can be compared to the bare <code>nil</code> identifier).
+	map, slice and function types don't support comparison
+	(but values of these types can be compared to the bare <code>nil</code> identifier).
 </li>
 <li>
-any struct type with a field whose type is uncomparable
-and any array type which element type is uncomparable also doesn't support comparison.
+	any struct type with a field whose type is uncomparable
+	and any array type which element type is uncomparable also doesn't support comparison.
 </li>
 <li>
-bare <code>nil</code> identifiers (untyped <code>nil</code> values) can't be compared with each other. 
-</li>
-<li>
-if the dynamic types of the two interface values
-are the same type, and the same dynamic type is uncomparable,
-then comparing the two interface values will panic at run time.
+	bare <code>nil</code> identifiers (untyped <code>nil</code> values) can't be compared with each other. 
 </li>
 </ul>
+
 </div>
 
-<p></p>
+<p class="anchor" id="comparison-implementation"></p>
+<h4>How Are Two Values Compared</h4>
 
 <div>
+Assume two values are comparable, and they have the same type <code>T</code>
+(if they have different types, one of them must be implicitly convertible to the type of the other).
+<ol>
+<li>
+	If <code>T</code> is a struct type, then
+	<a href="struct.html#comparison">each pair of the corresponding
+	fields of the two struct values will be compared</a>.
+</li>
+<li>
+	If <code>T</code> is an array type,then
+	<a href="cointer.html#comparison">each pair of the corresponding
+	elements of the two array values will be compared</a>.
+</li>
+<li>
+	If <code>T</code> is an interface type, please read
+	<a href="interface.html#comparison">how two interface values are compared</a>.
+</li>
+<li>
+	If <code>T</code> is a string type, please read
+	<a href="string.html#comparison">how two string values are compared</a>.
+</li>
+<li>
+	If <code>T</code> is a boolean, numeric or pointer
+	(either safe or unsafe), then each pair of the corresponding bytes
+	occupied in memory by the two values will be compared.
+	The two values are equal only if all the byte comparisons result true.
+</li>
+<li>
+	If <code>T</code> is a channel type, the two channel values are equal
+	if they both reference the same underlying channel structure.
+</li>
+</ol>
+
+<p>
+For the first three cases, in the comparing process, if the two values in
+a sub-comparison are both interface values, and the dynamic types of the two
+interface values are the same uncomparable type,
+then a run-time panic will occur.
+</p>
+
+Here are some uncomparable values of comparable types.
+<pre class="line-numbers"><code class="language-go">package main
+</code></pre>
+<p></p>
+
 Comparison restriction examples:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -633,24 +666,5 @@ func main() {
 </code></pre>
 <p></p>
 </div>
-
-<h4>How Are Two Values Compared</h4>
-
-<p>
-Assume two values are comparable, and they have the same type <code>T</code>
-(if they have different types, one of them must be implicitly convertible to the type of the other),
-if <code>T</code> is neither a string nor interface type, then the comparison result is the result
-of comparing the bytes they occupy in memory one by one.
-</p>
-
-<p>
-For the case both compared values are string values,
-please read <a href="string.html#comparison">how two string values are compared</a>.
-</p>
-
-<p>
-For the case of either compared value is an interface value,
-please read <a href="interface.html#comparison">how two interface values are compared</a>.
-</p>
 
 
