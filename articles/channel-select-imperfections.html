@@ -1,4 +1,4 @@
-﻿<h1>An Imperfection Of Go Select Mechanism</h1>
+﻿<h1>Two Imperfections Of Go Select Mechanism</h1>
 
 <p>
 Go is known and praised for its built-in concurrent programming support.
@@ -7,37 +7,13 @@ In particular, the select mechanism brings many interesting concurrent
 patterns and tricks to Go programming.
 </p>
 
-<!---
 <p>
-However, there are some imperfections in the current design of the select mechanism
-and the select mechanism implementation of the official Go runtime.
+However, in my personal opinion, there are some imperfections
+in the current design of the select mechanism.
 This article will describe them in detail.
 </p>
--->
 
-<p>
-However, there is an imperfection in the current design of the select mechanism.
-This article will describe it in detail.
-</p>
-
-<!--- will be moved to optimazation article.
-
-<h3>Imperfection 1: Select Is Slow</h3>
-
-<p>
-Each case in a <code>select</code> block consumes about 2x time of executing a single channel operation.
-Executing a two-case <code>select</code> block spends about 4x time of executing a single channel operation.
-Executing a five-case <code>select</code> block spends about 10x time of executing a single channel operation.
-Although often it is worth consuming more time by using the select mechanism,
-more than 5 cases in a <code>select</code> block is highly not recommended.
-</p>
-
--->
-
-<!---
-<h3>Imperfection 2: It Is Not Always Good To Select Unblocked Cases Randomly</h3>
--->
-
+<h3>It Is Not Always Good To Select Unblocked Cases Randomly</h3>
 
 <div>
 Here is a common example by using a closed channel to notify goroutines to exit:
@@ -53,15 +29,10 @@ func main() {
 	runtime.GOMAXPROCS(1)
 	log.SetFlags(0)
 	
-	data := make(chan int, 10000)
-	data <- -1; data <- -1; data <- -1
+	data := make(chan int)
 	stop := make(chan struct{})
 	done1 := make(chan struct{})
 	done2 := make(chan struct{})
-	
-	for i := range [100]struct{}{} {
-		data <- i
-	}
 	
 	// sender
 	go func() {
@@ -95,16 +66,14 @@ func main() {
 				log.Println("received", v)
 			}
 		}
-		close(done2)
 	}()
 	
 	// ...
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 3)
 	close(stop)
 	log.Println("stopped")
 	
-	<- done1
-	<- done2
+	<- done1; <- done2
 }
 </code></pre>
 
@@ -118,10 +87,10 @@ so even if the <code>stop</code> channel is closed, its corresponding cases
 may still be not selected for several loops, and in theory,
 they may be never selected so that the program will never exit.
 </p>
-</div>
 
-<div>
-A theory correct version is made by adding an extra <code>select</code> block in each loop:
+A theory-correct version is made by adding an extra <code>select</code>
+block in each loop:
+
 <pre class="line-numbers"><code class="language-go">// sender
 	go func() {
 		defer close(done1)
@@ -171,11 +140,15 @@ A theory correct version is made by adding an extra <code>select</code> block in
 </code></pre>
 
 <p>
-The one-case-plus-defalut <code>select</code> block will be specially optimized by the official Go compiler.
-The <code>case</code> channel operation will be translated to a try-send or try-receive operation.
-Although the above one-case-plus-defalut <code>select</code> block is optimized,
-the theory correct version is still more CPU consuming (about more 5% CPU usage) than the first one.
-And the additional <code>select</code> block makes code look verbose,
+The one-case-plus-default <code>select</code> blocks will be specially
+optimized by the official Go compiler.
+The <code>case</code> channel operation in
+an one-case-plus-default <code>select</code> block
+will be translated to a try-send or try-receive operation.
+Although the above one-case-plus-defalut <code>select</code> blocks are optimized,
+the theory-correct version is still more CPU consuming
+(about more 5% CPU usage) than the first one.
+And the additional <code>select</code> blocks make code look verbose,
 which is against the design philosophy of Go.
 </p>
 
@@ -184,15 +157,32 @@ Howerver, if the unblocked cases are selected by their natural appearance order
 (as another option alongside with randomized order),
 then the first version is already theory correct and
 is more effocient (and cleaner) than the above revised version.
-In fact, it would be more theory correct than the revise one.
+In fact, it would be more theory correct than the revised one.
 </p>
+
+It would be great if there is a runtime API to set the select mode.
+For example:
+
+<pre class="line-numbers"><code class="language-go">	runtime.ChangeSelectModeForOnce(runtime.SelectMode_Sequential)
+	select {
+	case <- stop:
+		return
+	case data <- v:
+		log.Println("sent", v)
+		v++
+	}
+</code></pre>
+
+<p>
+</p>
+
 </div>
 
-<!---
-<h3>Imperfection 3: Behavior Inconsistency</h3>
+<h3>Random Behaviors</h3>
 
 <div>
-A <code>select</code> block with a send-to-closed-channel case may panic the current goroutine, or not.
+A <code>select</code> block with a send-to-closed-channel <code>case</code>
+operation may panic the current goroutine, or not.
 Here is a simple example:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -209,7 +199,35 @@ func main() {
 <p>
 This program may panic or not, by luck.
 This is really not good to find bugs in time and verify tests.
-A better design should always make the above program panic.
+Personally, I think a better design should always make
+the above program panic to make the behavior consistent.
+</p>
+
+Surely, a good designed program should guarantee that values will never be sent
+to a closed channel. But to make the guarantee,
+<a href="channel-closing.html">some effort need to be made</a>.
+There is <a href="https://github.com/golang/go/issues/21985">a proposal</a>
+which can partially avoid the behavior inconsistency problem
+(but in another direction, by always avoiding panicing).
+
+<pre class="line-numbers"><code class="language-go">func f(c chan int) {
+	select {
+	case ok := c<-123: // if the proposal is adopted
+		if !ok {
+			// closed, ...
+		}
+	case <-c:
+	}
+}
+</code></pre>
+
+<p>
+If the proposal is adopted, the <code>f</code> function
+in the above example will never panic.
+The proposal can also simplify some code concurrency code design
+for some scenarios, though the simplification may encourage bad
+concurrency code design patterns.
 </p>
 </div>
--->
+
+

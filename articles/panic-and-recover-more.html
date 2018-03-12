@@ -1,24 +1,23 @@
 <h1>The Right Places To Call The <code>recover</code> Function</h1>
 
 <p>
-The article <a href="panic-and-recover.html">panic and recover</a> explains how to use
-panic and recover in daily Go programming.
-From that article, we know that a <code>recover</code> call can only take effect
-if it is invoked in another deferred function call.
-However, not all <code>recover</code> calls in other deferred function calls
+Panic and recover mechanism has been
+<a href="control-flows-more.html#panic-recover">introduced before</a>,
+and several panic/recover use cases are shown in
+<a href="panic-and-recover-use-cases.html">the last article</a>.
+We know that a <code>recover</code> call can only take effect
+if it is invoked in a deferred function call.
+However, not all <code>recover</code> calls in deferred function calls
 can catch alive panics.
-Below of this atticle will show some <code>recover</code> function call use cases
-explain what are the right places to call the <code>recover</code> function.
+Below of this atticle will show some useless <code>recover</code> function calls
+and explain what are the right places to call the <code>recover</code> function.
 </p>
 
 <div>
 Let's view an example:
-<pre class="line-numbers"><code class="language-go">// example1.go
-package main
+<pre class="line-numbers"><code class="language-go">package main
 
-import (
-	"fmt"
-)
+import "fmt"
 
 func main() {
 	defer func() {
@@ -26,41 +25,34 @@ func main() {
 			fmt.Println("6:", recover())
 		}()
 	}()
-	
 	defer func() {
 		func() {
 			fmt.Println("5:", recover())
 		}()
 	}()
-
 	func() {
 		defer func() {
 			fmt.Println("1:", recover())
 		}()
 	}()
-
 	func() {
 		defer fmt.Println("2:", recover())
 	}()
-
 	func() {
 		fmt.Println("3:", recover())
 	}()
-	
 	fmt.Println("4:", recover())
-	
 	panic(1)
-	
 	defer func() {
 		fmt.Println("0:", recover()) // never go here
 	}()
 }
 </code></pre>
 
-None of the 7 recover calls in above program recovers the program.
-The program crashes with printing out the panic stack traces:
-<pre class="output"><code>$ go run example1.go
-1: &lt;nil&gt;
+Run it, we will find that
+none of the 7 <code>recover</code> calls in above program recovers the program.
+The program crashes with printing out the following panic stack traces.
+<pre class="output"><code>1: &lt;nil&gt;
 2: &lt;nil&gt;
 3: &lt;nil&gt;
 4: &lt;nil&gt;
@@ -72,12 +64,14 @@ goroutine 1 [running]:
 ...
 </code></pre>
 
-Obviously, the 0th recover call is not reachable. 
-For others, let's check the <a href="handling panics">Go specifation</a> firstly: 
+Obviously, the 0th <code>recover</code> call (the last one) is not reachable.
+For others, let's check the rules specified
+in <a href="handling panics">Go specification</a> firstly.
+
 <div class="alert alert-success">
 The return value of recover is <ode>nil</ode> if any of the following conditions holds:
 <ul>
-<li> panic's argument was <code>nil</code>;</li>
+<li> panic's argument was nil;</li>
 <li> the goroutine is not panicking;</li>
 <li> recover was not called directly by a deferred function.</li>
 </ul>
@@ -85,7 +79,7 @@ The return value of recover is <ode>nil</ode> if any of the following conditions
 
 <p>
 Let's ignore the first condition.
-The second condition covers the 1st/2nd/3rd and 4th recover calls. 
+The second condition covers the 1st/2nd/3rd and 4th recover calls.
 The third one covers the 5th recover call.
 However, none of the three conditions covers the 6th recover call.
 </p>
@@ -102,7 +96,7 @@ func main() {
 	defer func() {
 		fmt.Println( recover() ) // 1
 	}()
-	
+
 	panic(1)
 }
 </code></pre>
@@ -117,39 +111,39 @@ Firstly, let's learn some concepts and facts.
 </p>
 </div>
 
-<h3>Concept: Function Call Level, Goroutine Execution Level &amp; Panic Level</h3>
+<h3>Concept: Function Call Depth, Goroutine Execution Depth &amp; Panic Depth</h3>
 
 <div>
 <p>
-Each function call corresponds a call level, which is related
+Each function call corresponds a call depth, which is related
 the entry function of a goroutine.
-The main gorotuine is also not an exception of this definition,
-but here we treat the main goroutine specially.
-For a function call in the main goroutine, its call level
+For the main gorotuine, the call depth of a function call
 is related to the program <b><i>main</i></b> entry function.
+For a goroutine other than the main goroutine, the call depth of
+a function call is related to the starting function call of the goroutine.
 </p>
 
-Example:
+For example example:
 <pre class="line-numbers"><code class="language-go">package main
 
-func main() { // level 0
-	go func() { // level 0
-		func() { // level 1
+func main() { // depth 0
+	go func() { // depth 0
+		func() { // depth 1
 		}()
-		
-		func() { // level 1			
-			func() { // level 2
+	
+		defer func() { // depth 1		
+			defer func() { // depth 2
 			}()
 		}()
 	}()
-	
-	func () { // level 1
-		func() { // level 2
-			go func() { // level 0
+
+	func () { // depth 1
+		func() { // depth 2
+			go func() { // depth 0
 			}()
 		}()
-		
-		go func() { // level 0
+	
+		go func() { // depth 0
 		}()
 	}()
 }
@@ -157,44 +151,44 @@ func main() { // level 0
 </div>
 
 <p>
-The call level of the function containing the current execution point
-of a goroutine is called the execution level of the goroutine.
+The depth of the call to the function containing the current execution point
+of a goroutine is called the execution depth of the goroutine.
 </p>
 
 <p>
-The level of a panic is the functon call level the panic has propagated to.
+The depth of a panic is the functon call depth the panic has propagated to.
 Please read the next section for a better understanding.
 </p>
 
-<h3>Fact: Panics Can Only Propagate Upwards</h3>
+<h3>Fact: Panics Can Only Propagate To The function Calls With Shadow Depths</h3>
 
 <div>
-Yes, panics can only propagate upwards, along the function call stack in reverse.
+Yes, panics can only propagate to its callers.
 Panics never propagate downwards into a deeper function call.
 
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
-func main() { // call level 0
-	defer func() { // call level 1
-		fmt.Println("Now, the panic is still in call level 0")
-		func() { // call level 2
-			fmt.Println("Now, the panic is still in call level 0")
-			func() { // call level 3
-				fmt.Println("Now, the panic is still in call level 0")
+func main() { // call depth 0
+	defer func() { // call depth 1
+		fmt.Println("Now, the panic is still in call depth 0")
+		func() { // call depth 2
+			fmt.Println("Now, the panic is still in call depth 0")
+			func() { // call depth 3
+				fmt.Println("Now, the panic is still in call depth 0")
 			}()
 		}()
 	}()
-	
-	defer fmt.Println("Now, the panic is in call level 0")
-	
-	func() { // call level 1
-		defer fmt.Println("Now, the panic is in call level 1")
-		func() { // call level 2
-			defer fmt.Println("Now, the panic is in call level 2")
-			func() { // call level 3
-				defer fmt.Println("Now, the panic is in call level 3")
+
+	defer fmt.Println("Now, the panic is in call depth 0")
+
+	func() { // call depth 1
+		defer fmt.Println("Now, the panic is in call depth 1")
+		func() { // call depth 2
+			defer fmt.Println("Now, the panic is in call depth 2")
+			func() { // call depth 3
+				defer fmt.Println("Now, the panic is in call depth 3")
 				panic(1)
 			}()
 		}()
@@ -202,29 +196,17 @@ func main() { // call level 0
 }
 </code></pre>
 
-The output:
-<pre class="output"><code>Now, the panic is in call level 3
-Now, the panic is in call level 2
-Now, the panic is in call level 1
-Now, the panic is in call level 0
-Now, the panic is still in call level 0
-Now, the panic is still in call level 0
-Now, the panic is still in call level 0
-panic: 1
-
-goroutine 1 [running]:
-
-...
-</code></pre>
+<p>
+</p>
 </div>
 
 <p>
-So the level of a panic is monotone decreasing, it never increases.
-And, the level of an alive panic will never
-be larger than the execution level of the goroutine.
+So the depth of a panic is monotonically decreasing, it never increases.
+And, the depth of an alive panic will never
+be larger than the execution depth of the goroutine.
 </p>
 
-<h3>Fact: Panics Will Suppress Old Panics At The Same Level</h3>
+<h3>Fact: Panics Will Suppress Old Panics At The Same Depth</h3>
 
 <div>
 Example:
@@ -234,11 +216,11 @@ import "fmt"
 
 func main() {
 	defer fmt.Println("program will not crash")
-	
+
 	defer func() {
 		fmt.Println( recover() ) // 3
 	}()
-	
+
 	defer fmt.Println("now, panic 3 suppresses panic 2")
 	defer panic(3)
 	defer fmt.Println("now, panic 2 suppresses panic 1")
@@ -256,15 +238,15 @@ program will not crash
 </div>
 
 <p>
-In this exanple, panic 1 is suppressed by panic 2, 
+In this exanple, panic 1 is suppressed by panic 2,
 and then panic 2 is suppressed by panic 3.
 So, in the end, there is only one active panic, which is panic 3.
 Panic 3 is recovered, hence the program will not crash.
 </p>
 
 <p>
-In one goroutine, there will be at most one active panic at the same call level at any time,
-especially when the execution point runs at the call level 0 of a goroutine,
+In one goroutine, there will be at most one active panic at the same call depth at any time,
+especially when the execution point runs at the call depth 0 of a goroutine,
 there will be at most one active panic in the goroutine.
 </p>
 
@@ -276,23 +258,24 @@ Example:
 
 import "fmt"
 
-func main() { // call level 0
+func main() { // call depth 0
 	defer fmt.Println("program will crash, for panic 3 is stll active")
-	
-	defer func() { // call level 1
-		defer func() { // call level 2
+
+	defer func() { // call depth 1
+		defer func() { // call depth 2
 			fmt.Println( recover() ) // 6
 		}()
-		
-		// The level of panic 3 is 0, and the level of panic 6 is 1.
+	
+		// The depth of panic 3 is 0, and the depth of panic 6 is 1.
 		defer fmt.Println("now, there are two active panics: 3 and 6")
 		defer panic(6) // will suppress panic 5
 		defer panic(5) // will suppress panic 4
-		panic(4) // will not suppress panic 3, for they have differrent levels. 
-		         // the level of panic 3 is 0.
-		         // the level of panic 4 is 1.
+		panic(4) // will not suppress panic 3,
+		         // for they have differrent depths.
+		         // The depth of panic 3 is 0.
+		         // The depth of panic 4 is 1.
 	}()
-	
+
 	defer fmt.Println("now, only panic 3 is active")
 	defer panic(3) // will suppress panic 2
 	defer panic(2) // will suppress panic 1
@@ -302,7 +285,7 @@ func main() { // call level 0
 
 <p>
 In this exanple, panic 6, one of the two active panics, is recovered.
-But the other active panic, panic 3, is still active at the end of main call, 
+But the other active panic, panic 3, is still active at the end of main call,
 so the program will crash.
 </p>
 
@@ -315,12 +298,12 @@ panic: 1
 	panic: 2
 	panic: 3
 
-goroutine 1 [running]:
+goroutine 1 [running]
 ...
 </code></pre>
 </div>
 
-<h3>Fact: Highest Level Panics May Be Recovered At First Or Not</h3>
+<h3>Fact: Highest Depth Panics May Be Recovered At First Or Not</h3>
 
 <div>
 Example:
@@ -370,19 +353,21 @@ panic 1 is recovered
 <h3>Then, What Is The Principal Rule To Make A <code>recover</code> Call Take Effect?</h3>
 
 <div>
-The rule is simple:
+The rule is simple.
+
 <div class="alert alert-info">
-in a goroutine,
+In a goroutine,
 if the caller function of a <code>recover</code> call is <code>f</code>
-and the level of the <code>f</code> call is <code>d</code>,
+and the depth of the <code>f</code> call is <code>d</code>,
 then, to make the <code>recover</code> call take effect,
 the <code>f</code> call must be a deferred call and
-there must be an active panic at level <code>d-1</code>.
+there must be an active panic at depth <code>d-1</code>.
+Whether or not the <code>recover</code> call is deferred is not important.
 </div>
 
 <p>
-That is it. It is a better description than Go specification.
-Now you can page up to check why the 6th recover call in the first example 
+That is it. I think It is better described than Go specification.
+Now you can page up to check why the 6th recover call in the first example
 doesn't take effect, and some others do in some other examples.
 </p>
 </div>

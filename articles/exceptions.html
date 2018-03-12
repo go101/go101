@@ -206,7 +206,7 @@ func main() {
 	// T{3}.Double() // error: T{3} is not addressable
 	                 // The last sugar doesn't work here.
 	
-	var pt = &T{3} // sugar: explicitly take address of 
+	var pt = &T{3} // sugar: explicitly take address of
 	               // unaddressable composite literal.
 	pt.Double()
 }
@@ -380,17 +380,18 @@ func main() {
 The basic rule:
 <div class="alert alert-info">
 Unaddressable values can't be modified.
+In other words, unaddressable values should appear in assignments
+as destination values.
 </div>
 
 Exception:
 <div class="alert alert-success">
-Although map element values are unaddressable, but their value can be modified if their types are numeric or string types.
+Although map element values are unaddressable, they can be modified
+and appear in assignments as destination values.
+(But map elements can't be modified partially,
+they can only be overwritten wholly, a.k.a., replaced.)
 </div>
 
-<p>
-Maybe this is not an exception, for although map elements values can't be partially modified,
-they can be wholly overwritten (replaced).
-</p>
 
 Example:
 <pre class="line-numbers"><code class="language-go">package main
@@ -401,20 +402,11 @@ func main() {
 	}
 	
 	var mt = map[string]T{"abc": {123}}
-	_ = mt
-	// mt["abc"].x *= 2 // error: mt["abc"].x is not changeable
-	mt["abc"] = T{mt["abc"].x * 2} // map elements are unaddressable
-	                               // but replaceable
-	
-	var mi = map[string]int{"abc": 123}
-	mi["abc"] *= 2
-	// above line is a sugar for
-	mi["abc"] = mi["abc"] * 2
-	
-	var ms =  map[int]string{123: "abc"}
-	ms[123] += "xyz"
-	// above line is a sugar for
-	ms[123] = ms[123] + "xyz"
+	mt["abc"] = T{x: 789} // replacement is ok.
+	// Partial modification is not allowed.
+	/*
+	mt["abc"].x = 456
+	*/
 }
 </code></pre>
 </div>
@@ -782,7 +774,7 @@ func main() {
 	
 	// var _ = nil // compile error: use of untyped nil
 	
-	var v interface{} 
+	var v interface{}
 	fmt.Printf("type of %v is %T \n", v, v) // type of &lt;nil&gt; is &lt;nil&gt;
 	var _ interface{} = v.(interface{}) // will panic
 }

@@ -73,7 +73,7 @@ There may be many holes (gaps) within the continuous memroy segment.
 Another common map implementation algorithm is the binary tree algorithm,
 but the following desciptions assume that
 the underlying structures of all maps are hashtables.
-Whatever algorithm is used, 
+Whatever algorithm is used,
 the keys associated with the elements of a map are also stored in the map.
 </p>
 
@@ -249,13 +249,20 @@ with the predeclared <code>nil</code>.
 <p>
 BTW, there are some other kinds of types whose zero values
 are also represented by <code>nil</code>,
-including function, channel and interface types.
-These types will be explained in the following articles.
+including pointer, function, channel and interface types.
+Pointer types have been explained in <a href="pointer.html">pointers in Go</a>.
+Other kinds of types will be explained in the following articles.
 </p>
 
 <p>
-Please note, <code>[]T{}</code> represents a blank slice value of
-slice type <code>[]T</code>, it is different with <code>[]T(nil)</code>.
+When an array variable is declared without being specified an initial value,
+memory has been allocated for the elements of the zero array value.
+The memory of a nil slice or map value has not been allocated yet.
+</p>
+
+<p>
+Please note, <code>[]T{}</code> represents a blank slice value (with zero elements)
+of slice type <code>[]T</code>, it is different with <code>[]T(nil)</code>.
 The same situation is for <code>map[K]T{}</code> and <code>map[K]T(nil)</code>.
 </p>
 
@@ -397,7 +404,7 @@ can be simplified to
 <p>
 Pleae notes, in the above several examples, the comma following the last item
 in each composite literal can't be omitted.
-Please read <a href="semicolon.html">the line break rules in Go</code>
+Please read <a href="line-break-rules.html">the line break rules in Go</code>
 for more impformation later.
 </p>
 
@@ -681,7 +688,7 @@ defined by the official Go compiler/runtime are like
 <p>
 The internal structure definitions used by other compilers/runtimes
 may be not the exact same but would be similar.
-The following explainations are based on the official slice implementation.
+The following explanations are based on the official slice implementation.
 </p>
 
 <p>
@@ -977,7 +984,7 @@ func main() {
 	s = append(s, 7, 11)
 	fmt.Println(s, len(s), cap(s)) // [0 0 0 7 11] 5 5
 	s = make([]int, 2)
-	fmt.Println(s, len(s), cap(s)) // [0 0] 2 
+	fmt.Println(s, len(s), cap(s)) // [0 0] 2
 }
 </code></pre>
 
@@ -1190,7 +1197,7 @@ The two-index form is equivalent to
 The two-index form is used munch more popularly
 than the three-index form in practice.
 In fact, the two-idnex form is a special case of the three-index form
-(see the comment above for explainations).
+(see the comment above for explanations).
 </p>
 
 <p>
@@ -1223,8 +1230,8 @@ Note,
 	and <code>len(baseContainer)</code> is smaller than <code>cap(baseContainer)</code>.
 </li>
 <li>
-	a subslice expression will never cause a panic for
-	the base container is a nil slice.
+	a subslice expression will never cause a panic when the base container
+	is a nil slice (if all indexes are valid in the expression).
 	The result slice derived from a nil slice is
 	still a nil slice.
 </li>
@@ -1359,10 +1366,10 @@ though our implementation doesn't support generic.
 <pre class="line-numbers"><code class="language-go">// Assume element type is T.
 func Copy(dest, src []T) int {
 	if len(dest) < len(src) {
-		_ = append(dest, src[:len(dest)]...)
+		_ = append(dest[:0], src[:len(dest)]...)
 		return len(dest)
 	} else {
-		_ = append(dest[:len(src)], src...)
+		_ = append(dest[:0], src...)
 		return len(src)
 	}
 }
@@ -1370,7 +1377,14 @@ func Copy(dest, src []T) int {
 
 <p>
 Although the <code>copy</code> function is not an essential function in Go,
-it really makes some conveniences for some circumstances.
+it really makes some conveniences for many circumstances.
+</p>
+
+<p>
+From another point of view, the <code>append</code> function can also be viewed
+as a non-essential function (whereas <code>copy</code> is viewed as an
+essential function), for all its uses can be implemented with
+<code>make</code> and <code>copy</code> function calls.
 </p>
 
 <p>
@@ -1729,7 +1743,6 @@ func main() {
 	for i, n := range &a { // copying a pointer is cheap.
 		fmt.Println(i, n)
 	}
-	
 	
 	for i, n := range a[:] { // copying a slice is cheap.
 		fmt.Println(i, n)
@@ -2148,7 +2161,7 @@ s = append(s, e)
 <h4>About The Above Examples For More Slice Operations</h4>
 
 <p>
-In reality, the needs are varied. 
+In reality, the needs are varied.
 For some cases, it is possible none of the above ways shown
 in the above example are the most efficient way. And sometimes,
 the above ways may not satisfy some specific requirements in parctice.
@@ -2159,7 +2172,7 @@ introduced above in the built-in way.
 
 </div>
 
-<h3>Use Maps To Simulated Sets</h3>
+<h3>Use Maps To Simulate Sets</h3>
 
 <p>
 Go doesn't support built-in set types.
@@ -2189,7 +2202,7 @@ for details.
 
 
 
-  
+ 
 
 
 

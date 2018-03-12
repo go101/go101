@@ -1,19 +1,125 @@
-﻿<h1>Evaluation Orders In Go</h1>
+﻿<h1>Expression Evaluation Orders</h1>
 
-switch
+<p>
+This article will expain expression evaluation orders in all kinds of scenarios.
+</p>
 
-select
+<h3>Evaluation Order In Assignments</h3>
 
 multiple assignment
 
-function arguments
+<pre>
 
-init, package-level variable
+Any assignment statement can be rewritten as the following form finally,
+just before the real individual assignments happens.
 
-constants and constant operations, function calls evaluated at compile time.
+	*L0, *L1, ..., *Ln = R0, R1, ..., Rn
 
+For example (assume a is a slice which element type is int),
+
+	a, a[len(a)-1] = a[:len(a)-1], 2
+
+will be rewritten in the following steps:
+
+	t0 := len(a); t1 := t0 - 1
+	t2 := a[:t1]
+	t3 := &a; t4 := &a[t1]
+	*t3, *t4 = t2, 2
+
+If a map element (which is unaddressable) appears at left side,
+the new value for it will be stored in an addressable temp value firstly,
+then in an extra step, the temp value will be assigned to the map element.
+
+For example (assume m is map and p is a pointer, the map element type
+and the base type of p is the same one, T):
+
+	m[5] = m[5] + *p
+
+will be rewirtten in the following steps:
+
+	t0 := m[5]; t1 := *p; t2 := t0 + t1
+	var t3 T; t4 := &t3 // t3 is a temp value
+	*t4 = t2
+	m[5] = t3 // the extra step
+
+The extra steps may be not the last steps. For example
+
+var m = map[int]int{}
+var p *int
+m[2], *p = 1, 2
+
+will be rewritten in the following steps:
+
+var t0 int; t1 := &t0
+*t1, *p = 1, 2
+m[2] = t0
+
+Here, m[2] = t0 happens between *t1 = 1 and *p = 2.
+</pre>
+
+<h3>Evaluation Order In Function Argument Passing</h3>
+
+<h3>Evaluation Order In <code>switch-case</code> Code Block</h3>
+
+<h3>Evaluation Order In <code>select</code> Code Block</h3>
+
+
+<h3>Constant Expressions Are Evaluated At Compile Time</h3>
+
+Constant expressions are evaluated at compile time.
+The evaluation result of a constant expression is still a constant.
+
+<pre>
+package main
+
+import "fmt"
+
+func main() {
+	const a, b = 3, 2
+	
+	x := a / b * 2.0 // <=> 1 * 2.0
+	y := 2.0 * a / b
+	
+	fmt.Println(x, y) // 2 3
+}
+</pre>
+
+<h3>Evaluation Order Of Constants</h3>
+
+at compile time
+
+<pre>
+package main
+
+import "fmt"
+
+func main() {
+	const a, b = 3, 2
+	
+	x := 3/2*0.1
+	y := 0.1*3/2
+	
+	fmt.Println(x, y) // 0.1 0.15
+}
+</pre>
+
+package-level ones
+
+local ones
+
+constant expressions
+
+function calls evaluated at compile time.
+
+<h3>Evaluation Order Of Package-Level Variables</h3>
+
+before all init calls
+
+<!---
 special cases
-* https://github.com/golang/go/issues/13890#issuecomment-212115681
-* https://github.com/golang/go/issues/18640
-
+https://github.com/golang/go/issues/13890#issuecomment-212115681
 https://github.com/golang/go/issues/23188#issuecomment-361482955
+https://github.com/golang/go/issues/23017
+https://github.com/golang/go/issues/15620
+https://github.com/golang/go/issues/22881
+-->

@@ -290,7 +290,7 @@ wg.Wait()
 
 <h3>Block Goroutines For Ever</h3>
 
-memory leak 
+memory leak
 
 <pre class="line-numbers"><code class="language-go">
 timeout := make(chan struct{})
@@ -379,13 +379,13 @@ import (
 func main() {
     m := sync.RWMutex{}
     c := make(chan struct{})
-    
+   
     fa := func() {
 	    m.Lock()
 	    fmt.Println("a")
 	    m.Unlock()
     }
-    
+   
     fb := func() {
 	    time.Sleep(time.Second)
 	    m.RLock()
@@ -393,7 +393,7 @@ func main() {
 	    <-c
 	    m.RUnlock()
     }
-    
+   
     fc := func() {
 	    time.Sleep(2 * time.Second)
 	    m.RLock()
@@ -401,14 +401,14 @@ func main() {
 	    c <- struct{}{}
 	    m.RUnlock()
     }
-    
+   
     m.Lock()
     go fa()
     go fb()
     go fc()
     time.Sleep(3 * time.Second)
     m.Unlock()
-    
+   
     select{}
 }
 </code></pre>
@@ -431,14 +431,16 @@ sync.Timer, Ticker.Reset
 
 
 
-=========================== 
+===========================
 
 ==========================
 
+// insert time.Sleep(...)
+
 * make sure every goroutine will not hang for ever
-* if a channel will never be closed, be careful when 
+* if a channel will never be closed, be careful when
   using bare <code><-ch</code> or <code>ch<-v</code> for it.
-* if a channel will never be closed, if bare <code>ch<-v</code> is used, 
+* if a channel will never be closed, if bare <code>ch<-v</code> is used,
   make sure the sender will not send more and read all values out of the channel in the end.
 * it is recommended to close every channel and read every values out of channels.
 
@@ -454,9 +456,9 @@ Some princinples:
 </p>
 
 <p>
-Experienced gophers all know that there are three value synchronization techniques: 
-mutex, atomic and channel. 
-Mutex and atomic are often used in object property getter and setter methods. 
+Experienced gophers all know that there are three value synchronization techniques:
+mutex, atomic and channel.
+Mutex and atomic are often used in object property getter and setter methods.
 Althought the usage of mutex is simple, but it is not easy to use it without any mistakes.
 </p>
 
@@ -465,14 +467,14 @@ Althought the usage of mutex is simple, but it is not easy to use it without any
 </p>
 
 <div>
-Let's start with the most simplest mistake: 
+Let's start with the most simplest mistake:
 <pre class="line-numbers"><code class="language-go">type T struct {
 	sync.RWMutex
 	a, b int // b is just for examples
 }
 
 func (t T) AB() int {
-	// here t is a copy of T value, 
+	// here t is a copy of T value,
 	// so t.RWMutex is also a copy.
 	// W
 	t.RLock()
@@ -491,7 +493,7 @@ The mistake is that mutex values should not be copied, which is stated in Go spe
 </div>
 
 <div>
-Ok, let's change the mutex field into a pointer one: 
+Ok, let's change the mutex field into a pointer one:
 <pre class="line-numbers"><code class="language-go">type T struct {
 	*sync.RWMutex
 	a, b int
@@ -511,10 +513,10 @@ func (t *T) SetAB(ab int) {
 	t.Unlock()
 }
 </code></pre>
-This above example is verified by govet, but the synchronization in AB method is totally meaningless. 
+This above example is verified by govet, but the synchronization in AB method is totally meaningless.
 Even if the passed receiver is a singleton, the synchronization is still meaningless.
-The reason is, although t.a is synchronized, but t itself is not synchronized. 
-This can be easily proved by the following simple program: 
+The reason is, although t.a is synchronized, but t itself is not synchronized.
+This can be easily proved by the following simple program:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "sync"
@@ -570,8 +572,8 @@ func main() {
 </div>
 
 <div>
-So we should always define synchronization methods on pointer types 
-instead of non-pointer types: 
+So we should always define synchronization methods on pointer types
+instead of non-pointer types:
 <pre class="line-numbers"><code class="language-go">type T struct {
 	sync.RWMutex
 	a, b int

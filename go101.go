@@ -131,17 +131,18 @@ func retrieveArticleContent(file string, cachedIt bool) (Article, error) {
 	return article, nil
 }
 
+const H1, _H1, MaxLen = "<h1>", "</h1>", 128
+var TagSigns = [2]rune{'<', '>'}
 func retrieveTitlesForArticle(article *Article) {
-	const H1, _H1, MaxLen = "<h1>", "</h1>", 128
 	i := strings.Index(string(article.Content), H1)
 	if i >= 0 {
 		i += len(H1)
 		j := strings.Index(string(article.Content[i:i+MaxLen]), _H1)
 		if j >= 0 {
 			article.Title = article.Content[i:i+j]
-			k, tags, s := 0, [2]rune{'<', '>'}, make([]rune, 0, MaxLen)
+			k, s := 0, make([]rune, 0, MaxLen)
 			for _, r := range article.Title {
-				if r == tags[k] {
+				if r == TagSigns[k] {
 					k = (k+1) & 1
 				} else if k == 0 {
 					s = append(s, r)

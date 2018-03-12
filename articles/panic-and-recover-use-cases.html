@@ -1,0 +1,235 @@
+<h1>Some Panic/Recover Use Cases</h1>
+
+<p>
+Panic and recover have been
+<a href="control-flows-more.html#panic-recover">introduced before</a>.
+The following of the current article will introduce some (good and bad)
+panic/recover use cases.
+</p>
+
+<h3>Use Case 1: Avoid Panics Crashing Programs</h3>
+
+<div>
+<p>
+This may be the mose popular use case of panic/recover.
+The use case is used commonly in concurrent programs,
+especially client-server programs.
+<p>
+
+An example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "errors"
+import "log"
+import "net"
+
+func main() {
+	listener, err := net.Listen("tcp", ":12345")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Println(err)
+		}
+		// Handle each client connection in a new goroutine.
+		go ClientHandler(conn)
+	}
+}
+
+func ClientHandler(c net.Conn) {
+	defer func() {
+		if v := recover(); v != nil {
+			log.Println("client handler panic:", v)
+		}
+		c.Close()
+	}()
+	panic(errors.New("just a demo.")) // a demo-purpose panic
+}
+</code></pre>
+
+<p>
+If we don't recover the potential panic in each client handler goroutine,
+the potential panic will crash the program.
+</p>
+
+<p>
+Start the server and run <code>telnet localhost 12345</code> in another terminal,
+we can observe that the server will not crash down
+for the panics created in each client handler goroutine.
+</p>
+
+</div>
+
+<h3>Use Case 2: Automatically Restart A Crashed Goroutine</h3>
+
+<div>
+
+When a panic is detected in a goroutine, we can create a new goroutine for it.
+An example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "log"
+import "time"
+
+func shouldNotExit() {
+	for {
+		time.Sleep(time.Second) // simulate a workload
+		// Simultate an unexpected panic.
+		if time.Now().UnixNano() & 0x3 == 0 {
+			panic("unexpected situation")
+		}
+	}
+}
+
+func NeverExit(name string, f func()) {
+	defer func() {
+		if v := recover(); v != nil { // a panic is detected.
+			log.Println(name, "is crashed. Restart it now.")
+			go NeverExit(name, f) // restart
+		}
+	}()
+	f()
+}
+
+func main() {
+	log.SetFlags(0)
+	go NeverExit("job#A", shouldNotExit)
+	go NeverExit("job#B", shouldNotExit)
+	select{} // blocks here for ever
+}
+</code></pre>
+</div>
+
+<h3>Use Case 3: Use Panic/Recover To Simulate Long Jump Statements</h3>
+
+<div>
+<p>
+Somtimes, we can use panic/recover as a way to
+simulate crossing-function long jump statements
+and crossing-function returns,
+though generally this way is not recommended to use.
+This way does harm for both code readibilty and execution efficiency.
+The only benefit is sometimes it can make code look less verbose.
+</p>
+
+In the following example, once a panic is created in an inner function,
+the exection will jump to the defer <code>recover</code> call.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	n := func () (result int)  {
+		defer func() {
+			if v := recover(); v != nil {
+				if n, ok := v.(int); ok {
+					result = n
+				}
+			}
+		}()
+	
+		func () {
+			func () {
+				func () {
+					// ...
+					panic(123) // panic on succeeded
+				}()
+				// ...
+			}()
+		}()
+		// ...
+		return 0
+	}()
+	fmt.Println(n) // 123
+}
+</code></pre>
+</div>
+
+<h3>Use Case 4: Use Panic/Recover To Reduce Error Checkings</h3>
+
+<div>
+
+An example:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func doTask(n int) {
+	if n%2 != 0 {
+		// Create a demo-purpose panic.
+		panic(fmt.Errorf("bad number: %v", n))
+	}
+	return
+}
+
+func doSomething() (err error) {
+	defer func() {
+		// The ok return must be present here, otherwise,
+		// a panic will be created if no errors occur.
+		err, _ = recover().(error)
+	}()
+
+	doTask(22)
+	doTask(98)
+	doTask(100)
+	doTask(53)
+	return nil
+}
+
+func main() {
+	fmt.Println(doSomething()) // bad number: 53
+}
+</code></pre>
+
+<p>
+The above code is less verbose than the following one.
+</p>
+
+<pre class="line-numbers"><code class="language-go">func doTask(n int) error {
+	if n%2 != 0 {
+		return fmt.Errorf("bad number: %v", n)
+	}
+	return nil
+}
+
+func doSomething() (err error) {
+	err = doTask(22)
+	if err != nil {
+		return
+	}
+	err = doTask(98)
+	if err != nil {
+		return
+	}
+	err = doTask(100)
+	if err != nil {
+		return
+	}
+	err = doTask(53)
+	if err != nil {
+		return
+	}
+	return
+}
+</code></pre>
+
+<p>
+However, usually, this panic/recover use case is not recommended to use.
+It is less readable and less efficient.
+</p>
+
+<p>
+Generally, panics are for logic errors, such as human careless errors.
+Logic errors are the errors which should never happen at run time.
+If they are happen, there must be bugs in the code.
+On the other hand, non-logic errors are the errors
+which are hard to absolutely avoid at run time.
+In other words, they are errors happening in reality.
+Such errors should be explicitly returned and handled properly.
+</p>
+</div>
+
+

@@ -131,14 +131,7 @@ type (
 </code></pre>
 
 <p>
-New type names must be identifiers,
-so a new defined type must be a named type,
-except the new type name is the blank identifier <code>_</code>.
-</p>
-
-<p>
-Except <code>byte</code> and <code>rune</code>,
-other built-in basic types are all defined types.
+New type names must be identifiers.
 </p>
 
 <div>
@@ -149,7 +142,7 @@ Note,
 	are two distinct types.
 </li>
 <li>
-	two different defined named types are always two distinct types.
+	two different defined types are always two distinct types.
 </li>
 <li>
 	the new defined type and the source type will share the same
@@ -194,8 +187,7 @@ In other words, the new defined type is not an alias of the source type.
 -->
 
 Some type definition examples:
-<pre class="line-numbers"><code class="language-go">// Both the new defined and source types in the
-// following definition are all named types.
+<pre class="line-numbers"><code class="language-go">// The following new defined and source types are all basic types.
 type (
 	MyInt int
 	Age   int
@@ -203,8 +195,6 @@ type (
 )
 
 // The following new defined and source types are all composite types.
-// The new defined ones are all name types.
-// The source ones are all unnamed types.
 type IntPtr *int
 type Book struct{author, title string; pages int}
 type Convert func(in0 int, in1 bool)(out0 int, out1 string)
@@ -235,43 +225,45 @@ Since Go 1.9, we can declare custom type alias by using the following syntaxes.
 The syntax of alias declaration is much like type definition,
 but please note there is a <code>=</code> in each type alias declaratio
 <pre class="line-numbers"><code class="language-go">type (
-	Ta = []int
-	Tb = []int
+	Name = string
+	Age  = int
 )
 
-type tc = map[string]int
-type Td = tc
+type table = map[string]int
+type Table = map[Name]Age
 </code></pre>
 
 <p>
 Type alias names must be identifers.
-so a type alias must be a named type,
-except the alias name is the blank identifier <code>_</code>.
 <p>
 
+<div>
+By the above declarations, <code>Name</code> is an alias of <code>string</code>,
+they denote the same type.
+The same relation is for the other three pairs of type:
+<ul>
+<li>
+	<code>Age</code> and <code>int</code>
+</li>
+<li>
+	<code>table</code> and <code>map[string]int</code>
+</li>
+<li>
+	<code>Table</code> and <code>map[Name]Age</code>
+</li>
+</ul>
+</div>
+
 <p>
-Every alias type is also a named type.
-So a named type must be either a defined type or an alias type.
+In fact, type <code>map[string]int</code> and <code>map[Name]Age</code>
+also denote the same type. So the four types involved in the last two
+type alias declarations all denote the same type.
 </p>
 
 <p>
-By the above declarations, <code>Ta</code> and <code>Tb</code> are both
-aliases of type <code>[]int</code>.
-In other words, they and <code>[]int</code> denote the same type.
-The same relations are for <code>map[string]int</code>, <code>tc</code> and <code>Td</code>.
-</p>
-
-<p>
-Although <code>Ta</code>, <code>Tb</code> and <code>[]int</code>
-denote the same type, <code>Ta</code>, <code>Tb</code> are named type,
-however <code>[]int</code> is unnamed.
-There are some senarios where only named types can be used in Go.
-</p>
-
-<p>
-Although <code>tc</code> and <code>Td</code> denote the same type,
-<code>Td</code> is exported so it can be used by other packages
-but <code>tc</code> can't.
+Note, although <code>table</code> and <code>Table</code> denote the same type,
+<code>Table</code> is an exported type so it can be used by other packages
+but <code>table</code> can't.
 </p>
 
 <!---
@@ -322,7 +314,7 @@ and an alias type may be a defined type or not.
 </p>
 
 <p>
-To make many explainations easy and clear, Go 101 adopts a new
+To make many explanations easy and clear, Go 101 adopts a new
 terminology, <code>non-defined type</code>, to represent
 unnamed types and alias of unnamed types.
 This terminology doesn't show up in Go specification.
@@ -352,15 +344,14 @@ In Go, each type has an underlying type. Rules:
 <li>for built-in basic types, the underlying types are themselves.</li>
 <li>the underlying type of <code>unsafe.Pointer</code> is itself.</li>
 <li>the underlying types of an unnamed type, which must be a composite type, is itself.</li>
-<li>in a type definition, the new defined type and the source type have the same underlying type.</li>
+<li>in a type declaration, the new declared type and the source type have the same underlying type.</li>
 </ul>
 
 Examples:
-<pre class="line-numbers"><code class="language-go">// The underlying types of the following ones are all int.
+<pre class="line-numbers"><code class="language-go">// The underlying types of the following ones are both int.
 type (
 	MyInt int
-	Age   MyInt // for the underlying type of MyInt is int,
-	            // the underlying type of Age is also int.
+	Age   MyInt
 )
 
 // The following new types have different underlying types.
@@ -374,10 +365,16 @@ type (
 type Ages AgeSlice
 </code></pre>
 
+<p>
+</p>
+
+<p>
 How to trace to the underlying type for a given user defined type?
-The rule is when a built-in basic type, <code>unsafe.Pointer</code> or an unnamed type is met,
-the tracing will be stopped.
-Take the declarations above for example:
+The rule is, when a built-in basic type, <code>unsafe.Pointer</code>
+or an unnamed type is met, the tracing will be stopped.
+Take the type declarations above as examples, let's trace their underlying types.
+</p>
+
 <pre>
 MyInt → int
 Age → MyInt → int
@@ -386,6 +383,10 @@ MyIntSlice → []MyInt <span style="color:#aaa">→ <strike>[]int</strike></span
 AgeSlice → []Age <span style="color:#aaa">→ <strike>[]MyInt</strike></span> <span style="color:#aaa">→ <strike>[]int</strike></span>
 Ages → AgeSlice → []Age <span style="color:#aaa">→ <strike>[]MyInt</strike></span> <span style="color:#aaa">→ <strike>[]int</strike></span>
 </pre>
+
+<p>
+
+</p>
 
 In Go,
 <ul>
@@ -400,7 +401,7 @@ In Go,
 
 <p>
 The concept of underlying type plays an important role in
-<a href="conversions-assignments-and-comparisons.html">value conversions, assignments and comparisions in Go</a>.
+<a href="value-conversions-assignments-and-comparisons.html">value conversions, assignments and comparisions in Go</a>.
 </p>
 
 <h3>Concept: Values</h3>
@@ -472,7 +473,7 @@ values of pointer, channel and interface types.
 <p>
 At run time, many values are stored somewhere in memory.
 In Go, each of such values has a direct part,
-however, some of them each has several indirect parts.
+however, some of them each has one or more indirect parts.
 Each value part occupies a continuous memory segment.
 The indirect underlying parts of a value are referenced
 by its direct part through pointers.
@@ -480,7 +481,7 @@ by its direct part through pointers.
 
 <p>
 The terminology <b>value part</b> is not defined in Go specification.
-It is just used in Go 101 to make some explainations simpler
+It is just used in Go 101 to make some explanations simpler
 and help Go programmers understand Go types and values better.
 Please read the article <a href="value-part.html">value parts</a>
 for more information on value parts.
@@ -702,7 +703,7 @@ for example, an interface value whose dynamic type is an uncomparable type.
 
 <p>
 We can learn more about the detailed rules of comparisons from the article
-<a href="conversions-assignments-and-comparisons.html#comparison-rules">conversions,
+<a href="value-conversions-assignments-and-comparisons.html#comparison-rules">value conversions,
 assignments and comparisons in Go</a>.
 </p>
 </div>
@@ -735,8 +736,8 @@ Please read the following listed articles for details:
 
 <p>
 The generic functionalities in Go are limited to built-in types and functions.
-Up to now (v1.9), Go doesn't support generic for custom types and custom functions.
-Please read <a href="builtin-generic.html">built-in generic in Go</a> for details.
+Up to now (v1.10), Go doesn't support generic for custom types and custom functions.
+Please read <a href="generic.html">built-in generic in Go</a> for details.
 </p>
 
 

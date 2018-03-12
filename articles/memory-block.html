@@ -282,6 +282,32 @@ func main() {
 }
 </code></pre>
 
+<p>
+</p>
+
+Sometimes, smart compilers, such as the official Go compiler,
+may make some optimizations so that some references
+are removed earlier than we expect. Here is such an example.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	bs := make([]int, 1000000)
+	
+	// A smart compiler may have broken the reference from
+	// the direct part of the slice bs to its underlying bytes,
+	// so that the underlying bytes of the slice bs can be
+	// garbage collected now.
+
+	fmt.Println(len(bs))
+}
+</code></pre>
+
+<p>
+</p>
+
 </div>
 
 <p class="anchor" id="when-to-collect"></p>
@@ -289,7 +315,7 @@ func main() {
 
 <p>
 Go runtime will collect unused heap memory blocks (garbage) to reuse or release memory.
-The current official Go compiler (v1.9) uses 
+The current official Go compiler (v1.9) uses
 <a href="https://blog.golang.org/go15gc">a concurrent, tri-color, mark-sweep garbage collector</a>.
 Here this article will not explain the detailed implementation. Just some facts are listed below.
 </p>
@@ -328,7 +354,7 @@ which memory blocks are unused:
 	The GC then chooses a grey object, blackens it, and then scans it for pointers to other objects.
 	When this scan finds a pointer to a white object, it turns that object grey.
 	This process repeats until there are no more grey objects.
-	At this point, white objects are known to be unreachable and can be reused. 
+	At this point, white objects are known to be unreachable and can be reused.
 </small>
 </blockquote>
 <p>

@@ -1,0 +1,264 @@
+<h1>Go Value Copy Costs</h1>
+
+<p>
+Value copying happens frequently in Go programming.
+Values assignments, argument passing, channel value send and receive operations
+are all value copying involved.
+This article will talk about value copy costs in Go.
+</p>
+
+<p class="anchor" id="value-sizes"></p>
+<h3>Value Sizes</h3>
+
+<p>
+The size of a value means how many bytes (the
+<a href="value-part.html">direct part</a> of) the value will occupy in memory.
+The indirect underlying parts of a value don't contribute to the size of the value.
+</p>
+
+<p>
+In Go, if the types of two values belong to the same
+<a href="type-system-overview.html#type-kinds">kind</a>,
+and the type kind is not basic type kinds, string type kind,
+interface type kind, array type kind and struct type kind,
+then the sizes of the two value are always equal.
+</p>
+
+<p>
+In fact, for the official Go compiler/runtime, the sizes of two string values
+are also always equal, the same for the sizes of two interface values.
+</p>
+
+<p>
+For the official Go compiler/runtime,
+values of the same type have the same value size.
+So, often, we call the size of a value as the size of the type of the value.
+</p>
+
+<p>
+The size of an array type depends on the element type size and the length
+of the array type. The array type size is the product of the size of
+the array element type and the array length.
+<p>
+
+<p>
+The size of a struct type depends on all of its fields.
+For there may be some <a href="memory-layout.html#size-and-padding">padding bytes</a>
+between two adjacent fields, the struct type size is not smaller than
+(and often larger than) the sum of the respective type sizes of the struct fields.
+</p>
+
+<p>
+The following table lists the value sizes of all kinds of types.
+In the table, one word means one native word,
+which is 4 bytes on 32bits OSes and 8 bytes on 64bits OSes.
+</p>
+
+<table class="table table-bordered text-center" style="width: auto !important;">
+<thead>
+	<tr>
+	<th class="text-center">Type</th>
+	<th class="text-center">Value Size For The Official Go Compiler v1.10</th>
+	<th class="text-center">
+		<a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">Requirement</a>
+		By <a href="https://golang.org/ref/spec#Numeric_types">Go Specification</a>
+	</th>
+	</tr>
+</thead>
+<tbody>
+	<tr class="active">
+	<th scope="row" class="text-center">bool</th>
+	<td>1 byte</td>
+	<td>not specified</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">int8, uint8 (byte)</th>
+	<td>1 byte</td>
+	<td>1 byte</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">int16, uint16</th>
+	<td>2 bytes</td>
+	<td>2 bytes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">int32 (rune), uint32, float32</th>
+	<td>4 bytes</td>
+	<td>4 bytes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">int64, uint64, float64, complex64</th>
+	<td>8 bytes</td>
+	<td>8 bytes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">complex128</th>
+	<td>16 bytes</td>
+	<td>16 bytes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">int, uint</th>
+	<td>1 word</td>
+	<td>compiler-specific, either 4 or 8 bytes</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">uintptr</th>
+	<td>1 word</td>
+	<td>large enough to store the uninterpreted bits of a pointer value</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">string</th>
+	<td>2 words</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">pointer</th>
+	<td>1 word</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">slice</th>
+	<td>3 words</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">map</th>
+	<td>1 word</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">channel</th>
+	<td>1 word</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">function</th>
+	<td>1 word</td>
+	<td>not specified</td>
+	</tr>
+	<tr>
+	<th scope="row" class="text-center">interface</th>
+	<td>2 words</td>
+	<td>not specified</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">struct</th>
+	<td>the sum of sizes of all fields + number of
+		<a href="memory-layout.html#size-and-padding">padding</a> bytes
+	</td>
+	<td>a <b>struct</b> type has size zero if it contains no fields
+		that have a size greater than zero</td>
+	</tr>
+	<tr class="active">
+	<th scope="row" class="text-center">array</th>
+	<td>(element value size) * (array length)</td>
+	<td>an <b>array</b> type has size zero if its element type
+		has zero size</td>
+	</tr>
+</tbody>
+</table>
+
+<p class="anchor" id="copy-costs"></p>
+<h3>Value Copy Costs</h3>
+
+<div>
+<p>
+Generally speaking, the cost to copy a value is proportional to the size of the value.
+However, value sizes are not the only factor to calculate value copying.
+Different CPU architectures may specially optimize value copying for values with specific sizes.
+In practice, we can view values with sizes smaller not larger than four native words
+as small-size values. The costs of copying small-size values are small.
+</p>
+
+<p>
+Except values of large-size struct and array types
+(for the official Go compiler),
+most values in Go are small-size values.
+</p>
+
+<p>
+To avoid large value copy costs in argument passing and channel value send
+and receive operations, we should try to avoid using large-size
+struct and array types as function and method parameter types
+(including method receiver types)
+and avoid using large-size struct and array types as channel element types.
+We can use pointer types whose base types are large-size struct and array types
+instead for such scenarios.
+</p>
+
+<p>
+One the other hand, we should also consider the negative effect for
+garbage collections caused by too many pointers are used at run time.
+So whether large-size struct and array types or their corresponding pointer
+types should be used relies on specific scenarios.
+</p>
+
+<p>
+Generally, we shouldn't use pointer types whose base types are
+slice types, map types, channel maps, function types, string types
+and interface types.
+The costs of copying values of these assumed base types are small.
+</p>
+
+<p>
+We should also try to avoid using the two-iteration-variable forms to
+iterate array and slice elements if the element types are large-size types,
+for each element value will be copy to the second iteration variable
+in the iteration process.
+<p>
+
+The following is an example to benchmark different ways
+of slice element iterations.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "testing"
+
+type S struct{a, b, c, d, e int64}
+var sX, sY, sZ = make([]S, 1000), make([]S, 1000), make([]S, 1000)
+var sumX, sumY, sumZ int64
+
+func Benchmark_Loop(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sumX = 0
+		for j := 0; j < len(sX); j++ {
+			sumX += sX[j].a
+		}
+	}
+}
+
+func Benchmark_Range_OneIterVar(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sumZ = 0
+		for j := range sY {
+			sumZ += sY[j].a
+		}
+	}
+}
+
+func Benchmark_Range_TwoIterVar(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sumY = 0
+		for _, v := range sY {
+			sumY += v.a
+		}
+	}
+}
+</code></pre>
+
+Run the benchmarks in the directory of the test file,
+we will get a result similar to:
+
+<pre class="output"><code>Benchmark_Loop-4                500000   3228 ns/op
+Benchmark_Range_OneIterVar-4    500000   3203 ns/op
+Benchmark_Range_TwoIterVars-4   200000   6616 ns/op
+</code></pre>
+
+<p>
+We can find that the efficiency of the two-iteration-variable form is much
+lower than the other two.
+</p>
+
+</div>
+
+

@@ -148,23 +148,23 @@ Go supports six bitwise binary arithmetic operators:
 			The two operands must be both values of the same integer type.
 			</p>
 			
-			Mechanism explainations (a value with the subscript <code>2</code> is the binary literal form of the value):
+			Mechanism explanations (a value with the subscript <code>2</code> is the binary literal form of the value):
 			<ul>
 			<li>
-				<code>1100<sub>2</sub> &amp; 1010<sub>2</sub></code> 
-				results <code>1000<sub>2</sub></code> 
+				<code>1100<sub>2</sub> &amp; 1010<sub>2</sub></code>
+				results <code>1000<sub>2</sub></code>
 			</li>
 			<li>
-				<code>1100<sub>2</sub> | 1010<sub>2</sub></code> 
-				results <code>1110<sub>2</sub></code> 
+				<code>1100<sub>2</sub> | 1010<sub>2</sub></code>
+				results <code>1110<sub>2</sub></code>
 			</li>
 			<li>
-				<code>1100<sub>2</sub> ^ 1010<sub>2</sub></code> 
-				results <code>0110<sub>2</sub></code> 
+				<code>1100<sub>2</sub> ^ 1010<sub>2</sub></code>
+				results <code>0110<sub>2</sub></code>
 			</li>
 			<li>
-				<code>1100<sub>2</sub> &^ 1010<sub>2</sub></code> 
-				results <code>0100<sub>2</sub></code> 
+				<code>1100<sub>2</sub> &^ 1010<sub>2</sub></code>
+				results <code>0100<sub>2</sub></code>
 			</li>
 			</ul>
 		</td>
@@ -196,19 +196,19 @@ Go supports six bitwise binary arithmetic operators:
 			<p>
 			The left operand must be an integer
 			and the right operand must be an unsigned integer
-			(or an <a href="type-system-overview.html#typed-and-untyped-values">untype</a>
-			non-negative integer constant).
+			(or an <a href="type-system-overview.html#typed-and-untyped-values">untyped</a>
+			integer constant which is representable as an <code>uint</code> value).
 			</p>
 			
-			Mechanism explainations:
+			Mechanism explanations:
 			<ul>
 			<li>
-				<code>1100<sub>2</sub> &lt;&lt; 3</code> 
-				results <code>1100000<sub>2</sub></code> 
+				<code>1100<sub>2</sub> &lt;&lt; 3</code>
+				results <code>1100000<sub>2</sub></code>
 			</li>
 			<li>
-				<code>1100<sub>2</sub> &gt;&gt; 3</code> 
-				results <code>1<sub>2</sub></code> 
+				<code>1100<sub>2</sub> &gt;&gt; 3</code>
+				results <code>1<sub>2</sub></code>
 			</li>
 			</ul>
 		</td>
@@ -332,8 +332,8 @@ Example:
 	_ = a | b   // error: a and b are not integers
 	_ = c + e   // error: type mismathing
 	_ = b >> 5  // error: b is not an integer
-	_ = c >> -5 // error: -5 is not representable as unsigned integers
-	_ = c >> d  // error: d is not an unsigned integer
+	_ = c >> -5 // error: -5 is not representable as uint
+	_ = e << c  // error: c is not an unsigned integer
 }
 </code></pre>
 
@@ -366,6 +366,9 @@ The result of a binary arithmetic operator operation
 	The default type of the result value is one of the two default
 	types and the one appears latter in this list: <code>int</code>,
 	<code>rune</code>, <code>float64</code>, <code>complex128</code>.
+	For example, if the default type of one untyped operand is <code>int</code>,
+	and the other one is <code>rune</code>, then the default type of
+	the result untyped value is <code>rune</code>.
 </li>
 </ul>
 
@@ -383,15 +386,18 @@ The result of a bitwise shift operatior operation
 
 Example:
 <pre class="line-numbers"><code class="language-go">func main() {
-	const X, Y = 2, 'A' // two untyped values. Default types: int and rune.
+	const X, Y, Z = 2, 'A', 3i // three untyped values. 
+	                           // Default types: int, rune, complex64.
+	
 	var a, b int = X, Y // two typed values.
 
 	d := X + Y // the type of d is the default type of Y: rune (int32).
 	e := Y - a // the type of e is the type of a: int.
 	f := a * b // the type of f is the types of a and b: int.
+	g := Z * Y // the type of g is the default type of Z: complex64.
 
-	println(X, Y)    // 2 65
-	println(d, e, f) // 67 63 130
+	println(X, Y, Z)    // 2 65 (+0.000000e+000+3.000000e+000i)
+	println(d, e, f, g) // 67 63 130 (+0.000000e+000+1.950000e+002i)
 }
 </code></pre>
 
@@ -417,10 +423,12 @@ Example:
 <pre class="line-numbers"><code class="language-go">var a, b uint8 = 255, 1
 var c = a + b  // okay: higher overflowed bits are truncated. c == 0
 var d = a << b // okay: higher overflowed bits are truncated. d == 254
-const X = 0x1FFFFFFFF * 0x1FFFFFFFF // okay, though the result overflows int.
+const X = 0x1FFFFFFFF * 0x1FFFFFFFF // okay, though X overflows int.
+const R = 'a' + 0x7FFFFFFF          // okay, though R overflows rune.
 
 // These lines fail to compile.
 var e = X                // error: untyped constant X overflows int.
+var h = R                // error: constant 2147483744 overflows rune.
 const Y = 128 - int8(1)  // error: 128 overflows int8
 const Z = uint8(255) + 1 // error: the result 256 overflow uint8.
 </code></pre>
@@ -452,8 +460,7 @@ If the divisor <code>y</code> is a constant, it must not be zero.
 If the divisor is zero at run time and it is an integer,
 a run-time panic occurs.
 Panics is like exceptions in some other languages.
-We can learn more about panics in the article
-<a href="panic-and-recover.html">panic and recover</a> later.
+We can learn more about panics in <a href="control-flow-more.html">this article</a>.
 </p>
 
 Example:
@@ -534,17 +541,25 @@ string concatenation.
 </tbody>
 </table>
 
+<p>
+The <code>op=</code> form also applies for the string concatenation operator.
+</p>
+
 Example:
 <pre class="line-numbers"><code class="language-go">println("Go" + "lang") // Golang
+var a = "Go"
+a += "lang"
+println(a) // Golang
 </code></pre>
 
 <p>
 </p>
 
 <p>
-If one of the two operands is a typed string, then the type of the result
+If one of the two operands of a string concatenation operation
+is a typed string, then the type of the result
 string is the same as the type of the typed string.
-If both the of the two oprands are untyped strings,
+If both the of the two oprands are untyped (constant) strings,
 the result is also an untyped string value.
 </p>
 
@@ -597,7 +612,7 @@ Go supports two boolean binary operators and one boolean unary operator:
 We can use the <code>!=</code> operator introduced above as the <b>boolean xor</b> operator.
 </p>
 
-Mechanism explainations:
+Mechanism explanations:
 <pre><code class="language-go">// x      y     x && y     x || y    !x     !y
 true    true    true       true     false  false
 true    false   false      true     false  true
@@ -682,7 +697,9 @@ Go supports six comparison binary operators:
 
 <p>
 The type of the result of any comparison operation is always an
-<a href="type-system-overview.html#typed-and-untyped-values">untype</a> boolean value.
+untype boolean value.
+If both of the two operands of a comparison operation are constant,
+the result is also a constant (bollean) value.
 </p>
 
 <p>

@@ -1,0 +1,249 @@
+﻿<h1>More About Deferred Function Calls</h1>
+
+<p>
+Deferred function calls have been
+<a href="control-flows-more.html#defer">introduced before</a>.
+Due to the limited knowledge at that time,
+some more details and use cases of deferred functions calls
+are not touched in that article.
+These details and use cases will be touched in the remaining of this article.
+</p>
+
+<h3>Calls To Many Built-in Functions With Return Results Can't Be Deferred</h3>
+
+<div>
+<p>
+In Go, the result values of a call to custom functions can be all absent (discarded).
+However, for built-in functions with non-blank return result lists,
+the result values of their calls mustn't be absent (up to Go 1.10), except
+the calls to the built-in <code>copy</code> and <code>recover</code> functions.
+We have learned that <a href="control-flows-more.html#defer">the result values
+of a deferred function call must be discarded</a>,
+so the calls to many built-in functions can't be deferred.
+</p>
+
+Fortunately, the needs to defer built-in function calls
+(with non-blank return result lists) are rare.
+As far as I know, only the calls to the built-in <code>append</code> function
+may be needed to defer sometimes.
+For this case, we can defer a call to an anonymous function
+which wrapps the <code>append</code> call.
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	s := []string{"a", "b", "c", "d"}
+	defer fmt.Println(s) // [a x y d]
+	// defer append(s[:1], "x", "y") // error
+	defer func() {
+		_ = append(s[:1], "x", "y")
+	}()
+}
+</code></pre>
+</div>
+
+<h3>The Evaluation Moment Of Deferred Function Values</h3>
+
+<div>
+The called function in a deferred function call may be a nil function value.
+For such a case, the panic will occur before the deferred call is
+pushed into the deferred call stack of the currrent goroutine. An example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	defer fmt.Println("reachable")
+	var f func() // f is nil by default
+	defer f()    // panic here
+	// The following lines are dead code.
+	fmt.Println("not reachable")
+	f = func() {}
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+The argumnts of a deferred function call are
+<a href="#argument-evaluation-moment">also evaluated before</a>
+the deferred call is pushed into the deferred call stack
+of the currrent goroutine.
+</p>
+</div>
+
+<h3>Deferred Calls Make Code Cleaner And Less Bug Prone</h3>
+
+<div>
+Example:
+
+<pre class="line-numbers"><code class="language-go">import "os"
+
+func withoutDefers (filepath string, head, body []byte) error {
+	f, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Seek(16, 0)
+	if err != nil {
+		f.Close()
+		return err
+	}
+
+	_, err = f.Write(head)
+	if err != nil {
+		f.Close()
+		return err
+	}
+
+	_, err = f.Write(body)
+	if err != nil {
+		f.Close()
+		return err
+	}
+	
+	err = f.Sync()
+	f.Close()
+	return err
+}
+
+func withDefers(filepath string, head, body []byte) error {
+	f, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.Seek(16, 0)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(head)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(body)
+	if err != nil {
+		return err
+	}
+	
+	return f.Sync()
+}
+</code></pre>
+
+<!---
+https://joeshaw.org/dont-defer-close-on-writable-files/
+-->
+
+<p>
+Which one looks cleaner? apparently, the one with the deferrd calls,
+though a little. And it is less bug prone,
+what about if any if <code>f.Close()</code> calls in the other one is missed? ;)
+</p>
+</div>
+
+<h3>Performance Losses Caused By Deferring Function Calls</h3>
+
+<div>
+<p>
+It is not always good to use defered function calls.
+Up to now (Go 1.10), for the offical Go compiler,
+deferred function calls will cause some performance losses at run time,
+in particular for deferred function calls within loop code blocks.
+</p>
+
+For example, in the following example, method <code>IncreaseB</code> is
+much more efficient than <code>IncreaseA</code>.
+
+<pre class="line-numbers"><code class="language-go">import "sync"
+
+type T struct {
+	mu sync.Mutex
+	n  int64
+}
+
+func (t *T) IncreaseA() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.n++
+}
+
+func (t *T) IncreaseB() {
+	t.mu.Lock()
+	t.n++
+	t.mu.Unlock()
+}
+</code></pre>
+
+<p>
+</p>
+
+A very large deferred call stack may also consume much memory.
+Sometimes, we can make some deferred function calls get executed earlier
+to avoid accumulating too many deferred calls.
+For example,
+<pre class="line-numbers"><code class="language-go">func writeManyFile(files []File) error {
+	for _, file := range files {
+		f, err := os.Open(file.path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		
+		_, err = f.WriteString(file.content)
+		if err != nil {
+			return err
+		}
+		
+		err = f.Sync()
+		if err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
+</code></pre>
+
+can be rewrittn and optimized as
+
+<pre class="line-numbers"><code class="language-go">func writeManyFile(files []File) error {
+	for _, file := range files {
+		if err := func() error {
+			f, err := os.Open(file.path)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			
+			_, err = f.WriteString(file.content)
+			if err != nil {
+				return err
+			}
+			
+			return f.Sync()
+		}(); err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+Currently, if you really care about the performance of your programs,
+you can try to avoid using unnecessary deferred function calls.
+</p>
+
+</div>
+
+

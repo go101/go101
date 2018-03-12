@@ -3,9 +3,9 @@
 <p>
 Since <a href="https://blog.golang.org/go1.7">Go 1.7</a>, the official Go compiler
 has used a new compiler back end, which based on static single-assignment form (SSA) (now only availabe for amd64).
-SSA makes go compiler generate more efficient code with optimizations like 
+SSA makes go compiler generate more efficient code with optimizations like
 <a href="https://en.wikipedia.org/wiki/Bounds-checking_elimination">bounds check elimination (BCE)</a>
-and <a href="https://en.wikipedia.org/wiki/Common_subexpression_elimination">common subexpression elimination</a>.
+and <a href="https://en.wikipedia.org/wiki/Common_subexpression_elimination">common subexpression elimination (CSE)</a>.
 </p>
 
 <p>
@@ -13,7 +13,7 @@ This article will show some examples how BCE works in the official Go compiler 1
 </p>
 
 <p>
-In Go 1.7+, one can run <b>go build <i>-gcflags="-d=ssa/check_bce/debug=1"</i></b> to 
+In Go 1.7+, one can run <b>go build <i>-gcflags="-d=ssa/check_bce/debug=1"</i></b> to
 show which code lines still need checking bounds.
 </p>
 
@@ -24,19 +24,19 @@ show which code lines still need checking bounds.
 package main
 
 func f1(s []int) {
-	_ = s[0] // line 5: bounds check 
-	_ = s[1] // line 6: bounds check 
-	_ = s[2] // line 7: bounds check 
+	_ = s[0] // line 5: bounds check
+	_ = s[1] // line 6: bounds check
+	_ = s[2] // line 7: bounds check
 }
 
 func f2(s []int) {
-	_ = s[2] // line 11: bounds check 
+	_ = s[2] // line 11: bounds check
 	_ = s[1] // line 12: bounds check eliminatd!
 	_ = s[0] // line 13: bounds check eliminatd!
 }
 
 func f3(s []int, index int) {
-	_ = s[index] // line 17: bounds check 
+	_ = s[index] // line 17: bounds check
 	_ = s[index] // line 18: bounds check eliminatd!
 }
 
@@ -50,30 +50,36 @@ func main() {}
 <pre>
 $ go build -gcflags="-d=ssa/check_bce/debug=1" example1.go
 # command-line-arguments
-./11.go:5: Found IsInBounds
-./11.go:6: Found IsInBounds
-./11.go:7: Found IsInBounds
-./11.go:11: Found IsInBounds
-./11.go:17: Found IsInBounds
+./example1.go:5: Found IsInBounds
+./example1.go:6: Found IsInBounds
+./example1.go:7: Found IsInBounds
+./example1.go:11: Found IsInBounds
+./example1.go:17: Found IsInBounds
 </pre>
 
 <p>
-We can see that there is no needs to do bounds check for line 12 and line 13 in function f2, 
-for the bounds check at line 11 ensures that the indexes in line 12 and line 13 will not be out of range.
+We can see that there is no needs to do bounds check for line <i>12</i>
+and line <i>13</i> in function <code>f2</code>,
+for the bounds check at line <i>11</i> ensures that the indexes in
+line <i>12</i> and line <i>13</i> will not be out of range.
 </p>
 
 <p>
-But in function f1, bounds check must be performed for all three lines.
-The bounds check at line 5 can't ensure line 6 and line 7 are safe, 
-and the bounds check at line 6 can't ensure line 7 is safe.
+But in function <code>f1</code>, bounds check must be performed for all three lines.
+The bounds check at line <i>5</i> can't ensure line <i>6</i>
+and line <i>7</i> are safe,
+and the bounds check at line <i>6</i> can't ensure line <i>7</i> is safe.
 </p>
 
 <p>
-For function f3, Go 1.7+ compiler knows the second s[index] is absolutely safe if the first s[index] is safe.
+For function <code>f3</code>, Go 1.7+ compiler knows the second
+<code>s[index]</code> is absolutely safe if the first <code>s[index]</code>
+is safe.
 </p>
 
 <p>
-Go 1.7+ compiler also correctly thinks the only line (line 22) in function f4 is safe.
+Go 1.7+ compiler also correctly thinks the only line (line <i>22</i>)
+in function <code>f4</code> is safe.
 </p>
 </div>
 
@@ -92,7 +98,7 @@ func f5(s []int) {
 }
 
 func f6(s []int) {
-	for i := 0; i < len(s); i ++ {
+	for i := 0; i < len(s); i++ {
 		_ = s[i]
 		_ = s[i:len(s)]
 		_ = s[:i+1]
@@ -100,8 +106,8 @@ func f6(s []int) {
 }
 
 func f7(s []int) {
-	for i := len(s) - 1; i >= 0; i -- {
-		_ = s[i] // line 22: bounds check 
+	for i := len(s) - 1; i >= 0; i-- {
+		_ = s[i] // line 22: bounds check
 		_ = s[i:len(s)]
 	}
 }
@@ -125,19 +131,21 @@ func main() {}
 <pre>
 $ go build -gcflags="-d=ssa/check_bce/debug=1" example2.go
 # command-line-arguments
-./11.go:22: Found IsInBounds
+./example2.go:22: Found IsInBounds
 </pre>
 
 <p>
-We can see that there is only one line need bounds check in example2.go.
+We can see that there is only one line need bounds check in example 2.
 </p>
 
 <p>
-Go 1.7+ compiler is so smart to make the conclusion that all lines in function f5, f6, f8 and f9 are safe.
+Go 1.7+ compiler is so smart to make the conclusion that all lines in function
+<code>f5</code>, <code>f6</code>, <code>f8</code> and <code>f9</code> are safe.
 </p>
 
 <p>
-Aha, maybe it is still not smart enough as human being, it looks line 22 is also safe.
+Aha, maybe it is still not smart enough as human being,
+it looks line <i>22</i> is also safe.
 </p>
 </div>
 
@@ -152,12 +160,12 @@ import "math/rand"
 func fa() {
 	s := []int{0, 1, 2, 3, 4, 5, 6}
 	index := rand.Intn(7)
-	_ = s[:index] // line 9: bounds check 
+	_ = s[:index] // line 9: bounds check
 	_ = s[index:] // line 10: bounds check eliminatd!
 }
 
 func fb(s []int, index int) {
-	_ = s[:index] // line 14: bounds check 
+	_ = s[:index] // line 14: bounds check
 	_ = s[index:] // line 15: bounds check, not smart enough?
 }
 
@@ -165,7 +173,7 @@ func fc() {
 	s := []int{0, 1, 2, 3, 4, 5, 6}
 	s = s[:4]
 	index := rand.Intn(7)
-	_ = s[:index] // line 22: bounds check 
+	_ = s[:index] // line 22: bounds check
 	_ = s[index:] // line 23: bounds check, not smart enough?
 }
 
@@ -175,11 +183,11 @@ func main() {}
 <pre>
 $ go build -gcflags="-d=ssa/check_bce/debug=1" example3.go
 # command-line-arguments
-./11.go:9: Found IsSliceInBounds
-./11.go:14: Found IsSliceInBounds
-./11.go:15: Found IsSliceInBounds
-./11.go:22: Found IsSliceInBounds
-./11.go:23: Found IsSliceInBounds
+./example3.go:9: Found IsSliceInBounds
+./example3.go:14: Found IsSliceInBounds
+./example3.go:15: Found IsSliceInBounds
+./example3.go:22: Found IsSliceInBounds
+./example3.go:23: Found IsSliceInBounds
 </pre>
 
 <p>
@@ -187,12 +195,13 @@ Oh, so many places still need to do bounds check!
 </p>
 
 <p>
-But wait, why does the Go official compiler 1.7+ think line 10 is safe but line 15 and line 23 are not?
+But wait, why does the Go official compiler 1.7+ think line <i>10</i>
+is safe but line <i>15</i> and line <i>23</i> are not?
 Is the compiler still not smart enough or is it a bug?
 </p>
 
 <p>
-In fact, the compiler is right here! Why? 
+In fact, the compiler is right here! Why?
 The reason is the length of a sub slice may be larger than original slice.
 For example:
 </p>
@@ -217,11 +226,14 @@ func main() {
 </code></pre>
 
 <p>
-So the statement <b>if s[:index] is safe then s[index:] is also safe</b> is only true when <b>len(s) == cap(s)</b>.
-This is why the code lines in function fb and fc of example 3 still need to do bounds check.
+So the statement <b>if <code>s[:index]</code> is safe then <code>s[index:]</code>
+is also safe</b> is only true when <code>len(s)</code> is equal to <code>cap(s)</code>.
+This is why the code lines in function <code>fb</code> and <code>fc</code>
+of example 3 still need to do bounds check.
 </p>
 <p>
-Go official compiler 1.7+ successfully detects <code>len(s) == cap(s)</code> in function fa.
+Go official compiler 1.7+ successfully detects <code>len(s)</code> is equal to
+<code>cap(s)</code> in function <code>fa</code>.
 Great work! Go team!
 </p>
 
@@ -244,7 +256,7 @@ func fc2() {
 	s := []int{0, 1, 2, 3, 4, 5, 6}
 	s = s[:4]
 	index := rand.Intn(7)
-	_ = s[index:] // line 15 bounds check 
+	_ = s[index:] // line 15 bounds check
 	_ = s[:index] // line 16: bounds check eliminatd!
 }
 
@@ -254,23 +266,23 @@ func main() {}
 <pre>
 $ go build -gcflags="-d=ssa/check_bce/debug=1" example4.go
 # command-line-arguments
-./a.go:7:7: Found IsSliceInBounds
-./a.go:15:7: Found IsSliceInBounds
+./example4.go:7:7: Found IsSliceInBounds
+./example4.go:15:7: Found IsSliceInBounds
 </pre>
 
 In this example, The official Go compiler successfully concludes
 <ul>
 <li>
-	line 8 is also safe if line 8 is safe in function fc2.
+	line <i>8</i> is also safe if line <i>8</i> is safe in function <code>fc2</code>.
 </li>
 <li>
-	line 16 is also safe if line 15 is safe in function fc1.
+	line <i>16</i> is also safe if line <i>15</i> is safe in function <code>fc1</code>.
 </li>
 </ul>
 
 <p><i>
 (Before Go SDK 1.9, the official Go compiler failed to
-detect line 16 doesn't need bounds check.)
+detect line <code>16</code> doesn't need bounds check.)
 </i></p>
 
 </div>
@@ -278,7 +290,8 @@ detect line 16 doesn't need bounds check.)
 <h3>Example 5</h3>
 
 <div>
-Although the current version of the official Go compiler is still not smart enough to eliminate some unneccessary bounds checkings, 
+Although the current version of the official Go compiler is still not smart
+enough to eliminate some unneccessary bounds checkings,
 but we can make some hints to help the compiler eliminate these unneccessary bounds checkings.
 
 <pre class="line-numbers"><code class="language-go">// example5.go
@@ -296,7 +309,7 @@ func fd2(is []int, bs []byte) {
 	if len(is) >= 256 {
 		is = is[:256] // line 14: a trick to avoid bounds check at line 16.
 		for _, n := range bs {
-			_ = is[n] // line 16: bounds check eliminatd! 
+			_ = is[n] // line 16: bounds check eliminatd!
 		}
 	}
 }
@@ -313,7 +326,7 @@ func fe2(isa []int, isb []int) {
 	if len(isa) > 0xFFF {
 		isa = isa[:0xFFF+1] // line 31: a trick to avoid bounds check at line 33.
 		for _, n := range isb {
-			_ = isa[n & 0xFFF] // line 33: bounds check eliminatd! 
+			_ = isa[n & 0xFFF] // line 33: bounds check eliminatd!
 		}
 	}
 }
@@ -330,7 +343,7 @@ func ff2(s []int) []int {
 	s2 := make([]int, len(s))
 	s2 = s2[:len(s)] // line 48: bounds check. (To avoid bounds check at line 50.)
 	for i := range s {
-		s2[i] = -s[i] // line 50: bounds check eliminatd! 
+		s2[i] = -s[i] // line 50: bounds check eliminatd!
 	}
 	return s2
 }
@@ -341,21 +354,91 @@ func main() {}
 <pre>
 $ go build -gcflags="-d=ssa/check_bce/debug=1" example5.go
 # command-line-arguments
-./11.go:7: Found IsInBounds
-./11.go:24: Found IsInBounds
-./11.go:41: Found IsInBounds
-./11.go:48: Found IsSliceInBounds
+./example5.go:7: Found IsInBounds
+./example5.go:24: Found IsInBounds
+./example5.go:41: Found IsInBounds
+./example5.go:48: Found IsSliceInBounds
 </pre>
+</div>
+
+<h3>A Use Case Of BCE: Efficient Slice Comparison</h3>
+
+<div>
+
+<p>
+We all know that slice types don't support comparison in Go.
+To compare two slices, we must write custom comparison code,
+or use the <code>DeepEqual</code> functions in the <code>reflect</code>
+standard package. But the <code>reflect.DeepEqual</code> function is too slow.
+</p>
+
+The following is a custom slice comparison function.
+
+<pre class="line-numbers"><code class="language-go">func CompareSlices_General(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	if (a == nil) != (b == nil) {
+		return false
+	}
+
+	for i, v := range a {
+		if v != b[i] { // here bounds check is needed for b[i]
+			return false
+		}
+	}
+
+	return true
+}
+</code></pre>
+
+Bounds check still is still needed for the <code>b[i]</code> in the
+<code>for-range</code> loop block to avoid index <code>i</code> out of range.
+We can modify the function a bit to remove the bounds check.
+
+<pre class="line-numbers"><code class="language-go">func CompareSlices_BCE(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	if (a == nil) != (b == nil) {
+		return false
+	}
+
+	b = b[:len(a)] // this line is the key.
+	for i, v := range a {
+		if v != b[i] { // no bounds check for b[i] now!
+			return false
+		}
+	}
+
+	return true
+}
+</code></pre>
+
+Let's <a href="https://github.com/go101/go-benchmarks/blob/master/bce/bce_test.go">benchmark the two functions</a>.
+The result:
+
+<pre class="output"><code>Benchmark_SliceComparison/General-4         	 5000000	       287 ns/op
+Benchmark_SliceComparison/BCE-4             	 5000000	       251 ns/op
+</code></pre>
+
+<p>
+The BCE version is about 12.5% faster than the general version.
+Really not bad.
+</p>
+
 </div>
 
 <h3>Summary</h3>
 
 <p>
-Although the BCE feature in the official Go compiler is still not perfect, 
+Although the BCE feature in the official Go compiler is still not perfect,
 it really does well for many common cases.
 It is no doubt that Go compiler will do better in later versions.
 
-Thank Go team for adding this wonderful feature! 
+Thank Go team for adding this wonderful feature!
 </p>
 
 <h3>References:</h3>
@@ -369,11 +452,3 @@ Thank Go team for adding this wonderful feature!
 <p class="well well-sm">
 [edit@2016/09/22] added example 5 and refs.
 </p>
-
-
-
-
-
-
-
-

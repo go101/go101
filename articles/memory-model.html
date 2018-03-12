@@ -26,7 +26,7 @@ even if there are really some instruction reorderings happening inside it.
 </p>
 
 <p>
-However, if some goroutines share some data, 
+However, if some goroutines share some data,
 instruction reorderings happen inside one of these goroutine
 may be observed by the others goroutines,
 and affact the behaviors of all these goroutines.
@@ -414,11 +414,11 @@ There are two other obvious channel related order guarantees.
 But they are not very valuable for Go programming in pratice.
 <ol>
 <li>
-	The completion of the <b>n</b>th successful send on a channel happens before 
+	The completion of the <b>n</b>th successful send on a channel happens before
 	the completion of the (<b>n+1</b>)th successful send on the channel.
 </li>
 <li>
-	The completion of the <b>n</b>th successful receive on a channel happens before 
+	The completion of the <b>n</b>th successful receive on a channel happens before
 	the completion of the (<b>n+1</b>)th successful receive on the channel.
 </li>
 </ol>
@@ -436,7 +436,7 @@ Followings are the mutex related order guarantees in Go.
 	For an addressable value <code>l</code> of type <code>Mutex</code> or <code>RWMutex</code>
 	in the <code>sync</code> standard package, the <b>n</b>th successful call of
 	<code>l.Unlock()</code> happens before the (<b>n+1</b>)th successful call of
-	<code>l.Lock()</code> returns. 
+	<code>l.Lock()</code> returns.
 </li>
 <li>
 	For an addressable value <code>l</code> of type <code>RWMutex</code>,
@@ -536,7 +536,7 @@ any <code>wg.Wait</code> method call made after the given time returns.
 </p>
 
 <p>
-Please read <a href="concurrent-synchronization-more.html#waitgroup">the explainations
+Please read <a href="concurrent-synchronization-more.html#waitgroup">the explanations
 for sync.WaitGroup</a> to get how to use <code>sync.WaitGroup</code> values.
 </p>
 
@@ -552,7 +552,7 @@ is guaranteed to be executed before any <code>o.Do</code> method call returns.
 </p>
 
 <p>
-Please read <a href="concurrent-synchronization-more.html#once">the explainations
+Please read <a href="concurrent-synchronization-more.html#once">the explanations
 for sync.Once</a> to get how to use <code>sync.Once</code> values.
 </p>
 
@@ -568,7 +568,7 @@ happen before the <code>c.Wait()</code> call returns.
 </p>
 
 <p>
-Please read <a href="concurrent-synchronization-more.html#cond">the explainations
+Please read <a href="concurrent-synchronization-more.html#cond">the explanations
 for sync.Cond</a> to get how to use <code>sync.Cond</code> values.
 </p>
 
@@ -583,7 +583,8 @@ However, none of Go official documentations mentions what memory order guarantee
 are made by the atomic synchronization technique.
 </p>
 
-In fact, in the implementation of the official Go compiler, at least for Go 1.9,
+In fact, in the implementation of the official Go compiler,
+at least up to Go SDK 1.10,
 there are exactly some memory order guarantees made by atomic operations.
 The official Go runtime relies extensively on the guarantees provided by atomic operations.
 For example, the following program always prints <code>1</code>,
@@ -598,13 +599,14 @@ func main() {
 	var a, b int32 = 0, 0
 
 	go func() {
-		a = 1
-		atomic.AddInt32(&b, 1)
+		atomic.StoreInt32(&a, 1)
+		atomic.StoreInt32(&b, 1)
 	}()
 
 	for {
 		if n := atomic.LoadInt32(&b); n == 1 {
-			fmt.Println(a) // always print 1
+			// The following line always prints 1.
+			fmt.Println(atomic.LoadInt32(&a))
 			break
 		}
 		runtime.Gosched()
@@ -613,25 +615,24 @@ func main() {
 </code></pre>
 
 <p>
-Here, the main goroutine will always observe that <code>a = 1</code>
-happens before <code>atomic.AddInt32(&amp;b, 1)</code>.
-When <code>b</code> becomes <code>1</code>,
-<code>a</code> must have also become <code>1</code>.
+Here, the main goroutine will always observe that the modification
+of <code>a</code> happens before the modification of <code>b</code>.
 </p>
 
 <p>
 However, the guarantees made by atomic operations are not
 written down in the Go specification and other offcial Go documentations.
 If you want to write cross-compiler and cross-compile-version compatible Go code,
-the safe advice is, <b>don't rely on atomic to guarantee memory orderings in general Go programming</b>.
+the safe advice is,
+<b>don't rely on atomic to guarantee memory orderings in general Go programming</b>.
 There is <a href="https://github.com/golang/go/issues/5045">an issue</a>
 on how these guarantees should be written down.
-But, up to now (Go 1.9), the decision has not been made.
+But, up to now (Go 1.10), the decision has not been made.
 </p>
 
 <p>
 Please read <a href="concurrent-atomic-operation.html">this article</a>
-to get how to use atomic operations.
+to get how to do atomic operations.
 </p>
 </div>
 
@@ -655,7 +656,7 @@ https://groups.google.com/forum/#!topic/golang-nuts/AoO3aivfA_E
 https://peeterjoot.wordpress.com/2009/12/04/intel-memory-ordering-fence-instructions-and-atomic-operations/
 
 https://github.com/golang/go/issues/5045#issuecomment-292673178
-C++ atomics and memory ordering 
+C++ atomics and memory ordering
 https://bartoszmilewski.com/2008/12/01/c-atomics-and-memory-ordering/
 Memory ordering
 https://en.wikipedia.org/wiki/Memory_ordering

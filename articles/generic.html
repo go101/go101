@@ -1,46 +1,44 @@
-﻿<h1>Built-in Generic And Type Compositions</h1>
+﻿<h1>Type Compositions</h1>
 
 <p>
-Go 1 doesn't support custom generic types and functions.
-However, Go 1 supports generic for built-in functions and
-some kinds of composite types, including
-<a href="pointer.html">pointer types</a>,
-<a href="channel.html">channel types</a>,
-and <a href="container.html">array types, slice types and map types</a>.
-We can use these types to composite many, infinite in theory,
-types we needed in go programming.
+Go 1 doesn't support user-defined generic types.
+Go only supports generic for first-level citizen composite types in Go.
+We can use composite types to create infinite custom types by using
+all kinds of first-level citizen types in Go.
 </p>
 
 <p>
-Type compositions in Go are designed very intuitive and easy to interpret.
-It is hardly to get lost on understanding Go composite types,
-even if for some very complex ones.
+Following of this article will show type composition examples
+and explain how to read these composited types.
 </p>
 
 <h3>Type Composition Examples</h3>
 
+<div>
+
 <p>
-Let's check some examples, from simple ones to complex ones,
-to learn how to interpret complex composite types in Go.
-As just has mentioned, it is not hard.
+Type compositions in Go are designed very intuitive and easy to interpret.
+It is hardly to get lost in understanding Go composite types,
+even if for some very complex ones.
+Following are several type composistion examples,
+from simpler ones to more complex ones.
 </p>
 
-<h4>Example 1</h4>
-
-<div>
+Let's view an simple composite type literal.
 
 <pre class="line-numbers"><code class="language-go">[3][4]int
 </code></pre>
 
 <p>
 When interpreting a composite type, we should look at it from left to right.
-The <code>[3]</code> on the left indicates that this type is an array type.
+The <code>[3]</code> on the left in the above type literal indicates that
+this type is an array type.
 The whole right part following the <code>[4]int</code> is another array type,
 which is the element type of the first array type.
 The first array type can be viewed as a two-dimention array type.
 </p>
 
-An example on using this two-dimention array type type.
+An example on using this two-dimention array type.
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -60,11 +58,40 @@ func main() {
 }
 </code></pre>
 
-</div>
+<p>
+</p>
 
-<h4>Example 2</h4>
+Similarly,
+<ul>
+<li>
+	<code>[][]string</code> is a slice type whose element type is
+	another slice type <code>[]string</code>.
+</li>
+<li>
+	<code>**bool</code> is a pointer type whose base type is
+	another pointer type <code>*bool</code>.
+</li>
+<li>
+	<code>chan chan int</code> is a channel type whose element type is
+	another channel type <code>chan int</code>.
+</li>
+<li>
+	<code>map[int]map[int]string</code> is a map type whose element type is
+	another map type <code>map[string]int</code>.
+	The key types of the two map types are both <code>int</code>.
+</li>
+<li>
+	<code>func(int32) func(int32)</code> is a function type whose only
+	return result type is another function type <code>func(int32)</code>.
+	The two function types both have only one input parameter
+	with type <code>int32</code>.
+</li>
+</ul>
 
-<div>
+<p>
+</p>
+
+Let's view another type.
 
 <pre class="line-numbers"><code class="language-go">chan *[16]byte
 </code></pre>
@@ -80,103 +107,60 @@ The element type of the array type is <code>byte</code>.
 An example on using this channel type.
 <pre class="line-numbers"><code class="language-go">package main
 
-import (
-	"fmt"
-	"time"
-	"crypto/rand"
-)
+import "fmt"
+import "time"
+import "crypto/rand"
 
 func main() {
 	c := make(chan *[16]byte)
 	
 	go func() {
 		// Use double arrays to avoid data racing.
-		var dataA, dataB [16]byte
-		var data *[16]byte = &dataA
+		var dataA, dataB = new([16]byte), new([16]byte)
 		for {
-			_, err := rand.Read(data[:])
+			_, err := rand.Read(dataA[:])
 			if err != nil {
-				c <- (*[16]byte)(nil)
+				close(c)
 			} else {
-				c <- data
-
-				// Swap the data array.
-				if data == &dataA {
-					data = &dataB
-				} else {
-					data = &dataA
-				}
+				c <- dataA
+				dataA, dataB = dataB, dataA
 			}
 		}
 	}()
 	
 	for data := range c {
-		if data == nil {
-			break
-		}
 		fmt.Println((*data)[:])
 		time.Sleep(time.Second / 2)
 	}
 }
 </code></pre>
 
-</div>
-
-<h4>Example 3</h4>
-
-<div>
-
-<pre class="line-numbers"><code class="language-go">**struct{x map[string]int; y []int16; z func(int)(string, bool)}
-</code></pre>
-
 <p>
-The left <code>*</code> sign on the left indicates that this type is a pointer type.
-The whole right part <code>*stuct{x bool}</code> following the first <code>*</code>
-sign denotes another pointer type, which base type is a struct type.
-The struct type has three fields.
-The first field <code>x</code> is of a map type <code>map[string]int</code>,
-the second field <code>y</code> is of a slice type <code>[]int16</code>,
-and the third field <code>z</code> is of a function type <code>func(int)(string, bool)</code>.
 </p>
 
-</div>
-
-<h4>Example 4</h4>
-
-<div>
-
-<pre class="line-numbers"><code class="language-go">map[string][]func(int) int
-</code></pre>
-
 <p>
-The <code>map</code> keyword on the left most indicates this type is a map type.
+Similarly, type <Code>map[string][]func(int) int</code> is a map type.
 The key type of this map type is <code>string</code>.
-The remaining right part <code>[]func(int) int</code> denotes the element type of the map type.
+The remaining right part <code>[]func(int) int</code> denotes
+the element type of the map type.
 The <code>[]</code> indicates the element type is a slice type,
 whose element type is a function type <code>func(int) int</code>.
 </p>
 
-An example on using this map type.
+An example on using the just explained map type.
+
 <pre class="line-numbers"><code class="language-go">package main
 
-import (
-	"fmt"
-)
+import "fmt"
 
 func main() {
-	plusone := func(x int) int {
-		return x + 1
-	}
-	square := func(x int) int {
-		return x * x
-	}
-	double := func(x int) int {
-		return x + x
-	}
+	plusone := func(x int) int {return x + 1}
+	square := func(x int) int {return x * x}
+	double := func(x int) int {return x + x}
 	
 	transforms := map[string][]func(int) int {
-		"plus,plus,plus": {plusone, plusone, plusone},
-		"square,plus,double": {square, plusone, double},
+		"increase,increase,increase": {plusone, plusone, plusone},
+		"square,increase,double": {square, plusone, double},
 		"double,square,square": {double, double, square},
 	}
 	
@@ -193,13 +177,12 @@ func main() {
 }
 </code></pre>
 
-</div>
+<p>
+</p>
 
-<h4>Example 5</h4>
+Below is a type which looks some complex.
 
-<div>
-
-<pre class="line-numbers"><code class="language-go">type T []map[struct {
+<pre class="line-numbers"><code class="language-go">[]map[struct {
 	a int
 	b struct {
 		x string
@@ -213,19 +196,23 @@ func main() {
 </code></pre>
 
 <p>
+Let's read it from left to right.
 The starting <code>[]</code> at the left most indicates this type is a slice type.
 The following <code>map</code> keyword shows the element type of the slice type is a map type.
 The struct type denoted by the struct literal enclosed in the <code>[]</code> following
 the <code>map</code> keyword is the key type of the map type.
 The element type of the map type is an interface type which specifies three methods.
-The key type, a struct type, has two field,
+The key type, a struct type, has two fields,
 one field <code>a</code> is of <code>int</code> type,
 and the other filed <code>b</code> is of another struct type
 <code>struct {x string; y bool}</code>.
 </p>
 
 To get a better readibility, we often decomposite such a type
-into multiple type declarations:
+into multiple type declarations.
+The type alias <code>T</code> declared in the following code
+and the just explained type above denote the identical type.
+
 <pre class="line-numbers"><code class="language-go">type B = struct {
 	x string
 	y bool
@@ -247,7 +234,7 @@ type T = []map[K]E
 
 </div>
 
-<h3>The Status Of The Built-in Generic Functionalites In Go</h3>
+<h3>The Current Status Of The Built-in Generic Functionalites In Go</h3>
 
 <p>
 Besides the built-in generic for composite types,
@@ -260,17 +247,22 @@ are also viewed as built-in functions.
 
 <p>
 Go doesn't support generic for custom types and functions, at least for Go 1.
-Although sometimes it is really inconvenient by lacking of custom generic support,
-the built-in generic often alleviates the inconveniences.
-In fact, Go has so many advantages in other aspects that
-most Go programmers are happy in Go programming.
+This really brings some inconveniences in Go programming sometimes.
+For example, the types of the arguments and results of most functions in the
+<code>math</code> standard package are <code>float64</code>.
+When we want to use these functions on values of other kinds of numeric types,
+we must first convert the values to <code>float64</code> values as arguments,
+and we must convert the <code>float64</code> results back to the original
+numeric types, which is not only inconvenient, but also is not efficient.
 </p>
 
-<!---
-
-mention math package use float64 only ...
-
--->
+<p>
+Luckily, the scenarios requiring custom general types and functions
+are not many in Go programming.
+If we do need custom generic, currently, we can use code generating
+for compile-time generic and use reflections (including type assertion
+and type switch) for run-time generic.
+</p>
 
 <h3>The future Of Generic In Go</h3>
 
@@ -279,14 +271,7 @@ Go language design and development team
 <a href="https://research.swtch.com/go2017#generics">wouldn't mind supporting generic feature in Go</a>,
 it is just that they <a href="https://github.com/golang/go/issues/15292">haven't found a generic solution</a>
 which will keep Go simple and clean yet.
-So, it is possible that Go 2 will support custom generic.
+So, it is (very) possible that Go 2 will support custom generic.
 </p>
-
-<!---
-type composition examples
-* chan chan chan in
-* func() func() func()
-* ....
--->
 
 
