@@ -156,6 +156,7 @@ func retrieveTitlesForArticle(article *Article) {
 func (*Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file string) bool {
 	article, err := retrieveArticleContent(file, !isLocalRequest(r))
 	if err == nil {
+		w.Header().Set("Cache-Control", "max-age=36000") // 10 hours
 		page := map[string]interface{}{
 			"Article": article,
 			"Title":   article.TitleWithoutTags,
@@ -165,6 +166,7 @@ func (*Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file str
 		}
 	}
 	
+	w.Header().Set("Cache-Control", "max-age=300") // 5 minutes
 	w.Write([]byte(err.Error()))
 	return false
 }

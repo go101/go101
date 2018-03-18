@@ -28,7 +28,7 @@ and their value literals</a>) are all untyped values.
 In fact, in Go,
 most untyped values are literal constants and the to be introduced
 untyped named constants. The other untyped values include the just mentioned
-<code>nil</code> and some boolean results returned by some special operations
+<code>nil</code> and some boolean results returned by some operations
 which will be introduced in other articles later.
 </p>
 
@@ -270,7 +270,7 @@ populated at those places. If we want to change the literal
 to <code>3.14</code> later, many places need to be modified.
 With the help of constant declarations, the literal <code>3.1416</code>
 will only appear in one constant declaration,
-so only one place need to be modified.
+so only one place needs to be modified.
 This is the main purpose of constant declarations.
 </p>
 
@@ -308,7 +308,7 @@ the same as the literal it denotes.
 
 <div>
 
-We can delcared typed constants.
+We can delcared typed constants. Typed constants are all named.
 In the following example, all the four declared constants are typed values.
 The types of <code>X</code> and <code>Y</code> are both <code>float32</code>
 and the types of <code>A</code> and <code>B</code> are both <code>int64</code>.
@@ -343,6 +343,50 @@ const (
 
 <p></p>
 
+If a basic value literal is bound to a typed constant, the basic value
+literal must be representable as a value of the type of the constant.
+The following typed constant declarations are invalid.
+
+<pre class="line-numbers"><code class="language-go">const a uint8 = 256             // error: 256 overflows uint8
+const b = uint8(255) + uint8(1) // error: 256 overflows uint8
+const c = int8(-128) / int8(-1) // error: 128 overflows int8
+const MaxUint_a = uint(^0)      // error: -1 overflows uint
+const MaxUint_b uint = ^0       // error: -1 overflows uint
+</code></pre>
+
+<p>
+</p>
+
+The following typed constant declaration is valid on 64-bit OSes,
+but invalid on 32-bit OSes.
+For each <code>uint</code> value has only 32 bits on 32-bit OSes.
+<code>(1 << 64) - 1</code> is not representable as 32-bit values.
+
+<pre class="line-numbers"><code class="language-go">const MaxUint uint = (1 << 64) - 1
+</code></pre>
+
+Then, how to declared a typed <code>uint</code> constant and bind
+the largest <code>uint</code> value to it? Use the following way.
+
+<pre class="line-numbers"><code class="language-go">const MaxUint = ^uint(0)
+</code></pre>
+
+Similarly, we can declare a typed <code>int</code> constant
+and bind the largest <code>int</code> value to it.
+
+<pre class="line-numbers"><code class="language-go">const MaxInt = int(^uint(0) >> 1)
+</code></pre>
+
+We can also similar ways to get the number of bits of a native word,
+and check the currrent OS is 32-bit or 64-bit.
+
+<pre class="line-numbers"><code class="language-go">const NativeWordBits = 32 << (^uint(0) >> 63) // 64 or 32
+const Is64bitOS = ^uint(0) >> 63 != 0
+const Is32bitOS = ^uint(0) >> 32 == 0
+</code></pre>
+
+<p>
+</p>
 </div>
 
 <h4>Autocomplete In Constant Declarations</h4>
@@ -363,7 +407,8 @@ complete the following code
 	Z                // here must be one identifier
 
 	A, B = "Go", "language"
-	C, _                   // here must be two identifier
+	C, _
+	// In the above line, the blank identifier is needed.
 )
 </code></pre>
 
@@ -380,8 +425,6 @@ as
 </code></pre>
 
 <p>
-Here, the blank identifier <code>_</code> is to ignore,
-but can't be omitted, the last declared constant.
 </p>
 
 </div>
@@ -585,16 +628,10 @@ make code get a better readability.
 
 </div>
 
+<p class="anchor" id="assignment"></p>
 <h4>Pure Value Assignments</h4>
 
 <div>
-<p>
-Later, if we say <b><i><code>x</code> is assignable to <code>y</code></i></b>,
-what we mean is <code>x</code> is mutable, and the types of <code>x</code> and
-<code>y</code> are identical or <code>y</code> can be implicitly converted to
-the type of <code>x</code>.
-</p>
-
 <p>
 In the above variable declarations, the sign <Code>=</code> means assignment.
 Once a variable is declared, we can modify its value by using pure value assignments.
@@ -602,7 +639,21 @@ Like variable declarations, multiple values can be assigned in a pure assignment
 <p>
 
 <p>
-Constants (immutable values) can be assigned to variables, but not vice versa.
+Later, if we say <b><i><code>x</code> is assignable to <code>y</code></i></b>,
+what we mean is <code>x</code> is mutable, and the types of <code>x</code> and
+<code>y</code> are identical, <code>y</code> can be implicitly converted to
+the type of <code>x</code>, or <code>y</code> is
+the blank identifier <code>_</code>.
+If <code>y</code> is not the blank identifier <code>_</code>,
+it must be either addressable, or a map index syntax.
+(Map types will introduced later.)
+</p>
+
+<p>
+Constants (immutable values) are all unaddressable, so they can't appear
+at the left sides of pure value assignments.
+Variables are all addressable, so they can appear
+at the left sides of pure value assignments.
 </p>
 
 Example:
@@ -616,11 +667,15 @@ x = y   // error: type mismatch
 x = N   // okay: N is implicitly converted to (deduced as an) int
 y = x   // error: type mismatch
 z = y   // okay
+_ = y   // okay
 
 x, y = 69, 1.23           // okay
 x, y = y, x               // error: type mismatch
-z, y = y, z               // okay
 x, y = int(y), float32(x) // okay
+z, y = y, z               // okay
+_, y = y, z               // okay
+z, _ = y, z               // okay
+_, _ = y, z               // okay
 </code></pre>
 
 <p>
@@ -697,7 +752,7 @@ Pure assignments have no such limition.
 
 </div>
 
-<h4>More About Variable Declarations</h4>
+<h4>Each Local Declared Variable Must Be Used At Least Once</h4>
 
 <div>
 <p>
@@ -750,6 +805,35 @@ func main() {
 
 	_, _ = r, s // make r and s used.
 }
+</code></pre>
+
+</div>
+
+<h4>Dependency Relations Of Package-Level Variables Affect Their Initialization Order</h4>
+
+<div>
+
+For the following example,
+
+<pre class="line-numbers"><code class="language-go">var x, y = a+1, 5         // 8 5
+var a, b, c = b+1, c+1, y // 7 6 5 8
+</code></pre>
+
+<p>
+the initialization order of the package-level variables are <code>y = 5</code>,
+<code>c = y</code>, <code>b = c+1</code>, <code>a = b+1</code>,
+and <code>x = a+1</code>.
+</p>
+
+<p>
+Here, the <code>+</code> symbol is the addition operator,
+which will be introudced in the next article. 
+</p>
+
+Pakcage-level variables can't be depended circularly in their declaration.
+The following code fails to compile.
+
+<pre class="line-numbers"><code class="language-go">var x, y = y, x
 </code></pre>
 
 </div>
@@ -934,9 +1018,5 @@ func main() {
 
 </div>
 
-<p>
-There are still some other details on constants, please read
-<a href="more-about-constants-and-type-deductions.html">more about
-constants and type deduction</a> for details.
-</p>
+
 

@@ -364,7 +364,7 @@ The result of a binary arithmetic operator operation
 <li>
 	is still an untyped value if both of the two operands are untyped.
 	The default type of the result value is one of the two default
-	types and the one appears latter in this list: <code>int</code>,
+	types and it is the one appears latter in this list: <code>int</code>,
 	<code>rune</code>, <code>float64</code>, <code>complex128</code>.
 	For example, if the default type of one untyped operand is <code>int</code>,
 	and the other one is <code>rune</code>, then the default type of
@@ -372,15 +372,27 @@ The result of a binary arithmetic operator operation
 </li>
 </ul>
 
-The result of a bitwise shift operatior operation
+The rules for the result of a bitwise shift operator operation
+is a little complex. Firstly, the result value is always an interger value.
+Whether it is typed or untype depends on specific scenarios.
 <ul>
 <li>
-	is a typed value of the same type of the first (left) operand
-	if the first operand is a typed value.
+	If the left operand is a typed value,
+	then the type of the left operand must be an integer type.
+	The result type is the same as the type of the left operand.
 </li>
 <li>
-	is an untyped value if the first operand is an untyped value.
-	The default type of the result is the same as the first operand.
+	If the left operand is an untyped constant and the right operand
+	is also a constant, the left operand will be always treated as an
+	integer value. If its default type is not an interger type,
+	it must be representable as an untyped integer, and its default
+	type will be viewed as <code>int</code>.
+</li>
+<li>
+	If the left operand is an untyped constant but the right operand
+	is a non-constant (unsigned) integer, the left operand will be first
+	converted to the type it would assume if the bitwise shift operator
+	operation were replaced by its left operand alone.
 </li>
 </ul>
 
@@ -402,6 +414,33 @@ Example:
 </code></pre>
 
 <p>
+</p>
+
+Another example (bitwise shift operations):
+<pre class="line-numbers"><code class="language-go">const N = 2
+const A = 3.0 << N       // A == 6, its default type is int.
+const B = int8(3.0) << N // B == 6, its default type is int8.
+
+var m = uint(32)
+// The following three lines are equivalent to each other.
+var x int64 = 1 << m  // the type of 1 is deduced as int64, not int.
+var y = int64(1 << m) // the type of 1 is deduced as int64, not int.
+var z = int64(1) << m
+
+// The following lines fail to compile.
+/*
+var _ = 3.0 << m // error: shift of type float64
+const _ = 1 << B // error: right the operand must be unsigned.
+*/
+</code></pre>
+
+<p>
+The rules for bitwise shift operator operations are to avoid some operations
+returning different results on different architectures.
+For exampe the bitwise operation at line <i>8</i> will return different results
+between 32-bit OSes and 64-bit OSes if the operand <code>1</code> is deduced as
+<code>int</code> instead of <code>int64</code>, which may produce some bugs
+hard to detect.
 </p>
 
 </div>
@@ -740,9 +779,60 @@ Like many other languages, <code>()</code> can be used to promote precedences.
 <p>
 </p>
 
+<p>
 One abvious difference to some other popular languages
 is that the precedences of <code>&lt;&lt;</code> and
 <code>&gt;&gt;</code> are higher than <code>+</code> and <code>-</code>.
+</p>
+
+</div>
+
+<p class="anchor" id="constant-expression"></p>
+<h3>Constant Expressions</h3>
+
+<div>
+<p>
+If every operands in an operator operation introduced above
+are constants, then the operator operation is called a constant
+<a href="expressions-and-statements.html">expression</a>.
+All constant expressions are evaluated at compile time.
+Each constant expression is also viewed as a constant.
+</p>
+
+<p>
+A constant expression, in fact any expression,
+can be used as an operand of another operator operation.
+</p>
+
+The following declared variable will be initialized as <code>2.2</code>
+instead of <code>2.7</code>.
+The reason is the division operation has a higher precedence than
+the addition operation, and in the division operation,
+both <code>3</code> and <code>2</code> are viewed as integers.
+
+<pre class="line-numbers"><code class="language-go">var x = 1.2 + 3/2
+</code></pre>
+
+<p>
+</p>
+
+The two named constants declared in the following program are not equal.
+In the first declaration, both <code>3</code> and <code>2</code> are
+viewed as integers, however, they are both viewed as floating-point numbers
+in the second declaration.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+const x = 3/2*0.1
+const y = 0.1*3/2
+
+func main() {
+	println(x, y) // +1.000000e-001 +1.500000e-001
+}
+</code></pre>
+
+<p>
+</p>
 
 </div>
 

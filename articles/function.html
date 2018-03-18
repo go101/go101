@@ -24,6 +24,7 @@ but custom delcared ones don't (up to now, v1.10).
 More differences will be mentioned below.
 </p>
 
+<p class="anchor" id="prototype"></p>
 <h3>Function Signatures And Function Types</h3>
 
 <div>
@@ -167,7 +168,7 @@ Note, the variadic parameter of a variadic function will be treated as a slice
 within the body of the variadic function.
 
 <pre class="line-numbers"><code class="language-go">// Sum and return the input numbers.
-func Sum (values ...int64) (sum int64) {
+func Sum(values ...int64) (sum int64) {
 	// The type of values is []int64.
 	sum = 0
 	for _, v := range values {
@@ -177,7 +178,7 @@ func Sum (values ...int64) (sum int64) {
 }
 
 // An inefficient string concatenation function.
-func Concat (seperator string, tokens ...string) string {
+func Concat(seperator string, tokens ...string) string {
 	// The type of tokens is []string.
 	r := ""
 	for i, t := range tokens {
@@ -218,15 +219,16 @@ in Go</a> later.
 There are two manners to pass arguments to a variadic parameter of type <code>[]T</code>:
 <ol>
 <li>
-	pass zero or more arguments which can be assignable to values of type <code>T</code>.
-	These arguments will be converted to values of type <code>T</code>
-	and put into a new allocated slice value of ype <code>[]T</code>.
-</li>
-<li>
 	pass a slice value as the only argument.
 	The slice must be assignable to values of type <code>[]T</code>,
 	and the slice must be followed by three dots <code>...</code>.
-	The passed slice can be called variadic argument.
+	The passed slice is called as a variadic argument.
+</li>
+<li>
+	pass zero or more arguments which are assignable to values of type <code>T</code>.
+	These arguments will be copied (or converted) as the elements of
+	a new allocated slice value of type <code>[]T</code>.
+	The new allocated slice will be used as the real variadic argument.
 </li>
 </ol>
 
@@ -239,7 +241,7 @@ A example program which uses some variadic function calls:
 
 import "fmt"
 
-func Sum (values ...int64) (sum int64) {
+func Sum(values ...int64) (sum int64) {
 	sum = 0
 	for _, v := range values {
 		sum += v
@@ -269,7 +271,7 @@ Another example:
 
 import "fmt"
 
-func Concat (seperator string, tokens ...string) (r string) {
+func Concat(seperator string, tokens ...string) (r string) {
 	for i, t := range tokens {
 		if i != 0 {
 			r += seperator
@@ -294,12 +296,12 @@ The following example doesn't compile,
 for the two variadic function call manners are mixed.
 <pre class="line-numbers"><code class="language-go">package main
 
-func Sum (values ...int64) (sum int64) {
+func Sum(values ...int64) (sum int64) {
 	// ...
 	return
 }
 
-func Concat (seperator string, tokens ...string) (r string) {
+func Concat(seperator string, tokens ...string) (r string) {
 	// ...
 	return
 }
@@ -397,7 +399,7 @@ expressions and statements.
 </p>
 
 If the return results of a call to a multi-result function are not discarded,
-then the call only can be used as a multi-value expression in two scenarios.
+then the call only can be used as a multi-valued expression in two scenarios.
 <ol>
 <li>
 	The call can be used in an assignment as source values.
@@ -438,7 +440,7 @@ func main() {
 
 <p>
 Note, there are <a href="exceptions.html#nest-function-calls">exceptions</a>
-to the rules of using multi-value expression.
+to the rules of using multi-valued expression.
 </p>
 
 </div>

@@ -14,10 +14,20 @@ In Go, we can (explicitly) declare a method for type
 <code>T</code> and <code>*T</code>,
 where <code>T</code> must satisfiy 4 conditions:
 <ol>
-<li><code>T</code> must be defined type;</li>
-<li><code>T</code> must be defined in the same package as the method declaration;</li>
-<li><code>T</code> must not be a pointer type;</li>
-<li><code>T</code> must not be an interface type.</li>
+<li>
+	<code>T</code> must be defined type;
+</li>
+<li>
+	<code>T</code> must be defined in the same package as the method declaration;
+</li>
+<li>
+	<code>T</code> must not be a pointer type;
+</li>
+<li>
+	<code>T</code> must not be an interface type.
+	(Interface types will be explained in
+	<a href="interface.html">the next article</a>.)
+</li>
 </ol>
 
 <p>
@@ -46,7 +56,7 @@ we can never (explicitly) declare method for
 </li>
 <li>
 	interface types. But an interface type can own methods.
-	Please read <a href="type-embedding.html">Interfaces In Go</a> for details.
+	Please read <a href="type-embedding.html">the next article</a> for details.
 </li>
 <li>
 	unnamed types except the pointer types <code>*T</code> which are described above,
@@ -54,7 +64,7 @@ we can never (explicitly) declare method for
 	However, if an unnamed struct type embeds other types which have methods,
 	then compiler will implicitly declare some methods for the unnamed struct type
 	and the unnamed pointer type whose base type is the unnamed struct type.
-	Please read <a href="type-embedding.html">Type Embedding</a> for details.
+	Please read <a href="type-embedding.html">type embedding</a> for details.
 </li>
 </ul>
 
@@ -119,9 +129,8 @@ as long as the receiver base types satisfy the 4 conditions listed above.
 
 <p>
 In some other programming languages,
-the receiver parameter name is always either implicit <code>this</code> (C++ and Java)
-or explicit <code>self</code> (Python) .
-The two receiver parameter names are not recommended in Go programming.
+the receiver parameter names are always the implicit <code>this</code>,
+which is not a recommended identifier for receiver parameter names in Go.
 </p>
 
 <p>
@@ -135,11 +144,15 @@ The reason will be explained below.
 </p>
 </div>
 
-<p><i>
-(Method names can be the blank identifier <code>_</code>.
+<p>
+Method names can be the blank identifier <code>_</code>.
 A type can have multiple methods with the blank identifier as names.
-But such methods can never be called.)
-</i></p>
+But such methods can never be called.
+</p>
+
+<p>
+Only exported methods can be called from other packages.
+</p>
 
 <h3>Each Method Corresponds To An Implicit Function</h3>
 
@@ -252,38 +265,101 @@ two implicit functions and one implicit method will also be declared at the same
 </p>
 </div>
 
-<h3>Method Signatures And Method Sets</h3>
+<p class="anchor" id="method-set"></p>
+<h3>Method Prototypes And Method Sets</h3>
 
 <div>
-Each declared method has a signature.
-The signature of a declared method doesn't include the <code>func</code> keyword
-and the receiver part in the method declaration.
-Following are the method signatures of the above declared methods:
+
+<p>
+We can view each method declaration is composed of a receiver parameter
+declaration and a function declaration.
+The <a href="function.html#prototype">function prototype</a> of the
+function declaration of a method declaration will also be called
+the method prototype of the method declaration later.
+</p>
+
+<p>
+The form of a method prototype is the same as a function prototype.
+</p>
+
+For example, the method prototypes of the <code>Pages</code> and
+<code>SetPages</code> methods shown above are
+
 <pre class="line-numbers"><code class="language-go">Pages() int
 SetPages(pages int)
 </code></pre>
-</div>
+
+<p>
+</p>
 
 <p>
 Each type has a method set.
-The method set of a type is composed of all the signatures of
-the methods declared, either explicitly or implicitly, for the type,
+The method set of a non-interface type is composed of all the method prototypes
+of the methods declared, either explicitly or implicitly, for the type,
 except the ones whose names are the blank identifier <code>_</code>.
-From the last serction, we know that the method set of a type <code>T</code>
-must be a subset of the method set of type <code>*T</code>
-if <code>*T</code> can have methods.
-Method sets play an important role in the polymorphism feature of Go.
-About polymorphism, please read <a href="interface.html">Interfaces In Go</a> for details.
+(Interface types will be explained in
+<a href="interface.html">the next article</a>.)
 </p>
 
-<div>
-The method set of the following types are always blank:
+For example, the method sets of the <code>Book</code> type shown in the
+previous sections is
+<pre class="line-numbers"><code class="language-go">Pages() int
+</code></pre>
+
+and the method set of the <code>*Book</code> type is
+
+<pre class="line-numbers"><code class="language-go">Pages() int
+SetPages(pages int)
+</code></pre>
+
+<p>
+</p>
+
+<p>
+The order of the method prototypes in a method set is not important for the method set.
+</p>
+
+<p>
+For a method set, if every method prototype in it is also in another method set,
+then we say the former method set is a subset of the other method set.
+If two method sets are subsets of each other,
+then we say the two method sets are identical.
+</p>
+
+<p>
+Given a type <code>T</code>, assume it is neither a pointer type nor an
+interface type, for <a href="#implicit-pointer-methods">the reason</a>
+mentioned above, the method set of a type <code>T</code> is always
+a subset of the method set of type <code>*T</code>.
+For example, the method set of the <code>Book</code> type shown above is a
+subset of the method set of the <code>*Book</code> type.
+</p>
+
+<p>
+Please note, non-exported method names, which start with lower-case letters,
+from different packages will be always viewed as two different method names.
+In other words, a method prototype with a non-exported method name is always
+different from any prototype from other packages.
+</p>
+
+<p>
+Method sets play an important role in the polymorphism feature of Go.
+About polymorphism, please read <a href="interface.html">the next article</a>
+(interfaces in Go) for details.
+</p>
+
+
+The method sets of the following types are always blank:
 <ul>
 <li>built-in basic types.</li>
 <li>defined pointer types.</li>
 <li>unnamed pointer types whose base types are interface or pointer types.</li>
 <li>unnamed array, slice, map, function and channel types.</li>
 </ul>
+
+<p>
+</p>
+
 </div>
 
 <p class="anchor" id="call"></p>
@@ -478,7 +554,7 @@ func (b Book) SetPages(pages int) {
 	b.pages = pages
 }
 
-func main () {
+func main() {
 	var b Book
 	b.SetPages(123)
 	fmt.Println(b.pages) // 0
@@ -505,7 +581,7 @@ func (books Books) Modify() {
 	books = append(books, Book{789})
 }
 
-func main () {
+func main() {
 	var books = Books{{123}, {456}}
 	books.Modify()
 	fmt.Println(books) // [{500} {456}]
@@ -520,7 +596,7 @@ will not be reflected to outside of the method body.
 	books[0].pages = 500
 }
 
-func main () {
+func main() {
 	var books = Books{{123}, {456}}
 	books.Modify()
 	fmt.Println(books) // [{123} {456}]
@@ -539,7 +615,7 @@ the receiver of the method must be a pointer one.
 	(*books)[0].pages = 500
 }
 
-func main () {
+func main() {
 	var books = Books{{123}, {456}}
 	books.Modify()
 	fmt.Println(books) // [{500} {456} {789}]
