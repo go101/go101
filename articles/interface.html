@@ -222,6 +222,11 @@ The dynamic value itself is immutable.
 </p>
 
 <p>
+Dynamic values and dynamic types are also called
+concrete values and concrete types sometimes.
+</p>
+
+<p>
 In Go, the zero values of any interface type are represented by the predeclared <code>nil</code>.
 Nothing is boxed in a nil interface value.
 Assign an untyped <code>nil</code> to an interface value will
@@ -559,50 +564,51 @@ where <code>i</code> is an interface value and <code>T</code> is
 </ul>
 
 In a type assertion <code>i.(T)</code>,
-<code>i</code> is called the asserted value and <code>T</code> is called asserted type.
+<code>i</code> is called the asserted value
+and <code>T</code> is called the asserted type.
 A type assertion would succeed or fail.
 <ul>
 <li>
-	If <code>T</code> is a non-interface type, then the intention of the type assertions is
+	If <code>T</code> is a non-interface type,
+	then the intention of the type assertions is
 	to get the dynamic values boxed in an interface value.
-	<code>T</code> must be the dynamic type of <code>i</code> to make the assertion succeed.
+	<code>T</code> must be the dynamic type of <code>i</code>
+	to make the assertion succeed.
 	Each of such cases can be viewed as a value unboxing attempt.
 </li>
 <li>
-	If <code>T</code> is an interface type, then the intention of the type assertions is
-	to make the dynamic value boxed in an interface value also boxed in another interface value.
-	The dynamic value of <code>i</code> must be convertible to interface type <code>T</code>
-	to make the assertion succeed.
+	If <code>T</code> is an interface type,
+	then the intention of the type assertion is to make the dynamic value
+	boxed in an interface value also boxed in another interface value of
+	type <code>T</code>.
+	The dynamic value of <code>i</code> must be convertible to
+	interface type <code>T</code> to make the assertion succeed.
 </li>
 </ul>
 
 <p>
-Each type assersion can return two values.
-The first one is required and the second one is optional.
-The second optional return result is a boolean value,
-which indicates whether a type assersion succeeded or not.
-The type of the first return retult is always <code>T</code>.
-If a type assersion failed, the first return retult must be
-a zero value of <code>T</code>.
+For most scenarios, a type assertion results one value of the asserted type
+and is viewed as a single-valued expression.
+However, when a type assertion is used as the only source value expression
+in an assignment, it can be viewed as a multi-valued expression
+and result a second optional untyped boolean value,
+which indicates whether or not the type assersion succeeds.
 </p>
 
-Therer are three cases when performing a type assertions:
-<ol>
-<li>
-	the assertion succeeded. For this case,
-	the first return value is the dynamic value boxed in the interface value,
-	and the second optional bool return value is <code>false</code>.
-</li>
-<li>
-	the assertion failed and the second bool return result is present.
-	For this case, the second bool return value is <code>false</code>,
-	and the first return value is a zero value of type <code>T</code>.
-</li>
-<li>
-	the assertion failed and the second bool return result is absent.
-	For this case, the type assertion will cause a panic.
-</li>
-</ol>
+<p>
+If a type assersion fails, the first return result must be
+a zero value of the asserted type, and the second return result
+(assume it is present) is an untyped boolean value <code>false</code>.
+If it succeeds, then the first return result is a copy of
+the dynamic value of the asserted interface value, and the second return result
+(assume it is present) is an untyped boolean value <code>true</code>.
+</p>
+
+<p>
+If a type assersion fails and the type assertion is used as a
+single-valued expression (the second return result is absent),
+a panic will occur.
+</p>
 
 An example (<code>T</code> is a non-interface type):
 <pre class="line-numbers"><code class="language-go">package main

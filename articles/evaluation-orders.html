@@ -5,6 +5,39 @@ This article will explain <a href="expressions-and-statements.html">expression</
 evaluation orders in all kinds of scenarios.
 </p>
 
+<h3>The Usual Order</h3>
+
+<div>
+<p>
+Before learning expression evaluation orders under all kinds of scenarios,
+let's learn what is <b><i>the usual order</i></b>.
+</p>
+
+Go specification doesn't describe much on what is the usual order.
+From the examples provided in Go specification,
+I think the the usual order means, in a statement,
+<ul>
+<li>
+	an <a href="expressions-and-statements.html#expressions">expression</a>
+	is evaluated after the evaluations of its sub-expressions.
+	(The expression depends on its sub-expressions.)
+</li>
+<li>
+	function calls, method calls and channel receive operations
+	which have no dependency relations with each other
+	are evaluated by their lexical left-to-right and up-to-down order.
+	(Function call, method call and channel receive operation
+	are several kinds of expressions.)
+</li>
+</ul>
+
+<p>
+The evaluation order of other kinds of expressions which have no
+dependency relations with each other in a statement is not specified.
+</p>
+
+</div>
+
 <h3>Evaluation Orders In <code>=</code> Assignments</h3>
 
 <div>
@@ -18,43 +51,11 @@ But for some special cases, we really should understand the rules
 to know the assignment results clearly.
 </p>
 
-Some relative expression evaluation orders in an assignment
-are specified in Go specification, some are not.
-For an example provided in Go specification
-
-<pre><code class="language-go">y[f()], ok = g(h(), i()+x[j()], <-c), k()
-</code></pre>
-
 <p>
-<code>j()</code>, <code>&lt;-c</code>, <code>g()</code>, and <code>k()</code>,
-in lexical left-to-right order.
-</p>
-
-<p>
-<code>x</code> and <code>y</code> may be also complex expressions,
-such as function calls and channel operations.
-The relative orders between their evaluations and the evaluations of
-the above just mentioned function calls (and the channel receive operation)
-are not specified, so the relative orders are compiler dependent.
-</p>
-
-<p>
-Although Go specification doesn't mention, according to the logic,
-the function call <code>j()</code> should happen before the container element
-accessment <code>x[]</code>, and the container element accessment
-<code>x[]</code> should happen before the function call <code>g()</code>.
-</p>
-
-We say the just mentioned evaluation order rules as preparation phase rules.
-After the preparation phase, solo assignments are carried out
-in left-to-right order, which will be called as carry-out phase below.
-For example, for the following assignment,
-
-<pre><code class="language-go">a, b = 123, true
-</code></pre>
-
-<p>
-the solo assignment <code>a = 123</code> is carried out before <code>b = true</code>.
+Each assignment will experience two phases at run time,
+the preparation phase and the carry-out phase.
+At the preparation phase, all expressions involved in that assignment
+are evaluated in the usual order mentioned above.
 </p>
 
 Just after the preparation phase and before the carry-out phase of an assignment,
@@ -90,10 +91,63 @@ They are all hidden temporary values which are only referenced
 in the elementary form of the assignment.
 </p>
 
-For example, assume <code>a</code> and <code>b</code> are two addressable
+<p>
+In the carry-out phase, solo assignments, <code>L0 = R0</code>,
+<code>L1 = R1</code>, ..., <code>Ln = Rn</code>,
+are carried out in left-to-right order.
+<p/>
+
+For example, in the following assignment, at the preparation phase,
+the evaluations of <code>f()</code>, <code>h()</code>, <code>i()</code>,
+<code>j()</code>, <code>&lt;-c</code>, <code>g()</code>, and <code>k()</code>
+happen in lexical left-to-right order.
+
+<pre><code class="language-go">y[f()], ok = g(h(), i()+x[j()], <-c), k()
+</code></pre>
+
+<p>
+By the dependency relations, the evluation of the container element indexing
+expression <code>x[]</code> should happen between the evluations of
+the function calls <code>j()</code> and <code>g()</code>.
+</p>
+
+<p>
+The relative evaluation order of <code>y</code> and any other expression
+in the above assignment is not specified.
+The evaluation of <code>x</code> happens before <code>g()</code>
+and <code>k()</code> for sure, but the relative evaluation order of
+<code>x</code> and <code>&lt;-c</code> (or <code>f()</code>, <code>h()</code>,
+<code>i()</code>, <code>j()</code>) is not specified.
+</p>
+
+In the following example, the relative order of the expression
+<code>x+1</code> and <code>f(&x)</code> is not specified.
+The example may output <code>100 99</code> or <code>1 99</code>.
+
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	f := func (p *int) int {
+		*p = 99
+		return *p
+	}
+	
+	x := 0
+	y, z := x+1, f(&x)
+	fmt.Println(y, z)
+}
+</code></pre>
+
+<p>
+</p>
+
+Assume <code>a</code> and <code>b</code> are two addressable
 elementary values, the following assignment
 
-<pre><code class="language-go">a, b = b, a
+<pre class="line-numbers"><code class="language-go">	a, b = b, a
 </code></pre>
 
 will go through the the following two phases.
@@ -112,28 +166,41 @@ R0 := a; R1 := b
 <p>
 </p>
 
-And here is another example.
+The following is another example, in which <code>x[0]</code> instead of
+<code>x[1]</code> is modified.
+
+<pre class="line-numbers"><code class="language-go">	x := []int{0, 0}
+	i := 0
+	i, x[i] = 1, 2
+	fmt.Println(x) // [2 0]
+</code></pre>
+
+<p>
+</p>
+
+A example which is a little complex.
 
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	m := map[string]int{}
-	s := []int{123}; olds := s
-	n := 789
-	s, m["Go"], s[0], n = []int{456}, s[0], n, m["Go"]
-	fmt.Println(m, s, n) // map[Go:123] [456] 0
-	fmt.Println(olds)    // [789]
+	m := map[string]int{"Go": 0}
+	s := []int{1, 1, 1}; olds := s
+	n := 2
+	p := &n
+	s, m["Go"], *p, s[n] = []int{2, 2, 2}, s[1], m["Go"], 5
+	fmt.Println(m, s, n) // map[Go:1] [2 2 2] 0
+	fmt.Println(olds)    // [1 1 5]
 }
 </code></pre>
 
-The phases for the assignment at line <i>8</i> are shown below.
+The phases for the assignment at line <i>10</i> are shown below.
 
 <pre class="line-numbers"><code class="language-go">// The preparation phase:
-P0 := &s; PM1 := &m; K1 := "Go"; P2 := &s[0]; P3 := &n
-R0 := []int{456}; R1 := s[0]; R2 := n; R3 := m["Go"]
-// now, R1 == 123, R2 == 789, R3 == 0
+P0 := &s; PM1 := &m; K1 := "Go"; P2 := p; P3 := &s[2]
+R0 := []int{2, 2, 2}; R1 := s[1]; R2 := m["Go"]; R3 := 5
+// now, R1 == 1, R2 == 0
 
 // The elementary form: *P0, (*PM1)[K1], *P2, *P3 = R0, R1, R2, R3
 
@@ -176,7 +243,7 @@ The last example in this section:
 
 <p>
 The expression evaluation rules of an assignment <code>x op= y</code>
-is almost the same as the pure assignment <code>x = x op y</code>.
+is almost the same as the general assignment <code>x = x op y</code>.
 The only difference is the expression <code>x</code> is only evaluated once.
 <p>
 
@@ -186,14 +253,13 @@ must contain exactly one single-valued expression,
 and the left-hand expression must not be the blank identifier.
 </p>
 
-<h3>Evaluation Orders In Container Literals</h3>
+<h3>Evaluation Orders In composite Literals</h3>
 
 <div>
-<p>
-The evaluation order of keys and values in a container literal is not specified.
-</p>
 
-An example from Go specification:
+The expressions in a composite literal are evaluated in the usual order
+mentioned above.
+Several examples from Go specification:
 
 <pre class="line-numbers"><code class="language-go">	a := 1
 	f := func() int { a++; return a }
@@ -218,23 +284,33 @@ An example from Go specification:
 <div>
 
 <p>
-The argument expressions passed to a function call are evaluated
-in lexical left-to-right order.
+The expressions in the argument list of a function call
+are evaluated in the usual order mentioned above.
 </p>
 
-For example,
+<p>
+For example, in the following example, the first argument, <code>f()</code>,
+of the function call <code>fmt.Println()</code> is guaranteed to be evaluated
+before the last <code>f()</code>. But the relative evaluation order
+of the second argument <code>y</code> and the two <code>f()</code>
+is not specified.
+<p>
+
+<code>1 7 2</code>, <code>1 8 2</code> and <code>1 9 2</code> are
+all legal outputs for the following program.
 
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	x := 0
+	x, y := 0, 7
 	f := func() int {
 		x++
-		return x+x
+		y++
+		return x
 	}
-	fmt.Println(f(), f(), f(), f()) // 2 4 6 8
+	fmt.Println(f(), y, f())
 }
 </code></pre>
 
@@ -250,6 +326,9 @@ func main() {
 The expression evaluation order in a <code>switch-case</code> code block
 has been <a href="control-flows.html#switch-case">described before</a>.
 Here just shows an example.
+Simply speaking, before a branch is entered,
+the expressions in a <code>switch-case</code> code block
+are evaluated in source order.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -299,8 +378,7 @@ f(7) is called.
 For all the cases in a <code>select-case</code> code block,
 the channel operands of receive operations and the channel and
 right-hand-side expressions of send statements are evaluated exactly once,
-in source order (from top to down and from left to right),
-upon starting executing the <code>select</code> statement.
+in source order, upon starting executing the <code>select</code> statement.
 </p>
 
 <p>
@@ -327,7 +405,9 @@ import "fmt"
 func main() {
 	fc := func(info string) chan int {
 		fmt.Println("fc:", info)
-		return make(chan int)
+		c := make(chan int, 1)
+		c <- 456
+		return c
 	}
 	fv := func(n int) int {
 		fmt.Println("fv:", n)
@@ -339,28 +419,25 @@ func main() {
 	}
 	
 	select {
-	default:
-	case *fp("abc") = <-fc("w"):
-	case fc("x") <- fv(123):
-	case *fp("def") = <-fc("y"):
-	case fc("z") <- fv(789):
+	case *fp("abc") = <-fc("ijk"):
+	case fc("pqr") <- fv(123):
+	case fc("xyz") <- fv(789):
 	}
 }
 </code></pre>
 
 The output of the above program:
-<pre class="output"><code>fc: w
-fc: x
+<pre class="output"><code>fc: ijk
+fc: pqr
 fv: 123
-fc: y
-fc: z
+fc: xyz
 fv: 789
+fp: abc
 </code></pre>
 
 <p>
-Each of the expressions <code>*fp("abc")</code> and <code>*fp("def")</code>
-will only be evaluated when its corresponding case is selected.
-However, in the above example, all channel operations are blocking operations.
+If the first case is never selected in the above example,
+then the expression <code>*fp("abc")</code> will never get evaluated.
 </p>
 
 </div>
