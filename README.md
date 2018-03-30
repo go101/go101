@@ -1,3 +1,4 @@
+<b>Go 101</b> is a book focusing on Go syntaxes and semantics.
 
 ### Install And Update
 
@@ -19,3 +20,10 @@ Server started: http://localhost:55555
 
 The start page should be opened in a browser automatically.
 If it is not opened, please visit http://localhost:55555 directly.
+
+### Some Notes
+
+* The book is still not finished. Several articles are still missing and many finished articles still need polishing.
+* Translations are welcome, but for the last note, it may be not the proper time to do so.
+* Chinese translation version will be transalted by myself.
+* A more relexed license is coming soon.

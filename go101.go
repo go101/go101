@@ -39,8 +39,8 @@ func main() {
 var (
 	rootPath              = findGo101ProjectRoot()
 	go101    http.Handler = &Go101{
-		staticHandler:     http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.ToSlash(rootPath + "static")))),
-		articleResHandler: http.StripPrefix("/article/res/", http.FileServer(http.Dir(filepath.ToSlash(rootPath + "articles/res")))),
+		staticHandler:     http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.ToSlash(rootPath+"static")))),
+		articleResHandler: http.StripPrefix("/article/res/", http.FileServer(http.Dir(filepath.ToSlash(rootPath+"articles/res")))),
 	}
 )
 
@@ -76,7 +76,7 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
 		}
-		
+
 		if go101.renderArticlePage(w, r, item) {
 			return
 		}
@@ -132,18 +132,20 @@ func retrieveArticleContent(file string, cachedIt bool) (Article, error) {
 }
 
 const H1, _H1, MaxLen = "<h1>", "</h1>", 128
+
 var TagSigns = [2]rune{'<', '>'}
+
 func retrieveTitlesForArticle(article *Article) {
 	i := strings.Index(string(article.Content), H1)
 	if i >= 0 {
 		i += len(H1)
 		j := strings.Index(string(article.Content[i:i+MaxLen]), _H1)
 		if j >= 0 {
-			article.Title = article.Content[i:i+j]
+			article.Title = article.Content[i : i+j]
 			k, s := 0, make([]rune, 0, MaxLen)
 			for _, r := range article.Title {
 				if r == TagSigns[k] {
-					k = (k+1) & 1
+					k = (k + 1) & 1
 				} else if k == 0 {
 					s = append(s, r)
 				}
@@ -156,7 +158,7 @@ func retrieveTitlesForArticle(article *Article) {
 func (*Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file string) bool {
 	article, err := retrieveArticleContent(file, !isLocalRequest(r))
 	if err == nil {
-		w.Header().Set("Cache-Control", "max-age=36000") // 10 hours
+		//w.Header().Set("Cache-Control", "max-age=36000") // 10 hours
 		page := map[string]interface{}{
 			"Article": article,
 			"Title":   article.TitleWithoutTags,
@@ -165,8 +167,8 @@ func (*Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file str
 			return true
 		}
 	}
-	
-	w.Header().Set("Cache-Control", "max-age=300") // 5 minutes
+
+	//w.Header().Set("Cache-Control", "max-age=300") // 5 minutes
 	w.Write([]byte(err.Error()))
 	return false
 }

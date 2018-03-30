@@ -455,6 +455,58 @@ we can also use a channel to do multiple 1-to-1 notifications.
 The logic is simple, so no examples are provided for such use case.
 </p>
 
+<h4>Timer: Scheduled Notification</h4>
+
+<div>
+<p>
+It is easy to use channels to implement one-time timers.
+<p>
+
+A custom one-time timer implementaion:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func AfterDuration(d time.Duration) <- chan struct{} {
+	c := make(chan struct{}, 1)
+	go func() {
+		time.Sleep(d)
+		c <- struct{}{}
+	}()
+	return c
+}
+
+func main() {
+	fmt.Println("Hi!")
+	<- AfterDuration(time.Second)
+	fmt.Println("Hello!")
+	<- AfterDuration(time.Second)
+	fmt.Println("Bye!")
+}
+</code></pre>
+
+<p>
+In fact, the <code>After</code> function in the <code>time</code> standard
+package provides the same functionality.
+We should use that function instead to make code look clean.
+</p>
+
+<p>
+Please note, <code>&lt;-time.After(aDuration)</code> will make the current goroutine
+enter blocking state, but a <code>time.Sleep(aDuration)</code> functon call will not.
+</p>
+
+<p>
+The use of <code>&lt;-time.After(aDuration)</code> is often used
+in the timeout mechanism which will be introduced below.
+</p>
+
+</div>
+
 <h3>Use Channels As Mutex Locks</h3>
 
 <div>
@@ -680,65 +732,6 @@ suggest that queuing consumers should go to other bars,
 by using the try-receive or try-send mechanisms introduced below.
 </p>
 </div>
-
-<h3>One-Time Timer</h3>
-
-<div>
-<p>
-It is easy to use channels to implement one-time timers. In fact,
-we can view timers and tickers as variants of request-response use cases.
-<p>
-
-A custom one-time timer implementaion:
-
-<pre class="line-numbers"><code class="language-go">package main
-
-import (
-	"fmt"
-	"time"
-)
-
-func AfterDuration(d time.Duration) <- chan struct{} {
-	c := make(chan struct{}, 1)
-	go func() {
-		time.Sleep(d)
-		c <- struct{}{}
-	}()
-	return c
-}
-
-func main() {
-	fmt.Println("Hi!")
-	<- AfterDuration(time.Second)
-	fmt.Println("Hello!")
-	<- AfterDuration(time.Second)
-	fmt.Println("Bye!")
-}
-</code></pre>
-
-<p>
-In fact, the <code>After</code> function in the <code>time</code> standard
-package provides the same functionality.
-We should use that funtion instead to make look clean.
-The <code>time.After</code> function is used often in the timeout mechanism
-which will be introduced below.
-</p>
-
-<p>
-Please note, <code>&lt;-time.After(aDuration)</code> will make the current goroutine
-enter blocking state, but a <code>time.Sleep(aDuration)</code> functon call will not.
-</p>
-
-<p>
-Implementing a custom perfect ticker is not as easy as
-implementing a perfect one-time timer.
-We should use the functionalities provided
-in the <code>time</code> standard package instead.
-</p>
-
-</div>
-
-</code></pre>
 
 <h3>Ping-Pong (Dialogue)</h3>
 
@@ -971,7 +964,7 @@ Try-send and try-receive operations never block.
 </p>
 
 <p>
-The official Go compiler makes special optimations for try-send
+The standard Go compiler makes special optimations for try-send
 and try-receive select blocks, their execution efficiencies are
 much higher than multi-case select blocks.
 </p>
@@ -1210,6 +1203,49 @@ The following code shows how to make a request with timeout.
 
 </div>
 
+<h4>Ticker</h4>
+
+<div>
+
+We can use a buffered channel and try-send mechanism to implement a ticker.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "time"
+
+func Tick(d time.Duration) <-chan struct{} {
+	c := make(chan struct{}, 1) // the capacity should be exactly one
+	go func() {
+		for {
+			time.Sleep(d)
+			select {
+			case c <- struct{}{}:
+			default:
+			}
+		}
+	}()
+	return c
+}
+
+func main() {
+	t := time.Now()
+	for range Tick(time.Second) {
+		fmt.Println(time.Since(t))
+	}
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+In fact, there is a <code>Tick</code> function in the <code>time</code>
+standard package provides the same functionality.
+We should use that function instead to make code look clean.
+</p>
+</div>
+
 <h4>Switches</h4>
 
 <div>
@@ -1381,27 +1417,6 @@ Many modules together compose a data flow system.
 </p>
 
 <p>
-The simplest, and most common used, data flow topology
-may be the linear pipeline shown in the following picture.
-
-<br/>
-<img src="#">
-<br/>
-
-</p>
-
-
-<p>
-More complex data flow topologies may be arbitrary graphs.
-The following picture shows one example:
-
-<br/>
-<img src="#">
-<br/>
-
-</p>
-
-<p>
 Following will show some data flow module worker implementations.
 These implementations are for education purpose,
 so they are neither efficient nor flexible.
@@ -1497,6 +1512,7 @@ an input stream has been closed.
 (Also valid for the following other module worker implementations.)
 
 <pre class="line-numbers"><code class="language-go">...
+		in := in // this line is important
 		go func() {
 			for {
 				x, ok := <-in
@@ -1511,7 +1527,28 @@ an input stream has been closed.
 </code></pre>
 
 <p>
-</p
+</p>
+
+If the number of aggregated data streams are very few (two or three),
+we can use <code>select</code> block to aggregate these data streams.
+
+<pre class="line-numbers"><code class="language-go">// Assume the number of input stream is two.
+...
+	output := make(chan uint64)
+	go func() {
+		inA, inB := inputs[0], inputs[1]
+		for {
+			select {
+			case v := <- inA: output <- v
+			case v := <- inB: output <- v
+			}
+		}
+	}
+...
+</code></pre>
+
+<p>
+</p>
 
 </div>
 
@@ -1551,8 +1588,12 @@ For data aggregation, two pieces of data are still two pieces of data.
 But for data composition, several pieces of data compose one piece of new data.
 </p>
 
-The following is an composition worker example, in which two <code>uint16</code>
-values and one <code.uint32</code> value compose one <code>uint64</code> value.
+The following is an composition worker example, in which two <code>uint64</code>
+values from one stream and one <code>uint64</code> value from another stream
+compose one new <code>uint64</code> value.
+Generally these stream channel element types are different in parctice.
+Here they are the same in the following example is to
+make the data flow system assembling explainations below simpler.
 
 <pre class="line-numbers"><code class="language-go">func Composor(inA <-chan uint64, inB <-chan uint64) <-chan uint64 {
 	output := make(chan uint64)
@@ -1709,7 +1750,7 @@ Assembling a data flow system is just to create some workers
 of different modules, and specify the input streams for every workers.
 </p>
 
-Data flow system example 1:
+Data flow system example 1 (a linear pipeline):
 <pre class="line-numbers"><code class="language-go">package main
 
 ... // the worker functions declared above.
@@ -1732,11 +1773,11 @@ func main() {
 The above data flow system is depicted in the following diagram.
 
 <br/>
-<img src="#">
+<img src="res/data-flow-linear.png">
 <br/>
 </p>
 
-Data flow system example 2:
+Data flow system example 2 (a directed acyclic graph pipeline):
 <pre class="line-numbers"><code class="language-go">package main
 
 ... // the worker functions declared above.
@@ -1760,8 +1801,14 @@ func main() {
 The above data flow system is depicted in the following diagram.
 
 <br/>
-<img src="#">
+<img src="res/data-flow-dag.png">
 <br/>
+</p>
+
+<p>
+More complex data flow topologies may be arbitrary graphs,
+but data flow systems with cyclic-graph topologies
+are seldom used in reality.
 </p>
 
 <p>

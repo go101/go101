@@ -249,21 +249,20 @@ Please read the next section to get the reason.
 From the articles <a href="struct.html">structs in Go</a> and
 <a href="method.html">methods in Go</a>, we have learned that,
 for a value <code>x</code>, <code>x.y</code> is called a selector,
-where <code>y</code> is either a field or a method.
-If <code>y</code> is a field,
-then <code>x</code> must be a stuct value or a struct pointer value.
+where <code>y</code> is either a field name or a method name.
+If <code>y</code> is a field name,
+then <code>x</code> must be a struct value or a struct pointer value.
 A selector is an expresssion, which represents a value.
 If the selector <code>x.y</code> denotes a field, it may also
 has its own fields (if <code>x.y</code> is a struct value) and methods.
 Such as <code>x.y.z</code>,
-where <code>z</code> can also be either a field or a method.
+where <code>z</code> can also be either a field name or a method name.
 </p>
 
 <p>
-There is a syntax sugar in Go, <b><i>if a middle token in a seletor
-corresponds an anonymous field, then that token can be omitted from the selector</i></b>,
-except that the selector collides with (or is shadowed by) other selectors
-(please read the following sections for what are selector colliding and shadowing).
+There is a syntax sugar in Go, (without considering selector colliding and
+shadowing explained in a later section), <b><i>if a middle name in a seletor
+corresponds an embedded field, then that name can be omitted from the selector</i></b>.
 This is why embedded types are called anonymous fields.
 </p>
 
@@ -335,8 +334,10 @@ So the following code is also legal in Go.
 <p>
 Similiarly, the selector <code>gaga.PrintName</code> can be viewed as
 a shorthand of <code>gaga.Person.PrintName</code>.
-But, it is also okay if we think it is not a shorthand. After all,
-the type <code>Singer</code> really has a <code>PrintName</code> method.
+But, it is also okay if we think it is not a shorthand.
+After all, the type <code>Singer</code> really has a <code>PrintName</code>
+method, though the method is declared implicitly
+(please read the next next section for details).
 For the similar reason, the selector <code>(&gaga).PrintName</code>
 and <code>(&gaga).SetAge</code> can also be viewed as, or not as,
 shorthands of <code>(&gaga.Person).PrintName</code> and
@@ -346,9 +347,108 @@ shorthands of <code>(&gaga.Person).PrintName</code> and
 <p>
 Note, we can also use the selector <code>gaga.SetAge</code>, but only if
 <code>gaga</code> is an addressable value of type <code>Singer</code>.
-It is jsut a sugar of <code>(&gaga).SetAge</code>.
+It is just a sugar of <code>(&gaga).SetAge</code>.
 Please read <a href="method.html#call">method calls</a> for details.
 </p>
+
+<p>
+In the above examples, <code>c.B.A.x</code> is called the full form
+of selectors <code>c.x</code>, <code>c.B.x</code> and <code>c.A.x</code>. 
+Similarly, <code>c.B.A.MethodA</code> is called the full form of selectors
+<code>c.MethodA</code>, <code>c.B.MethodA</code> and <code>c.A.MethodA</code>.
+</p>
+
+<p>
+If every middle name in the full forl of a selector corresponds
+an anonymous field, then the number of moddile names in the selector
+is called the depth of the selector.
+The depths of all the selectors used in the above two examples are two.
+</p>
+</div>
+
+<h3>Selector Shadowing And Colliding</h3>
+
+<div>
+For a value <code>x</code>, it is possible that many of its full-form
+selectors have the same last item <code>y</code>
+(which is either a explicitly declared field or method)
+and every middle names of these selectors is an anonymous field name.
+For such cases,
+<ul>
+<li>
+	only the full-form selector with the shallowest depth can be shortened as <code>x.y</code>.
+	In other words, <code>x.y</code> denotes the the full-form selector with the shallowest depth.
+	Other full-form selectors are <b>shadowed</b> by the one with the shallowest depth.
+</li>
+<li>
+	if there are more than one full-form selectors with the shallowest depth,
+	then none of those full-form selectors can be shortened as <code>x.y</code>.
+	We say those full-form selectors with the shallowest depth are <b>colliding</b>.
+</li>
+</ul>
+
+<p>
+If a method selector is shadowed by another method selector,
+and the two corresponding method signatures are identical,
+we say the first method is overridden by the other one.
+</p>
+
+For example, assume <code>A</code>, <code>B</code> and <code>C</code>
+are three defined types.
+
+<pre class="line-numbers"><code class="language-go">type A struct {
+	x string
+}
+func (A) y(int) bool {
+	return false
+}
+
+type B struct {
+	y bool
+}
+func (B) x(string) {}
+
+type C struct {
+	B
+}
+</code></pre>
+
+The following code doesn't compile.
+The reasons is selector <code>v1.A.x</code> and <code>v1.B.x</code> are collided,
+so both of them can't be shortened to <code>v1.x</code>.
+The same sotuation is for selector <code>v1.A.y</code> and <code>v1.B.y</code>.
+
+<pre class="line-numbers"><code class="language-go">var v1 struct {
+	A
+	B
+}
+
+func f1() {
+	_ = v1.x
+	_ = v1.y
+}
+</code></pre>
+
+The following code compiles okay.
+The selector <code>v2.C.B.x</code> is shadowed by <code>v2.A.x</code>, so the
+selector <code>v2.x</code> is a shortened form of <code>v2.A.x</code> actually.
+For the same reason, the selector <code>v2.y</code> is a shortened form of
+<code>v2.A.y</code>, not of <code>v2.C.B.y</code>.
+
+<pre class="line-numbers"><code class="language-go">var v2 struct {
+	A
+	C
+}
+
+func f2() {
+	fmt.Printf("%T \n", v2.x) // string
+	fmt.Printf("%T \n", v2.y) // func(int) bool
+}
+</code></pre>
+
+<p>
+</p>
+
 </div>
 
 <h3>Implicit Methods For Embedding Types</h3>
@@ -367,27 +467,27 @@ In fact,
 <ul>
 <li>
 	for each method of an embedded type,
-	if it neither collides nor is shadowed by other methods and fields
-	(please read the following sections for details), then compilers will
-	implicitly declare a correspoding method for the embedding struct type,
-	and consequently, compiler will also
+	if the selectors to that method neither collide nor are shadowed
+	by other selectors, then compilers will implicitly declare
+	a correspoding method for the embedding struct type.
+	And consequently, compiler will also
 	<a href="method.html#implicit-pointer-methods">implicitly declare
 	a correspoding method</a> for the unnamed pointer type
 	whose base type is the embedding struct type.
 </li>
 <li>
-	and assume a struct type <code>S</code> embeds a named type <code>T</code>,
+	assume a struct type <code>S</code> embeds a named type <code>T</code>,
 	for each method of type <code>*T</code>,
-	if it neither collides nor is shadowed by other methods and fields,
-	then compilers will implicitly declare a correspoding method for
-	type <code>*S</code>.
+	if the selectors to that method neither collide nor are shadowed
+	by other selectors, then compilers will implicitly declare
+	a correspoding method for type <code>*S</code>.
 </li>
 </ul>
 
 Simply speaking,
 <ul>
 <li>
-	both type <code>struct{T}</code> and <code>*struct{T}</code>
+	both type <code>struct{T}</code> and type <code>*struct{T}</code>
 	will obtain (inherit) all the methods of type <code>T</code>.
 </li>
 <li>
@@ -395,7 +495,7 @@ Simply speaking,
 	all the methods of type <code>*T</code> as well.
 </li>
 <li>
-	both type <code>struct{*T}</code> and <code>*struct{*T}</code>
+	both type <code>struct{*T}</code> and type <code>*struct{*T}</code>
 	will obtain (inherit) all the methods of type <code>*T</code>.
 	As the method set of type <code>T</code> is a subset of type <code>*T</code>,
 	we can also say both type <code>struct{*T}</code> and <code>*struct{*T}</code>
@@ -403,8 +503,9 @@ Simply speaking,
 </li>
 </ul>
 
-Here are the implicitly declared methods for type <code>Singer</code> and <code>*Singer</code>
-and their corresponding implicitly declared functions:
+Here are the implicitly declared methods for type <code>Singer</code>
+and type <code>*Singer</code>.
+
 <pre class="line-numbers"><code class="language-go">func (s Singer) PrintName() {
 	s.Person.PrintName()
 }
@@ -423,17 +524,9 @@ func (s *Singer) SetAge(age int) {
 
 <p>
 From the article <a href="method.html">methods in Go</a>,
-we know that we can't explicitly declare methods for unnamed struct types
-and unnamed pointer types whose base types are unnamed struct types.
-But through type embedding, such types can also own methods.
-</p>
-
-<p>
-For a type embedding,
-if the embedded type implements some interface types,
-then the embedding type will also implement these inrerface types
-if the embedding types obtains all the methods specified in the interface types
-from the embedding type.
+we know that we can't explicitly declare methods for non-defined struct types
+and non-defined pointer types whose base types are non-defined struct types.
+But through type embedding, such non-defined types can also own methods.
 </p>
 
 Here is another example to show which implicit methods are declared.
@@ -499,144 +592,59 @@ The result:
    method#4: Save
    method#5: Validate
 </code></pre>
-</div>
-
-<h3>A Defined Type Will Only Obtain Methods Which Are Obtained Through Embedding From The Source Type</h3>
 
 <p>
-In a type definition, if the new defined type is neither an interface type nor a pointer type,
-then for each method, which is obtained through type embedding, of the source type,
-a corresponding method with the same name will be implictly declared by compiler for the new defined type.
-The methods which are not obtained (by the source type) through type embedding
-will not be obtained by the new defined type.
 </p>
 
-<div>
-Example:
-<pre class="line-numbers"><code class="language-go">package main
+<p>
+If a struct type embeds a type which implements an interface type
+(the embedded type may be the interface type itself),
+then generally the struct type also implements the interface type,
+exception there is a method specified by the interface type
+shadowed by of colliding other methods or fileds.
+</p>
 
-import "fmt"
+Please note, a type will only obtain the methods of the types its contains
+(embeds directly or indirectly).
+For example, in the the following code,
+<ul>
+<li>
+	type <code>Age</code> has no methods, for it doesn't embed any types.
+</li>
+<li>
+	type <code>X</code> has two methods, <code>IsOdd</code> and <code>Double</code>.
+	<code>IsOdd</code> is obtained through embedding type <code>MyInt</code>.
+</li>
+<li>
+	type <code>Y</code> has no methods, for its embedded type <code>Age</code> has not methods.
+</li>
+<li>
+	type <code>Z</code> has only one method, <code>IsOdd</code>.
+	for it contains type <code>MyInt</code>.
+	It doesn't obtain the method <code>Double</code> from type <code>X</code>,
+	for it doesn't contain type <code>X</code>.
+</li>
+</ul>
 
-type MyInt int
+<pre class="line-numbers"><code class="language-go">type MyInt int
 func (mi MyInt) IsOdd() bool {
 	return mi%2 == 1
 }
 
-// Type S has two methods, IsOdd and Scale.
-// IsOdd is obtained through embedding MyInt.
-type S struct {
-	MyInt
-}
-func (s S) Scale(n int) int {
-	return int(s.MyInt) * n
-}
-
-// Type T only obtains the IsOdd method from S.
-// It doesn't obtain the Scale method from S.
-type T S
-
-// Type Age has not methods.
 type Age MyInt
 
-func main() {
-	t, age := T{5}, Age(123)
-	fmt.Println(t.IsOdd())   // okay, print true.
-	fmt.Println(t.Scale(12)) // error: t.Scale undefined
-	fmt.Println(age.IsOdd()) // error: age.IsOdd undefined
+type X struct {
+	MyInt
 }
-</code></pre>
-
-</div>
-
-<h3>Selector Shadowing And Colliding</h3>
-
-<p>
-The number of dots in the full form of a selector can be called the depth of the selector.
-For example, if <code>x.y.z</code> is a full form selector,
-then its depth is <i>2</i>.
-</p>
-
-<div>
-Sometimes, for a value <code>x</code>,
-there may be multiple full form selectors whose last tokens are identical.
-Assume the last tokens are <code>y</code>, among these selectors,
-<ul>
-<li>
-	if only one selector has the smallest depth, then it can be
-	shortened to <code>x.y</code> (or one-dot selector),
-	whereas the others can't.
-	We say the others are shadowed by the one with the smallest depth.
-</li>
-<li>
-	if more than one selectors have the smallest depth,
-	then none of them can be shortened to <code>x.y</code>.
-	We say the selectors with the smallest depth are collided.
-</li>
-</ul>
-
-<p>
-If a method selector is shadowed by another method selector,
-and the two corresponding method signatures are same,
-we say the first method is overridden by the other one.
-</p>
-
-<p>
-If a method selector with depth larger than one can't be shortened to an one-dot selector,
-then there will not be corresponding implicit methods declared for it.
-</p>
-
-For example, assume <code>A</code>, <code>B</code> and <code>C</code>
-are three defined types.
-
-<pre class="line-numbers"><code class="language-go">type A struct {
-	x string
-}
-func (A) y(int) bool {
-	return false
+func (x X) Double() MyInt {
+	return x.MyInt + x.MyInt
 }
 
-type B struct {
-	y bool
-}
-func (B) x(string) {}
-
-type C struct {
-	B
-}
-</code></pre>
-
-The following code doesn't compile.
-The reasons is selector <code>v1.A.x</code> and <code>v1.B.x</code> are collided,
-so both of them can't be shortened to <code>v1.x</code>.
-The same sotuation is for selector <code>v1.A.y</code> and <code>v1.B.y</code>.
-There is no implicit methods are declared for the type of <code>v1</code>.
-
-<pre class="line-numbers"><code class="language-go">var v1 struct {
-	A
-	B
+type Y struct {
+	Age
 }
 
-func f1() {
-	_ = v1.x
-	_ = v1.y
-}
-</code></pre>
-
-The following code compiles okay.
-The selector <code>v2.C.B.x</code> is shadowed by <code>v2.A.x</code>, so the
-selector <code>v2.x</code> is a shorten form of <code>v2.A.x</code> actually.
-For the same reason, the selector <code>v2.y</code> is a shorten form of
-<code>v2.A.y</code>, instead of <code>v2.C.B.y</code>.
-
-<pre class="line-numbers"><code class="language-go">var v2 struct {
-	A
-	C
-}
-
-func f2() {
-	fmt.Printf("%T \n", v2.x) // string
-	fmt.Printf("%T \n", v2.y) // func(int) bool
-}
+type Z X
 </code></pre>
 
 <p>

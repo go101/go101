@@ -1,133 +1,219 @@
 ﻿<h1>Memory Leaking</h1>
 
-for a GC langauge, generally, there shouldn't be memory leaking.
-But ...
+<p>
+When programming in a GC langauge, generally we don't need care about memory
+leaking problem, for the language runtime will collect unused memory regularly.
+However, we do need to be aware of some special scenarios
+which may cause kind-of or real memory leaking.
+The remaining of the current article will list several such scenarios.
+</p>
+
+<h3>Kind-Of Memory Leaking Casued By Substrings</h3>
+
+<div>
+<p>
+Go specification doesn't specify whether or not the result string
+and base string involved in a substring expression should share
+the same underlying <a href="memory-block.html">memory block</a>
+which hosting <a href="string.html">the underlying byte sequences</a>
+of the two strings.
+The standard Go compiler/runtime does let them share the same underlying memory block.
+This is a good design, which is both memroy and CPU consuming wise.
+But it may cause kind-of memory leaking.
+</p>
+
+For example, after the following function <code>f</codE> is called,
+there will be 1M bytes memory leaking (kind of),
+until the package-level variable <code>s0</code> is modified elsewhere.
+
+<pre class="line-numbers"><code class="language-go">var s0 string // package level variable
+
+func f(s1 string) {
+	// Assume s1 is a string much longer than 50.
+	s0 = s1[:50]
+	// Now, s0 shares the same underlying memory block of s1.
+	// s1 is not alive now, but s0 is still alive.
+	// Although there are only 50 bytes used in the block,
+	// the fact that s0 is still alive prevent the 1M bytes
+	// memory block from being collected.
+}
+</code></pre>
+
+<p>
+</p>
+
+To avoid this kind-of memory leaking, we can convert the substring to a
+<code>[]byte</code> value then convert the <code>[]byte</code> value back
+to <code>string</code>.
+
+<pre class="line-numbers"><code class="language-go">func f(s1 string) {
+	s0 = string([]byte(s1[:50]))
+}
+</code></pre>
+
+<p>
+The disadvantage of the above way to avoid the kind-of memory leaking
+is there are 50-byte duplications happen in the conversion process,
+one of them is unecessary.
+</p>
+
+We can make using of one of <a href="string.html#conversion-optimizations">the
+optimizations</a> made by the standard Go compiler to avoid one duplication,
+with a small extra cost of one byte memory wasting.
+
+<pre class="line-numbers"><code class="language-go">func f(s1 string) {
+	s0 = (" " + s1[:50])[1:]
+}
+</code></pre>
+
+<p>
+The disadvantage of the above way is the compiler optimization may become
+invalid later, and the optimization may be not available for other compilers.
+</p>
+
+The third way to avoid the kind-of memory leaking is to untilizing
+the <code>strings.Builder</code> supported since Go 1.10.
+
+<pre class="line-numbers"><code class="language-go">import "strings"
+
+func f(s1 string) {
+	var b strings.Builder
+	b.Grow(50)
+	b.WriteString(s1[:50])
+	s0 = b.String()
+	// b.Reset() // if b is used elsewhere,
+	             // it must be reset here.
+}
+</code></pre>
+
+<p>
+The disadvantage of the third way is a little verbose
+(by comparing to the first two ways).
+</p>
+
+</div>
+
+<h3>Kind-Of Memory Leaking Casued By Subslices</h3>
+
+<div>
+Similarly to substrings, subslices may also cause kind-of memory leaking.
+In the following code, after the <code>g</code> function is called,
+most memory occupied by the memory block hosting the elements of <code>s1</code>
+will be lost (if no more values reference the memory block).
+
+<pre class="line-numbers"><code class="language-go">var s0 []int
+
+func g(s1 []int) {
+	// Assume the length of s1 is much larger than 30.
+	s0 = s1[len(s1)-30:]
+}
+</code></pre>
+
+<p>
+</p>
+
+If we want to avoid the kind-of memory leaking, we must duplicated the
+30 elements for <code>s0</code>, so that the aliveness of <code>s0</code>
+will not prevent the memory block hosting the elements of <code>s1</code>
+from being collected.
+
+<pre class="line-numbers"><code class="language-go">func g(s1 []int) {
+	s0 = append([]int(nil), s1[len(s1)-30:]...)
+}
+</code></pre>
+
+</div>
+
+<h3>Kind-Of Memory Leaking Casued By Not Resetting Pointers In Dead Slice Elements</h3>
+
+<div>
+In the following code, after the <code>g</code> function is called,
+the memroy block allocated for the first element of slice <code>s</code>
+gets lost. The memroy block allocated for the last element also gets lost
+if the last element is never used as an element of any slice later.
+
+<pre class="line-numbers"><code class="language-go">func h() []*int {
+	s := []*int{new(int), new(int), new(int), new(int)}
+	return s[1:3]
+}
+</code></pre>
+
+<p>
+If the returned slice is still alive, then it will prevent the underlying
+memory block hosting the elements of <code>s</code> from being collected,
+which in consequence prevents the two memory blocks allocated from the first
+and the last elements of <code>s</code> from being collected,
+though the two elements are dead.
+</p>
+
+If we want to avoid the kind-of memory leaking, we must reset the pointers
+in the dead elements (here, the first and the last elements are viewed as
+dead elements after the function <code>h</code> is called.)
+
+<pre class="line-numbers"><code class="language-go">func h() []*int {
+	s := []*int{new(int), new(int), new(int), new(int)}
+	s1 := s[1:3]
+	s[0] = nil; s[len(s)-1] = nil
+	return s1
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+We often need to reset the pointers for dead elements in
+<a href="container.html#slice-manipulations">slice element deletion operations</a>.
+</p>
+
+</div>
+
+<h3>Memory Leaking Casued By Lost Goroutines</h3>
+
+<div>
+<p>
+Some times, for some logic mistakes in code design, one or more goroutines
+stay in blocking state for ever, which causes many code blocks used in
+these goroutines can't be garbage collected for ever.
+This is real memory leaking.
+</p>
+
+For example, if the following function is called as the start function
+of a goroutine and a nil channel argument is passed to it,
+then the goroutine will block for ever.
+Go runtime thinks the goroutine is still alive,
+so the memory block allocated for <code>s</code> will never get collected.
+
+<pre class="line-numbers"><code class="language-go">func k(c <-chan bool) {
+	s := make([]int64, 1e6)
+	if <-c { // block here for ever if c is nil
+		_ = s
+		// use s, ...
+	}
+}
+</code></pre>
+
+<p>
+We should avoid such logic mistakes.
+</p>
+
+</div>
 
 
 <h3>Finalizers</h3>
 
-<h3>time.Tick</h3>
-
-<h3>Subslice</h3>
-
-
-<h3>Delete Slice Elements</h3>
-
-delete elements and elements contains pointers ...
-
-<h3>More About Substrings</h3>
-
-<p>
-todo: moved to a seperated article (memory leaking problems, with subslice, ...)
-</p>
-
 <div>
 <p>
-We have learned that the syntax <code>aString[start:end]</code> to create a substring of <code>aString</code>.
-In the official Go implementation,
-when creating a substring from another string,
-the substring and the other string will share the same underlying memory block allocated for underlying bytes,
-even if the substring only use a small portion of the memory block.
-Assume the memory block is only used by the two strings,
-it will be only garbaged collected if both of the two strings are not reachable any more.
-</p>
-
-Example:
-<pre class="line-numbers"><code class="language-go">package main
-
-import (
-	"runtime"
-	"strings"
-)
-
-var s0 string // package level variable
-
-func f1() {
-	bs := make([]byte, 1 << 20) // (1 << 20) is 1M
-	
-	s1 := string(bs) // The underlying byte sequence of s1 is
-	                 // a copy of the underlying bytes of bs.
-	s0 = s1[:1] // s0 only contains the first byte in s1.
-	            // s0 and s1 share the same underlying bytes.
-		     // In fact, even if len(s0) == 0, s0 will still
-	            // share the same underlying bytes with s1.
-}
-
-func main() {
-	f1()
-	runtime.GC()
-
-	// Up to now, the 1M bytes memory block allocated in f1 is
-	// still not be GCed. The reason is the package level
-	// variable s0 is still alive now, even if it only actually
-	// uses one byte in the 1M memory block.
-	
-	// use any of these methods to avoid "memory leaking".
-	s0 = strings.Repeat(s0, 1)
-	s0 = string([]byte(s0))
-	
-	// todo: use strings.Builder to avoid one allocation.
-	
-	runtime.GC()
-	// now, the 1M memory block is garbage collected.
-}
-</code></pre>
-</div>
-
-
-
-
-<h3>Memory Leaking</h3>
-
-<div>
-Sometimes, a value only occupying a small portion of a memory block,
-which prevents the memory block from being collected.
-An example:
-<pre class="line-numbers"><code class="language-go">package main
-
-var smallStr string
-
-func f1(smallLen int) {
-	longStr := string(make([]byte, 1 << 20))
-	smallStr = longStr[0:smallLen]
-	// For the offcial Go compiler, now smallStr shares
-	// the same underlying byte sequence memory block
-	// with longStr. After exiting this function, this
-	// memory block is still referenced by smallStr,
-	// even if smallLen is zero. This will prevent the
-	// memory block being collected,
-}
-
-var aSlice []int
-
-func f2(sliceLen int) {
-	anArray := [10000]int{}
-	aSlice = anArray[0:sliceLen]
-	// anArray and the underlying element sequence are
-	// hosted on the same memory block, so even if
-	// there is no elements in aSlice, after exiting
-	// this functions, the memory block hosting
-	// anArray still can't be collected.
-}
-
-func main() {
-	f1(0)
-	f2(0)
-	
-	// ...
-}
-</code></pre>
-<p>
-These are kind of memory leaking, not real memory leaking.
-</p>
-</div>
-
-<div>
 Setting a finalizer for a value which is a member of a cyclic reference group may
 <a href="https://golang.org/pkg/runtime/#SetFinalizer">prevent all memory blocks allocated
 for the cyclic reference group from being collected</a>.
 This is real memory leaking, not kind of.
-For example:
+</p>
+
+After the following function is called and exits,
+the memory blocks allocated for <code>x</code> and <code>y</code> are not
+guaranteed to be garbage collected in future garbage collecting.
+
 <pre class="line-numbers"><code class="language-go">func memoryLeaking() {
 	type T struct {
 		v [1<<20]int
@@ -139,12 +225,18 @@ For example:
 	}
 	
 	var x, y T
+	
 	// SetFinalizer will make x escape to heap.
+	runtime.SetFinalizer(&x, finalizer)
+	
 	// Following two lines combined will make
 	// x and y not collectable.
 	x.t, y.t = &y, &x // y also escapes to heap.
-	runtime.SetFinalizer(&x, finalizer)
 }
 </code></pre>
+
+<p>
+So, please avoid set finalizers for values in a cyclic reference group.
+</p>
 </div>
 
