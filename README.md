@@ -25,5 +25,5 @@ If it is not opened, please visit http://localhost:55555 directly.
 
 * The book is still not finished. Several articles are still missing and many finished articles still need polishing.
 * Translations are welcome, but for the last note, it may be not the proper time to do so.
-* Chinese translation version will be transalted by myself.
+* Chinese translation version will be transalted by myself ([@TapirLiu](https://twitter.com/tapirliu)).
 * A more relexed license is coming soon.

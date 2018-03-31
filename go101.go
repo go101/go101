@@ -71,6 +71,7 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "":
 
 	case "static":
+		w.Header().Set("Cache-Control", "max-age=360000") // 100 hours
 		go101.staticHandler.ServeHTTP(w, r)
 		return
 	case "article":
@@ -160,12 +161,13 @@ func retrieveTitlesForArticle(article *Article) {
 
 func (go101 *Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file string) bool {
 	isLocal := go101.IsLocalServer()
-	if isLocal {
-		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
-	}
 	article, err := retrieveArticleContent(file, !isLocal)
 	if err == nil {
-		//w.Header().Set("Cache-Control", "max-age=36000") // 10 hours
+		if isLocal {
+			w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+		} else {
+			w.Header().Set("Cache-Control", "max-age=36000") // 10 hours
+		}
 		page := map[string]interface{}{
 			"Article":       article,
 			"Title":         article.TitleWithoutTags,
@@ -176,7 +178,7 @@ func (go101 *Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, fi
 		}
 	}
 
-	//w.Header().Set("Cache-Control", "max-age=300") // 5 minutes
+	w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 	w.Write([]byte(err.Error()))
 	return false
 }
