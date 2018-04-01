@@ -29,4 +29,3 @@ func main() {
 	log.Printf("Server started: http://localhost:%v \n", *port)
 	(&http.Server{Handler: go101}).Serve(l)
 }
-

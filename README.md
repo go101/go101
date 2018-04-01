@@ -1,4 +1,4 @@
-<b>Go 101</b> is a book focusing on Go syntaxes and semantics.
+<b>Go 101</b> is a book focusing on Go syntax and semantics.
 
 ### Install And Update
 
