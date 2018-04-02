@@ -77,6 +77,7 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "article":
 		item = strings.ToLower(item)
 		if strings.HasPrefix(item, "res/") {
+			w.Header().Set("Cache-Control", "max-age=360000") // 100 hours
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
 		}
@@ -178,7 +179,6 @@ func (go101 *Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, fi
 		}
 	}
 
-println("eeee")
 	w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 	w.Write([]byte(err.Error()))
 	return false
