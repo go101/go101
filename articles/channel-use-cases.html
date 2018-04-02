@@ -31,7 +31,7 @@ supported in Go.
 And for many circumstances, the channel way may be not the best solution.
 Please read <a href="concurrent-atomic-operation.html">atomic operations</a> and
 <a href="concurrent-synchronization-more.html">some other synchronization techniques</a>
-for more concurrency synchronization techniques.
+for more concurrency synchronization techniques in Go.
 </p>
 
 <p>
@@ -84,13 +84,13 @@ import (
 func longTimeRequest() <-chan int32 {
 	r := make(chan int32)
 
-	// This goroutine treat the channel r as a promise.
+	// This goroutine treats the channel r as a promise.
 	go func() {
 		time.Sleep(time.Second * 3) // simulate a workload
 		r <- rand.Int31n(100)
 	}()
 
-	return r // return r as as a future.
+	return r // return r as a future
 }
 
 func sumSquares(a, b int32) int32 {
@@ -155,7 +155,7 @@ func main() {
 </p>
 
 In fact, we don't need two channels to transfer results.
-Use one channel is okay.
+Using one channel is okay.
 
 <pre class="line-numbers"><code class="language-go">...
 	
@@ -226,7 +226,7 @@ func main() {
 
 <p>
 There is another way to implement the first-reponse-win use case,
-by using the select mechanism introduced below and a buffered channel
+by using the select mechanism and a buffered channel
 which capacity is one. The other way will be introduced below.
 </p>
 
@@ -326,7 +326,7 @@ func main() {
 <p>
 If the value buffer queue of a channel is full,
 a send operation on the channel will block
-until another goroutine receive a value out of the channel.
+until another goroutine receive a value from the channel.
 So we can receive a value from a channel to notify another goroutine
 which is waiting to send a value to the same channel.
 Generally, the channel should be an unbuffered channel.
@@ -358,7 +358,7 @@ func main() {
 	
 	// do some other things ...
 	
-	done <- struct{}{} // block here until a receive is done.
+	done <- struct{}{} // block here until a receive is made.
 	fmt.Println(" world!")
 }
 </code></pre>
@@ -421,7 +421,7 @@ Please read the next sub-section for details.
 <p>
 The way to do 1-to-N notifications shown in the last sub-section
 is seldom used in practice, for there is a better way.
-By make using of the feature that infinite values can be received from
+By making using of the feature that infinite values can be received from
 a closed channel, we can close a channel to broadcast notifications.
 </p>
 
@@ -433,10 +433,9 @@ to do an 1-to-N notifications.
 
 <pre class="line-numbers"><code class="language-go">...
 
-	time.Sleep(time.Second * 2) // simulate an initialzation phase
-	close(ready)                // do 1-to-N notifications.
-	<-done; <-done; <-done      // being N-to-1 notified
-}
+	// ready <- struct{}{}; ready <- struct{}{}; ready <- struct{}{}
+	close(ready) // broadcast notifications
+...
 </code></pre>
 
 <p>
@@ -534,7 +533,7 @@ There are two styles to use one-capacity buffered channels as mutex locks.
 
 Here, only a lock-through-send example is shown.
 Please note that, the capacity of the channel
-who is used as a mutex must be one.
+which is used as a mutex must be one.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -589,10 +588,10 @@ there are also two styles to acquire one piece of ownerships
 of a channel semaphore.
 <ol>
 <li>
-	Acquire through a send, release through a receive.
+	Acquire ownership through a send, release through a receive.
 </li>
 <li>
-	Acquire through a receive, release through a send.
+	Acquire ownership through a receive, release through a send.
 </li>
 </ol>
 
@@ -647,11 +646,11 @@ There is a better way, which will be introduced below, to do the job.
 </p>
 
 Although there will be most ten consumers are drinking at any given time,
-there may be more than ten consumers are served at the same time.
+there may be more than ten consumers are served at the bar at the same time.
 Some consumers are waiting for free seats.
 Although each consumer goroutine consumes much less resources than a system thread,
 the total resources consumed by a large quantity of goroutines are not neglectable.
-So it is best to create a consumer goroutine until a free seat is promised.
+So it is best to create a consumer goroutine until a free seat is available.
 
 <pre class="line-numbers"><code class="language-go">... // same code as the above example
 
@@ -682,7 +681,7 @@ func main() {
 
 <p>
 There will be most about ten live consumer goroutines
-coexisting in the above optmized version.
+coexisting in the above optimized version.
 </p>
 
 The style of acquiring ownership through sending is simpler comparatively.
@@ -728,7 +727,7 @@ There is a variant of the channel semaphore use case.
 In the above two examples, although the throughput is limited,
 but there may be many requests (consumers) are queuing.
 This is not always a good idea, sometimes it would be better to
-suggest that queuing consumers should go to other bars,
+suggest queuing consumers go to other bars,
 by using the try-receive or try-send mechanisms introduced below.
 </p>
 </div>
@@ -827,7 +826,7 @@ func main() {
 
 <p>
 Although here the encapsulation implementaion may be not
-the most efficient way for the specified use case in the above example,
+the most efficient way for the above specified example,
 the use case may be useful for some other scenarios.
 </p>
 </div>
@@ -884,7 +883,7 @@ then we can use the following code to do this job.
 
 <p>
 The select mechanism is a unique feature in Go.
-It brings many patterns and tricks to concurrent programming.
+It brings many patterns and tricks for concurrent programming.
 About the code execution rules of the select mechanism,
 please read the article <a href="channel.html#select">channels in Go</a>.
 </p>
@@ -1026,7 +1025,8 @@ The following sub-sections will show more try-send and try-receive use cases.
 <h4>Check If An Unbuffered Channel Is Closed Without Blocking The Current Goroutine</h4>
 
 <div>
-We can use the following code to check whether or not an unbuffered channel
+Assume it is guaranteed that no values were ever sent to an unbuffered channel,
+We can use the following code to check whether or not then unbuffered channel
 is closed without blocking the current goroutine,
 where <code>T</code> the element type of the corresponding channel type.
 
@@ -1051,17 +1051,16 @@ in Go concurrent programming.
 <div>
 
 <p>
-At the end of the "use channels as counting semaphores" section above,
+At the end of the <i>use channels as counting semaphores</i> section above,
 it is mentioned that it would be better to suggest that new coming consumers
-should go to other bars if there are no available seats in the current bar.
+go to other bars if there are no available seats in the current bar.
 This is call rate limiting.
 </p>
 
 The following is a modified version of
-the last example in the "use channels as counting semaphores" section.
+the last example in the <i>use channels as counting semaphores</i> section.
 
 <pre class="line-numbers"><code class="language-go">...
-	
 	bar24x7 := make(Bar, 10) // can serve most 10 consumers
 	for customerId := 0; ; customerId++ {
 		time.Sleep(time.Second)
@@ -1073,8 +1072,7 @@ the last example in the "use channels as counting semaphores" section.
 			log.Print("consumer#", customerId, " goes elsewhere")
 		}
 	}
-	for {time.Sleep(time.Second)}
-}
+...
 </code></pre>
 
 <p>
@@ -1129,7 +1127,7 @@ if the receiver/request side has not get ready in time.
 <h4>The Third Way to Implement The First-Response-Wins Use Case</h4>
 
 <div>
-For a first-response-win use case, if the number of sources are small,
+For a first-response-wins use case, if the number of sources are small,
 for example, two or three, we can use a <code>select</code> code block
 to receive the source responses at the same time. For example,
 
@@ -1405,10 +1403,10 @@ Here is a list of some module job examples in practice:
 
 <p>
 A worker in a module group may receive data from several other modules
-as inputs and send data to server other modules as outputs.
+as inputs and send data to serve other modules as outputs.
 In other words, a module can be both a data consumer and a data producer.
 A module which only sends data to some other modules but never
-receives data from other modules is called a producer-only module
+receives data from other modules is called a producer-only module.
 A module which only receives data from some other modules but never
 sends data to other modules is called a consumer-only module.</p>
 
@@ -1419,7 +1417,7 @@ Many modules together compose a data flow system.
 <p>
 Following will show some data flow module worker implementations.
 These implementations are for education purpose,
-so they are neither efficient nor flexible.
+so they may be neither efficient nor flexible.
 </p>
 
 </div>
@@ -1588,7 +1586,7 @@ For data aggregation, two pieces of data are still two pieces of data.
 But for data composition, several pieces of data compose one piece of new data.
 </p>
 
-The following is an composition worker example, in which two <code>uint64</code>
+The following is a composition worker example, in which two <code>uint64</code>
 values from one stream and one <code>uint64</code> value from another stream
 compose one new <code>uint64</code> value.
 Generally these stream channel element types are different in parctice.
@@ -1618,7 +1616,7 @@ make the data flow system assembling explainations below simpler.
 
 Data decomposition is the inverse process of data composition.
 A decomposition worker function implementation takes one
-input data stream parameter and return several data stream results.
+input data stream parameter and returns several data stream results.
 
 </div>
 
@@ -1657,7 +1655,7 @@ An example:
 <p>
 The functionalities of data calculation and analuzation modules vary much
 and are very specfic each.
-Generally, a worker function of such modules transform each piece of input data
+Generally, a worker function of such modules transforms each piece of input data
 into another piece of output data.
 </p>
 
@@ -1740,7 +1738,7 @@ func Printer(input <-chan uint64) {
 
 </p>
 
-<h4>Data Flow Systems Assembling</h4>
+<h4>Data Flow System Assembling</h4>
 
 <div>
 <p>
