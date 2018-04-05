@@ -1,8 +1,9 @@
 ﻿<h1>Memory Leaking</h1>
 
 <p>
-When programming in a GC langauge, generally we don't need care about memory
-leaking problem, for the language runtime will collect unused memory regularly.
+When programming in a langauge supporting garbage collecting,
+generally we don't need care about memory leaking problem,
+for the language runtime will collect unused memory regularly.
 However, we do need to be aware of some special scenarios
 which may cause kind-of or real memory leaking.
 The remaining of the current article will list several such scenarios.
@@ -14,19 +15,18 @@ The remaining of the current article will list several such scenarios.
 <p>
 Go specification doesn't specify whether or not the result string
 and base string involved in a substring expression should share
-the same underlying <a href="memory-block.html">memory block</a>
-which hosting <a href="string.html">the underlying byte sequences</a>
-of the two strings.
+the same underlying <a href="memory-block.html">memory block</a> to host
+<a href="string.html">the underlying byte sequences</a> of the two strings.
 The standard Go compiler/runtime does let them share the same underlying memory block.
 This is a good design, which is both memroy and CPU consuming wise.
-But it may cause kind-of memory leaking.
+But it may cause kind-of memory leaking sometimes.
 </p>
 
 For example, after the following function <code>f</codE> is called,
 there will be 1M bytes memory leaking (kind of),
-until the package-level variable <code>s0</code> is modified elsewhere.
+until the package-level variable <code>s0</code> is modified again elsewhere.
 
-<pre class="line-numbers"><code class="language-go">var s0 string // package level variable
+<pre class="line-numbers"><code class="language-go">var s0 string // a package-level variable
 
 func f(s1 string) {
 	// Assume s1 is a string much longer than 50.
@@ -53,7 +53,7 @@ to <code>string</code>.
 
 <p>
 The disadvantage of the above way to avoid the kind-of memory leaking
-is there are 50-byte duplications happen in the conversion process,
+is there are two 50-byte duplications happen in the conversion process,
 one of them is unecessary.
 </p>
 
@@ -71,7 +71,7 @@ The disadvantage of the above way is the compiler optimization may become
 invalid later, and the optimization may be not available for other compilers.
 </p>
 
-The third way to avoid the kind-of memory leaking is to untilizing
+The third way to avoid the kind-of memory leaking is to untilize
 the <code>strings.Builder</code> supported since Go 1.10.
 
 <pre class="line-numbers"><code class="language-go">import "strings"
@@ -112,7 +112,7 @@ func g(s1 []int) {
 <p>
 </p>
 
-If we want to avoid the kind-of memory leaking, we must duplicated the
+If we want to avoid the kind-of memory leaking, we must duplicate the
 30 elements for <code>s0</code>, so that the aliveness of <code>s0</code>
 will not prevent the memory block hosting the elements of <code>s1</code>
 from being collected.
@@ -128,30 +128,30 @@ from being collected.
 
 <div>
 In the following code, after the <code>g</code> function is called,
-the memroy block allocated for the first element of slice <code>s</code>
-gets lost. The memroy block allocated for the last element also gets lost
-if the last element is never used as an element of any slice later.
+the memroy block allocated for the first and the last elements of slice
+<code>s</code> will get lost.
 
 <pre class="line-numbers"><code class="language-go">func h() []*int {
 	s := []*int{new(int), new(int), new(int), new(int)}
-	return s[1:3]
+	// do smething ...
+	return s[1:3:3]
 }
 </code></pre>
 
 <p>
 If the returned slice is still alive, then it will prevent the underlying
 memory block hosting the elements of <code>s</code> from being collected,
-which in consequence prevents the two memory blocks allocated from the first
+which in consequence prevents the two memory blocks allocated for the first
 and the last elements of <code>s</code> from being collected,
 though the two elements are dead.
 </p>
 
-If we want to avoid the kind-of memory leaking, we must reset the pointers
-in the dead elements (here, the first and the last elements are viewed as
-dead elements after the function <code>h</code> is called.)
+If we want to avoid the kind-of memory leaking,
+we must reset the pointers in the dead elements.
 
 <pre class="line-numbers"><code class="language-go">func h() []*int {
 	s := []*int{new(int), new(int), new(int), new(int)}
+	// do smething ...
 	s1 := s[1:3]
 	s[0] = nil; s[len(s)-1] = nil
 	return s1
@@ -162,26 +162,26 @@ dead elements after the function <code>h</code> is called.)
 </p>
 
 <p>
-We often need to reset the pointers for dead elements in
+We often need to reset the pointers for some old slice elements in
 <a href="container.html#slice-manipulations">slice element deletion operations</a>.
 </p>
 
 </div>
 
-<h3>Memory Leaking Casued By Lost Goroutines</h3>
+<h3>Kind-Of Memory Leaking Casued By Lost Goroutines</h3>
 
 <div>
 <p>
 Some times, for some logic mistakes in code design, one or more goroutines
-stay in blocking state for ever, which causes many code blocks used in
-these goroutines can't be garbage collected for ever.
-This is real memory leaking.
+stay in blocking state for ever. Such goroutines are called stale goroutines.
+Go runtime thinks stale goroutines are still alive.
+Once a goroutine becomes stale, the resources allocated for it and the
+memory blocks referenced by it will never be garbage collected.
 </p>
 
-For example, if the following function is called as the start function
-of a goroutine and a nil channel argument is passed to it,
-then the goroutine will block for ever.
-Go runtime thinks the goroutine is still alive,
+For example, if the following function is called
+by passing a nil channel argument to it,
+then the current goroutine will become stale.
 so the memory block allocated for <code>s</code> will never get collected.
 
 <pre class="line-numbers"><code class="language-go">func k(c <-chan bool) {
@@ -192,6 +192,12 @@ so the memory block allocated for <code>s</code> will never get collected.
 	}
 }
 </code></pre>
+
+<p>
+If we pass a non-nil channel to the above function, and there are no other
+goroutines will send values to the channel since the function is called,
+The current goroutine will also become stale.
+</p>
 
 <p>
 We should avoid such logic mistakes.
