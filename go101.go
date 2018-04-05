@@ -71,13 +71,13 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "":
 
 	case "static":
-		w.Header().Set("Cache-Control", "max-age=360000") // 100 hours
+		w.Header().Set("Cache-Control", "max-age=360000") // 100 hours // 31536000
 		go101.staticHandler.ServeHTTP(w, r)
 		return
 	case "article":
 		item = strings.ToLower(item)
 		if strings.HasPrefix(item, "res/") {
-			w.Header().Set("Cache-Control", "max-age=360000") // 100 hours
+			w.Header().Set("Cache-Control", "max-age=360000") // 100 hours // 31536000
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
 		}
