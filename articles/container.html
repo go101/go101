@@ -235,6 +235,19 @@ An element which index is absent uses the previous element's index plus one.
 If the index of the first element is absent, its index is zero.
 </p>
 
+Please note, the keys (indexes) in slice and array literals must be non-negative integer constants.
+However, the keys in map literals can be non-constants.
+
+<pre class="line-numbers"><code class="language-go">var a uint = 1
+var _ = map[uint]int {a : 123} // okay
+var _ = []int{a: 100}  // error: index must be non-negative integer constant
+var _ = [5]int{a: 100} // error: index must be non-negative integer constant
+</code></pre>
+
+
+<p>
+</p>
+
 </div>
 
 <h3>Literal Representations Of Zero Values Of Container Types</h3>
@@ -303,6 +316,7 @@ func main() {
 </p>
 </div>
 
+<p class="anchor" id="composite-literal-simplification"></p>
 <h3>Nested Composite Literals Can Be Simplified</h3>
 
 <div>
@@ -564,8 +578,7 @@ func main() {
 	/*
 	_ = a[3]  // invalid array index 3 (out of bounds)
 	_ = s[-1] // invalid slice index -1 (index must be non-negative)
-	*/
-	
+	*/	
 
 	// Each of the following lines causes a panic.
 	_ = a[n]         // panic: runtime error: index out of range
@@ -808,7 +821,7 @@ even if <code>m</code> is a nil map.
 
 <p>
 The entries stored in a map are not ordered by their orders of being appended.
-Their orders are non-determinstic, we can think them are kind of randomized.
+Their orders are non-determinstic, we can think them are kind-of randomized.
 </p>
 
 An example show how to append (put) elements to and delete elements from maps:
@@ -1248,10 +1261,9 @@ Note,
 	and <code>len(baseContainer)</code> is smaller than <code>cap(baseContainer)</code>.
 </li>
 <li>
-	a subslice expression will never cause a panic when the base container
-	is a nil slice (if all indexes are valid in the expression).
-	The result slice derived from a nil slice is
-	still a nil slice.
+	a subslice expression will not cause a panic if the base container
+	is a nil slice and all indexes used in the expression are zero.
+	The result slice derived from a nil slice is still a nil slice.
 </li>
 </ul>
 
@@ -1745,6 +1757,7 @@ func fb(buffers []Buffer) int {
 
 </div>
 
+<p class="anchor" id="use-pointer-as-array"></p>
 <h3>Use Array Pointers As Arrays</h3>
 
 <div>
