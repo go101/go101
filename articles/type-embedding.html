@@ -262,7 +262,7 @@ where <code>z</code> can also be either a field name or a method name.
 <p>
 There is a syntax sugar in Go, (without considering selector colliding and
 shadowing explained in a later section), <b><i>if a middle name in a seletor
-corresponds an embedded field, then that name can be omitted from the selector</i></b>.
+corresponds to an embedded field, then that name can be omitted from the selector</i></b>.
 This is why embedded types are called anonymous fields.
 </p>
 
@@ -359,7 +359,7 @@ Similarly, <code>c.B.A.MethodA</code> is called the full form of selectors
 </p>
 
 <p>
-If every middle name in the full forl of a selector corresponds
+If every middle name in the full forl of a selector corresponds to
 an anonymous field, then the number of moddile names in the selector
 is called the depth of the selector.
 The depths of all the selectors used in the above two examples are two.
@@ -660,40 +660,51 @@ But interface types can only embed named interface types.
 Please read <a href="interface.html#embedding">interfaces in Go</a> for details.
 </p>
 
-<h3>A Detail About Selector Shorthands</h3>
+<!---
+
+<h3>Two Types Embedding Two Types Which Denote The Same Type But Have Different Names Are Two Distinct Types</h3>
 
 <div>
 
-<p>
-<p>
-A pointer value of a defined one-level struct pointer type
-can access the fields of the struct value it references,
-But two-level (and higher level) pointers, either defined or not, can't.
-</p>
+For example,
 
-<p>
-
-</p>
-
-<pre class="line-numbers"><code class="language-go">package main
-
-type T struct {
-	x int
-}
-func (T) m(){} // T has one method.
-
-type P *T  // a defined one-level pointer type.
-type PP *P // a defined two-level pointer type.
-
-func main() {
-	var t T
-	var p P = &t
-	var pp PP = &p
-	p.x = 123  // okay
-	pp.x = 789 // error: type PP has no field or method x
-}
+<pre class="line-numbers"><code class="language-go">
 </code></pre>
 <p>
 </p>
 </div>
+
+-->
+
+<h3>An Interesting Type Embedding Example</h3>
+
+<div>
+In the end, let's view an interesting example,
+the example program will dead loop and stack overflow.
+If you have understood the above content,
+it is easy to understand why it will dead loop.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type I interface {
+	m()
+}
+
+type T struct {
+	I
+}
+
+func main() {
+	var t T
+	var i = &t
+	t.I = i
+	i.m() // will call t.m(), then will call i.m() again, ...
+}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+
 
