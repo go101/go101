@@ -1,395 +1,300 @@
-﻿<h1>Details In Go</h1>
-
-<!--
-or called "Go fact lists"
-or seperated a article "rules (and exceptions) in Go"
--->
-
-<p>
-Go is a simple language, but Goalng also has many details in syntax and standard libraries usages.
-This article will list all sorts of details in Go.
-</p>
-
+<h1>Go Details 101</h1>
 
 <div>
-Index
+<p>
+This article will list all kinds of details in Go.
+Some of these details are shown in other Go 101 articles,
+some are shown in the following sections.
+</p>
+
 <ul>
-<li><a href="#aaaaaaaa">It is ok to iterate array elements by ranging over array pointers</a>.</li>
-<li><a href="#aaaaaaaa">It is ok to retrieve array elements from array pointers. It is ok to derive slices from array pointers.</a>.</li>
-<li><a href="#aaaaaaaa">Retreive elements from nil maps will not panic</a>.</li>
-<li><a href="#aaaaaaaa">Delete keys from nil maps will not panic</a>.</li>
-<li><a href="#aaaaaaaa">In a for-range loop, any iterator variable(s) can be ignored or omitted</a>.</li>
-<li><a href="#aaaaaaaa">In a for loop, there can be zero or two <code>;</code> between the <code>for</code> keyword and <code>{</code></a>.</li>
-<li><a href="#aaaaaaaa">In a for-range loop, the iterator variable(s) and the ranged container are all value copies</a>.</li>
-<li><a href="#aaaaaaaa">Retreive elements from nil maps will not panic</a>.</li>
+<li>
+	<a href="value-part.html#about-value-copy">When copying a value, only the direct part of the value is copied.</a>
+</li>
+<li>
+	<a href="type-system-overview.html#type-definition">Types can be declared within function bodies.</a>
+</li>
+<li>
+	<a href="#import-package-multiple-times">A package can be imported more than once in a source file.</a>
+</li>
+<li>
+	<a href="#force-import-path">The comment <code>// import "x.y.z.mypkg"</code> following <code>package mypkg</code> is meaningful for the standard Go compiler.</a>
+</li>
+<li>
+	<a href="#naa-inf">NaN != NaN, Inf == Inf.</a>
+</li>
+<li>
+	Control flow related details:
+	<ul>
+	<li>
+		<a href="control-flows.html#default-branch-placement">The <code>default</code> branch in <code>switch</code> and <code>select</code> blocks can be put before all case branches, after all case branches, or between case branches.</a>
+	</li>
+	<li>
+		<a href="control-flows-more.html#defer-modify-resutls">Nested deferred function calls can modify return result values of nesting functions.</a>
+	</li>
+	</ul>
+</li>
+<li>
+	Pointer related details:
+	<ul>
+	<li>
+		<a href="pointer.html#restrictions">For a numeric value pointer <code>p</code>, expression <code>*p++</code> is equivalent to <code>(*p)++</code>. If <code>p</code> is not an numeric value pointer, <code>*p++</code> doesn't compile.</a>
+	</li>
+	<li>
+		<a href="value-conversions-assignments-and-comparisons.html#conversion-rule-underlying-types">Values of two named pointer types can be converted to each other if the base types of the two types are identical. The underlying types of the two pointer types can be different.</a>
+	</li>
+	<li>
+		<a href="#addresses-of-zeor-sized-values">Addresses of different zero-sized value may be equal, or not.</a>
+	</li>
+	<li>
+		<a href="#self-based-pointer-type">The base type of a pointer type may be the pointer type itself.</a>
+	</li>
+	<li>
+		<a href="#pointer-selector-shorthands">A detail about selector shorthands.</a>
+	</li>
+	</ul>
+</li>
+<li>
+	Container related details:
+	<ul>
+	<li>
+		<a href="container.html#composite-literal-simplification">Sometimes, nested composite Literals can be simplified.</a>
+	</li>
+	<li>
+		<a href="container.html#use-pointer-as-array">In some scenarios, it is ok to use array pointers as arrays.</a>
+	</li>
+	<li>
+		<a href="container.html#element-accessment">Retreiving elements from nil maps will not panic. The result is a zero element value.</a>
+	</li>
+	<li>
+		<a href="container.html#element-addition-deletion">Deleting an entry from a nil map will not panic. It is a no-op.</a>
+	</li>
+	<li>
+		<a href="container.html#element-addition-deletion">The result slice of an <code>append</code> function call may share the underlying array with the original slice, or not.</a>
+	</li>
+	<li>
+		<a href="container.html#subslice">The length of a subslice may be larger than the base slice the subslice is derived from.</a>
+	</li>
+	<li>
+		<a href="container.html#subslice">Deriving a subslice from a nil slice is ok only if all the indexes used in the subslice expression are zero. The result subslice is also a nil slice.</a>
+	</li>
+	<li>
+		<a href="container.html#modify-slice-length-and-capacity">The length and capacity of a slice can be modified seperately.</a>
+	</li>
+	<li>
+		<a href="container.html#value-literals"">The indexes in slice and array compsiste literals must be non-negative integer constants.</a>
+	</li>
+	<li>
+		<a href="array-slice-element-addressability">Elements of unaddressable arrays are also unaddressable, but elements of unaddressable slices are always addressable.</a>
+	</li>
+	<li>
+		<a href="#array-slice-derivable">It is ok to retrieve subslices from unaddressable slices, but not ok from unaddressable arrays. It is ok to take element addresses for unaddressable slices, but not ok for unaddressable arrays.</a>
+	</li>
+	<li>
+		<a href="#nan-as-map-keys">Putting elements with NaN as key to a map is like putting the elements in a black hole.</a>
+	</li>
+	<li>
+		<a href="#constent-map-keys">Constant key values in a container composite literal can't be duplicated.</a>
+	</li>
+	<li>
+		<a href="container.html#iteration">In a <code>for-range</code> loop code block, any iteration variable can be ignored or omitted.</a>
+	</li>
+	<li>
+		<a href="container.html#iteration">In a for-range loop, the iterator variable(s) and the ranged container are all value copies.</a>
+	</li>
+	<li>
+		<a href="container.html#iteration">Ranging over a nil maps or a nil slices is ok, it is a no-op.</a>
+	</li>
+	<li>
+		<a href="container.html#use-pointer-as-array">Range over a nil array pointer is ok if the second iteration variable is ignored or omitted.</a>
+	</li>
+	<li>
+		<a href="container.html#memclr">There is an optimization made by the standard Go compiler to reset container elements as zero values.</a>
+	</li>
+	<li>
+		<a href="#capacity-of-slice-from-string">The capacity of the result slice of a conversion from a string to byte/rune slice may be larger than the length of the result slice.</a>
+	</li>
+	</ul>
+</li>
+<li>
+	String related details:
+	<ul>
+	<li>
+		<a href="string.html#comparison">The time complexity of comparing two equal strings may be <code><i>O</i>(1)</code> or <code><i>O</i>(n)</code>.</a>
+	</li>
+	<li>
+		<a href="string.html#use-string-as-byte-slice">If the first argument of a built-in function <code>copy</code> or <code>append</code> call is a byte slice, then the second argument can be a string followed by <code>...</code>.</a>
+	</li>
+	</ul>
+</li>
+<li>
+	Interface related details:
+	<ul>
+	<li>
+		<a href="interface.html#comparison">Comparing two interface values with the same uncomparable dynamic type causes a panic.</a>
+	</li>
+	<li>
+		<a href="interface.html#type-assertion">Type assertions can be used to convert a value of an interface type to another interface type, even if the form interface type doesn't implemented the latter one.</a>
+	</li>
+	<li>
+		<a href="exceptions.html#behaviors-on-missing-optional-result">Whether or not the second optional result of a type assertion is present will affect the behavior of the type assertion.</a>
+	</li>
+	<li>
+		<a href="#interface-comparison-complexity">For the standard Go compiler, the time complexity of comparing two equal interface values may be <code><i>O</i>(1)</code> or <code><i>O</i>(n)</code>.</a>
+	</li>
+	<li>
+		<a href="#interface-copy-complexity">About the time complexity of copying a non-nil interface value.</a>
+	</li>
+	<li>
+		<a href="#errors-new-different-returns">Two <code>error</code> values returned by two <code>errors.New</code> with the same argument are not equal.</a>
+	</li>
+	</ul>
+</li>
+<li>
+	Channel related details:
+	<ul>
+	<li>
+		<a href="channel.html#operations">Receive-only channels can't be closed.</a>
+	</li>
+	<li>
+		<a href="channel.html#simple-rule-summary">Sending a value to a closed channel is viewed as a non-blocking operation, and this operation causes a panic.</a>
+	</li>
+	</ul>
+</li>
+<li>
+	<a href="#sometimes-parentheses-are-required">Parentheses are required in several rare scenarios to make code compile okay.</a>
+</li>
+<li>
+	<a href="#different-loops">For a slice <code>s</code>, the loop <code>for i = range s {...}</code> is not equivalent to the loop <code>for i = 0; i < len(s); i++ {...}</code>.</a>
+</li>
+<li>
+	<a href="function.html#call-as-expression">A multi-result function call can't mix with other expessions when the call is used as the sources in an assignment or the arguments of another function call.</a>
+</li>
+<li>
+	<a href="#main-entry-function-missing">A program doesn't need a <code>main</code> entry function to run.</a>
+</li>
+<li>
+	<a href="reflection.html#deep-equal">The results of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</a>
+</li>
+<li>
+	<a href="line-break-rules.html#commas">The extra last <code>,</code> in an item list (such parameter/argument/result lists and element lists in composite literals) never do harm.</a>
+</li>
+<li>
+	<a href="blocks-and-scopes.html#weird-shadowing"><code>nil</code>, <code>iota</code>, <code>true</code>, <code>false</code> and built-in types are not keywords. They are just predeclared identifiers.</a>
+</li>
+<li>
+	<a href="unofficial-faq.html#final-zero-size-field">For the standard compiler, zero-sized fields in a struct may be treated as one-byte-sized value.</a>
+</li>
+<li>
+	<a href="#check-file-existent">We should not use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists.</a>
+</li>
+<li>
+	<a href="#boolean-flag">The <code>flag</code> standard package treats boolean command flags differently than integer and string flags.</a>
+</li>
+<li>
+	<a href="#printf-positional-arguments"><code>[Sp|Fp|P]rintf</code> functions support positional arguments.</a>
+</li>
 </ul>
 </div>
 
-<h3>
-	It is ok to iterate array elements by ranging over array pointers</h3>
-
+<p class="anchor" id="import-package-multiple-times"></p>
+<h3>A package can be imported more than once in a source file</h3>
 
 <div>
+<p>
+A Go source file can imports the same package multiple times,
+but the import names must be different.
+These same-pacakge imports reference the same package instance.
+</p>
+
 For example:
 <pre class="line-numbers"><code class="language-go">package main
 
-// todo: need a better an example: [N][M]int{}
-
 import "fmt"
+import "io"
+import inout "io"
 
 func main() {
-	var words = [...]string{"see", "you", "later"}
+	fmt.Println(&inout.EOF == &io.EOF)
+}
+</code></pre>
+</div>
+
+<p class="anchor" id="array-slice-element-addressability"></p>
+<h3>Elements of unaddressable arrays are also unaddressable, but elements of unaddressable slices are always addressable</h3>
+
+<div>
+<p>
+The reason is the elements of an array value and the array will be stored
+in the same memory block when the array is stored in memory.
+But <a href="unofficial-faq.html#slice-elements-always-addressable">the
+situation is different for slices</a>.
+</p>
+
+An example:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	// Container composite literals and map elements are all unaddressable.
 	
-	for i, w := range &words { // &words is an array pointer
-		fmt.Println(i, w)
-	}
-	//<=>
-	for i, w := range words[:] { // range over slice
-		fmt.Println(i, w)
-	}
+	// Take container element addresses.
+	_ = &[]int{1}[0] // ok
+	_ = &[5]int{}[0] // error: cannot take the address of [5]int literal[0]
+	_ = &(&[5]int{})[0] // ok
+	_ = &(*&[5]int{})[0] // ok
+	
+	// Modify container element values.
+	map[int]int{}[1] = 9
+	[]int{1,2,3}[1] = 9
+	[3]int{1,2,3}[1] = 9 // error: cannot assign to [3]int literal[1]
+	(&[3]int{1,2,3})[1] = 9
 }
 </code></pre>
 
 <p>
-In fact, for most circumstances, array pointer is preferred to array in element iterations
-(<a href="#value-copies-in-range">reason</a>).
-But for <a href="#memclr-optimization">one speicial case</a>, array is preferred to array pointer.
-</p>
-
-<p>
-If the second iteration variable is absent or ignored,
-then iterating over a <code>nil</code> array pointer will not panic.
 </p>
 </div>
 
+<p class="anchor" id="array-slice-derivable"></p>
 <h3>
-	It is ok to retrieve array elements from array pointers.
-	It is ok to derive slices from array pointers.
+It is ok to retrieve subslices from unaddressable slices, but not ok from unaddressable arrays.
+It is ok to take element addresses for unaddressable slices, but not ok for unaddressable arrays.
 </h3>
 
 <div>
-For example:
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	var words = [...]string{"see", "you", "later"}
-	var pwords = &words
-	fmt.Println(pwords[1]) // you
-	
-	var subwords = pwords[:2]
-	fmt.Println(subwords) // [see you]
-}
-</code></pre>
 <p>
-</p>
-</div>
-
-<p class="anchor" id="access-nil-map-elements"></p><h3>
-	Retreive elements from nil maps will not panic</h3>
-
-<div>
-Retreive elements from nil map will return a zero element value.
-The second optional boolean return is always <code>false</code>.
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	var m map[string]int // m == nil
-	v, ok := m["abc"]
-	fmt.Println(v, ok) // 0 false
-}
-</code></pre>
-<p>
-Retreive elements from nil slices and <code>nil</code> array pointers will panic.
-</p>
-</div>
-
-<p class="anchor" id="delete-nil-map-elements"></p><h3>
-	Delete keys from nil maps will not panic</h3>
-
-<div>
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	var m map[string]int // m == nil
-	delete(m, "xyz") // ok, it is a no-op
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>
-	In a for-range loop, any iterator variable(s) can be ignored or omitted</h3>
-
-<div>
-For example:
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	var words = []string{"see", "you", "later"}
-	
-	for i, w := range words { // normal form
-		fmt.Println(i, w)
-	}
-	
-	for _, w := range words { // ignore the index
-		fmt.Println(w)
-	}
-	
-	for i, _ := range words { // ignore the element
-		fmt.Println(i, words[i])
-	}
-	
-	for i := range words { // omit the element
-		fmt.Println(i, words[i])
-	}
-	
-	for range words { // omit both index and element
-	}
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>
-	In a for loop, there can be zero or two <code>;</code> between the <code>for</code> keyword and <code>{</code>
-</h3>
-
-<div>
-For example:
-<pre class="line-numbers"><code class="language-go">package main
-
-func main() {
-	
-	for i := 0; i < 5; i++ {
-	}
-
-	var i int
-	
-	for i < 5 {
-		i++
-	}
-
-	for ; ; {
-		i++
-		if i == 5 {
-			break
-		}
-	}
-	
-	for {
-		i++
-		if i == 5 {
-			break
-		}
-	}
-}
-</code></pre>
-</div>
-
-<p class="anchor" id="value-copies-in-range"></p><h3>
-	In a for-range loop, the iterator variable(s) and the ranged container are all value copies</h3>
-
-<div>
-Following code:
-<pre class="line-numbers"><code class="language-go">for i, e := range anArrayOrSlice {
-	// ...
-}
-</code></pre>
-
-is equivalent to:
-<pre class="line-numbers"><code class="language-go">aCopy := anArrayOrSlice
-for i := 0; i < len(aCopy); i++ {
-	e := aCopy[i]
-	// ...
-}
-</code></pre>
-</div>
-
-<p>
+The reason is the same as the last detail.
 </p>
 
-<div>
-This rule affects array iterations most. For example:
+An example:
 <pre class="line-numbers"><code class="language-go">package main
 
-import "fmt"
-
 func main() {
-	type Book struct {
-		pages int
-	}
+	// Literal values and map elements are unaddressable in Go.
 	
-	var books = [...]Book{{111}, {222}, {333}}
-	
-	for i, b := range books { // range over a copy of array books.
-	                          // it is inefficient if the array is large.
-		fmt.Println(i, b)
-		b.pages = 999 // b is a copy of the iterated element, so the
-		              // change on b can't be reflected outside of this loop.
-		books[2].pages = 555 // the change can't be reflected in this loop,
-		                     // for the change happens on the original array.
-		                     // it will be reflected outside of this loop.
-	}
+	// The following lines fail to compile.
 	/*
-	above loop outputs:
-	0 {111}
-	1 {222}
-	2 {333}
+	_ = [...]int{6, 7, 8, 9}[1:3]  // error: slice of unaddressable value
+	_ = &([...]int{6, 7, 8, 9}[0]) // error: cannot take element address
+	var ma = map[string][4]int{"abc": {0, 1, 2, 3}}
+	_ = ma["abc"][1:3]  // error: slice of unaddressable value
+	_ = &(ma["abc"][0]) // error: cannot take element address
 	*/
-	fmt.Println(&books) // &[{111} {222} {555}]
 	
-	for i, b := range &books { // range over a copy of array pointer &books.
-	                           // it is preferred way to iterate array elements.
-		fmt.Println(i, b)
-		books[2].pages = 777 // the change will be reflected both
-		                     // in this loop and outside of this loop.
-	}
-	/*
-	above loop outputs:
-	0 {111}
-	1 {222}
-	2 {777}
-	*/
-	fmt.Println(&books) // &[{111} {222} {777}]
-}
-</code></pre>
-
-<p>
-Compilers may do optimizations to avoid some copyings.
-But we shouldn't rely on these optimizations to write efficient Go code.
-</p>
-</div>
-
-<p class="anchor" id="range-over-nil-contianer"></p><h3>
-	Range over nil maps, nil slices and <code>nil</code> array pointers is ok.</h3>
-
-<p>
-The number of iterations is zero.
-</p>
-
-<p>
-Iterate over nil channels will block the current goroutine for ever.
-</p>
-
-
-<p class="anchor" id="memclr-optimization"></p><h3>The memclr optimization of the standard Go compiler</h3>
-
-<div>
-In Go, assume <code>a</code> is a slice or array
-and <code>e0</code> is the zero value of the element type of <code>a</code>,
-the following code snippet:
-
-<pre><code class="language-go">for i := range a {
-	a[i] = e0
-}
-</code></pre>
-
-will be translated to to an internal <code>memclr</code> call.
-</div>
-
-<h3>The result of a subslice expression may be not a subslice of the original slice</h3>
-
-<div>
-In Go, for a slice <code>s</code>, the subslice expression <code>s[start:end]</code>
-is valid at run time if both of the following two conditions are satisfied:
-<ol>
-<li><code class="language-go">0 <= start && start <= len(s)</code></li>
-<li><code class="language-go">len(s) <= end && end <= cap(s)</code></li>
-</ol>
-By the rules, a subslice may be longer than the original slice:
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	var s0 = make([]int, 3, 6)
-	fmt.Println(len(s0), cap(s0)) // 3, 6
-	var sub = s0[2:6]
-	fmt.Println(len(sub), cap(sub)) // 4, 4
-	// len(sub) > len(s0)
+	// The following lines compile okay.
+	_ = []int{6, 7, 8, 9}[1:3]
+	_ = &([]int{6, 7, 8, 9}[0])
+	var ms = map[string][]int{"abc": {0, 1, 2, 3}}
+	_ = ms["abc"][1:3]
+	_ = &(ms["abc"][0])
 }
 </code></pre>
 <p>
 </p>
 </div>
 
-<h3>
-	Get subslice from a nil slice is ok if the start and end indexes are both <code>0</code></h3>
-
-<div>
-For a nil slice <code>s</code>, <code>len(s)</code> and <code>cap(s)</code> both return <code>0</code>.
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	var s0 []int // == nil
-	s1 := s0[len(s0):cap(s0)] // <=> s0[0:0]
-	                          // <=> s0[:]
-	fmt.Println(s1 == nil) // true
-}
-</code></pre>
-<p>
-As we can see, the subslice of a nil slice is still a nil slice.
-</p>
-</div>
-
-<h3>
-	It is ok to retrieve subslices from unaddressable slices, but not ok from unaddressable arrays.
-	It is ok to take element addresses for unaddressable slices, but not ok for unaddressable arrays.
-</h3>
-
-<div>
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	// literal values are unaddressable in Goalng
-	
-	// sa := [...]int{6, 7, 8, 9}[1:3] // compile error: slice of unaddressable value
-	ss := []int{6, 7, 8, 9}[1:3] // ok
-	fmt.Println(ss) // [7 8]
-	
-	// pa := &([...]int{6, 7, 8, 9}[0]) // compile error: cannot take the address
-	ps := &([]int{6, 7, 8, 9}[0]) // ok
-	fmt.Println(*ps) // 6
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>Sometimes, comparing an interface value to itself will panic</h3>
-
-<div>
-If the dynamic type of an interface value <a href="summaries.html#not-comparable">doesn't support comparison</a>, then comparing it to any values,
-excluding the nil interface value but including the interface value itself, will panic.
-<pre class="line-numbers"><code class="language-go">package main
-
-func main() {
-	var i interface{} = []int{} // slice types doesn't support comparison
-	_ = i == i // panic: runtime error: comparing uncomparable type []int
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<!--
-todo: nil != nil
--->
-
+<p class="anchor" id="naa-inf"></p>
 <h3>NaN != NaN, Inf == Inf</h3>
 
 <div>
@@ -405,20 +310,24 @@ func main() {
 	fmt.Println(a == a) // false
 	
 	var x = 0.0
-	var y = 1 / x
-	var z = 2 / x
-	fmt.Println(y, z)   // +Inf +Inf
-	fmt.Println(y == z) // true
+	var y1, z1 = 1 / x, 2 / x
+	var y2, z2 = -1 / x, -2 / x
+	fmt.Println(y1, z1, y1 == z1) // +Inf +Inf true
+	fmt.Println(y2, z2, y2 == z2) // +Inf +Inf true
 }
 </code></pre>
 <p>
 </p>
 </div>
 
+<p class="anchor" id="nan-as-map-keys"></p>
 <h3>Putting elements with NaN as key to a map is like putting the elements in a black hole</h3>
 
 <div>
-Reason: NaN != NaN (see the above detail):
+This reason is <code>NaN != NaN</code> (see the above detail).
+The elements with <code>NaN</code> as key can only be found out
+in a <code>for-range</code> loop.
+
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -429,7 +338,6 @@ func main() {
 	fmt.Println(a)      // NaN
 	
 	var m = map[float64]int{}
-	
 	m[a] = 123
 	v, present := m[a]
 	fmt.Println(v, present) // 0 false
@@ -453,60 +361,14 @@ func main() {
 </p>
 </div>
 
-<h3>For an numeric value pointer <code>p</code>, expression <code>*p++</code> is equivalent to <code>(*p)++</code></h3>
+<p class="anchor" id="interface-comparison-complexity"></p>
+<h3>For the standard Go compiler, the time complexity of comparing two equal interface values may be <code><i>O</i>(1)</code> or <code><i>O</i>(n)</code></h3>
 
 <div>
-Generally, the post-unary operators have higher precedence over pre-unary operators.
-But in Go, the <code>++</code> operator can't apply to pointer values,
-<code>p++</code> is meaningless, so <code>*p++</code> is equivalent to <code>(*p)++</code>.
-</div>
+The time complexity depends on whether or not the direct parts
+of the two equal interfaces both reference the undrelying value.
+Please read the article <a href="value-part.html#interface-structure">value parts</a> for detail.
 
-
-<h3>The time complexity of comparing equal strings may be <code><i>O</i>(1)</code> or <code><i>O</i>(n)</code></h3>
-
-<div>
-The time complexity depends on whether the equal strings
-<a href="string.html#comparison">share underlying bytes or not</a>
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-import "time"
-
-func main() {
-	bs := make([]byte, 1<<20)
-	
-	// s0, s1 and s2 are three equal strings.
-	s0 := string(bs) // the underlying bytes of s0 is a copy of bs.
-	s1 := string(bs) // the underlying bytes of s1 is also a copy of bs.
-	                 // Note, the underlying bytes of s0 and s1 are
-	                 // two different copies of bs.
-	s2 := s1 // s2 shares the same underlying bytes with s1.
-
-	startTime := time.Now()
-	_ = s0 == s1
-	duration := time.Now().Sub(startTime)
-	fmt.Println("duration for (s0 == s1):", duration)
-	
-	startTime = time.Now()
-	_ = s1 == s2
-	duration = time.Now().Sub(startTime)
-	fmt.Println("duration for (s1 == s2):", duration)
-}
-/*
-The output (1µs == 1000ns):
-duration for (s0 == s1): 127.453µs
-duration for (s1 == s2): 104ns
-*/
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>The time complexity of comparing equal interface values may be <code><i>O</i>(1)</code> or <code><i>O</i>(n)</code></h3>
-
-<div>
-The time complexity depends on whether or not the equal interfaces
-share the same dynamic value or not (for the standard Go compiler):
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -541,245 +403,44 @@ duration for (i1 == i2): 609ns
 */
 </code></pre>
 <p>
+1ms is 1000000ns!
 </p>
 </div>
 
-<h3>Deferred function calls can change return result values</h3>
+<p class="anchor" id="interface-copy-complexity"></p>
+<h3>About the time complexity of copying a non-nil interface value</h3>
 
-<div>
-Only named return results can be modified in deferred function calls:
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func f() (result int) {
-	defer func() {
-		result = 789
-	}()
-	
-	return 123 // <=> result = 123; return
-}
-
-func main() {
-	r := f()
-	fmt.Println(r) // 789
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>There are several ways to initialize slices and arrays</h3>
-
-<div>
-<pre class="line-numbers"><code class="language-go">	// a0, a1, a2, a3 and a4 are equal arrays
-	a0 := [5]int{0, 9, 0, 3, 0}
-	a1 := [...]int{0, 9, 0, 3, 0}
-	a2 := [5]int{3: 3, 1: 9}
-	a3 := [...]int{3: 3, 1: 9, 4: 0}
-	a4 := *new([5]int); a4[1] = 9; a4[3] = 3
-	
-	// s0, s1, s2, s3 and s4 are slices with
-	// the same elements, lengths and capacities.
-	s0 := []int{0, 9, 0, 3}
-	s1 := []int{3: 3, 1: 9}
-	s2 := a0[:4:4]
-	s3 := s0[:]
-	s4 := make([]int, 4); s4[1] = 9; s3[3] = 3
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>Extra last <code>,</code>s in value/parameter lists never do harm</h3>
-
-<div>
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	var _ = []int{0, 1, 2, } // the last , is optional
-	var _ = []int{
-		0,
-		1,
-		2, // the last , is required
-	}
-	
-	fmt.Println(true, 1, "abc", )  // the last , is optional
-	fmt.Println(
-		true,
-		1,
-		"abc", // the last , is required
-	)
-}
-</code></pre><p>
-</p>
-</div>
-<h3>Code line breaking can't be arbitrary in Go</h3>
-
-<div>
-The <a href="https://golang.org/ref/spec#Semicolons">line break rule</a> defined in Go spec
-is too academic. Here is a simple and clear one.
-It is not equivalent to the official one but it also doesn't break it.
-<div class="well">
-The last effective token of each incomplete code line should be a binary operator
-or any of <code>{[(,:=</code> (six symbol letters).
-</div>
-<p>
-In Go community, <a href="https://golang.org/cmd/gofmt/">gofmt</a> is recommended format go source code.
-</p>
-</div>
-
-<h3><code>nil</code>, <code>iota</code>, <code>true</code>, <code>false</code> and built-in types are not keywords</h3>
-
-<div>
-You can use them as custom identifiers (to shadow the predeclared ones), but surely, it is not recommended to do this.
-</div>
-
-<h3>Constants and types can be declared in functions</h3>
-
-<div>
-This makes many conveniences in programming:
-<pre class="line-numbers"><code class="language-go">package main
-
-func main() {
-	const N = 16
-	type IntArray [N]int
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>Functions, types, constants and variables may be shadowed by inner block identifiers</h3>
-
-<div>
-<pre class="line-numbers"><code class="language-go">package main
-
-type t map[string]int
-
-func main() {
-	var t bool // shadows the package level type t
-	// var v t // error: t is not a type
-	_ = t
-	
-	for t := 1; ; t++ { // shadows bool variable t
-		//if t == false {} // error: mismatched types int and bool
-		if t == 5 {
-			break
-		}
-		
-		t := func() {} // shadows the iteration variable i
-		t()
-	}
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>Short variable declarations may modify variables declared in the same level block or shadow variables declared in outer level blocks</h3>
-
-<div>
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	var x = 1
-	px1 := &x
-	
-	// open a new inner block
-	{
-		x = 2 // the x is the x declared in the outer block
-		
-		x, y := 3, 4 // the x is a new x
-		px2 := &x
-		fmt.Println(*px1, *px2) // 2, 3
-		
-		x, z := 7, 8 // the x is the last declared x
-		_, _ = y, z
-		fmt.Println(*px1, *px2) // 2, 7
-	}
-	// now, only the first declared x is visible.
-	fmt.Println(x) // 2
-}
-</code></pre>
+<!---
+https://github.com/golang/go/issues/17181
+-->
 
 <p>
-BTW, we can use the <code>go vet -shadow</code> command to list possible unexpectedly shadows.
+The <a href="https://golang.org/doc/faq#pass_by_value">official Go FAQ</a>
+says <b><i>copying an interface value makes a copy of the thing stored in the interface value.</i></b>.
+The article <a href="interface.html#boxing">interfaces in Go</a> mentions that,
+for the standard Go compiler, the time complexity of copying an interface value
+is <code><i>O</i>(1)</code>.
+But the the sizes of different dynamic values stored in interface values may
+be different, why isn't the complexity <code><i>O</i>(n)</code>?
 </p>
-</div>
 
-<h3>Code flow control statements (<code>if</code>, <code>for</code> and <code>switch</code>) will open two new nested code blocks</h3>
-
-<div>
-One implicit block and one explicit block.
-The explicit block is nested in the implicit block.
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	var x = 2 // the first x
-	px1 := &x
-	
-	if x := x; x > 0 { // the second x is declared in the implicit block,
-	                   // it is initialized with the value of the first x.
-		x += 3
-		px2 := &x
-		
-		x := 2 * x // the third x is declared in the explicit block,
-		           // it is initialized as the double of the second x.
-		fmt.Println(*px1, *px2, x) // 2 5 10
-	}
-	// now the second x and the third x are invisible,
-	// only the first x is visible.
-	fmt.Println(x) // 2
-}
-</code></pre>
 <p>
+The reason is the dynamic values of interface values are all inmutable,
+so the standard Go compiler makes an optimization here.
+As the article <a href="value-part.html#interface-structure">value parts</a>
+has explained, an non-nil interface value has an underlying part and
+the direct part of the interface value stores a pointer which
+references the underlying part. When the interface value is copied,
+only its direct part is copied. For the standard Go compiler,
+the sizes of the direct parts of all interface values are the same.
 </p>
-</div>
 
-<h3>The <code>default</code> branch in <code>switch</code> and <code>select</code> blocks can be put before all case branches, after all case branches, or between case branches</h3>
+<p class="anchor" id="constent-map-keys"></p>
+<h3>Constant key values in a container composite literal can't be duplicated</h3>
 
 <div>
-<pre class="line-numbers"><code class="language-go">package main
+Duplicated non-constant keys are allowed. For example:
 
-func main() {
-	var n = 1
-	
-	// all of the three switch blocks are okay to compile
-	
-	switch n {
-	default:
-	case 0:
-	case 1:
-	}
-	
-	switch n {
-	case 0:
-	default:
-	case 1:
-	}
-	
-	switch n {
-	case 0:
-	case 1:
-	default:
-	}
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>Constant key values in a composite literals can't be duplicated</h3>
-
-<div>
-Non-constant keys can be duplicated.:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -790,221 +451,32 @@ func main() {
 	
 	var m = map[int]string {
 		N: "abc",
-		// N: "xyz", // duplicate key N in map literal
-		n: "abc", // ok
-		n: "xyz", // ok
+		// N: "xyz", // error: duplicate key N in map literal
+		n: "hello", // ok
+		n: "bye", // ok
 	}
 	
-	fmt.Println(m[N]) // xyz
+	fmt.Println(m[N])
 }
 </code></pre>
+
 <p>
+Please note, Go specification doesn't specifies the element initilization
+order in a composite literal. So the above program may print <code>abc</code>,
+<code>hello</code> or <code>bye</code>, depending on compilers and compiler versions.
 </p>
 </div>
 
-<h3>Substrings may cause memory leak (sort of)</h3>
-
-<div>
-For the standard Go compiler, the resulted string of a substring expression will
-share the underlying bytes memory block with the source string.
-Even if the resulted string contains only one (or zero) byte,
-it will prevent the memory block being garbage collected.
-<pre class="line-numbers"><code class="language-go">package main
-
-import (
-	"runtime"
-	"fmt"
-	"strings"
-)
-
-func printMemStat() {
-    runtime.GC()
-    var stat runtime.MemStats
-    runtime.ReadMemStats(&stat)
-    fmt.Println("about", stat.Alloc)
-}
-
-func getC() string {
-	var bigStr = strings.Repeat("abc", 1 << 20) // 3M bytes
-	var subStr = bigStr[2:3] // "c"
-	return subStr
-}
-
-func main() {
-	c := getC()
-	printMemStat() // about 3199912
-	               // the 3M bytes memory can't not garbage collected now.
-	              
-	c = string([]byte(c)) // copy the one byte and recreate a new string
-	                      // to make the 3M bytes garbage collected.
-	                     
-	printMemStat() // about 54184
-	               // the 3M bytes memory has been garbage collected.
-}
-</code></pre>
-<p>
-Up to now (Go 1.10), the standard compiler may make two memory allocations
-for <code>string([]byte(c))</code>, one is a waste.
-This may get optimized later.
-</p>
-</div>
-
-<h3>Slice may share underlying array, which may cause memory leak (sort of)</h3>
-
-<div>
-The resulted slice of a subslice expression will
-share the underlying array memory block with the source slice.
-Even if the resulted slice doesn't contain any elements,
-it will prevent the memory block being garbage collected.
-<pre class="line-numbers"><code class="language-go">package main
-
-import (
-	"runtime"
-	"fmt"
-)
-
-func printMemStat() {
-    runtime.GC()
-    var stat runtime.MemStats
-    runtime.ReadMemStats(&stat)
-    fmt.Println("about", stat.Alloc)
-}
-
-func subslice() []int64 {
-	var bigSlice = make([]int64, 1 << 20) // 8M memory
-	return bigSlice[len(bigSlice):]
-		// after the function returns, the underlying array
-		// memroy block is still referenced by the subslice,
-		// so even if the whole memroy block is not accessable
-		// any more, it will not be garbage collected if the
-		// subslice is still referenced by the program.
-		// It is sort of a memory leak.
-}
-
-func main() {
-	s := subslice()
-	fmt.Println(len(s)) // 0
-	printMemStat() // about 8430296
-	               // the 8M bytes memory can't not garbage collected now,
-	               // for s is still referencing the memory block.
-	              
-	s = nil // unreference the 8M memory block.
-	                     
-	printMemStat() // about 41752
-	               // the 8M memory block has been garbage collected.
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>
-	The result slice of an <code>append</code> function call may share
-	the underlying array with the original slice, and may not
-</h3>
-
-<div>
-Go runtime will decide to whether or not alloc a new underlying array
-by judging if the free capacity of the original slice is enough to hold
-the new appended elements.
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	a := [...]int{0, 1, 2, 3}
-	fmt.Println(" a:", cap(a), len(a), a) // 4 4 [0 1 2 3]
-	
-	fmt.Println()
-	s0 := a[:1]
-		// the underlying array of s0 is a
-	fmt.Println("s0:", cap(s0), len(s0), s0) // 4 1 [0]
-	
-	fmt.Println()
-	s1 := append(s0, 5, 6)
-		// the underlying array of s1 is also a,
-		// same as s0, for the free capacity of s0 is
-		// large enough to contain two more elements.
-	s1[0] = 4
-	fmt.Println("s1:", cap(s1), len(s1), s1) // 4 3 [4 5 6]
-	fmt.Println("s0:", cap(s0), len(s0), s0) // 4 1 [4]
-	
-	fmt.Println()
-	s2 := append(s1, 7, 8)
-		// the underlying array of s2 is a new allocated array,
-		// not same as s0 and s1, for the free capacity of s1
-		// is not large enough to contain two more elements.
-	s2[0] = 9
-	fmt.Println("s2:", cap(s2), len(s2), s2) // 8 5 [9 5 6 7 8]
-	fmt.Println("s1:", cap(s1), len(s1), s1) // 4 3 [4 5 6]
-	fmt.Println("s0:", cap(s0), len(s0), s0) // 4 1 [4]
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-
-
-<h3>You can use three-index notation to limit the capacity of subslices</h3>
-
-
-
-<div>
-The three-index notation is called
-<a href="https://golang.org/ref/spec#Slice_expressions">full slice expressions</a> formally.
-This notation is to avoid the derived subslices deriving other subslices which can modify
-a tail part of the underlying array.
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	s0 := []int{0, 1, 2, 3, 4, 5, 6}
-	
-	s1 := s0[1:3:3] // here, limit the capacity to 2
-	s1[0] = 7
-	fmt.Println(cap(s1), len(s1), s1) // 2 2 [7 2]
-	
-	s2 := append(s1, 9)
-	s2[1] = 8
-	fmt.Println(cap(s2), len(s2), s2) // 4 3 [7 8 9]
-	fmt.Println(s0) // [0 7 2 3 4 5 6]
-		// s2 doesn't share the same underlying array with s1 and s0.
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>A package can be imported more than once</h3>
-
-<div>
-A Go source file must use different package names to import a same package multiple times.
-These imports with different names reference the same package instance in memory.
-</div>
-
-<h3>If main function/goroutine exit, program will exit too, even if there are still other active goroutines running</h3>
-
-<div>
-For such cases, program will exit quietly.
-</div>
-
-<h3>If all goroutines stay in blocking state, then program will panic all goroutines and exit</h3>
-
-<div>
-For such cases, program will exit with the error message: <code>fatal error: all goroutines are asleep - deadlock!</code>.
-</div>
-
-<h3>Pointers to different zero-sized value may be equal, or not</h3>
+<p class="anchor" id="addresses-of-zeor-sized-values"></p>
+<h3>Addresses of different zero-sized value may be equal, or not</h3>
 <!--
 https://github.com/golang/go/issues/12726
 -->
+
 <div>
-This depends on whether the compared values will escaped to heap,
-and also depends on compiler implementation.
-The standard Go compiler thinks the two compared values are equal
-if both of them will not escaped to heap,
+Whether or not the addresses of two zero-sized values are equal
+is compiler and compiler version dependent.
+
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -1014,528 +486,457 @@ func main() {
 	b := struct{}{}
 	x := struct{}{}
 	y := struct{}{}
+	m := [10]struct{}{}
+	n := [10]struct{}{}
+	o := [10]struct{}{}
+	p := [10]struct{}{}
 	
-	f := func(*struct{}, *struct{}) {}
-	f(&x, &y) // this call will make x and y escaped to heap
+	fmt.Println(&x, &y, &o, &p)
 	
-	// a and b are allocated on stack,
-	// x and y are allocated on heap.
-	fmt.Println(&a == &b) // true
+	// For the standard Go compiler (1.10),
+	// x, y, o and p escape to heap,
+	// but a, b, m and n are allocated on stack.
+	
+	fmt.Println(&a == &b) // false
 	fmt.Println(&x == &y) // true
 	fmt.Println(&a == &x) // false
 	
-	// The results are compile implementation specific.
-	// Different compilers may output different results.
+	fmt.Println(&m == &n) // false
+	fmt.Println(&o == &p) // true
+	fmt.Println(&n == &p) // false
 }
 </code></pre>
+
 <p>
+The outputs indicated in the above code are for the standard Go compiler 1.10.
 </p>
 </div>
 
-<h3>Zero-sized fields in a struct may be counted as one-byte-sized field</h3>
-
-todo:
-
-<h3>Receive-only channels can't be closed</h3>
+<p class="anchor" id="check-file-existent"></p>
+<h3>We should not use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists</h3>
 
 <div>
-If the a receive-only channel is derived from a bidirectional channel,
-it can still be closed in other places by close the bidirectional channel.
-Go makes this rule is just to show that it is not recommended to close a
-channel from the receiver side.
-</div>
 
-<h3>Writing to a closed channel is viewed as non-blocking operation</h3>
-
-<div>
-If such an operation is used as a case operation in a select block,
-it may produce a panic.
-</div>
-
-<h3>Whether or not the second optional result variable is present will affect program behavior</h3>
-
-todo:
-
-<h3>Type assertions can be used to convert one interface value to another interface value</h3>
-
-todo:
-
-<h3>The asserted type can be an interface type in a type assertion</h3>
-
-todo:
-
-<h3>Why does the existence of the ok result affect type assert behivor?</h3>
-
-todo:
-
-<h3>os.ErrNotExist</h3>
-
-todo: "os.IsNotExist(err)" over "err == os.ErrNotExist"
-
-<h3>Sometimes, values of two named pointer types can be converted to the other type even if the two pointer types have different underlying types</h3>
-
-<div>
-The prerequisite is the base types of the two pointer types must be the same one.
-</div>
-
-<h3>Values of two channel types can always be converted to the other if their element types are the same one</h3>
-
-<div>
-even if the underlying types of the two types are different (their direction attributes are different).
-</div>
-
-<h3>The second parameter of calls of built-in function <code>copy</code> and <code>append</code> can be string if the first parameter is []byte</h3>
-
-<div>
-Generally, the type of the second parameter of calls of built-in function <code>copy</code> and <code>append</code> should be the same as the first parameter.
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	buf := make([]byte, 5)
-	copy(buf, "hello")
-	buf = append(buf, " world"...)
-	fmt.Println(string(buf)) // hello world
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>Sometimes, function calls with multiple return results can be nested in other calls</h3>
-
-<div>
-If the return results of a function call can be used as the input parameters of another function call,
-then the first function call can be nested in the second one.
-When used as parameters, nested function calls can't be mixed with other parameters and calls.
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func AddSubCompare(a, b int) (add, sub int, compare bool) {
-	add = a + b
-	sub = a - b
-	compare = a > b
-	return
-}
-
-func Dummy(add, sub int, compare bool) (int, int, bool) {
-	return add, sub, compare
-}
-
-func main() {
-	fmt.Println(Dummy(AddSubCompare(5, 3))) // 8 2 true
-}
-</code></pre>
-<p>
-</p>
-</div>
-
-<h3>Sometimes, composite Literals can be simplified</h3>
-
-<div>
-<a href="https://golang.org/ref/spec#Composite_literals">Go spec says</a>:
-"Within a composite literal of array, slice, or map type <code>T</code>,
-elements or map keys that are themselves composite literals
-may elide the respective literal type if it is identical to
-the element or key type of <code>T</code>. Similarly, elements or keys
-that are addresses of composite literals may elide the
-<code>&T</code> when the element or key type is <code>*T</code>."
+Using <code>err == os.ErrNotExist</code> may miss errors.
 
 <pre class="line-numbers"><code class="language-go">package main
 
-// todo: this program doesn't compile.
+import (
+	"fmt"
+	"os"
+)
+
 func main() {
-	mt := map[string]struct{age int}{
-		"John": {age: 29}, // note, here the "," is needed.
-	}
-	ma := map[int][5]int{
-		1: {1: 789}, // note, here the "," is needed.
-	}
-	
-	type MyType struct {
-		n int
-	}
-	
-	var a = map[*MyType][]int{
-		&MyType{1}: []int{1, 2, 3},
-		&MyType{2}: []int{7, 8, 9},
-	}
-	// above composite literal can be simplified to
-	var b = map[*MyType]*[]int{
-		{1}: {1, 2, 3},
-		{2}: {7, 8, 9},
-	}
-	
-	// For the standard compiler (1.10 now), above two identifier
-	// a and b can't be replaced with the blank identifier _.
-	// It is a known bug which has not be fixed yet.
-	_, _ = a, b
+	_, err := os.Stat("a-nonexistent-file.abcxyz")
+	fmt.Println(os.IsNotExist(err))    // true
+	fmt.Println(err == os.ErrNotExist) // false
 }
 </code></pre>
+
 <p>
 </p>
 </div>
 
+<p class="anchor" id="self-based-pointer-type"></p>
+<h3>The base type of a pointer type may be the pointer type itself</h3>
 
-todo:
+<div>
 
-<pre class="line-numbers"><code class="language-go">
-transforms := map[string][]func(int) int {
-	"plus,plus,plus": {plusone, plusone, plusone},
-	"square,plus,double": {square, plusone, double},
-	"double,square,square": {double, double, square},
-}
+An example:
 
-[...]Point{{1.5, -3.5}, {0, 0}}     // same as [...]Point{Point{1.5, -3.5}, Point{0, 0}}
-[][]int{{1, 2, 3}, {4, 5}}          // same as [][]int{[]int{1, 2, 3}, []int{4, 5}}
-[][]Point{{{0, 1}, {1, 2}}}         // same as [][]Point{[]Point{Point{0, 1}, Point{1, 2}}}
-map[string]Point{"orig": {0, 0}}    // same as map[string]Point{"orig": Point{0, 0}}
-map[Point]string{{0, 0}: "orig"}    // same as map[Point]string{Point{0, 0}: "orig"}
-
-type PPoint *Point
-[2]*Point{{1.5, -3.5}, {}}          // same as [2]*Point{&Point{1.5, -3.5}, &Point{}}
-[2]PPoint{{1.5, -3.5}, {}}          // same as [2]PPoint{PPoint(&Point{1.5, -3.5}), PPoint(&Point{})}
-</code></pre>
-
-<!---
-
-
-[0]AnyType [n]ZeroSizeType
-
-underlying my be copied: https://github.com/golang/go/issues/17181
-gc doesn't do so.
-
-the result of reflect.DeepEqual and == may be different.
-* https://github.com/golang/go/issues/20428
-
-you can iterate nil array pointer, unless no array elemetns are referenced in the iteration.
-
-the zero values of string types may contain non-zero bytes in memory.
-
-package main
+<pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	type T *T
-	var a T
-	a = &a
-	a = *********a // compile okay, the type *p is the same as the type of p
-	a = &a; a = &a; a = &a; a = &a
-	
-	type C chan C
-	var c = make(C, 3)
-	c <- c; c <- c; c <- c
-	<-<-<-c
-	
-	type M map[int]M
-	var m = M{}
-	m[0] = m
-	_ = m[0][0][0][0][0][0]
-	
+	type P *P
+	var p P
+	p = &p
+	p = **************p
+}
+</code></pre>
+
+<p>
+</p>
+
+Similarly, 
+<ul>
+<li>
+	the element type of a slice type can be the slice type itself,
+</li>
+<li>
+	the element type of a map type can be the map type itself,
+</li>
+<li>
+	the element type of a channel type can be the channel type itself,
+</li>
+<li>
+	and the argument and result types of a function type can be the function type itself.
+</li>
+</ul>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
 	type S []S
-	var s = make(S, 1)
-	s[0] = s
-	_ = s[0][0][0][0][0][0]
+	type M map[string]M
+	type C chan C
+	type F func(F) F
 	
-	type F func(F)F
+	s := S{0:nil}
+	s[0] = s
+	m := M{"Go": nil}
+	m["Go"] = m
+	c := make(C, 3)
+	c <- c; c <- c; c <- c
 	var f F
-	f = func(F)F {
-		return f
-	}
+	f = func(F)F {return f}
+	
+	_ = s[0][0][0][0][0][0][0][0]
+	_ = m["Go"]["Go"]["Go"]["Go"]
+	<-<-<-c
 	f(f(f(f(f))))
 }
+</code></pre>
 
-generally, you can't change the length and capacity of a slice seperately,
-but you can use reflect.SetLen and reflect.SetCap to achieve these.
+<p>
+</p>
 
-indexes in slice compsiste literal must be non-negative integer constant
-	var a uint = 10
-	s := []int{a: 100} // error: index must be non-negative integer constant
-	_ = s
+</div>
 
-a function don't need return if it will not return
-	func f() int {
-		for {
-		}
-	}
-	func f() int {
-	A:
-	goto A
-	}
+<p class="anchor" id="sometimes-parentheses-are-required"></p>
+<h3>Parentheses are required in several rare scenarios to make code compile okay</h3>
 
-inline can't be controlled
-avoid inline (maybe not work for later standard Go compiler versions):
-	func f(){
-		for false {} // avoid f being inlined.
-	}
+<div>
+For example:
 
-func f() int {
-	for {
-	}
-	// no need to return here
-}
+<pre class="line-numbers"><code class="language-go">package main
 
-the size of [N]strtuct{} is 0 in the standard go compiler, but go spec doesn't promsit this.
-for range [N]struct{}{} {
-}
-
-map iteration order is some randmized.
-
-fallthrough must be the last line in a case branch block if it is present.
-
-new return a pointer pointing the zero vakue of T.
-for example, new([]int), new(map[string]int}, new(*int), ....
-
-<h3><code>op=</code> does't apply for <code>&&</code> and <code>||</code></h3>
-
-
-<h3>built-in and unsafe functions can't be used as function values</h3>
-
-	size := unsafe.Sizeof
-	align := unsafe.Alignof
-	offset := unsafe.Offsetof
-
-<h3>fallthrough must be the last statement in a case branch</h3>
-
-it can't be put in a if clause.
-
-<h3>It is ok to implicitly convert values of type <code>[]int</code> and type <code>MyIntSlice</code> to each other
-	if their underlying types are both <code>[]int</code>,
-	but it is not ok to implicitly convert values of type <code>int</code> and type <code>MyInt</code> to each other
-	even if their underlying types are both <code>int</code>
-</h3>
-
-todo:
-
--->
-
-<!--
-<h3>goroutine arguments evaluation timing?</h3>
-
-varriables will be evaluated when function is called or expressions are executed
-
--->
-
-<!--
-* is there a <code>for i in M..N</code> syntax in Go?
-  (no, but: for range [N]struct{}{})
-
-todo:
--->
-
-<!--
-<h3>compiste literals of named composite types in if/switch/for must be enclosed in parentheses</h3>
-	if x == (T{a,b,c}[i]) { … }
-	if (x == T{a,b,c}[i]) { … }
-
-	type T struct{}
-	if defaultTime := (T{}); (T{}) != defaultTime { // must use parenthesis
-	    // ...
-	}
-	
-
-	if defaultTime := struct{}{}; struct{}{} != defaultTime { // no need to use parenthesis
-	    // ...
-	}
--->
-
-<!---
-embed c code in Go
-
-		package main
-
-		/*
-		#include <stdio.h>
-
-		void foo(int x) {
-		printf("x: %v\n", x);
-		}
-		*/
-		import "C"
-
-		func main() {
-		C.foo(C.int(123)) // x: 123
-		}
-
--->
-
-
-<!---
-
-package mypkg // import "x.y.z.mypkg"
-
-// the above comment will take effect.
--->
-
-
-<!---
-
-a package can't be imported multiple times, under different import names.
-
-
-for i = range s
-<=!=>
-for i = 0; i < len(s) i++
-
-
-
-Sometimes, the types in the compoiste literals can be omitted to make the code look clean.
-
-
-
-https://groups.google.com/forum/#!topic/golang-nuts/J3kXXZivlHA
-*p and *p+1, *p*1 are different in a channel send operation.
-
-
-https://github.com/golang/go/issues/21256#issuecomment-321322952
-a Go program without main entry function can run okay.
-may not okay since 1.10: https://github.com/golang/go/issues/21256#event-1354711695
-
-
-type D = d
-struct{D} and struct{d} are two different types,
-but struct{x D} and struct{x d} are two identical types.
-
-
-    var i = 99
-    for i = range []int{} {
-    }
-    fmt.Println(">>> i = ", i) // 99
-    for i = range [10]int{} {
-    }
-    fmt.Println(">>> i = ", i) // 9
-    for i = 0; i < 10; i++ {
-    }
-    fmt.Println(">>> i = ", i) // 10
-
-
-https://github.com/golang/go/issues/22619
-
-Sometimes, () us required.
-	func main() {
-		type T struct{}
-		var t T
-		if (T{}) == t {
-		}
-		if t == (T{}) {
-		}
-	}
-	more ...
-
-named pointer types selector rules.
-* https://github.com/golang/go/issues/21738
-
-two value created by erros.New() are not equal.
-
-https://github.com/golang/go/issues/22974
-	the results of constant operations are still constants
-
-https://github.com/golang/go/issues/22961
-	boolean flag is some different
-
-it is ok to import a package multiple times.
-
-    type B bool
-    var b B
-    func f() {
-	    switch { // typed "bool"
-	    case b: // invalid case b in switch (mismatched types B and bool)
-	    }
-    }
-    type B bool
-    var i interface{} = B(true)
-    func main() {
-	    switch { // typed "bool"
-	    case i: println("case")
-	    default: println("default")
-	    }
-    }
-   
-    https://github.com/golang/go/issues/18424
-    package main
-    import "fmt"
-    func main() {
-        s := "a"
-        x := []rune(s)
-        fmt.Println(cap([]rune(s))) // 32
-        fmt.Println(cap(x))         // 2
-        fmt.Println(x) // if no this line, the outputs of the above two line are same.
-                       // The reason is x is this line makes x escap to heap.
-    }
-   
-https://github.com/golang/go/issues/23734
-  package main
-
-	func main() {
-		var m = map[interface{}]int{}
-		_ = m[interface{}([]int{})] // ok
-		var m = map[interface{}]int{nil: 1}
-		_ = m[interface{}([]int{})] // panic
-	}
-
-
-runtime: goroutine stack exceeds 1000000000-byte limit
-fatal error: stack overflow
-
-runtime stack:
-runtime.throw(0x46efcb, 0xe)
-	/home/lx/sdks/go/src/runtime/panic.go:605 +0x95
-runtime.newstack(0x0)
-	/home/lx/sdks/go/src/runtime/stack.go:1050 +0x6e1
-runtime.morestack()
-	/home/lx/sdks/go/src/runtime/asm_amd64.s:415 +0x86
-
-goroutine 1 [running]:
-
-	package main
-
-	type I interface {
-		m()
-	}
-
-	type T struct {
-		I
-	}
-
-	func main() {
-		var t T
-		var i = &t
-		t.I = i
-		i.m() // or t.m()
-	}
-
-============================
+type T struct{x, y int}
 
 func main() {
-	_ = &[]int{1}[0] // ok
-	_ = &[5]int{}[0] // error
-	_ = &(&[5]int{})[0] // ok
-	_ = &(*&[5]int{})[0] // ok
+	// Each of the following three lines makes code fail to compile.
+	// Some "{}" confuse compilers.
+	/*
+	if T{} == T{123, 789} {}
+	if T{} == (T{123, 789}) {}
+	if (T{}) == T{123, 789} {}
+	*/
 	
-	map[int]int{}[1] = 9
-	[]int{1,2,3}[1] = 9
-	[3]int{1,2,3}[1] = 9 // error
-	(&[3]int{1,2,3})[1] = 9
+	// We must add parentheses like the following two lines to
+	// make code compile okay.
+	if (T{} == T{123, 789}) {}
+	if (T{}) == (T{123, 789}) {}
+}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+<p class="anchor" id="force-import-path"></p>
+<h3>The comment <code>// import "x.y.z.mypkg"</code> following <code>package mypkg</code> is meaningful for the standard Go compiler</h3>
+
+<div>
+For example, when the source files importing this package are compiled by the standard Go compiler,
+the import path of the following package must be <code>"x.y.z.mypkg"</code>.
+
+<pre class="line-numbers"><code class="language-go">package mypkg // import "x.y.z.mypkg"
+...
+</code></pre>
+
+<p>
+</p>
+</div>
+
+<p class="anchor" id="different-loops"></p>
+<h3>For a slice <code>s</code>, the loop <code>for i = range s {...}</code> is not equivalent to the loop <code>for i = 0; i < len(s); i++ {...}</code></h3>
+
+<div>
+The respective final values of the iteration variable <Code>i</code>
+may be different for the two loops.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+var i int
+
+func fa(s []int, n int) int {
+	i = n
+	for i = 0; i < len(s); i++ {}
+	return i
 }
 
-====================
+func fb(s []int, n int) int {
+	i = n
+	for i = range s {}
+	return i
+}
 
+func main() {
+	s := []int{2, 3, 5, 7, 11, 13}
+	fmt.Println(fa(s, -1), fb(s, -1)) // 6 5
+	s = nil
+	fmt.Println(fa(s, -1), fb(s, -1)) // 0 -1
+}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+<p class="anchor" id="main-entry-function-missing"></p>
+<h3>A program doesn't need a <code>main</code> entry function to run</h3>
+
+<div>
+The following program runs well, at least for the standard Go compiler 1.10.
+(It may be not runnable since 1.11. Please read <a href="https://github.com/golang/go/issues/21256">issue#21256</a> for details.)
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func init() {
+	for {
+		time.Sleep(time.Second)
+		fmt.Println("hi")
+	}
+}
+
+var main int
+</code></pre>
+
+<p>
+</p>
+</div>
+
+<p class="anchor" id="pointer-selector-shorthands"></p>
+<h3>A detail about selector shorthands</h3>
+
+<div>
+
+<p>
+<p>
+A pointer value, either its type is defined or not,
+of a defined one-level struct pointer type
+can access the <b>fields</b> of the struct value it references,
+But two-level (and higher level) pointers,
+either its type is defined or not, can't.
+</p>
+
+<p>
+But, only the non-defined pointer values can access the <b>methods</b>
+of the respective non-pointer and non-interface values they reference.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type T struct {
+	x int
+}
+func (T) m(){} // T has one method.
+
+type P *T  // a defined one-level pointer type.
+type PP *P // a defined two-level pointer type.
+
+func main() {
+	var t T
+	var tp = &t
+	var tpp = &tp
+	var p P = tp
+	var pp PP = &p
+	tp.x = 12  // okay
+	p.x = 34   // okay
+	pp.x = 56  // error: type PP has no field or method x
+	tpp.x = 78 // error: type **T has no field or method x)
+	
+	tp.m()  // okay
+	p.m()   // error: type P has no field or method m
+	pp.m()  // error: type PP has no field or method m
+	tpp.m() // error: type **T has no field or method m
+}
+</code></pre>
+<p>
+</p>
+</div>
+
+<p class="anchor" id="errors-new-different-returns"></p>
+<h3>Two <code>error</code> values returned by two <code>errors.New</code> with the same argument are not equal</h3>
+
+<div>
+The reason is the <code>errors.New</code> function will copy the input string argument
+and use a pointer to the copied string as the dynamic value of the returned <code>error</code> value.
+Two different calls will produce two different pointers.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "errors"
+
+func main() {
+	notfound := "not found"
+	a, b := errors.New(notfound), errors.New(notfound)
+	fmt.Println(a == b) // false
+}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+<p class="anchor" id="boolean-flag"></p>
+<h3>The <code>flag</code> standard package treats boolean command flags differently than integer and string flags</h3>
+
+<div>
+There are three forms to pass command arguments.
+<ol>
+<li>
+	<code>-flag</code>, for boolean flags only.
+</li>
+<li>
+	<code>-flag=x</code>, for any flag.
+</li>
+<li>
+	<code>-flag x</code>, for non-boolean flags only.
+</li>
+</ol>
+
+<p>
+And please note that, all items following a boolean flag with
+the first form are viewed as arguments.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "flag"
+
+var b = flag.Bool("b", true, "a boolean flag")
+var i = flag.Int("i", 123, "an integer flag")
+var s = flag.String("s", "hi", "a string flag")
+
+func main() {
+	flag.Parse()
+	fmt.Print("b=", *b, ", i=", *i, ", s=", *s, "\n")
+	fmt.Println("arguments:", flag.Args())
+}
+</code></pre>
+
+<p>
+</p>
+
+If we run the following program with the below shown flags and arguments
+
+<pre class="output"><code>./exampleProgram -b false -i 789 -s bye arg0 arg1
+</code></pre>
+
+the output will be
+
+<pre class="output"><code>b=true, i=123, s=hi
+arguments: [false -i 789 -s bye arg0 arg1]
+</code></pre>
+
+<p>
+This output is obviously not what we expect.
+</p>
+
+We should pass the flags and arguments like
+
+<pre class="output"><code>./exampleProgram -b=false -i 789 -s bye arg0 arg1
+</code></pre>
+
+or
+
+<pre class="output"><code>./exampleProgram -i 789 -s bye -b arg0 arg1
+</code></pre>
+
+to get the output we expect:
+
+<pre class="output"><code>b=true, i=789, s=bye
+arguments: [arg0 arg1]
+</code></pre>
+
+</div>
+
+<p class="anchor" id="capacity-of-slice-from-string"></p>
+<h3>The capacity of the result slice of a conversion from a string to byte/rune slice may be larger than the length of the result slice</h3>
+
+<div>
+<p>
+We should not assume the length and the capacity of the result slice are alway equal.
+</p>
+
+In the following example, if the last <code>fmt.Println</code> line is removed,
+the outputs of the two lines before it print the same value <code>32</code>,
+otherwise, one print <code>32</code> and one print <code>8</code>.
+(For the standard Go compiler 1.10.)
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	s := "a"
+	x := []byte(s)              // len(s) == 1
+	fmt.Println(cap([]byte(s))) // 32
+	fmt.Println(cap(x))         // 8
+	fmt.Println(x)
+}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+<p class="anchor" id="printf-positional-arguments"></p>
+<h3><code>[Sp|Fp|P]rintf</code> functions support positional arguments</h3>
+
+<div>
+<p>
+The following program will print <code>3, 2, 1</code>.
+</p>
+
+An example:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	fmt.Printf("%[3]v, %[2]v, %[1]v", 1, 2, 3) // 3, 2, 1
+}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+
+
+
+
+<!---
 https://github.com/golang/go/issues/13890
 
-===================
+https://github.com/golang/go/issues/24693
 
-  * try not to use multi-value assignments with values appearing at both sides.
-    Reason 1: maybe bug. Reason 2: maybe inefficient.
-    https://github.com/golang/go/issues/23188#issuecomment-361482955
-    https://github.com/golang/go/issues/23017
-    https://github.com/golang/go/issues/22881
-    https://github.com/golang/go/issues/24448
-  * avoid unspecified behaviours
-    * https://github.com/tamird/cockroach/commit/a4c79ac70e65c4362e4fa92bd63f4e7f6c2cdd64
-    * https://github.com/golang/go/issues/24448
+https://github.com/golang/go/issues/24721
 
-=================
-
+Try not to use multi-value assignments.
+Reason 1: maybe bug. Reason 3: unspecified behaviours. 2: maybe inefficient.
+https://github.com/golang/go/issues/23188#issuecomment-361482955
+https://github.com/golang/go/issues/23017
+https://github.com/golang/go/issues/22881
+https://github.com/golang/go/issues/24448
 
 -->
+
+
+
+
+
+
+
+
