@@ -595,8 +595,8 @@ Any comparison results an untyped boolean value.
 Currently (Go 1.10), there are some restrictions for the above comparison rules:
 <ul>
 <li>
-	map, slice and function types don't support comparison
-	(but values of these types can be compared to the bare <code>nil</code> identifier).
+	map, slice and function types don't support comparison.
+	(But values of these types can be compared to the bare <code>nil</code> identifier).
 </li>
 <li>
 	any struct type with a field whose type is uncomparable
@@ -606,6 +606,52 @@ Currently (Go 1.10), there are some restrictions for the above comparison rules:
 	bare <code>nil</code> identifiers (untyped <code>nil</code> values) can't be compared with each other.
 </li>
 </ul>
+
+<p>
+</p>
+
+Here are some uncomparable types.
+<pre class="line-numbers"><code class="language-go">[]int
+map[string]bool
+func() int
+struct{x map[int]int} // one field element type is uncomparable
+[5][]int              // array element type is uncomparable
+</code></pre>
+
+<p>
+</p>
+
+Comparison restriction examples:
+<pre class="line-numbers"><code class="language-go">package main
+
+// The types of the following variables are all uncomparable.
+var s []int
+var m map[int]int
+var f func()()
+var t struct {
+	s []int
+	n int
+}
+var a [5]map[int]int
+
+func main() {
+	// The following lines fail to compile.
+	/*
+	_ = s == s
+	_ = m == m
+	_ = f == f
+	_ = t == t
+	_ = a == a
+	_ = nil == nil
+	*/
+
+	// The following lines compile okay.
+	_ = s == nil
+	_ = m == nil
+	_ = f == nil
+}
+</code></pre>
+<p></p>
 
 </div>
 
@@ -647,60 +693,42 @@ Assume two values are comparable, and they have the same type <code>T</code>
 </ol>
 
 <p>
-For the first three cases, in the comparing process, if the two values in
-a sub-comparison are both interface values, and the dynamic types of the two
-interface values are the same uncomparable type,
-then a run-time panic will occur.
-</p>
+Please note, comparing two interfaces with the same uncomparable dynamic type
+produces a panic.
+A sub-comparison of the first three cases mentioned above may also
+an interface value comparison.
+So comparisons of the first three cases may be also possible to produce panics.
+<p>
 
-Here are some uncomparable values of comparable types.
-<pre class="line-numbers"><code class="language-go">package main
-</code></pre>
-<p></p>
+Here is an example in which some panics will occur in comparisons.
 
-Comparison restriction examples:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	var s []int
-	var m map[int]int
-	var f func()()
-
-	// The following 4 don't compile.
-	// _ = s == s
-	// _ = m == m
-	// _ = f == f
-	// _ = nil == nil
-
-	// The following 3 compile okay.
-	_ = s == nil
-	_ = m == nil
-	_ = f == nil
-
-	// Type T also doesn't support comparison,
-	// for it contains one uncomparable field.
 	type T struct {
-		s []int
-		n int
+		a interface{}
+		b int
 	}
-
-	var t T
-	var a [5]map[int]int
-
-	// The following 2 don't compile.
-	// _ = t == t
-	// _ = a == a
-
-	// The following comparisons compile okay,
-	// but will panic at run time.
-	var i interface{} = t
-	_ = i == i
-
-	// ...
-	_, _, _, _ = s, m, f, a
+	var x interface{} = []int{}
+	var y = T{a: x}
+	var z = [3]T{}
+	
+	// Each of the following line can produce a panic.
+	_ = x == x
+	_ = y == y
+	_ = z == z
+	
+	// The two z lines are commented out, for
+	// there is a bug in the latest standard compiler.
 }
 </code></pre>
-<p></p>
+
+<p>
+Please note, the two code lines involved <code>z</code> compile okay for
+the <code>go build</code> and <code>go install</code> commands,
+but fail to compile for the <code>go run</code> command.
+This is a known bug of the standard Go compiler 1.9 and 1.10.
+</p>
 </div>
 
 
