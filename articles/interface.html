@@ -1,10 +1,5 @@
 ﻿<h1>Interfaces In Go</h1>
 
-<!---
-need more example:
-https://books.google.com.sg/books?id=oowq_6bAgloC&pg=PA586&lpg=PA586&dq=golang+cgo+vs+socket&source=bl&ots=ERSZgLzLpF&sig=GsOQIuU_b_id4wKkE1kIDkvURig&hl=en&sa=X&ved=0ahUKEwi7v_jq76bUAhUHOY8KHafJChsQ6AEIRTAG#v=onepage&q=golang%20cgo%20vs%20socket&f=false
--->
-
 <p>
 Interface types are one special kind of types in Go.
 Interface kind plays several important roles in Go.
@@ -21,7 +16,7 @@ in detail. Some interface related details will also be shown.
 
 <p>
 An interface type specifies a collection of
-<a href=method.html#method-set">method prototypes</a>.
+<a href="method.html#method-set">method prototypes</a>.
 In other words, each interface type defines a method set.
 In fact, we can view an interface type as a method set.
 For any of the method prototype specified in an interface type,
@@ -41,7 +36,7 @@ type ReadWriter interface {
 	Write(buf []byte) (n int, err error)
 }
 
-// Comparable is also a named interface alias type.
+// Comparable is a named interface alias type.
 type Comparable = interface {
 	IsEqualTo(another Comparable) bool
 }
@@ -63,8 +58,9 @@ It is defined as
 <p>
 </p>
 
-In particular, an interface type with a blank method prototype collection
-is called a blank interface type. Some blank interface types examples:
+In particular, an interface type with a blank method set
+is called a blank interface type.
+Here are some blank interface types examples:
 
 <pre class="line-numbers"><code class="language-go">// An unnamed blank interface type.
 interface{}
@@ -84,7 +80,7 @@ Each type has a <a href=method.html#method-set">method set</a> associated with i
 </li>
 <li>
 	For a non-interface type, its method set is the prototype collection of
-	all the methods declared, either explicitly or implicitly, for the non-interface type.
+	all the methods (either explicit or implicit ones) declared for it.
 </li>
 </ul>
 </div>
@@ -116,9 +112,9 @@ then we say type <code>T</code> implements interface <code>I</code>.
 
 <p>
 Implementations are all implicit in Go.
-The implementation relations are not needed to be specified for compiler in code explicitly.
-There is not a <code>implements</code> keyword in Go.
-Go compiler will check the implementation relations automaticlly as needed.
+The implementation relations are not needed to be specified for compilers in code explicitly.
+There is not an <code>implements</code> keyword in Go.
+Go compilers will check the implementation relations automaticlly as needed.
 </p>
 
 <p>
@@ -129,8 +125,8 @@ Two interface types with the same method set implement each other.
 <div>
 For example, in the following example, the method sets of
 stuct pointer type <code>*Book</code>, integer type <code>MyInt</code> and
-pointer type <code>*MyInt</code> are both contains the method prototype
-<code>About() string</code>, so they both implement the above mentioned
+pointer type <code>*MyInt</code> all contain the method prototype
+<code>About() string</code>, so they all implement the above mentioned
 interface type <code>interface {About() string}</code>.
 <pre class="line-numbers"><code class="language-go">type Book struct {
 	name string
@@ -158,12 +154,13 @@ This is an important fact in Go.
 </p>
 
 
-The implicit implementation design makes it possible to let concrete types defined
-in other library packages, such as standard packages,
+The implicit implementation design makes it possible to let concrete types
+defined in other library packages, such as standard packages,
 passively implement some interface types declared in user packages.
 For example, if we define an interface type as the following one,
-then the type <code>DB</code> and <code>Tx</code> types in the <code>database/sql</code>
-standard package will both implement the interface type automatically,
+then the type <code>DB</code> and type <code>Tx</code> declared in
+<a href="https://golang.org/pkg/database/sql/">the <code>database/sql</code>
+standard package</a> will both implement the interface type automatically,
 for they both have the three corresponding methods specified in the interface.
 
 <pre class="line-numbers"><code class="language-go">type DatabaseStorer interface {
@@ -190,7 +187,7 @@ In such a conversion (or an assignment),
 <ul>
 <li>
 	If type <code>T</code> is a non-interface type, then
-	the a copy of the <code>T</code> value is boxed (or encapsulated)
+	a copy of the <code>T</code> value is boxed (or encapsulated)
 	into the result (or destination) <code>I</code> value.
 	The time complexity of the copy is <code><i>O</i>(n)</code>,
 	where <code>n</code> is the size of copied <code>T</code> value.
@@ -202,6 +199,12 @@ In such a conversion (or an assignment),
 	The standard Go compiler makes an optimazation here,
 	so the time complexity of the copy is <code><i>O</i>(1)</code>,
 	instead of <code><i>O</i>(n)</code>.
+	<!---
+	http://commaok.xyz/post/interface-allocs
+	since Go1.5, in the official compiler implementation (), if the dynamic value
+	is not a pointer, the runtime will alloc memory for a copy of the danymic value and
+	storage the pointers of the copy in the interface value.
+	-->
 </li>
 </ul>
 
@@ -219,6 +222,8 @@ The type of the dynamic value is called the
 <p>
 The dynamic value of an interface value must be a non-interface value.
 The dynamic value itself is immutable.
+We can replace the dynamic value of an interface value with another dynamic
+value, but there are no (safe) ways to modify any part of the dynamic value.
 </p>
 
 <p>
@@ -227,9 +232,10 @@ concrete values and concrete types sometimes.
 </p>
 
 <p>
-In Go, the zero values of any interface type are represented by the predeclared <code>nil</code>.
+In Go, the zero values of any interface type are represented
+by the predeclared <code>nil</code> identifier.
 Nothing is boxed in a nil interface value.
-Assign an untyped <code>nil</code> to an interface value will
+Assigning an untyped <code>nil</code> to an interface value will
 clear the dynamic value boxed in the interface value.
 </p>
 
@@ -244,16 +250,18 @@ Such interface values are not nil interface values.)
 As any type implements any blank interface types,
 so any non-interface value can be boxed in (or assigned to) a blank interface value.
 For this reason, blank interface types can be viewed as the
-<code>any</code> or <code>Any</code> type in many other languages.
+<code>any</code> type in many other languages.
+</p>
+
+<p>
 When an untyped value (except untype <code>nil</code> values)
 is assigned to a blank interface value,
 the untyped value will be first converted to its default type.
 (Or, we can think the untyped value is deduced as a value of its default type.)
 </p>
 
-Let's view an exmaple which demonstrates some assignments
-with interface values as destination values.
-
+Let's view an example which demonstrates some assignments
+with interface values as the destinations.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -263,7 +271,7 @@ type Aboutable interface {
 	About() string
 }
 
-// Type *Book implements Aboutable
+// Type *Book implements Aboutable.
 type Book struct {
 	name string
 }
@@ -293,7 +301,7 @@ Please note, the prototype of the <code>fmt.Println</code> function is
 
 <p>
 This is why a <code>fmt.Println</code> function call can take arguments of
-any type.
+any types.
 </p>
 
 The following is another example which shows how a blank interface value
@@ -318,14 +326,14 @@ func main() {
 
 	// Clear the boxed value in interface value i.
 	i = nil
-	fmt.Println(i) // <nil>
+	fmt.Println(i) // &lt;nil&gt;
 }
 </code></pre>
 
 <p>
 </p>
 
-As above has mentioned, the information of the dynamic type if an interface
+As above has mentioned, the information of the dynamic type of an interface
 value is also stored in (more accureately, referenced by) the interface value.
 The dynamic type information is essential 
 for implementing two important features in Go.
@@ -334,14 +342,14 @@ for implementing two important features in Go.
 	The dynamic type information includes a method table which stores
 	all the corresponding methods specified by the interface type
 	and declared for the dynamic type of the interface type.
-	This table is the key of implementing <a href="#polymorphism">polymorphism</a> in Go.
+	This table is the key to implement <a href="#polymorphism">polymorphism</a> in Go.
 </li>
 <li>
 	The dynamic type information also includes all sorts of
 	other information about the dynamic type, such as
 	what <a href="type-system-overview.html#type-kinds">kind</a> the dynamic type belongs to
 	and the method and field lists of the dynamic type, etc.
-	The information is the key of implementing <a href="#reflection">reflection</a> in Go.
+	The information is the key to implement <a href="#reflection">reflection</a> in Go.
 </li>
 </ol>
 
@@ -350,7 +358,7 @@ At run time, the information items of all types are stored in a global zone.
 Each interface value just holds a reference to one type information item.
 Each non-interface to interface type implementation relation corresponds
 to one global method table.
-For the standard Go cimpler/runtime.
+For the standard Go compiler/runtime.
 a method table will only be created as needed.
 </p>
 </div>
@@ -366,14 +374,13 @@ and it is an important feature of Go.
 <p>
 When a non-interface value <code>t</code> of a type <code>T</code>
 is boxed in an interface value <code>i</code> of type <code>I</code>,
-call a method declared by the interface type <code>I</code>
+calling a method specified by the interface type <code>I</code>
 on the interface value <code>i</code>
-will call the corresponding method defined for the non-interface type <code>T</code>
-on the non-interface value <code>t</code> acctually.
-In other words, call method <code>i.m</code> will call method <code>t.m</code> acctually.
+will call the corresponding method declared for the non-interface type <code>T</code>
+on the non-interface value <code>t</code> actually.
+In other words, calling method <code>i.m</code> will call method <code>t.m</code> actually.
 With different values boxed into the interface value,
-the interface value behaves differently.
-This is called polymorphism.
+the interface value behaves differently. This is called polymorphism.
 </p>
 
 <p>
@@ -382,7 +389,7 @@ Mehtod lookup in the table is just a slice element indexing.
 </p>
 
 <p><i>
-(Note, call methods on a nil interface value will panic at run time,
+(Note, calling methods on a nil interface value will panic at run time,
 for there are no available declared methods can be called.)
 </i></p>
 
@@ -400,11 +407,11 @@ type Filter interface {
 // A UniqueFilter will remove duplicated numbers.
 type UniqueFilter struct{}
 func (UniqueFilter) About() string {
-	return "remove diplicated numbers"
+	return "remove duplicated numbers"
 }
 func (UniqueFilter) Process(inputs []int) []int {
-	var outs = make([]int, 0, len(inputs))
-	var pusheds = make(map[int]bool)
+	outs := make([]int, 0, len(inputs))
+	pusheds := make(map[int]bool)
 	for _, n := range inputs {
 		if !pusheds[n] {
 			pusheds[n] = true
@@ -415,7 +422,7 @@ func (UniqueFilter) Process(inputs []int) []int {
 }
 
 // A MultipleFilter will only keep numbers which are
-// multiples of the MultipleFilter as an integer.
+// multiples of the MultipleFilter as an int value.
 type MultipleFilter int
 func (mf MultipleFilter) About() string {
 	return fmt.Sprintf("keep multiples of %v", mf)
@@ -434,7 +441,7 @@ func (mf MultipleFilter) Process(inputs []int) []int {
 // function is needed.
 func filteAndPrint(fltr Filter, unfiltered []int) []int {
 	// Call the methods of "fltr" will call the methods
-	// of the value boxed in "fltr" acctually.
+	// of the value boxed in "fltr" actually.
 	filtered := fltr.Process(unfiltered)
 	fmt.Println(fltr.About() + ":\n\t", filtered)
 	return filtered
@@ -454,7 +461,7 @@ func main() {
 
 	// Each slice element will be assigned to the local variable
 	// "fltr" (of interface type Filter) one by one. The value
-	// boxed in each element will also be copied to "fltr".
+	// boxed in each element will also be copied into "fltr".
 	for _, fltr := range filters {
 		numbers = filteAndPrint(fltr, numbers)
 	}
@@ -473,7 +480,7 @@ keep multiples of 3:
 </code></pre>
 
 <p>
-In the above example, polymorphism makes it is unnecessary to
+In the above example, polymorphism makes it unnecessary to
 write one <code>filteAndPrint</code> function for each filter types.
 </p>
 
@@ -486,21 +493,20 @@ interface types of the parameters of the exported functions and methods.
 </div>
 
 <p>
-In fact, polymorphism is not an essential feature.
+In fact, polymorphism is not an essential feature for a language.
 There are alternative ways to achieve the same job,
 such as callback functions.
-But the polymorphism way is cleaner and more elegent.
+But the polymorphism way is cleaner and more elegant.
 </p>
 
 <p class="anchor" id="reflection"></p>
 <h3>Reflection</h3>
 
 <p>
-The dynamic type information storages in an interface value
-can be used to inspect and manipulate the dynamic value which is boxed in the interface value.
+The dynamic type information stored in an interface value
+can be used to inspect and manipulate the values referenced by
+the dynamic value which is boxed in the interface value.
 This is called reflection in programming.
-The method sets declared by interface types and
-the method table stored in interface values are not used in reflection.
 </p>
 
 <p>
@@ -511,7 +517,8 @@ Reflection partially remedies the inconveniences caused by lacking of generic.
 <p>
 This article will not explain the functionalities provided by
 <a href="https://golang.org/pkg/reflect/">the <code>reflect</code> standard package</a>.
-Please read <a href="reflection.html">Reflections In Go</a> to get how to use this package.
+Please read <!---a href="reflection.html"-->Reflections In Go<!---/a-->
+to get how to use this package.
 Below will only introduce the built-in reflection functionalities in Go.
 In Go, built-in reflections are achieved with type assertion and type switch.
 </p>
@@ -520,44 +527,48 @@ In Go, built-in reflections are achieved with type assertion and type switch.
 <h4>Type Assertion</h4>
 
 <div>
-There are four kinds of interface value involved value conversions in Go:
+There are four kinds of interface value involved value conversion cases in Go:
 <ol>
 <li>
-	convert non-interface value to interface value, where the type of the non-interface value
+	convert a non-interface value to an interface value,
+	where the type of the non-interface value
 	must implement the type of the interface value.
 </li>
 <li>
-	convert interface value to interface value, where the type of the source interface value
+	convert an interface value to an interface value,
+	where the type of the source interface value
 	must implement the type of the destination interface value.
 </li>
 <li>
-	convert interface value to non-interface value, where the type of the non-interface value
+	convert an interface value to a non-interface value,
+	where the type of the non-interface value
 	may or may not implement the type of the interface value.
 </li>
 <li>
-	convert interface value to interface value, where the type of the destination interface value
-	may or may not implement the type of the source interface value.
+	convert an interface value to an interface value,
+	where the type of the source interface value
+	may or may not implement the type of the destination interface value.
 </li>
 </ol>
 
 <p>
-Above has explained the first two.
+Above has explained the first two kinds of cases.
 The two both require the source value type must implement the destination interface type.
 The convertibility for the first two are verified at compile time.
 </p>
 
 <p>
-Here will explain the later two.
-The convertibility for the later two are verified and acieved at run time,
+Here will explain the later two kinds of cases.
+The convertibility for the later two are verified and achieved at run time,
 by using a syntax called <b><i>type assertion</i></b>.
 In fact, the syntax also applies to the second kind of conversions.
 </p>
 
-The form of type assertion expression is <code>i.(T)</code>,
+The form of a type assertion expression is <code>i.(T)</code>,
 where <code>i</code> is an interface value and <code>T</code> is
 <ul>
 <li>
-	either a non-interface type which must implement the type of <code>i</code>
+	either a non-interface type which must implement the type of <code>i</code>,
 </li>
 <li>
 	or an arbrtrary interface type.
@@ -572,10 +583,10 @@ A type assertion would succeed or fail.
 <li>
 	If <code>T</code> is a non-interface type,
 	then the intention of the type assertions is
-	to get the dynamic values boxed in an interface value.
+	to get (a copy of) the dynamic value boxed in an interface value.
 	<code>T</code> must be the dynamic type of <code>i</code>
 	to make the assertion succeed.
-	Each of such cases can be viewed as a value unboxing attempt.
+	Each of such conversion can be viewed as a value unboxing attempt.
 </li>
 <li>
 	If <code>T</code> is an interface type,
@@ -584,6 +595,8 @@ A type assertion would succeed or fail.
 	type <code>T</code>.
 	The dynamic value of <code>i</code> must be convertible to
 	interface type <code>T</code> to make the assertion succeed.
+	In other words, the dynamic type of <code>i</code> must implement
+	the interface type <code>T</code> to make the assertion succeed.
 </li>
 </ul>
 
@@ -631,7 +644,7 @@ func main() {
 	fmt.Println(a, ok) // 0 false
 	
 	// Case 3:
-	a = x.(float64) // Will panic.
+	a = x.(float64) // will panic
 }
 </code></pre>
 
@@ -651,7 +664,7 @@ func (DummyWriter) Write(buf []byte) (int, error) {
 
 func main() {
 	var x interface{} = DummyWriter{}
-	var y interface{} = "abc" // dynamic type is string.
+	var y interface{} = "abc" // dynamic type is "string"
 	var w Writer
 	var ok bool
 	
@@ -661,11 +674,11 @@ func main() {
 	x, ok = w.(interface{})
 	fmt.Println(x, ok) // {} true
 	
-	// The dynamic type of y is string, which doesn't
+	// The dynamic type of y is "string", which doesn't
 	// implement Writer.
 	w, ok = y.(Writer)
 	fmt.Println(w, ok) // &ltnil&gt; false
-	w = y.(Writer) // Will panic.
+	w = y.(Writer)     // will panic
 }
 </code></pre>
 
@@ -686,7 +699,7 @@ which dynamic type is <code>T</code> is equivalent to the method call of <code>i
 The type swtich syntax may be the weirdest syntax in Go.
 It can be viewed as the enhanced version of type assertion.
 A type switch block looks like:
-<pre class="line-numbers"><code class="language-go">switch v := x.(type) {
+<pre class="line-numbers"><code class="language-go">switch aSimpleStatement; v := x.(type) {
 case TypeA:
 	...
 case TypeB, TypeC:
@@ -697,6 +710,10 @@ default:
 	...
 }
 </code></pre>
+
+<p>
+The <code>aSimpleStatement;</code> portion is opotional in a type swtich code block.
+</p>
 
 <p>
 The <code>case</code> keywords in a type swtich block can be followed by
@@ -725,7 +742,7 @@ func main() {
 		// Here, v is declared once, but it denotes
 		// different varialbes in different branches.
 		switch v := x.(type) {
-		case []int: // type literal
+		case []int: // a type literal
 			// The type of v is []int.
 			fmt.Println("int slice:", v)
 		case string: // one type name
@@ -761,7 +778,7 @@ others: map[]
 &lt;nil&gt;
 </code></pre>
 
-The above example is equalenvent to the following one:
+The above example is equivalent to the following one:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -798,25 +815,19 @@ func main() {
 Some details about type switch:
 <ul>
 <li>
-	unlike general switch blocks, <code>fallthrough</code> statement can't be used within
-	branch blocks of a type swtich block.
+	unlike general <code>switch-case</code> blocks, <code>fallthrough</code> statements
+	can't be used within branch blocks of a type swtich block.
 </li>
 <li>
-	like general switch blocks, if the <code>default</code> branch is present,
+	like general <code>switch-case</code> blocks, if the <code>default</code> branch is present,
 	it can be the last branch, the first branch, or a middle branch.
-</li>
-<li>
-	like general switch blocks,
-	between the <code>switch</code> keyword and the assertion,
-	a simple statement is allowed to be present.
-	For example, <code>switch x := f(); v := x.(type) {...}</code>.
 </li>
 <li>
 	if we don't care about the assertion value in a type switch,
 	we can use the short form <code>swtich x.(type) {...}</code> instead.
 </li>
 <li>
-	like general switch blocks,
+	like general <code>switch-case</code> blocks,
 	zero or more branches can be present in a type swtich block.
 	A type switch block without branches, <code>switch a.(type) {}</code>,
 	is a no-op at run time.
@@ -861,10 +872,11 @@ has the identical method set as <code>Ic</code>:
 <p>
 </p>
 
-Up to now (Go 1.10), if two interface types both have a method declaration with the same name,
-then they can't be embedded as the same time in other interface types,
-even if the two same name methods have the same prototype.
+Up to now (Go 1.10), if two interface types both specify a method prototype with the same name,
+then they can't be embedded as the same time in the same third interface type,
+even if the two method prototypes are identical.
 For example, the following two interafce types are both illegal:
+
 <pre class="line-numbers"><code class="language-go">interface {
 	Ia
 	Ic
@@ -893,53 +905,70 @@ There are two cases of interface values involved comparisons:
 
 <p>
 For the first case,
-the type of the non-interface value must implement the type of the interface value,
-so the non-interface value can be converted to (boxed into) an interface value.
+the type of the non-interface value must implement the type
+(assume it is <code>I</code>) of the interface value,
+so the non-interface value can be converted to (boxed into)
+an interface value of <code>I</code>.
 This means a comparison between a non-interface value and an interface value
 can be translated to a comparison between two interface values.
 So below only comparisons between two interface values will be explained.
 </p>
 
-The steps of comparing two interface values (with the <code>==</code> operator).
+The steps of comparing two interface values (with the <code>==</code> operator):
 <ol>
 <li>
-	If one of two interface values is a nil interface value,
-	then the comparison result is whether or not the other intrface value is also a nil interface value.
+	if one of two interface values is a nil interface value,
+	then the comparison result is whether or not
+	the other interface value is also a nil interface value.
 </li>
 <li>
-	If the dynamic types of the two interface values are two different types,
-	then the comparison result is false.
+	if the dynamic types of the two interface values are two different types,
+	then the comparison result is <code>false</code>.
 </li>
 <li>
-	For the case of the dynamic types of the two interface values are the same type,
+	for the case of the dynamic types of the two interface values are the same type,
 	<ul>
 	<li>
 		if the same dynamic type is an
 		<a href="value-conversions-assignments-and-comparisons.html#comparison-rules">uncomparable type</a>,
-		then panic.
+		a panic will occur.
 	</li>
 	<li>
-		otherwise, the comparing result is the result of comparing the dynamic values of the two interface values.
+		otherwise, the comparison result is the result of comparing the dynamic values of the two interface values.
 	</li>
 	</ul>
 </li>
 </ol>
 
-An example:
+<p>
+In short, two interface values are equal only if their respective dynamic types
+and their respective dynamic values are both equal,
+and their dynamic values are comparable.
+</p>
+
+By the rules, two interface values which dynamic values are both <code>nil</code>
+may be not equal. An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
 func main() {
 	var a, b, c interface{} = "abc", 123, "a"+"b"+"c"
-	fmt.Println(a == b) // a case for step 3. Print "false".
-	fmt.Println(a == c) // a case for step 3. Print "true".
+	fmt.Println(a == b) // a case of step 3. Print "false".
+	fmt.Println(a == c) // a case of step 3. Print "true".
 	
-	var s []int = nil // []int is not a comparable type
-	var i interface{} = s
-
-	fmt.Println(i == nil) // a case for step 1. Print "false".
-	fmt.Println(i == i)   // a case for step 2. Will panic.
+	var x *int = nil
+	var y *bool = nil
+	var ix, iy interface{} = x, y
+	var i interface{} = nil
+	fmt.Println(ix == iy) // false
+	fmt.Println(ix == i)  // false
+	fmt.Println(ix == i)  // false
+	
+	var s []int = nil // []int is an uncomparable type
+	i = s
+	fmt.Println(i == nil) // a case of step 1. Print "false".
+	fmt.Println(i == i)   // a case of step 2. Will panic.
 }
 </code></pre>
 </div>
@@ -956,50 +985,51 @@ Please read <a href="value-part.html#interface-structure">value parts</a> for de
 
 <p>
 The offcial Go compiler/runtime makes an optimization
-which makes than boxing pointer values in interface values
+which makes that boxing pointer values into interface values
 is more efficient than boxing non-pointer values.
-For <a href="value-copy-cost.html">small sized values</a>,
-the efficiency difference is small,
-but for large sized values, the difference may be not small.
+For <a href="value-copy-cost.html">small size values</a>,
+the efficiency differences are small,
+but for large size values, the differences may be not small.
 For the same optimization, type assertions with a pointer type
 are also more efficient than type assertions with the base type
-of the pointer type if the base type is a large sized type.
+of the pointer type if the base type is a large size type.
 </p>
 
 <p>
-So please try to avoid boxing large sized values, box their pointers instead.
+So please try to avoid boxing large size values, box their pointers instead.
 </p>
 
 <p><i>
 (BTW, for the standard Go compiler and runtime,
-types other than array and struct types are all small sized types.
-Struct types with very few fields are also small sized.)
+types other than array and struct types are all small size types.
+Struct types with very few fields are also viewed as small size types.)
 </i></p>
 
 <h4>Values Of <code>[]T</code> Can't Be Directly Converted To <code>[]I</code>
-	Even If Type <code>T</code> Implements Interface Type<code>I</code>.</h4>
+	Even If Type <code>T</code> Implements Interface Type <code>I</code>.</h4>
 
 <div>
-For exampel, sometimes, we may need to concert a <code>[]string</code> value
+For example, sometimes, we may need to convert a <code>[]string</code> value
 to <code>[]interface</code> type. Unlike some other languages, there is no
 direct ways to make the conversion. We must make the conversion manually in a loop:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
-// The prototype of fmt.Println function is
-// func Println(a ...interface{}) (n int, err error).
-// So a []string argument can't be passed to it.
-
 func main() {
 	words := []string{
 		"Go", "is", "a", "high",
 		"efficient", "language.",
 	}
+	
+	// The prototype of fmt.Println function is
+	// func Println(a ...interface{}) (n int, err error).
+	// So words... can't be passed to it as the argument.
+
 	// fmt.Println(words...) // not compile
 
-	// Convert []string value to []interface{}.
-	var iw []interface{}
+	// Convert the []string value to []interface{}.
+	iw := make([]interface{}, 0, len(words))
 	for _, w := range words {
 		iw = append(iw, w)
 	}
@@ -1015,14 +1045,14 @@ func main() {
 <p>
 For each method with name <code>m</code>
 in the method set defined by an interface type <code>I</code>,
-compiler will implicitly declare a function named <code>I.m</code>,
+compilers will implicitly declare a function named <code>I.m</code>,
 which has one more input parameter, of type <code>I</code>, than method <code>m</code>.
 The extra parameter is the first input parameter of function <code>I.m</code>.
 A call to the function <code>I.m(i, ...)</code>
 is equivalent to the method call <code>i.m(...)</code>.
 </p>
 
-Example:
+An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -1040,31 +1070,15 @@ func main() {
 	var i I = T("gopher")
 	fmt.Println (i.m(5))                         // true
 	fmt.Println (I.m(i, 5))                      // true
-	fmt.Println (interface {m(int)bool}.m(i, 5)) // true
+	fmt.Println (interface {m(int) bool}.m(i, 5)) // true
 	
 	// The following lines compile okay, but will panic at run time.
 	I(nil).m(5)
 	I.m(nil, 5)
-	interface {m(int)bool}.m(nil, 5)
+	interface {m(int) bool}.m(nil, 5)
 }
 </code></pre>
 </div>
-
-<!---
-
-
-
-should try to avoid to box large-size values. assignments will copy the boxed values.
-
-http://commaok.xyz/post/interface-allocs
-
-since Go1.5, in the official compiler implementation (), if the dynamic value
-is not a pointer, the runtime will alloc memory for a copy of the danymic value and
-storage the pointers of the copy in the interface value.
-
-
-need a special article: the underlying structures of blank interface and non-blank interface.
--->
 
 
 
