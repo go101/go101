@@ -497,7 +497,30 @@ for when the three <code>fmt.Println</code> calls in the deferred anonymous call
 the value of the loop variable <code>i</code> has become to <code>3</code>.
 </p>
 
-The same argument valuation moment rules for goroutine function calls.
+To make the second loop print the same result as the first one,
+we can modify the second loop as 
+
+<pre class="line-numbers"><code class="language-go">		for i := 0; i < 3; i++ {
+			defer func(i int) {
+				fmt.Println("b:", i) // the "i" is an input parameter
+			}(i)
+		}
+</code></pre>
+
+or
+
+<pre class="line-numbers"><code class="language-go">		for i := 0; i < 3; i++ {
+			i := i
+			defer func() {
+				fmt.Println("b:", i) // the "i" is not the loop variable
+			}()
+		}
+</code></pre>
+
+<p>
+</p>
+
+The same argument valuation moment rules are for goroutine function calls.
 The following program will output <code>123 789</code>.
 
 <pre class="line-numbers"><code class="language-go">package main
