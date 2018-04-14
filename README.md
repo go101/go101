@@ -1,4 +1,5 @@
-<b>Go 101</b> is a book focusing on Go syntax/semantics, and all kinds of details.
+<b>Go 101</b> is a book focusing on Go syntax/semantics and all kinds of details.
+The book is also try to help gophers understand Go deeply and thoroughly.
 
 ### Install And Update
 
@@ -25,5 +26,5 @@ If it is not opened, please visit http://localhost:55555.
 
 * The book is still not finished. Several articles are missing and many finished articles need correcting.
 * Translations are welcome, but for the last note, it may not be the proper time to do so.
-* Chinese translation version will be transalted by myself ([@TapirLiu](https://twitter.com/tapirliu)).
+* Chinese translation version will be translated by myself ([@TapirLiu](https://twitter.com/tapirliu)).
 * A more relexed license is coming soon.
