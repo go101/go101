@@ -37,6 +37,7 @@ func (go101 *Go101) ComfirmLocalServer(isLocal bool) {
 	if go101.isLocalServer != isLocal {
 		go101.isLocalServer = isLocal
 		if go101.isLocalServer {
+			unloadPageTemplates()
 			go go101.Update()
 		}
 	}
@@ -82,7 +83,7 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if go101.renderArticlePage(w, r, item) {
+		if go101.RenderArticlePage(w, r, item) {
 			return
 		}
 	}
@@ -100,6 +101,7 @@ type Article struct {
 	FilenameWithoutExt string
 }
 
+var articleContentsMutex sync.Mutex
 var articleContents = func() map[string]Article {
 	path := filepath.ToSlash(rootPath + "/articles/")
 	if files, err := filepath.Glob(path + "*.html"); err != nil {
@@ -116,7 +118,10 @@ var articleContents = func() map[string]Article {
 }()
 
 func retrieveArticleContent(file string, cachedIt bool) (Article, error) {
+	articleContentsMutex.Lock()
 	article, present := articleContents[file]
+	articleContentsMutex.Unlock()
+	
 	if !present {
 		return Article{}, nil
 	}
@@ -128,8 +133,11 @@ func retrieveArticleContent(file string, cachedIt bool) (Article, error) {
 		article.Content = template.HTML(content)
 		article.FilenameWithoutExt = strings.TrimSuffix(file, ".html")
 		retrieveTitlesForArticle(&article)
+		
 		if cachedIt {
+			articleContentsMutex.Lock()
 			articleContents[file] = article
+			articleContentsMutex.Unlock()
 		}
 	}
 	return article, nil
@@ -160,7 +168,7 @@ func retrieveTitlesForArticle(article *Article) {
 	}
 }
 
-func (go101 *Go101) renderArticlePage(w http.ResponseWriter, r *http.Request, file string) bool {
+func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, file string) bool {
 	isLocal := go101.IsLocalServer()
 	article, err := retrieveArticleContent(file, !isLocal)
 	if err == nil {
@@ -196,10 +204,11 @@ const (
 )
 
 var pageTemplates [NumPageTemplates + 1]*template.Template
+var pageTemplatesMutex sync.Mutex //
 
 func init() {
 	for i := range pageTemplates {
-		retrievePageTemplate(PageTemplate(i), false) // must all templates
+		retrievePageTemplate(PageTemplate(i), true)
 	}
 }
 
@@ -207,7 +216,11 @@ func retrievePageTemplate(which PageTemplate, cacheIt bool) *template.Template {
 	if which > NumPageTemplates {
 		which = NumPageTemplates
 	}
+	
+	pageTemplatesMutex.Lock()
 	t := pageTemplates[which]
+	pageTemplatesMutex.Unlock()
+	
 	if t == nil {
 		switch which {
 		case Template_Article:
@@ -217,10 +230,20 @@ func retrievePageTemplate(which PageTemplate, cacheIt bool) *template.Template {
 		}
 
 		if cacheIt {
+			pageTemplatesMutex.Lock()
 			pageTemplates[which] = t
+			pageTemplatesMutex.Unlock()
 		}
 	}
 	return t
+}
+
+func unloadPageTemplates() {
+	for i := range pageTemplates {
+		pageTemplatesMutex.Lock()
+		pageTemplates[i] = nil
+		pageTemplatesMutex.Unlock()
+	}
 }
 
 //===================================================
