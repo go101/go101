@@ -23,7 +23,51 @@
 	</head>
 	<body>
 		<div class="container">
+		
+		{{- with .Article -}}
+		
+		{{- template "navbar" . -}}
+		
 		{{ block "article" . }}to be replaced{{ end }}
+		
+		{{- template "navbar" . -}}
+		
+		{{- end -}}		
+		
 		</div>
 	</body>
 </html>
+		
+{{ define "navbar" }}
+
+{{- $is_details := and . (eq .FilenameWithoutExt "details") -}}
+{{- $is_faq := and . (eq .FilenameWithoutExt "unofficial-faq") -}}
+{{- $is_tips := and . (eq .FilenameWithoutExt "tips") -}}
+{{- $is_book := not (or $is_details $is_faq $is_tips) -}}
+
+<div class="row nav-bar-with-borders">
+	{{- if $is_book -}}
+	<div class="col-xs-6 col-sm-3 {{ if $is_book }}nav-item-active{{ else }}nav-item-inactive{{ end }}">
+		{{- if eq .FilenameWithoutExt "101" -}}The Book{{- else -}}<a href="/article/101.html">The Book</a>{{- end -}}
+	</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-3 nav-item-inactive">
+		<a href="/article/101.html">The Book</a>
+	</div>
+	{{- end -}}
+	
+	{{- if $is_details -}}
+	<div class="col-xs-6 col-sm-3 nav-item-active">Go Details 101</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-3 nav-item-inactive"><a href="/article/details.html">Go Details 101</a></div>
+	{{- end -}}
+	
+	{{- if $is_faq -}}
+	<div class="col-xs-6 col-sm-3 nav-item-active">Go FAQ 101</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-3 nav-item-inactive"><a href="/article/unofficial-faq.html">Go FAQ 101</a></div>
+	{{- end -}}
+	
+	<div class="col-xs-6 col-sm-3 nav-item-inactive" style="color: #ccc;">Go Tips 101</div>
+</div>
+{{ end }}
