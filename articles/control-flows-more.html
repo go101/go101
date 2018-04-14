@@ -186,6 +186,12 @@ when the other two goroutines both finish their respective tasks.
 </p>
 
 <p>
+The following picuture depicts a possible lifecycle of a goroutine.
+<br/>
+<img src="res/goroutine-states.png">
+</p>
+
+<p>
 A goroutine in sleeping (by calling <code>time.Sleep</code> function)
 or waiting the response of a syscall or a netword connnection
 is viewed as staying in running state.
@@ -196,8 +202,7 @@ When a new goroutine is created, it will enter running state automatically.
 Goroutines can only exit from running state, and never from blocking state.
 If, for any reason, a goroutine stays in blokcing state for ever,
 then it will never exit.
-Such case should be avoided in concurrent programming,
-if it happens, it causes memory leak and should be viewed as a logic bug.
+Such cases, except some rare ones, should be avoided in concurrent programming.
 </p>
 
 <p>
@@ -246,13 +251,32 @@ enter blocking state.
 <h3>Goroutine Schedule</h3>
 
 <p>
+Not all goroutines in running state are being executed at a given time.
+At any given time, the maximum number of goroutines being executed will
+not exceed the number of the logical CPUs available for the current program.
 We can call the <a href="https://golang.org/pkg/runtime/#NumCPU"><code>runtime.NumCPU</code></a>
-function to get the number of logical CPUs avaliable for the current running program.
-The number of live running goroutines may be much larger than the number of logical CPUs.
+function to get the number of logical CPUs avaliable for the current program.
 Each logical CPU can only execute one goroutine at any given time.
 Go runtime must frequently switches execution contexts between goroutines
 to let each running goroutine have chances to execute.
 This is similar to how operation systems switch execution contexts between OS threads.
+</p>
+
+<p>
+The following picture depicts a more detailed possible lifecycle for a goroutine.
+In the picture, the running state is divided into several more sub-states.
+A goroutine in the queuing sub-state is waiting to be executed.
+A goroutine in the executing sub-state may enter the queuing sub-state
+again when it has been executed for a while (a very small piece of time).
+<br/>
+<img src="res/goroutine-schedule.png">
+</p>
+
+<p>
+Please notes, for explanation simplicity, the sub-states shown in the above
+picture will be not mentioned in other articles in Go 101.
+And, in Go 101, the sleeping and system calling sub-states are not viewed
+as sub-states of the blocking state.
 </p>
 
 <p>
@@ -497,7 +521,7 @@ func main() {
 <p>
 By the way, it is not a good idea to do synchronizations by using
 <code>time.Sleep</code> calls.
-If the program runs on a computor which CPUs are occupied by many other
+If the program runs on a computer which CPUs are occupied by many other
 programs running on the computer, the new created goroutine may never
 get chances to execute before the program exits.
 We should use the concurrency synchronization techniques introduced in the article
