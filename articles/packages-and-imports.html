@@ -23,7 +23,7 @@ func main() {
 }
 </code></pre>
 
-Some Explainations:
+Some Explanations:
 <ul>
 <li>
 	The third line imports the <code>fmt</code> standard package.
@@ -353,6 +353,11 @@ So there shouldn't be dependency relations between the
 </p>
 
 <p>
+For the standard Go compiler, the <code>init</code> functions in a source file
+will be called from top to down.
+</p>
+
+<p>
 All <code>init</code> functions in all involved packages in a program
 will be called sequentially.
 An <code>init</code> function in an importing package
@@ -363,8 +368,8 @@ before invoking the <code>main</code> entry function.
 </p>
 
 <p>
-For the standard Go compiler, the <code>init</code> functions in a source file
-will be called from top to down.
+All package-level variables in a package are initialized before
+any <code>init</code> function is invoked.
 </p>
 
 <div>
@@ -375,7 +380,7 @@ Here is a simple example which contains two <code>init</code> functions:
 import "fmt"
 
 func init() {
-	fmt.Println("hi")
+	fmt.Println("hi,", bob)
 }
 
 func main() {
@@ -383,13 +388,19 @@ func main() {
 }
 
 func init() {
-	fmt.Println("hello")
+	fmt.Println("hello,", smith)
 }
+
+func respectfulName(who string) string {
+	return "Mr. " + who
+}
+
+var bob, smith = respectfulName("Bob"), respectfulName("Smith")
 </code></pre>
 
 The output of this program:
-<pre class="output"><code>hi
-hello
+<pre class="output"><code>hi, Mr. Bob
+hello, Mr. Smith
 bye
 </code></pre>
 
