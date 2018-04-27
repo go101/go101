@@ -172,15 +172,18 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 	isLocal := go101.IsLocalServer()
 	article, err := retrieveArticleContent(file, !isLocal)
 	if err == nil {
+		var pageURL string
 		if isLocal {
 			w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 		} else {
 			w.Header().Set("Cache-Control", "max-age=36000") // 10 hours
+			pageURL = r.URL.String()
 		}
 		page := map[string]interface{}{
 			"Article":       article,
 			"Title":         article.TitleWithoutTags,
 			"IsLocalServer": isLocal,
+			"SocialLinkURL": pageURL,
 		}
 		if err = retrievePageTemplate(Template_Article, !isLocal).Execute(w, page); err == nil {
 			return true
