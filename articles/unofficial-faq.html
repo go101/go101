@@ -1,16 +1,18 @@
-﻿<h1>Unofficial Go FAQ</h1>
+﻿<h1>Go FAQ 101</h1>
 
 <p><i>
 (This is an unofficial Go FAQ. The official one is <a href="https://golang.org/doc/faq">here</a>.)
 </i></p>
 
 <div>
-Index
+Index:
+
 <ul>
 <li>compiler and runtime
 	<ul>
 	<li><a href="#error-non-name">What does the compile error message <code>non-name *** on left side of :=</code> mean?</a></li>
 	<li><a href="#error-missing-left-brace">What does the compile error message <code>unexpected newline, expecting { after if clause</code> mean?</a></li>
+	<li><a href="#error-declared-not-used">What does the compiler error message <code>declared and not used</code> mean?</a></li>
 	<li><a href="#map-iteration-order">Does Go runtime maintain the iteration orders for maps?</a></li>
 	<li><a href="#compiler-field-padding">Will Go compilers do padding to ensure field alignments for struct types?</a></li>
 	<li><a href="#final-zero-size-field">Why does the final field of a zero-sized type in a struct contribute to the size of the struct sometimes?</a></li>
@@ -28,11 +30,16 @@ Index
 	<ul>
 	<li><a href="#pointer-atomic">How to manipulate pointer values atomically?</a></li>
 	<li><a href="#get-days-of-month">How to get the number of days of any month by using as few code lines as possible?</a></li>
+	<li><a href="#time-sleep-after">What is the difference between the function call <code>time.Sleep(d)</code> and the channel receive operation <code>&lt;-time.After(d)</code>?</a></li>
 	<li><a href="#finalizers">Can I use finalizers as object destructors?</a></li>
 	<li><a href="#trim">Calls of the <code>TrimLeft</code> and <code>TrimRight</code> functions in the <code>strings</code> and <code>bytes</code>
 		standard packages often return unexpected results, are there bugs in these function implementations?</a></li>
-	<li><a href="#fmt-print-synced">Are <code>fmt.Print</code>, <code>fmt.Println</code> and <code>fmt.Printf</code> synchronized?</a></li>
-	<li><a href="#log-print-println">Is there any difference between <code>log.Print</code> and <code>log.Println</code>?</a></li>
+	<li><a href="#fmt-print-synced">Are <code>fmt.Print</code>, <code>fmt.Println</code> and <code>fmt.Printf</code> functions synchronized?</a></li>
+	<li><a href="#fmt-print-println">What are the differences between the <code>fmt.Print</code> and <code>fmt.Println</code> functions?</a></li>
+	<li><a href="#log-print-println">Is there any difference between the <code>log.Print</code> and <code>log.Println</code> functions?</a></li>
+	<li><a href="#print-builtin-fmt-log">What are the differences between the built-in <code>print</code>/<code>println</code> functions and the corresponding print functions in the <code>fmt</code> and <code>log</code> standard packages?</a></li>
+	<li><a href="#math-crypto-rand">What is the difference between the random numbers produced by the <code>math/rand</code> standard package and the <code>crypto/rand</code> standard package?</a></li>
+	<li><a href="#math-round">Why isn't there a <code>math.Round</code> function?</a></li>
 	</ul>
 </li>
 
@@ -41,7 +48,7 @@ Index
 	<li><a href="#uncomparable-types">Which types don't support comparisons?</a></li>
 	<li><a href="#nil-equality">Why aren't two <code>nil</code> values equal sometimes?</a></li>
 	<li><a href="#slice-conversion">Why don't type <code>[]T1</code> and <code>[]T2</code> share the same underlying type
-		even if <code>T1</code> and <code>T2</code> share the same underlying type?</a></li>
+		even if the two different types <code>T1</code> and <code>T2</code> share the same underlying type?</a></li>
 	<li><a href="#unaddressable-values">Which values can and which values can't be taken addresses?</a></li>
 	<li><a href="#maps-are-unaddressable">Why are map elements not addressable?</a></li>
 	<li><a href="#slice-elements-always-addressable">Why elements of a non-nil slice are always addressable, even if the slice is unaddressable?</a></li>
@@ -60,6 +67,7 @@ Index
 	<li><a href="#about-iota">What does <code>iota</code> mean?</a></li>
 	<li><a href="#check-if-channels-closed">Why isn't there a built-in <code>closed</code> function to check whether or not a channel is closed?</a></li>
 	<li><a href="#return-local-pointers">Is it safe for a function to return pointers of local variables?</a></li>
+	<li><a href="#gopher">What does the word <b><i>gopher</i></b> mean in Go community?</a></li>
 	</ul>
 </li>
 
@@ -69,7 +77,8 @@ Index
 
 <!--- compiler and runtime  -->
 
-<p class="anchor" id="error-non-name"></p><h3>
+<p class="anchor" id="error-non-name"></p>
+<h3>
 	What does the compile error message <code>non-name *** on left side of :=</code> mean?
 </h3>
 
@@ -91,20 +100,21 @@ Currently, there is an <a href="https://github.com/golang/go/issues/377">open is
 for this problem. It looks Go authors want to leave this problem unresolved until Go 2.0.
 </p>
 
-<p class="anchor" id="error-missing-left-brace"></p><h3>
-	What does the compile error message <code>unexpected newline, expecting { after if clause</code> mean?
+<p class="anchor" id="error-missing-left-brace"></p>
+<h3>
+	What does the compile error message <code>unexpected newline, expecting { ...</code> mean?
 </h3>
 
+<div>
 <p>
 In Go, we can't break a code line at an arbitrary position.
-Please read <a href="https://golang.org/ref/spec#Semicolons">the rules defined in Go spec</a> for details.
-By the rules, generally, it is not okay to break code lines just before the open bracket <code>{</code>
-of <code>if</code>, <code>switch</code> and <code>for</code> blocks.
+Please read <a href="line-break-rules.html">line break rules in Go </a> for details.
+By the rules, generally, it is not okay to break code lines just before the open brackets.
 </p>
 
-<div>
 For example, the following code
-<pre class="line-numbers"><code class="language-go">if condition
+
+<pre class="line-numbers"><code class="language-go">if true
 {
 }
 
@@ -112,10 +122,14 @@ for i := 0; i < 10; i++
 {
 }
 
-var a = 1
-	+2
+var _ = []int
+{
+	1, 2, 3
+}
 </code></pre>
+
 will be interpreted as
+
 <pre class="line-numbers"><code class="language-go">if true;
 {
 }
@@ -124,37 +138,58 @@ for i := 0; i < 10; i++;
 {
 }
 
-var a = 1;
-	+2 // +2 evaluated but not used
+var _ = []int;
+{
+	1, 2, 3;
+}
 </code></pre>
+
+Go compilers will report an error for each open bracket <code>{</code>.
+To avoid these errors, we should rewrite the above code as the following.
+
+<pre class="line-numbers"><code class="language-go">if true {
+}
+
+for i := 0; i < 10; i++ {
+}
+
+var _ = []int {
+	1, 2, 3,
+}
+</code></pre>
+
 </div>
 
-<p><i>
-(Before Go SDK 1.9, the error message may be <code>syntax error: missing { after for clause</code>.)
-</i></p>
+<p class="anchor" id="error-declared-not-used"></p>
+<h3>
+	What does the compiler error message <code>declared and not used</code> mean?
+</h3>
 
+<div>
 <p>
-Please read <a href="line-break-rules.html">line break rules in Go</a> for more information.
+For the standard Go compiler, each variable declared in local code blocks
+must be used as a RHS value (right-hand side) for at lease once.
 </p>
+
+So the following code fails to compile.
+
+<pre class="line-numbers"><code class="language-go">func f(x bool) {
+	var y = 1 // y declared and not used
+	if x {
+		y = 2
+	}
+}
+</code></pre>
 
 <!---
-<div>
-The line break rules defined in Go spec is some academic and hard to grasp fully.
-Here is a simple and clear alternative for this rule.
-It is not equivalent to but it also doesn't collide with the official one:
-<div class="alert alert-success">
-The last effective token of each incomplete code line should be a binary operator
-or any of <code>{[(,:=</code> (six symbol letters).
-</div>
-
-</div>
-
-<p>
-Personally I don't like the limitations made by this rule.
-</p>
+exception: https://github.com/golang/go/issues/8560
 -->
 
-<p class="anchor" id="map-iteration-order"></p><h3>
+</div>
+
+
+<p class="anchor" id="map-iteration-order"></p>
+<h3>
 	Does Go runtime maintain the iteration orders for maps?
 </h3>
 
@@ -167,7 +202,8 @@ If you require a stable iteration order for a map you must maintain the order by
 Please read <a href="https://blog.golang.org/go-maps-in-action#TOC_7.">Go maps in action</a> for more information.
 </p>
 
-<p class="anchor" id="compiler-field-padding"></p><h3>
+<p class="anchor" id="compiler-field-padding"></p>
+<h3>
 	Will Go compilers do padding to ensure field alignments for struct types?
 </h3>
 
@@ -219,7 +255,8 @@ However, programmers can minimize padding by reordering the fields manually.
 </p>
 </div>
 
-<p class="anchor" id="final-zero-size-field"></p><h3>
+<p class="anchor" id="final-zero-size-field"></p>
+<h3>
 	Why does the final field of a zero-sized type in a struct contribute to the size of the struct sometimes?
 </h3>
 
@@ -288,7 +325,8 @@ func main() {
 </code></pre>
 </div>
 
-<p class="anchor" id="new-function"></p><h3>
+<p class="anchor" id="new-function"></p>
+<h3>
 	Is <code>new(T)</code> a sugar of <code>var t T; (&t)</code>?
 </h3>
 
@@ -298,7 +336,8 @@ The memory block allocated by <code>new</code> may be either on stack or on heap
 There would some other subtle differences, depending on compiler implementation.
 </p>
 
-<p class="anchor" id="fatal-error-deadlock"></p><h3>
+<p class="anchor" id="fatal-error-deadlock"></p>
+<h3>
 	What does the runtime error message <code>all goroutines are asleep - deadlock</code> mean?
 </h3>
 
@@ -313,7 +352,8 @@ A normal running program is never expected to be deadlocked,
 so the standard Go runtime makes the program crash and exit.
 </p>
 
-<p class="anchor" id="64-bit-alignment"></p><h3>
+<p class="anchor" id="64-bit-alignment"></p>
+<h3>
 	Are 64-bit variables and struct fields guaranteed to be 64-bit aligned
 	so that they can be accessed atomically?
 </h3>
@@ -420,7 +460,8 @@ No for the standard Go compiler, even if the sizes of the assigned values are on
 Pleae view <a href="https://golang.org/doc/faq#What_operations_are_atomic_What_about_mutexes">the official question</a> for more details.
 </p>
 
-<p class="anchor" id="zero-values-zero-bytes"></p><h3>
+<p class="anchor" id="zero-values-zero-bytes"></p>
+<h3>
 	Is every zero value composed of a sequence of zero bytes in memory?
 </h3>
 
@@ -460,7 +501,8 @@ I have heard that on some very old processors,
 nil pointers are not zero in memory.
 </p>
 
-<p class="anchor" id="function-inline"></p><h3>
+<p class="anchor" id="function-inline"></p>
+<h3>
 	Does the standard Go compiler support function inline?
 </h3>
 
@@ -496,7 +538,8 @@ Currently (Go 1.9), for the standard Go compiler,
 
 <!--- standard libs  -->
 
-<p class="anchor" id="pointer-atomic"></p><h3>
+<p class="anchor" id="pointer-atomic"></p>
+<h3>
 	How to manipulate pointer values atomically?
 </h3>
 
@@ -543,7 +586,8 @@ func demo(newP *T) {
 Yes, now it is much verbose to use the pointer atomic functions.
 </div>
 
-<p class="anchor" id="get-days-of-month"></p><h3>
+<p class="anchor" id="get-days-of-month"></p>
+<h3>
 	How to get the number of days of any month by using as few code lines as possible?
 </h3>
 
@@ -587,7 +631,22 @@ func main() {
 </code></pre>
 </div>
 
-<p class="anchor" id="finalizers"></p><h3>
+<p class="anchor" id="time-sleep-after"></p>
+<h3>
+	What is the difference between the function call <code>time.Sleep(d)</code> and the channel receive operation <code>&lt;-time.After(d)</code>?</a>
+</h3>
+
+<p>
+Thw two will both pause the currrent goroutine execution for a certain duration.
+The difference is the function call <code>time.Sleep(d)</code>
+will let the current goroutine enter sleeping status (not a goroutine state),
+but still stay in <a href="control-flows-more.html#states-of-goroutine">running state</a>,
+whereas, the channel receive operation <code>&lt;-time.After(d)</code>
+will let the current goroutine enter blocking state.
+</p>
+
+<p class="anchor" id="finalizers"></p>
+<h3>
 	Can I use finalizers as object destructors?
 </h3>
 
@@ -628,7 +687,8 @@ garbage collected. Please read the <a href="https://golang.org/pkg/runtime/#SetF
 function documentation to get more details.
 </p>
 
-<p class="anchor" id="trim"></p><h3>
+<p class="anchor" id="trim"></p>
+<h3>
 	Calls of the <code>TrimLeft</code> and <code>TrimRight</code> functions in the <code>strings</code> and <code>bytes</code>
 		standard packages often return unexpected results, are there bugs in these function implementations?
 </h3>
@@ -688,32 +748,141 @@ func main() {
 </code></pre>
 </div>
 
-<p class="anchor" id="fmt-print-synced"></p><h3>
-	Are <code>fmt.Print</code>, <code>fmt.Println</code> and <code>fmt.Printf</code> synchronized?
+<p class="anchor" id="fmt-print-synced"></p>
+<h3>
+	Are <code>fmt.Print</code>, <code>fmt.Println</code> and <code>fmt.Printf</code> functions synchronized?
 </h3>
 
 <p>
 No, these functions are not synchronized.
-Please use the corresponding functions in the <code>log</code> standard package instead if synchronization is needed.
+Please use the corresponding functions in the <code>log</code> standard package instead
+when synchronizations are neededed.
 You can call <code>log.SetFlags(0)</code> to remove the prefix from each log line.
 </p>
 
-<p class="anchor" id="log-print-println"></p><h3>
-	Is there any difference between <code>log.Print</code> and <code>log.Println</code>?
+<p class="anchor" id="fmt-print-println"></p>
+<h3>
+	What are the differences between the <code>fmt.Print</code> and <code>fmt.Println</code> functions?
 </h3>
 
 <p>
-For <code>log.Print</code>, a space will be added between two adjacent arguments when both of them are not strings.
-For <code>log.Println</code>, a space will be always added between two adjacent arguments.
+The <code>fmt.Println</code> function will always write a space between two adjacent arguments,
+whereas the <code>fmt.Print</code> function will only write a space between two adjacent arguments
+if both of (the concrete values of) the two adjacent arguments are not strings.
 </p>
 
 <p>
-The two functions will both write a newline character in the end.
+Another difference is <code>fmt.Println</code> will write
+a newline character in the end,
+but the <code>fmt.Print</code> function will not.
+</p>
+
+<p class="anchor" id="log-print-println"></p>
+<h3>
+	Is there any difference between the <code>log.Print</code> and <code>log.Println</code> functions?
+</h3>
+
+<p>
+The difference between the <code>log.Print</code> and <code>log.Println</code> functions
+is the sams as the first difference between the <code>fmt.Print</code> and <code>fmt.Println</code>
+functions described in the last question.
+</p>
+
+<p>
+Both of the two functions will write a newline character in the end.
+</p>
+
+<p class="anchor" id="print-builtin-fmt-log"></p>
+<h3>
+What are the differences between the built-in <code>print</code>/<code>println</code> functions and the corresponding print functions in the <code>fmt</code> and <code>log</code> standard packages?
+</h3>
+
+
+<div>
+There are several differences between the two sets of functions.
+<ol>
+<li>
+	The built-in <code>print</code>/<code>println</code> functions
+	will write to the standard error.
+	The print functions in the <code>fmt</code> standard package
+	will write to the standard output.
+	The print functions in the <code>log</code> standard package
+	will write to the standard error by default,
+	whereas which can be configured through the
+	<code>log.SetOutput</code> function.
+	
+</li>
+<li>
+	The built-in <code>println</code> function never writes spaces
+	between arguments.
+</li>
+<li>
+	The built-in <code>print</code>/<code>println</code> functions
+	can't take array and struct arguments.
+</li>
+<li>
+	For an argument of a composite type,
+	the built-in <code>print</code>/<code>println</code> functions
+	write the addresses of the underlying value parts of the argument,
+	whereas the print functions in the <code>fmt</code> and <code>log</code>
+	standard packages try to write the value literal of the argument.
+</li>
+<li>
+	Currently (Go 1.10), for the standard Go compiler,
+	calls to the built-in <code>print</code>/<code>println</code> functions
+	will not make the values referenced by the arguments of the calls
+	escape to heap, whereas the print functions in the <code>fmt</code>
+	and <code>log</code> standard packages will.
+</li>
+<li>
+	If an argument has a <code>String() string</code> or <code>Error() string</code>
+	method, the print functions in the <code>fmt</code> and <code>log</code>
+	standard packages will try to call that method when writing the argument,
+	whereas the built-in <code>print</code>/<code>println</code> functions
+	will ignore methods of arguments.
+</li>
+<li>
+	The built-in <code>print</code>/<code>println</code> functions
+	are not guaranteed to exist in future Go versions.
+</li>
+</ol>
+</div>
+
+<p class="anchor" id="math-crypto-rand"></p>
+<h3>
+	What is the difference between the random numbers produced by the <code>math/rand</code> standard package and the <code>crypto/rand</code> standard package?
+</h3>
+
+<p>
+The pseudo random numbers produced by the <code>math/rand</code> standard
+package are determinstic for a given seed.
+The produced random numbers are not good for security-sensitive contexts.
+For cryptographical security purepose, we should use the pseudo random numbers
+produced by the <code>crypto/rand</code> standard package.
+</p>
+
+<p class="anchor" id="math-round"></p>
+<h3>
+	Why isn't there a <code>math.Round</code> function?
+</h3>
+
+<p>
+There is a <code>math.Round</code> function, but only since Go 1.10.
+Two new functions, <code>math.Round</code> and <code>math.RoundToEven</code>
+have been added since Go 1.10.
+</p>
+
+<p>
+Before Go 1.10, there is a long time in
+<a href="https://github.com/golang/go/issues/4594">disputing</a> whether or not
+the <code>math.Round</code> function should be added to standard package or not.
+In the end, the proposal is adopted.
 </p>
 
 <!--- type system -->
 
-<p class="anchor" id="uncomparable-types"></p><h3>
+<p class="anchor" id="uncomparable-types"></p>
+<h3>
 	Which types don't support comparisons?
 </h3>
 
@@ -758,7 +927,8 @@ please read <a href="https://golang.org/doc/faq#map_keys">this answer</a> in the
 
 </div>
 
-<p class="anchor" id="nil-equality"></p><h3>
+<p class="anchor" id="nil-equality"></p>
+<h3>
 	Why aren't two <code>nil</code> values equal sometimes?
 </h3>
 
@@ -828,6 +998,11 @@ From these facts, we can get:
 </li>
 </ul>
 
+<p>
+Please read <a href="interface.html">interfaces in Go</a> and
+<a href="nil.html">nils in Go</a> for detailed explanations.
+</p>
+
 For example:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -849,9 +1024,10 @@ func main() {
 </code></pre>
 </div>
 
-<p class="anchor" id="slice-conversion"></p><h3>
+<p class="anchor" id="slice-conversion"></p>
+<h3>
 	Why don't type <code>[]T1</code> and <code>[]T2</code> share the same underlying type
-	even if two different types <code>T1</code> and <code>T2</code> share the same underlying type?
+	even if the two different types <code>T1</code> and <code>T2</code> share the same underlying type?
 </h3>
 
 <p><i>
@@ -913,7 +1089,8 @@ func main() {
 </code></pre>
 </div>
 
-<p class="anchor" id="unaddressable-values"></p><h3>
+<p class="anchor" id="unaddressable-values"></p>
+<h3>
 	Which values can and which values can't be taken addresses?
 </h3>
 
@@ -963,7 +1140,8 @@ Following values can be taken addresses:
 </ul>
 </div>
 
-<p class="anchor" id="maps-are-unaddressable"></p><h3>
+<p class="anchor" id="maps-are-unaddressable"></p>
+<h3>
 	Why are map elements unaddressable?
 </h3>
 
@@ -985,7 +1163,8 @@ algorithms to implement map. For the standard Go compiler, the internal addresse
 map elements may be changed at run time.
 </p>
 
-<p class="anchor" id="slice-elements-always-addressable"></p><h3>
+<p class="anchor" id="slice-elements-always-addressable"></p>
+<h3>
 	Why elements of a non-nil slice are always addressable, even if the slice is unaddressable?
 </h3>
 
@@ -1011,7 +1190,8 @@ For the same reason, the substring operations on unaddressable strings also alwa
 However, I can't make sure whether this is guaranteed by Go specification or not.
 </p>
 
-<p class="anchor" id="method-set-relation"></p><h3>
+<p class="anchor" id="method-set-relation"></p>
+<h3>
 	For any non-pointer non-interface named type <code>T</code>,
 	why is the method set of <code>*T</code> always a super set of the method set of <code>T</code>,
 	but not vice versa?
@@ -1067,7 +1247,8 @@ a super set of the method set of <code>T</code>, but not vice versa.
 (Please read <a href="https://golang.org/doc/faq#different_method_sets">this answer</a> in the official Go FAQ to get more explanations.)
 </i></p>
 
-<p class="anchor" id="types-can-have-methods"></p><h3>
+<p class="anchor" id="types-can-have-methods"></p>
+<h3>
 	Which types can we implement methods for?
 </h3>
 
@@ -1081,7 +1262,8 @@ In Go, we can only implement methods for any type <code>T</code> and type <code>
 </ul>
 </div>
 
-<p class="anchor" id="declare-immutables"></p><h3>
+<p class="anchor" id="declare-immutables"></p>
+<h3>
 	How to declare immutable values in Go?
 </h3>
 
@@ -1113,7 +1295,8 @@ There are no ways to declare other custom immutable values in Go.
 </p>
 </div>
 
-<p class="anchor" id="set-container-type"></p><h3>
+<p class="anchor" id="set-container-type"></p>
+<h3>
 	Why isn't there a built-in <code>set</code> type?
 </h3>
 
@@ -1122,7 +1305,8 @@ Sets are just maps but don't care about element values.
 In Go, <code>map[Tkey]struct{}</code> is often used as a set type.
 </div>
 
-<p class="anchor" id="byte-rune-slice-string"></p><h3>
+<p class="anchor" id="byte-rune-slice-string"></p>
+<h3>
 	What is byte? What is rune?
 	How to convert <code>[]byte</code> and <code>[]rune</code> values to strings?
 </h3>
@@ -1165,7 +1349,8 @@ About more on strings, please read <a href="string.html">strings in Go</a>.
 
 <!--- others -->
 
-<p class="anchor" id="about-iota"></p><h3>
+<p class="anchor" id="about-iota"></p>
+<h3>
 	What does <code>iota</code> mean?
 </h3>
 
@@ -1176,7 +1361,8 @@ In any constant declaration groups, the initial value of <code>iota</code> is 0,
 and it will increase by one, line by line.
 </div>
 
-<p class="anchor" id="check-if-channels-closed"></p><h3>
+<p class="anchor" id="check-if-channels-closed"></p>
+<h3>
 	Why isn't there a built-in <code>closed</code> function to check whether or not a channel is closed?
 </h3>
 
@@ -1193,7 +1379,8 @@ Please read <a href="channel-closing.html">this article</a>
 to get how to write <code>closed</code> functions and how to avoid using such a function.
 </p>
 
-<p class="anchor" id="return-local-pointers"></p><h3>
+<p class="anchor" id="return-local-pointers"></p>
+<h3>
 	Is it safe for a function to return pointers of local variables?
 </h3>
 
@@ -1208,178 +1395,39 @@ will only be used in current function call for sure, it will allocate the
 memory block on stack, otherwise, then the memory block will be allocated on heap.
 </p>
 
+<p class="anchor" id="gopher"></p>
+<h3>
+	What does the word <b><i>gopher</i></b> mean in Go community?
+</h3>
+
+<p>
+In Go community, a <b><i>gopher</i></b> means a Go programmer.
+This nickname may be originated from the fact that Go language
+adopted <a href="https://blog.golang.org/gopher">a cartoon gopher</a> as the mascot.
+BTW, the cartoon gopher is designed by <i>Renee French</i>,
+who is the wife of the Go project leader, <i>Rob Pike</i>.
+</p>
+
 
 <!---
 
-difference between time.Sleep and time.After
+todo: add related go-nuts/issue links in each question.
 
-difference between math/rand and crypto/rand
-* math/rand will create determinstic random sequence, good for games.
-* crypto/rand ..., good for auth, ...
+todo: also index official faq questions.
 
-print/println vs fmt.Print/fmt.Println (merged into log.PrintXXX)
-=> compare print / fmt.Print / log.Print
-   print and println can't take array and struct argument
-   print and println, print interface and channel and function as pointers
+is it possible to recover out of memory error?
+* https://github.com/golang/go/issues/14162
+* https://github.com/golang/go/issues/16843
+* https://groups.google.com/forum/#!topic/golang-dev/wUEWhk2jtHM
+* https://github.com/golang/go/blob/master/src/runtime/HACKING.md#error-handling-and-reporting
 
-* print doesn't support some types
-* print doesn't exscape variable. Good to print addresses.
-* print may be not exist in later Go versions.
-* print doesn't accept multiple returns from one function call.
-		type T int
+time.Format, what do 01 02 03 04 05 06 07 mean?
 
-		func (T) String() string {
-			return "abc"
-		}
+Why json marshal no output: fields are not exported.
 
-		func main() {
-			var t T = 1
-			fmt.Println(t)
-			println(t)
-		}
+in go, size type is int, not uint, why?
 
-too many connections: http.Transport
-
-declared and not use
-* exceptions: https://github.com/golang/go/issues/8560
-              https://github.com/golang/go/issues/3059
-* should appear at the right side of =
-
-is it possible to recover out of memory panic?
-+ https://github.com/golang/go/issues/16843
-
-why following calling will not v escaped to heap
-   var v int
-   f(&v)
-reason: stack grow.
-If stack grow in calling f, then the addres of v may change and the passed &v becomes invalid if v is allocated on stack.
-
-todo: add related go-nuts post link in each questions
-
-todo: need a full faq index page, for both official and unofficial faq.
-
-* "os.IsNotExist(err)" over "err == os.ErrNotExist"
-
-* why strings.Index has not a fromIndex paramter
-  How to copy slice from a specified index
-  how to copy array from offset with limit length?
-
-  copy (dest[a:], src[b:b+len])
-
-* relative import (need a tools category)
-
-* goroutine is not run
-
-  https://github.com/golang/go/issues/19145
-
-
-
-* union?
-
-  https://github.com/golang/go/issues/1935
-
-* gc and gccgo compilers
-
-* how gc (garbage collection works in Go gc omppiler)
-
-
-
-* uncomparable types, why?
-
-	https://groups.google.com/forum/#!topic/golang-nuts/ajXzEM6lqJI
-
-	https://groups.google.com/forum/#!topic/golang-nuts/fdePnbiZe-A
-
-	Slice: equality definition is hard, implementation is easy.
-
-	* nil and []T{}
-	* s := []int{0, 1}
-	s[:1:1] and s[:1:2]
-	s and  []int{0, 1}
-
-	Map: equality definition is easy, implentation is hard.
-
-	Function: both are hard.
-	          there are many generic functions which can be used as values.
-		   Will make some trouble for share lib and plugin.
-		   https://groups.google.com/forum/#!topic/golang-nuts/g-2WnwwwqCo
-		   https://groups.google.com/forum/#!topic/golang-nuts/fdePnbiZe-A
-		   Maybe it is okay to make functions comparable,
-		   but there are many substle details make the implementations be
-		   done with much effort and carefulness.
-		   Plus the need to compare functions is not strong.
-
-
-* How unsafe is the unsafe package?
-
-* Why can't some variables be modified in inner code blocks sometimes?
-
-* It look some goroutines never get yielded, this make some other goroutines never get chances to run, why?
-http://stackoverflow.com/questions/13107958/what-exactly-does-runtime-gosched-do
-go 1.8 may make this become history.
-
-* can all panic be recovered?
-  * https://github.com/golang/go/blob/master/src/runtime/HACKING.md#error-handling-and-reporting
-
-* goto Invalid jumps over
-	this is some inconvenient, but Go spec is really like
-
-	func printSqrt(x float64) {
-		if x < 0 {
-			goto Invalid
-		}
-		
-		// Note, the new block created by {} is essential,
-		// otherwise, the above goto statement will
-		// compile error: goto Invalid jumps over
-		// declaration of sqrt.
-		{
-			sqrt := math.Sqrt(x)
-			fmt.Println("sqrt of", x, "is", sqrt)
-			return
-		}
-		
-	Invalid:
-		fmt.Println("invalid input:", x)
-	}
-
-* https://github.com/golang/go/issues/20798
-
-
-
-
-<h3>Concept: Reference Types?</h3>
-
-<p>
-The terminology of <b>reference type</b> is not formally defined in Go.
-At least it is not defined in the latest version of Go spec.
-So it is not recommended to use this concept, not only does it bring confusions,
-but also <a href="has-no-reference-values.html">it is an unnecessary concept</a>.
-</p>
-
-
-<h3>Concept: Value Types (vs. Pointer Types)?</h3>
-
-<p>
-The terminology of <b>value type</b> is not formally defined in Go.
-Some articles use <b>value type</b> as opposite of <b>pointer type</b>.
-This is sadly some confusing, for pointers are just special values.
-It is obviously that <b>non-pointer type</b> is a better alternative.
-</p>
-
-time.Format, 01 02 03 04 05 06 07 meaningfulness
-
-
-struct {x struct{a int}; y int} and struct {a int, y int} memory layouts are same.
-
-why isn't there a math.Round function?
-
-why Go doesn't support loop import like C++?
+why Go doesn't support loop import like C++ and Java?
 just a tradeoff, one of many in Go.
-
-Why json marshal no output
-	fileds are not exported.
-
-Why are Go programmers often called gophers?
 -->
 

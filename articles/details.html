@@ -189,36 +189,48 @@ some are shown in the following sections.
 	<li>
 		<a href="nil.html#sizes">The sizes of nil values of different types may be different.</a>
 	</li>
+	<li>
+		<a href="blocks-and-scopes.html#weird-shadowing"><code>nil</code>, <code>iota</code>, <code>true</code>, <code>false</code> and built-in types are not keywords. They are just predeclared identifiers.</a>
+	</li>
+	<li>
+		<a href="unofficial-faq.html#final-zero-size-field">For the standard compiler, zero-sized fields in a struct may be treated as one-byte-sized value.</a>
+	</li>
+	<li>
+		<a href="#non-exported-names-from-different-packages">Non-exported method names and struct field names from different packages are viewed as diffferent names.</a>
+	</li>
 	</ul>
 </li>
 <li>
-	<a href="#sometimes-parentheses-are-required">Parentheses are required in several rare scenarios to make code compile okay.</a>
+	Miscellanies:
+	<ul>
+	<li>
+		<a href="#sometimes-parentheses-are-required">Parentheses are required in several rare scenarios to make code compile okay.</a>
+	</li>
+	<li>
+		<a href="#main-entry-function-missing">A program doesn't need a <code>main</code> entry function to run.</a>
+	</li>
+	<li>
+		<a href="line-break-rules.html#commas">The extra last <code>,</code> in an item list (such parameter/argument/result lists and element lists in composite literals) never do harm.</a>
+	</li>
+	</ul>
 </li>
 <li>
-	<a href="#main-entry-function-missing">A program doesn't need a <code>main</code> entry function to run.</a>
+	Standard packages related:
+	<ul>
+	<li>
+		<a href="reflection.html#deep-equal">The results of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</a>
+	</li>
+	<li>
+		<a href="#check-file-existent">We should use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists.</a>
+	</li>
+	<li>
+		<a href="#boolean-flag">The <code>flag</code> standard package treats boolean command flags differently than integer and string flags.</a>
+	</li>
+	<li>
+		<a href="#printf-positional-arguments"><code>[Sp|Fp|P]rintf</code> functions support positional arguments.</a>
+	</li>
+	</ul>
 </li>
-<li>
-	<a href="line-break-rules.html#commas">The extra last <code>,</code> in an item list (such parameter/argument/result lists and element lists in composite literals) never do harm.</a>
-</li>
-<li>
-	<a href="blocks-and-scopes.html#weird-shadowing"><code>nil</code>, <code>iota</code>, <code>true</code>, <code>false</code> and built-in types are not keywords. They are just predeclared identifiers.</a>
-</li>
-<li>
-	<a href="unofficial-faq.html#final-zero-size-field">For the standard compiler, zero-sized fields in a struct may be treated as one-byte-sized value.</a>
-</li>
-<li>
-	<a href="reflection.html#deep-equal">The results of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</a>
-</li>
-<li>
-	<a href="#check-file-existent">We should use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists.</a>
-</li>
-<li>
-	<a href="#boolean-flag">The <code>flag</code> standard package treats boolean command flags differently than integer and string flags.</a>
-</li>
-<li>
-	<a href="#printf-positional-arguments"><code>[Sp|Fp|P]rintf</code> functions support positional arguments.</a>
-</li>
-</ul>
 </div>
 
 <p class="anchor" id="import-package-multiple-times"></p>
@@ -782,6 +794,83 @@ func main() {
 </p>
 </div>
 
+<p class="anchor" id="non-exported-names-from-different-packages"></p>
+<h3>Non-exported method names and struct field names from different packages are viewed as diffferent names</h3>
+
+<div>
+For example, if the following types are declared in package <code>foo</code>:
+
+<pre class="line-numbers"><code class="language-go">package foo
+
+type I = interface {
+	about() string
+}
+
+type S struct {
+	a string
+}
+
+func (s S) about() string {
+	return s.a
+}
+</code></pre>
+
+and the following types are declared in package <code>bar</code>:
+
+<pre class="line-numbers"><code class="language-go">package bar
+
+type I = interface {
+	about() string
+}
+
+type S struct {
+	a string
+}
+
+func (s S) about() string {
+	return s.a
+}
+</code></pre>
+
+then, 
+<ul>
+<li>
+	values of the two respective types <code>S</code> from the two packages
+	can't be converted to each other.
+</li>
+<li>
+	the two respective interface types <code>S</code> from the two packages
+	denote two distinct method sets.
+</li>
+<li>
+	type <code>foo.S</code> doesn't implement the interface type <code>bar.I</code>.
+</li>
+<li>
+	type <code>bar.S</code> doesn't implement the interface type <code>foo.I</code>.
+</li>
+</ul>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "包2/foo"
+import "包2/bar"
+
+func main() {
+	var x foo.S
+	var y bar.S
+	var _ foo.I = x
+	var _ bar.I = y
+	
+	// The following lines fail to compile.
+	x = foo.S(y)
+	y = bar.S(x)
+	var _ foo.I = y
+	var _ bar.I = x
+}
+</code></pre>
+
+</div>
+
 <p class="anchor" id="errors-new-different-returns"></p>
 <h3>Two <code>error</code> values returned by two <code>errors.New</code> calls with the same argument are not equal</h3>
 
@@ -934,25 +1023,17 @@ func main() {
 </div>
 
 <!---
-<p class="anchor" id="one-sentence-described-details"></p>
-<h3>More one-sentence described details.</h3>
+greedy goroutine https://github.com/golang/go/issues/10958
+* It look some goroutines never get yielded, this make some other goroutines never get chances to run, why?
+http://stackoverflow.com/questions/13107958/what-exactly-does-runtime-gosched-do
 
-<div>
-There are details which are so simple that each of them can be described in one line.
-<ul>
-<li>
-	Receive-only channels can't be closed.
-</li>
-<li>
-	Constant keys in a map composite literals mustn't be duplicated.
-</li>
-</ul>
-</div>
--->
+internal package
 
-<!---
+"go doc xyz" may show the docs of the first package
+https://github.com/golang/go/issues/24462
 
-in go, size type is int, not uint, why? (to faq?)
+
+untyped const values can represent the value out of the rage of its default type.
 
 
 https://github.com/golang/go/issues/13890
