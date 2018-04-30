@@ -26,6 +26,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("Server started: http://localhost:%v \n", *port)
+	log.Println("Server started:")
+	log.Printf("   http://localhost:%v (non-cached version)\n", *port)
+	log.Printf("   http://127.0.0.1:%v (cached version)\n", *port)
 	(&http.Server{Handler: go101}).Serve(l)
 }
