@@ -112,6 +112,14 @@ The initial stack size of each goroutine is small.
 The stack size will grow and shrink as needed.
 </p>
 
+<p><i>
+(Please note, for the standard Go compiler, there is a limit of stack size
+each goroutine can has. Ar present, Go 1.10, the default maximum stack size
+is 1 GB on 64-bit systems, and 250 MB on 32-bit systems.
+We can call the <code>SetMaxStack</code> function in the
+<code>runtime/debug</code> standard package to change the size.)
+</i></p>
+
 <p>
 Memory blocks allocated on the stack of a goroutine can only be used (referenced)
 in the goroutine internally.
@@ -296,16 +304,45 @@ import "fmt"
 func main() {
 	bs := make([]int, 1000000)
 	
-	// A smart compiler may have broken the reference from
-	// the direct part of the slice bs to its underlying bytes,
-	// so that the underlying bytes of the slice bs can be
-	// garbage collected now.
+	// A smart compiler can detect that the underlying part of the
+	// slice bs will never be used later, so that the underlying
+	// part of the slice bs can be garbage collected safely now.
 
 	fmt.Println(len(bs))
 }
 </code></pre>
 
 <p>
+Please read <a href="value-part.html">value parts</a> to learn the
+internal structures of slice values.
+</p>
+
+<p>
+By the way, sometimes, we may hope the slice <code>bs</code> is guaranteed
+to not being garbage collected after the <code>fmt.Println</code> call,
+then we can use a <code>runtime.KeepAlive</code> function call to tell
+garbage collectors that the slice <code>bs</code> is still used.
+</p>
+
+For example,
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "runtime"
+
+func main() {
+	bs := make([]int, 1000000)
+
+	fmt.Println(len(bs))
+	runtime.KeepAlive(&bs) // runtime.KeepAlive(bs) is also
+	                       // okay for this specified example.
+}
+</code></pre>
+
+<p>
+<code>runtime.KeepAlive</code> function calls are often needed
+if <a href="unsafe.html">unsafe pointers</a> are involved.
 </p>
 
 </div>
@@ -381,7 +418,7 @@ The collector is a non-compacting one, so it will not move memory blocks to rear
 
 <!---
 <p>
-A memroy block may not be released to OS immediately after it is collected,
+A memory block may not be released to OS immediately after it is collected,
 so that it can be reused in another memory block allocation shortly after.
 Don't worry, the offical Go runtime is much less memory greedy than most Java runtimes.
 </p>

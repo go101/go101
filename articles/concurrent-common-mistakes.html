@@ -15,14 +15,16 @@ One the other hand, Go doesn't prevent Go programmers from making some
 concurrent programming mistakes which are caused by either carelessnesses
 or lacking of experiences.
 The remaining of the current article will show some common mistakes
-in Go concurrent programming, to help Go programmers avoid
-making the such mistakes.
+in Go concurrent programming, to help Go programmers avoid making such mistakes.
 </p>
 
 <h3>No Synchronizations When Synchronizations Are Needed</h3>
 
 <div>
-Code lines may be not executed by the appearance orders.
+<p>
+Code lines may be <a href="memory-model.html">not executed by the appearance orders</a>.
+</p>
+
 There are two mistakes in the following program.
 <ul>
 <li>
@@ -210,7 +212,7 @@ in the new goroutine to remove the data races.
 
 <div>
 Hanging goroutines are the goroutines staying in blocking state for ever.
-There are many reaons leading goroutines into hanging. For example,
+There are many reasons leading goroutines into hanging. For example,
 <ul>
 <li>
 	a goroutine tries to receive a value from a nil channel or
@@ -263,7 +265,7 @@ there will be 4 goroutines stay in blocking state for ever.
 
 <p>
 To avoid the four goroutines hanging, the capacity of channel <code>c</code>
-must be <code>4</code>.
+must be at least <code>4</code>.
 </p>
 
 In <a href="channel-use-cases.html#first-response-wins-2">the second way
@@ -292,9 +294,9 @@ so that the caller goroutine will never receive a value.
 </code></pre>
 
 <p>
-Changing the channel <code>c</code> as a buffered channel will make at least
-one of the five try-send operations succeed so that the caller goroutine
-will never hang in the above function.
+Changing the channel <code>c</code> as a buffered channel will guarantee
+at least one of the five try-send operations succeed so that the caller
+goroutine will never hang in the above function.
 </p>
 
 </div>
@@ -333,7 +335,7 @@ func (c *Counter) Increase(d int64) (r int64) {
 }
 
 // The method is bad. When it is called, a Counter
-// receiver value will be copied. The
+// receiver value will be copied.
 func (c Counter) Value() (r int64) {
 	c.Lock()
 	r = c.n
@@ -344,7 +346,7 @@ func (c Counter) Value() (r int64) {
 
 <p>
 We should change the reveiver type of the <code>Value</code> method to
-a poiner type <code>*Counter</code> to avoid copying <code>Mutex</code> values.
+the poiner type <code>*Counter</code> to avoid copying <code>Mutex</code> values.
 </p>
 
 <p>
@@ -447,8 +449,8 @@ then the following call uses future arguments improperly.
 </p>
 
 In the above code line, the two channel receive operations are processed
-in sequentially, instead of parrellelly. We should modify it as the following
-to process them parrellelly.
+in sequentially, instead of concurrently.
+We should modify it as the following to process them concurrently.
 
 <pre class="line-numbers"><code class="language-go">ca, cb := fa(), fb()
 doSomethingWithFutureArguments(<-c1, <-c2)
@@ -500,7 +502,7 @@ guarantee the addresses of 64-bit word 64-bit aligned on 32-bit OSes.
 
 </div>
 
-<h3>Not Pay Attention To Too Many Goroutines Are Created By Calls To The <code>time.After</code> Function</h3>
+<h3>Not Pay Attention To Too Many Resources Are Consumed By Calls To The <code>time.After</code> Function</h3>
 
 <div>
 <p>
@@ -508,11 +510,11 @@ The <code>After</code> function in the <code>time</code> standard package
 returns <a href="channel-use-cases.html#timer">a channel for delay notification</a>.
 The function is convenient, however each of its calls will
 create a new value of the <code>time.Timer</code> type.
-The new created <code>Timer</code> values will keep alive in the duration
+The new created <code>Timer</code> value will keep alive in the duration
 specified by the passed argument to the <code>After</code> function.
 If the function is called many times in the duration,
 there will be many <code>Timer</code> values alive
-and consuming much memory and computing.
+and consuming much memory and computation.
 </p>
 
 For example, if the following <code>longRunning</code> function is called
@@ -592,7 +594,7 @@ it is possible that a send (by the Go runtime) to the channel
 and it is possible that the <code>longRunning</code> function returns earlier
 than expected, for the <code>Reset</code> method will only reset
 the internal timer to zero, it will not clear (drain) the value
-whcih has been sent to the <code>timer.C</code> channel.
+which has been sent to the <code>timer.C</code> channel.
 </p>
 
 For example, the following program is very possible to exit in about one second,
@@ -611,11 +613,11 @@ func main() {
 	select {
 	case <-timer.C:
 	default:
-		time.Sleep(time.Second)
+		time.Sleep(time.Second) // go here
 	}
 	timer.Reset(time.Second * 10)
 	<-timer.C
-	fmt.Println(time.Since(start))
+	fmt.Println(time.Since(start)) // 1.000188181s
 }
 </code></pre>
 
@@ -631,7 +633,7 @@ concurrently in multiple goroutines.
 
 <p>
 We should not rely on the return value of a <code>Reset</code> method call.
-The return result of the <code>Reset</code> method exits
+The return result of the <code>Reset</code> method exists
 just for compatibility purpose.
 </p>
 </div>

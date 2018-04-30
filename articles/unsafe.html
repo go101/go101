@@ -33,7 +33,7 @@ and difficult to detect when using unsafe pointers.
 The biggest risk of using unsafe pointers comes from the fact that
 the unsafe mechanism is not protected by
 <a href="https://golang.org/doc/go1compat">the Go 1 compatibility guidelines</a>.
-Currently, code depending on unsafe pointers works today could break
+Code depending on unsafe pointers works today could break
 since a later Go version.
 </p>
 
@@ -242,14 +242,14 @@ to write valid Go code with unsafe pointers.
 <h3>Some Facts In Go We Should Know</h3>
 
 <p>
-Before introduce the valid unsafe pointer use patterns,
-we need know some facts in Go.
+Before introducing the valid unsafe pointer use patterns,
+we need to know some facts in Go.
 </p>
 
 <h4>Fact 1: Unsafe Pointers Are Pointers And Uintptr Values Are Intergers</h4>
 
 <p>
-Each of non-nil safe and unsafe pointers references some one value.
+Each of non-nil safe and unsafe pointers references another value.
 However uintptr values don't reference any values, they are just plain integers,
 though often each nof them stores a memory address.
 </p>
@@ -261,10 +261,10 @@ When a Go program is running, Go runtime will
 any more and collect the memory</a> allocated for these unused values,
 from time to time.
 Pointers play an important role in the check process.
-If a value is referenced (directly and indirectly) by another used value,
-the Go runtime will think it is not an unused value.
-If a value is unreachable from any used values, then Go runtime will think
-it is an unuse value and it can be safely garbage collected.
+If a value is referenced (directly and indirectly) by another value still in using,
+the Go runtime will think it is not a unused value.
+If a value is unreachable from any values in using, then Go runtime thinks
+it is a unuse value and it can be safely garbage collected.
 </p>
 
 <p>
@@ -272,8 +272,8 @@ As uintptr values are integers, they can participate arithmetic operations.
 </p>
 
 <p>
-The next section shows an example showing the difference between
-pointers and uintptr value.
+The example in the next subsection showing the difference between
+pointers and uintptr values.
 </p>
 
 <h4>Fact 2: Unused Values May Be Collected At Any Time</h4>
@@ -304,9 +304,10 @@ func main() {
 	// At the time, vz has already become unused,
 	// although its address is stored in z.
 	// But vx and vy are still in using, for they
-	// are reachable from the x and y pointers.	
+	// are reachable from the x and y pointers.
 	
-	z++ // uinptr can be used as operands.
+	// uinptr can be used as operands of arithmetic operators.
+	z++
 	z &^= 1 // <=> z = z &^ 1
 }
 </code></pre>
@@ -316,11 +317,11 @@ func main() {
 
 </div>
 
-<h4>Fact 3: We Can Use The <code>runtime.KeepAlive</code> Function To Mark A Value As Still Used (Reachable) Currently</h4>
+<h4>Fact 3: We Can Use The <code>runtime.KeepAlive</code> Function To Mark A Value As Still In Using (Reachable) Currently</h4>
 
 <div>
 <p>
-To mark a value is still reachable, we should pass a pointer referencing
+To mark a value still reachable, we should pass a pointer referencing
 the value as the argument a <code>runtime.KeepAlive</code> function call.
 </p>
 
@@ -638,9 +639,9 @@ function call is used as the argument, in literal,
 of a <code>runtime.KeepAlive</code> call.
 <pre class="line-numbers"><code class="language-go">syscall.Syscall(SYS_READ, uintptr(fd), uintptr(unsafe.Pointer(p)), uintptr(n))
 // Compilers will automatically append the following lines for the above line.
-runtime.KeepAlive(uintptr(fd))
-runtime.KeepAlive(uintptr(unsafe.Pointer(p)))
-runtime.KeepAlive(uintptr(n))
+runtime.KeepAlive(unsafe.Pointer(uintptr(fd)))
+runtime.KeepAlive(unsafe.Pointer(uintptr(unsafe.Pointer(p))))
+runtime.KeepAlive(unsafe.Pointer(uintptr(n)))
 </code></pre>
 
 <p>
