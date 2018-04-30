@@ -31,6 +31,9 @@ some are shown in the following sections.
 	<li>
 		<a href="#different-loops">For a slice <code>s</code>, the loop <code>for i = range s {...}</code> is not equivalent to the loop <code>for i = 0; i < len(s); i++ {...}</code>.</a>
 	</li>
+	<li>
+		<a href="#os-exit-runtime-goexit">Exit a program with a <code>os.Exit</code> function call and exit a goroutine with a <code>runtime.Goexit</code> function call</a>
+	</li>
 	</ul>
 </li>
 <li>
@@ -197,6 +200,9 @@ some are shown in the following sections.
 	</li>
 	<li>
 		<a href="#non-exported-names-from-different-packages">Non-exported method names and struct field names from different packages are viewed as diffferent names.</a>
+	</li>
+	<li>
+		<a href="blocks-and-scopes.html#scope-difference-detail"><code>type T *T</code> is a valid type definition</a>
 	</li>
 	</ul>
 </li>
@@ -1022,18 +1028,99 @@ func main() {
 </p>
 </div>
 
+<p class="anchor" id="os-exit-runtime-goexit"></p>
+<h3>Exit a program with a <code>os.Exit</code> function call and exit a goroutine with a <code>runtime.Goexit</code> function call</h3>
+
+<div>
+<p>
+We can exit a program from any function by calling the <code>os.Exit</code> function.
+An <code>os.Exit</code> function call takes an <code>int</code> code as
+argument and returns the code to operating system.
+</p>
+
+An example:
+
+<pre class="line-numbers"><code class="language-go">// exit-example.go
+package main
+
+import "os"
+import "time"
+
+func main() {
+	go func() {
+		time.Sleep(time.Second)
+		os.Exit(1)
+	}()
+	select{}
+}
+</code></pre>
+
+Run it:
+
+<pre class="output"><code>$ go run a.go 
+exit status 1
+$ echo $?
+1
+</code></pre>
+
+<p>
+</p>
+
+<p>
+We can exit a goroutine by calling the <code>runtime.Goexit</code> function.
+The <code>runtime.Goexit</code> function has no parameters.
+</p>
+
+An example:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "runtime"
+
+func main() {
+	c := make(chan int)
+	go func() {
+		defer func() {c <- 1}()
+		defer fmt.Println("Go")
+		func() {
+			defer fmt.Println("C")
+			runtime.Goexit()
+		}()
+		fmt.Println("Java")
+	}()
+	<-c
+}
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
 <!---
+
+strings.TrimRight/Left
+
+
+
+The rule to deduce the type of untyped value a in a << b depends on whether or not b is a constant.
+
+an untype rune or int constant can be bound with a value which is larger than the max <code>rune</code> or <code>int</code> value in memory.
+
+-128/-1 = -128
+
+
 greedy goroutine https://github.com/golang/go/issues/10958
 * It look some goroutines never get yielded, this make some other goroutines never get chances to run, why?
 http://stackoverflow.com/questions/13107958/what-exactly-does-runtime-gosched-do
 
 internal package
 
-"go doc xyz" may show the docs of the first package
+"go doc xyz" may show the docs of the first package named with "xyz"
 https://github.com/golang/go/issues/24462
 
 
-untyped const values can represent the value out of the rage of its default type.
 
 
 https://github.com/golang/go/issues/13890
