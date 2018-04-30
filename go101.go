@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"go/build"
 	"html/template"
@@ -17,11 +18,12 @@ import (
 )
 
 var (
-	rootPath              = findGo101ProjectRoot()
-	go101    http.Handler = &Go101{
+	rootPath = findGo101ProjectRoot()
+	go101    = &Go101{
 		staticHandler:     http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(rootPath, "static")))),
 		articleResHandler: http.StripPrefix("/article/res/", http.FileServer(http.Dir(filepath.Join(rootPath, "articles", "res")))),
 		isLocalServer:     false, // may be modified later
+		articlePages:      map[string][]byte{},
 	}
 )
 
@@ -29,26 +31,8 @@ type Go101 struct {
 	staticHandler     http.Handler
 	articleResHandler http.Handler
 	isLocalServer     bool
-	isLocalServerMu   sync.Mutex
-}
-
-func (go101 *Go101) ComfirmLocalServer(isLocal bool) {
-	go101.isLocalServerMu.Lock()
-	if go101.isLocalServer != isLocal {
-		go101.isLocalServer = isLocal
-		if go101.isLocalServer {
-			unloadPageTemplates()
-			go go101.Update()
-		}
-	}
-	go101.isLocalServerMu.Unlock()
-}
-
-func (go101 *Go101) IsLocalServer() (isLocal bool) {
-	go101.isLocalServerMu.Lock()
-	isLocal = go101.isLocalServer
-	go101.isLocalServerMu.Unlock()
-	return
+	articlePages      map[string][]byte
+	serverMutex       sync.Mutex
 }
 
 func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -66,15 +50,9 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// log.Println("group=", group, ", item=", item)
 
 	switch strings.ToLower(group) {
-	default:
-		http.Error(w, "", http.StatusNotFound)
-		return
-	case "":
-
 	case "static":
 		w.Header().Set("Cache-Control", "max-age=360000") // 100 hours // 31536000
 		go101.staticHandler.ServeHTTP(w, r)
-		return
 	case "article":
 		item = strings.ToLower(item)
 		if strings.HasPrefix(item, "res/") {
@@ -82,13 +60,44 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
 		}
-
-		if go101.RenderArticlePage(w, r, item) {
-			return
-		}
+		go101.RenderArticlePage(w, r, item)
+	default:
+		http.Redirect(w, r, "/article/101.html", http.StatusTemporaryRedirect)
 	}
 
-	http.Redirect(w, r, "/article/101.html", http.StatusTemporaryRedirect)
+}
+
+func (go101 *Go101) ComfirmLocalServer(isLocal bool) {
+	go101.serverMutex.Lock()
+	if go101.isLocalServer != isLocal {
+		go101.isLocalServer = isLocal
+		if go101.isLocalServer {
+			unloadPageTemplates() // loaded in one init function
+			go101.articlePages = map[string][]byte{} // invalidate article caches
+		}
+	}
+	go101.serverMutex.Unlock()
+}
+
+func (go101 *Go101) IsLocalServer() (isLocal bool) {
+	go101.serverMutex.Lock()
+	isLocal = go101.isLocalServer
+	go101.serverMutex.Unlock()
+	return
+}
+
+func (go101 *Go101) ArticlePage(file string) ([]byte, bool) {
+	go101.serverMutex.Lock()
+	page := go101.articlePages[file]
+	isLocal := go101.isLocalServer
+	go101.serverMutex.Unlock()
+	return page, isLocal
+}
+
+func (go101 *Go101) CacheArticlePage(file string, page []byte) {
+	go101.serverMutex.Lock()
+	go101.articlePages[file] = page
+	go101.serverMutex.Unlock()
 }
 
 //===================================================
@@ -101,57 +110,70 @@ type Article struct {
 	FilenameWithoutExt string
 }
 
-var articleContentsMutex sync.Mutex
-var articleContents = func() map[string]Article {
-	path := filepath.ToSlash(rootPath + "/articles/")
-	if files, err := filepath.Glob(path + "*.html"); err != nil {
-		log.Fatal(err)
-		return nil
-	} else {
-		contents := make(map[string]Article, len(files))
-		for _, f := range files {
-			file, _ := filepath.Rel(path, f)
-			contents[file] = Article{}
-		}
-		return contents
-	}
-}()
+var articlePagesMutex sync.Mutex
+var articlePages = map[string][]byte{}
 
-func retrieveArticleContent(file string, cachedIt bool) (Article, error) {
-	articleContentsMutex.Lock()
-	article, present := articleContents[file]
-	articleContentsMutex.Unlock()
-	
-	if !present {
-		return Article{}, nil
-	}
-	if article.Content == "" {
-		content, err := ioutil.ReadFile(filepath.Join(rootPath, "articles", file))
-		if err != nil {
-			return Article{}, err
+func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, file string) {
+	page, isLocal := go101.ArticlePage(file)
+	if page == nil {
+		//log.Println(file, "not cached")
+		article, err := retrieveArticleContent(file)
+		if err == nil {
+			var pageURL string
+			if !isLocal {
+				pageURL = r.URL.String()
+			}
+			pageParams := map[string]interface{}{
+				"Article":       article,
+				"Title":         article.TitleWithoutTags,
+				"IsLocalServer": isLocal,
+				"SocialLinkURL": pageURL, // non-blank to show social buttons
+			}
+			t := retrievePageTemplate(Template_Article, !isLocal)
+			var buf bytes.Buffer
+			if err = t.Execute(&buf, pageParams); err == nil {
+				page = buf.Bytes()
+			}
 		}
-		article.Content = template.HTML(content)
-		article.FilenameWithoutExt = strings.TrimSuffix(file, ".html")
-		retrieveTitlesForArticle(&article)
 		
-		if cachedIt {
-			articleContentsMutex.Lock()
-			articleContents[file] = article
-			articleContentsMutex.Unlock()
+		if err != nil {
+			page = []byte(err.Error())
+		}
+		
+		if !isLocal {
+			go101.CacheArticlePage(file, page)
 		}
 	}
-	return article, nil
+
+	// ...
+	
+	if isLocal {
+		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+	} else {
+		w.Header().Set("Cache-Control", "max-age=5000") // about 1.5 hours
+	}
+	w.Write(page)
 }
 
 const H1, _H1, MaxLen = "<h1>", "</h1>", 128
 
 var TagSigns = [2]rune{'<', '>'}
 
-func retrieveTitlesForArticle(article *Article) {
-	i := strings.Index(string(article.Content), H1)
+func retrieveArticleContent(file string) (Article, error) {
+	article := Article{}
+	content, err := ioutil.ReadFile(filepath.Join(rootPath, "articles", file))
+	if err != nil {
+		return article, err
+	}
+	
+	article.Content = template.HTML(content)
+	article.FilenameWithoutExt = strings.TrimSuffix(file, ".html")
+	
+	// retrieve titles
+	j, i := -1, strings.Index(string(article.Content), H1)
 	if i >= 0 {
 		i += len(H1)
-		j := strings.Index(string(article.Content[i:i+MaxLen]), _H1)
+		j = strings.Index(string(article.Content[i:i+MaxLen]), _H1)
 		if j >= 0 {
 			article.Title = article.Content[i-len(H1) : i+j+len(_H1)]
 			article.Content = article.Content[i+j+len(_H1):]
@@ -166,33 +188,11 @@ func retrieveTitlesForArticle(article *Article) {
 			article.TitleWithoutTags = string(s)
 		}
 	}
-}
-
-func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, file string) bool {
-	isLocal := go101.IsLocalServer()
-	article, err := retrieveArticleContent(file, !isLocal)
-	if err == nil {
-		var pageURL string
-		if isLocal {
-			w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
-		} else {
-			w.Header().Set("Cache-Control", "max-age=36000") // 10 hours
-			pageURL = r.URL.String()
-		}
-		page := map[string]interface{}{
-			"Article":       article,
-			"Title":         article.TitleWithoutTags,
-			"IsLocalServer": isLocal,
-			"SocialLinkURL": pageURL,
-		}
-		if err = retrievePageTemplate(Template_Article, !isLocal).Execute(w, page); err == nil {
-			return true
-		}
+	if j < 0 {
+		log.Println("retrieveTitlesForArticle", article.FilenameWithoutExt, "failed")
 	}
-
-	w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
-	w.Write([]byte(err.Error()))
-	return false
+	
+	return article, nil
 }
 
 //===================================================

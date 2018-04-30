@@ -25,6 +25,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	
+	go go101.Update()
 
 	log.Println("Server started:")
 	log.Printf("   http://localhost:%v (non-cached version)\n", *port)
