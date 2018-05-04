@@ -2,7 +2,7 @@
 
 <p>
 Since <a href="https://blog.golang.org/go1.7">Go 1.7</a>, the standard Go compiler
-has used a new compiler back end, which based on static single-assignment form (SSA) (now only availabe for amd64).
+has used a new compiler back end, which based on static single-assignment form (SSA).
 SSA makes go compiler generate more efficient code with optimizations like
 <a href="https://en.wikipedia.org/wiki/Bounds-checking_elimination">bounds check elimination (BCE)</a>
 and <a href="https://en.wikipedia.org/wiki/Common_subexpression_elimination">common subexpression elimination (CSE)</a>.
@@ -202,7 +202,7 @@ Is the compiler still not smart enough or is it a bug?
 
 <p>
 In fact, the compiler is right here! Why?
-The reason is the length of a sub slice may be larger than original slice.
+The reason is the length of a sub-slice may be larger than the original slice.
 For example:
 </p>
 
@@ -229,7 +229,7 @@ func main() {
 So the statement <b>if <code>s[:index]</code> is safe then <code>s[index:]</code>
 is also safe</b> is only true when <code>len(s)</code> is equal to <code>cap(s)</code>.
 This is why the code lines in function <code>fb</code> and <code>fc</code>
-of example 3 still need to do bounds check.
+of example 3 still need to do bounds checking.
 </p>
 <p>
 Go standard compiler 1.7+ successfully detects <code>len(s)</code> is equal to
@@ -282,7 +282,7 @@ In this example, The standard Go compiler successfully concludes
 
 <p><i>
 (Before Go SDK 1.9, the standard Go compiler failed to
-detect line <code>16</code> doesn't need bounds check.)
+detect line <code>16</code> doesn't need bounds checking.)
 </i></p>
 
 </div>
@@ -300,14 +300,14 @@ package main
 func fd(is []int, bs []byte) {
 	if len(is) >= 256 {
 		for _, n := range bs {
-			_ = is[n] // line 7: bounds check, not smart enough.
+			_ = is[n] // line 7: bounds check, not smart enough
 		}
 	}
 }
 
 func fd2(is []int, bs []byte) {
 	if len(is) >= 256 {
-		is = is[:256] // line 14: a trick to avoid bounds check at line 16.
+		is = is[:256] // line 14: to avoid bounds check at line 16
 		for _, n := range bs {
 			_ = is[n] // line 16: bounds check eliminatd!
 		}
@@ -317,14 +317,14 @@ func fd2(is []int, bs []byte) {
 func fe(isa []int, isb []int) {
 	if len(isa) > 0xFFF {
 		for _, n := range isb {
-			_ = isa[n & 0xFFF] // line 24: bounds check, not smart enough.
+			_ = isa[n & 0xFFF] // line 24: bounds check, not smart enough
 		}
 	}
 }
 
 func fe2(isa []int, isb []int) {
 	if len(isa) > 0xFFF {
-		isa = isa[:0xFFF+1] // line 31: a trick to avoid bounds check at line 33.
+		isa = isa[:0xFFF+1] // line 31: to avoid bounds check at line 33
 		for _, n := range isb {
 			_ = isa[n & 0xFFF] // line 33: bounds check eliminatd!
 		}
@@ -334,14 +334,14 @@ func fe2(isa []int, isb []int) {
 func ff(s []int) []int {
 	s2 := make([]int, len(s))
 	for i := range s {
-		s2[i] = -s[i] // line 41: bounds check, not smart enough.
+		s2[i] = -s[i] // line 41: bounds check, not smart enough
 	}
 	return s2
 }
 
 func ff2(s []int) []int {
 	s2 := make([]int, len(s))
-	s2 = s2[:len(s)] // line 48: bounds check. (To avoid bounds check at line 50.)
+	s2 = s2[:len(s)] // line 48: to avoid bounds check at line 50
 	for i := range s {
 		s2[i] = -s[i] // line 50: bounds check eliminatd!
 	}
@@ -369,7 +369,7 @@ $ go build -gcflags="-d=ssa/check_bce/debug=1" example5.go
 <p>
 We all know that slice types don't support comparison in Go.
 To compare two slices, we must write custom comparison code,
-or use the <code>DeepEqual</code> functions in the <code>reflect</code>
+or use the <code>DeepEqual</code> function in the <code>reflect</code>
 standard package. But the <code>reflect.DeepEqual</code> function is too slow.
 </p>
 
@@ -394,9 +394,9 @@ The following is a custom slice comparison function.
 }
 </code></pre>
 
-Bounds check still is still needed for the <code>b[i]</code> in the
+Bounds checking still is still needed for the <code>b[i]</code> in the
 <code>for-range</code> loop block to avoid index <code>i</code> out of range.
-We can modify the function a bit to remove the bounds check.
+We can modify the function a bit to remove the bounds checking.
 
 <pre class="line-numbers"><code class="language-go">func CompareSlices_BCE(a, b []int) bool {
 	if len(a) != len(b) {

@@ -1,0 +1,334 @@
+﻿<h1>Reflections In Go</h1>
+
+<p>
+Go is static language with well reflection support.
+The remaining of this article will explain the reflection functionalites
+provided in the <code>reflect</code> standard package.
+Many reflection related details will also be listed.
+</p>
+
+<p>
+Built-in reflections through interfaces will not be touched in the current article.
+Please read <a href="interface.html#reflection">interfaces in Go</a> for built-in reflections.
+</p>
+
+
+<h3>The Functionalities Can't Be Achieved Through Normal Routines But Can Through Reflections</h3>
+
+<h3>The Functionalities Can Be Achieved Through Normal Routines But Can't Through Reflections</h3>
+
+
+https://github.com/golang/go/issues/15924
+https://github.com/golang/go/issues/16522
+https://github.com/golang/go/issues/20824
+
+https://github.com/golang/go/issues/22073
+
+https://github.com/golang/go/issues/22075
+
+https://github.com/golang/go/issues/22143
+
+https://github.com/golang/go/issues/20541
+
+https://github.com/golang/go/issues/20013
+
+
+----------------------------------------
+
+https://groups.google.com/forum/#!msg/golang-dev/coyYwxU3dfM/K_nSPAbOY4kJ;context-place=searchin/golang-dev/closure$20$20callable$20pointer%7Csort:date
+
+reflect.StructOf: StructOf currently does not generate wrapper methods for embedded fields.
+                  This limitation may be lifted in a future version.
+
+reflect.StructOf: anonymous fileds: will not produce methods table
+
+https://github.com/golang/go/issues/15924
+
+https://github.com/golang/go/issues/24781
+
+https://github.com/golang/go/issues/20633
+https://github.com/golang/go/issues/20632
+https://github.com/golang/go/issues/20824
+
+https://github.com/golang/go/issues/24782
+* https://play.golang.org/p/Kd4igw-vOp7
+* https://play.golang.org/p/KCvFWtWRC1b
+
+---------------------------------------
+
+the result of reflect.DeepEqual and == may be different.
+* https://github.com/golang/go/issues/20428
+* type the types of two values are not identical, then DeepEqual return false.
+
+package main // specify the pacakge name of the current source file.
+
+import "fmt"
+import "reflect"
+
+func main() {
+	type box struct{ n *box }
+	var b = &box{&box{nil}}
+	b.n.n = b
+
+	fmt.Printf("%p %p\n", b.n, b.n.n.n) // not the same addresses
+	fmt.Println(b == b.n)                  // false
+	fmt.Println(reflect.DeepEqual(b, b.n)) // true
+	
+	type P *P
+	var p P
+	p = &p
+	
+	fmt.Println(p, &p, *p) // three same addresses
+	fmt.Println (p == &p)                  // true
+	fmt.Println(reflect.DeepEqual(p, &p))  // false
+	fmt.Println (p == *p)                  // true
+	fmt.Println(reflect.DeepEqual(p, *p))  // true
+	fmt.Println (&p == *p)                 // true
+	fmt.Println(reflect.DeepEqual(&p, *p)) // false
+}
+
+
+
+--------------------------------------
+
+
+
+func DumpValueInfo(v interface{}) {
+	// For efficency, the dynamic type and dynamic value
+	// information is stored in a reflect.Value value.
+	// There are many methods defined for reflect.Value
+	// to inspect values of reflect.Value value type.
+	value := reflect.ValueOf(v)
+	vtype := value.Type()
+	fmt.Println("=======", v, "=======")
+	for i := 0; i < vtype.NumField(); i++ {
+		fmt.Println("field#%d, %s %s",
+			i, 
+			vtype.Field(i).Name,
+			value.Field(i),
+		)
+	}
+}
+
+
+in this article, if not specially specified,
+a value may mean an instance of any type.
+
+judge if a reflect.Value, v, is a zero reflect.Value
+* don't v == reflect.Value{}
+* use reflect.IsValie(v) instead.
+If IsValid returns false, all other methods except String panic.
+* reflect.ValueOf(nil) returns the zero Value
+
+check if v is nil of specified kind:
+if val.Kind() == reflect.Ptr && val.IsNil() {}
+
+how to get the type (an interace type) of an interface value, v?
+* pv := &v, call reflect.ValueOf(pv).Elem().Type()
+
+check function input and output parameters
+* https://gist.github.com/tkrajina/880eb4b9a10aee28707e2aa764257503
+* check if a type or a value has a specified method,
+  * i, ok = myInstance.(interface{F()})
+
+=======================
+
+annotation reflect functions can be used in
+* reflect.Type.Elem(): get element type
+* reflect.Type.Key(): get key type
+* 
+
+====================
+
+non-exported filed can't be set by reflection, but can be listed. Can read?
+
+====================
+
+typ := v.Type().Elem().(*rtype)
+
+	size := typ.Size()
+
+	hasPtr := typ.kind&kindNoPointers == 0
+
+	hasPtr is true for typ.Kind() == String
+
+====================
+
+There is not a function to get the undrlying type of a type
+https://groups.google.com/forum/#!searchin/golang-nuts/reflect$3A$20get$20underlying$20type|sort:relevance/golang-nuts/BJEuegjQtEA/q2S3b6JxY1MJ
+
+======================
+
+reflect without reflect package, use interface only.
+* i, ok = myInstance.(interface{F()})
+
+======================
+
+generally, reflect can do any things non-reflect ways can do (not including the unsafe ways)
+reflect even can do non-relfect ways can't do. 
+* SetLen and SetCap
+* get alignment at run time
+* select any number of cases
+* get the kind of a value
+
+======================
+
+* dynamic number select-cases
+* modify slice len and cap
+* convert []MyByte to []byte
+
+https://tiancaiamao.gitbooks.io/go-internals/content/zh/07.2.html
+
+
+http://commaok.xyz/post/interface-allocs
+
+since Go1.5, in the official compiler implementation (), if the dynamic value
+is not a pointer, the runtime will alloc memory for a copy of the danymic value and 
+store the pointers of the copy in the interface value.
+
+============================
+
+<p>
+The <code>string</code> and <code>interface</code> types in Go are much different,
+but they really have one similarity. 
+The similarity is addressable values of these types can be overwritten in assignments
+but there are no ways to modify part of their underlying properties.
+</p>
+
+<p>
+The similarity makes string and interface values some special in Go.
+The official Go compiler utilizes this feature by making an optimization in
+value assignments of string and interface types.
+The optimization makes the target values share the same underlying data with
+the source values.
+</p>
+
+<p>
+The underlying data of a string value is a byte array.
+The underlying data of an interface value is the danymic value.
+</p>
+
+===========================
+
+try not to put large dynamic vlaues in interfaces
+
+===================================
+
+
+http://stackoverflow.com/questions/23148812/go-whats-the-meaning-of-interface
+
+
+assert a type implement
+
+====================================
+
+interface type play an important role in goalng now
+even if Go suppours generic feature one day, interface is still a important type in Go.
+
+=========================================
+
+anInterface.Method
+<=>
+anInterface.(DynamicType).Method
+<=>
+danymicValue.Method
+
+=========================================
+
+non-exported field can't be listed
+
+=========================================
+
+reflection created embedding type will not obtain meethods.
+
+=========================================
+
+
+package main
+
+
+func main() {
+	var abcd1 ABCD1
+	var abcd2 ABCD2
+	_ = abcd1 == abcd2
+}
+
+
+type A interface { a() }
+
+type B interface { b() }
+
+type C interface { c() }
+
+type D interface { d() }
+
+type AB interface {
+	A
+	B
+}
+
+type CD interface {
+	C
+	D
+}
+
+type AD interface {
+	A
+	D
+}
+
+type BC interface {
+	B
+	C
+}
+
+type ABCD1 interface {
+	AB
+	CD
+}
+
+type ABCD2 interface {
+	AD
+	BC
+}
+
+
+=======================================
+
+package main
+
+import (
+	"fmt"
+)
+
+type T int
+
+func (T) f() A {}
+
+func main() {
+	var c C = T(1)
+	var d D = c.(D)
+	var t T = d.(T)
+	fmt.Println(t)
+}
+
+type A interface{
+    f()
+}
+
+
+type B interface {
+    f()
+}
+
+// A and B are not the same type
+// C and D are two incompatible interfaces
+
+type C interface {
+    f() A
+}
+
+con
+type D interface {
+    f() B
+}

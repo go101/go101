@@ -34,7 +34,7 @@ func main() {
 	log.Printf("   http://127.0.0.1:%v (cached version)\n", *port)
 	(&http.Server{
 		Handler:      go101,
-		WriteTimeout: 10 * time.Seconds,
-		ReadTimeout:  5 * time.Seconds,
+		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  5 * time.Second,
 	}).Serve(l)
 }
