@@ -72,7 +72,7 @@ func (go101 *Go101) ComfirmLocalServer(isLocal bool) {
 	if go101.isLocalServer != isLocal {
 		go101.isLocalServer = isLocal
 		if go101.isLocalServer {
-			unloadPageTemplates() // loaded in one init function
+			unloadPageTemplates()                    // loaded in one init function
 			go101.articlePages = map[string][]byte{} // invalidate article caches
 		}
 	}
@@ -135,18 +135,18 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 				page = buf.Bytes()
 			}
 		}
-		
+
 		if err != nil {
 			page = []byte(err.Error())
 		}
-		
+
 		if !isLocal {
 			go101.CacheArticlePage(file, page)
 		}
 	}
 
 	// ...
-	
+
 	if isLocal {
 		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 	} else {
@@ -165,10 +165,10 @@ func retrieveArticleContent(file string) (Article, error) {
 	if err != nil {
 		return article, err
 	}
-	
+
 	article.Content = template.HTML(content)
 	article.FilenameWithoutExt = strings.TrimSuffix(file, ".html")
-	
+
 	// retrieve titles
 	j, i := -1, strings.Index(string(article.Content), H1)
 	if i >= 0 {
@@ -191,7 +191,7 @@ func retrieveArticleContent(file string) (Article, error) {
 	if j < 0 {
 		log.Println("retrieveTitlesForArticle", article.FilenameWithoutExt, "failed")
 	}
-	
+
 	return article, nil
 }
 
@@ -219,11 +219,11 @@ func retrievePageTemplate(which PageTemplate, cacheIt bool) *template.Template {
 	if which > NumPageTemplates {
 		which = NumPageTemplates
 	}
-	
+
 	pageTemplatesMutex.Lock()
 	t := pageTemplates[which]
 	pageTemplatesMutex.Unlock()
-	
+
 	if t == nil {
 		switch which {
 		case Template_Article:
@@ -253,22 +253,30 @@ func unloadPageTemplates() {
 // git
 //===================================================
 
-func gitPull() ([]byte, error) {
+func gitPull() {
 	output, err := runShellCommand(time.Minute/2, "git", "pull")
 	if err != nil {
 		log.Println("git pull:", err)
 	} else {
 		log.Printf("git pull: %s", output)
 	}
-	return output, err
+}
+
+func goGet() {
+	_, err := runShellCommand(time.Minute/2, "go", "get", "-u", "github.com/go101/go101")
+	if err != nil {
+		log.Println("go get -u:", err)
+	} else {
+		log.Println("go get -u succeeded.")
+	}
 }
 
 func (go101 *Go101) Update() {
 	<-time.After(time.Minute * 5)
-	gitPull()
+	goGet() // gitPull()
 	for {
 		<-time.After(time.Hour * 24)
-		gitPull()
+		goGet() // gitPull()
 	}
 }
 

@@ -7,6 +7,10 @@ The book also tries to help gophers understand Go deeply and thoroughly.
 $ go get -u github.com/go101/go101
 ```
 
+NOTE: if your last `go get -u github.com/go101/go101` command run
+was before May 5th, 2018, please run this command again to install
+the latest `go101` program.
+
 ### Run Locally
 
 Add the path of the `bin` folder under `GOPATH`
@@ -26,5 +30,5 @@ If it is not opened, please visit http://localhost:55555.
 
 * The book is still not finished. Several articles are missing and many finished articles need correcting.
 * Translations are welcome, but for the last note, it may not be the proper time to do so.
-* Chinese translation version will be translated by myself ([@TapirLiu](https://twitter.com/tapirliu)).
+* Chinese translation version is maintained by myself ([@TapirLiu](https://twitter.com/tapirliu)).
 * A more relexed license is coming soon.
