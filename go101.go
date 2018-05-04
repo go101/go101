@@ -242,11 +242,11 @@ func retrievePageTemplate(which PageTemplate, cacheIt bool) *template.Template {
 }
 
 func unloadPageTemplates() {
+	pageTemplatesMutex.Lock()
 	for i := range pageTemplates {
-		pageTemplatesMutex.Lock()
 		pageTemplates[i] = nil
-		pageTemplatesMutex.Unlock()
 	}
+	pageTemplatesMutex.Unlock()
 }
 
 //===================================================
