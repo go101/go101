@@ -112,6 +112,7 @@ type Article struct {
 
 var articlePagesMutex sync.Mutex
 var articlePages = map[string][]byte{}
+var schemes = map[bool]string{false: "http://", true: "https://"}
 
 func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, file string) {
 	page, isLocal := go101.ArticlePage(file)
@@ -121,7 +122,8 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 		if err == nil {
 			var pageURL string
 			if !isLocal {
-				pageURL = r.URL.String()
+				//pageURL = r.URL.String() // looks only working for GAE
+				pageURL = schemes[r.TLS != nil] + r.Host + r.RequestURI
 			}
 			pageParams := map[string]interface{}{
 				"Article":       article,
