@@ -17,6 +17,14 @@ import (
 	"time"
 )
 
+type Go101 struct {
+	staticHandler     http.Handler
+	articleResHandler http.Handler
+	isLocalServer     bool
+	articlePages      map[string][]byte
+	serverMutex       sync.Mutex
+}
+
 var (
 	rootPath = findGo101ProjectRoot()
 	go101    = &Go101{
@@ -26,14 +34,6 @@ var (
 		articlePages:      map[string][]byte{},
 	}
 )
-
-type Go101 struct {
-	staticHandler     http.Handler
-	articleResHandler http.Handler
-	isLocalServer     bool
-	articlePages      map[string][]byte
-	serverMutex       sync.Mutex
-}
 
 func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	go101.ComfirmLocalServer(isLocalRequest(r))
@@ -61,8 +61,11 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		go101.RenderArticlePage(w, r, item)
-	default:
+	case "":
 		http.Redirect(w, r, "/article/101.html", http.StatusTemporaryRedirect)
+	default:
+		// http.NotFound(w, r)
+		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
 	}
 
 }
@@ -136,10 +139,12 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 			if err = t.Execute(&buf, pageParams); err == nil {
 				page = buf.Bytes()
 			}
-		}
 
-		if err != nil {
-			page = []byte(err.Error())
+			if err != nil {
+				page = []byte(err.Error())
+			}
+		} else if os.IsNotExist(err) {
+			page = []byte{} // blank page means page not found.
 		}
 
 		if !isLocal {
@@ -148,7 +153,12 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 	}
 
 	// ...
-
+	if len(page) == 0 { // blank page means page not found.
+		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
+		return
+	}
+	
 	if isLocal {
 		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 	} else {
