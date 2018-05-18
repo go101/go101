@@ -202,7 +202,7 @@ some are shown in the following sections.
 		<a href="#non-exported-names-from-different-packages">Non-exported method names and struct field names from different packages are viewed as diffferent names.</a>
 	</li>
 	<li>
-		<a href="blocks-and-scopes.html#scope-difference-detail"><code>type T *T</code> is a valid type definition</a>
+		<a href="blocks-and-scopes.html#scope-difference-detail"><code>type T *T</code> is a valid type definition.</a>
 	</li>
 	</ul>
 </li>
@@ -224,7 +224,7 @@ some are shown in the following sections.
 	Standard packages related:
 	<ul>
 	<li>
-		<a href="reflection.html#deep-equal">The results of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</a>
+		<a href="reflection.html#deep-equal">The result of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</a>
 	</li>
 	<li>
 		<a href="#check-file-existent">We should use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists.</a>
@@ -1100,8 +1100,32 @@ func main() {
 
 <!---
 
+https://github.com/golang/go/issues/14232
+the capacity of []byte(aString) and []rune(aString) may be larger than
+the length of aString.
+So, for x = []byte(aString), the results of two append(x, ...) calls may
+share elements or not, deponding on contexts, for gc,
+whether or not escaping to heap.
+To avoid the uncertainty, we should use append(x[:len(x):len(x)], ...)
+
+two unnamed struct types embedding two alias types which denote the same type are two different types.
+
 strings.TrimRight/Left
 
+non-exported field can't be set by reflection, but can be listed. Can read?
+
+reflection created embedding type will not obtain meethods.
+
+don't use == to compare two reflect.Value values, compare v1.Interface() and v2.Interface() instead
+
+don't use == compare two time.Time values, use time.EqualTo instead
+
+https://golang.org/pkg/reflect/#pkg-note-BUG
+
+https://golang.org/pkg/reflect/#Value.String
+Print functions not always print the result of the String() method of a value.
+
+evaluation order: https://github.com/golang/go/issues/23188 https://github.com/golang/go/issues/24448
 
 size_t in go is int instead of uint, ..., good design.
 
