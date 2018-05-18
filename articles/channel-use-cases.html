@@ -1054,7 +1054,7 @@ in Go concurrent programming.
 </p>
 </div>
 
-<h4>Rate Limiting</h4>
+<h4>Peak Limiting</h4>
 
 <div>
 
@@ -1063,7 +1063,7 @@ At the end of the <a href="#semaphore">use channels as counting semaphores</a>
 section above, it is mentioned that it would be better to suggest
 that new coming consumers go to other bars
 if there are no available seats in the current bar.
-This is call rate limiting.
+This is call peak limiting.
 </p>
 
 The following is a modified version of the last example in the
@@ -1255,6 +1255,52 @@ We should use that function instead to make code look clean and run efficiently.
 </p>
 </div>
 
+<p class="anchor" id="rate-limiting"></p>
+<h4>Rate Limiting</h4>
+
+<div>
+One of above section has shown how to use try-send to do peak limiting.
+We can also use try-send to do rate limiting.
+The following shows such an example borrowed from
+<a href="https://github.com/golang/go/wiki/RateLimiting">the official Go wiki</a>.
+In this example, the average number of handled requests per second in a long
+period is no more than 10. But sometimes, in a short period, there may be
+a burst of most 5 requests being handled parrellelly.
+
+<pre class="line-numbers"><code class="language-go">import "time"
+
+type Request interface{}
+func handle(Request) {/* do something */}
+
+const RateLimit = 10
+const BurstLimit = 5 // 1 means bursts are not supported.
+
+func handleRequests(requests <-chan Request) {
+	throttle := make(chan time.Time, BurstLimit)
+	
+	go func() {
+		tick := time.NewTicker(time.Second / RateLimit)
+		defer tick.Stop()
+		for t := range tick.C {
+			select {
+			case throttle <- t:
+			default:
+			}
+		}
+	}()
+	
+	for reqest := range requests {
+		<-throttle
+		go handle(reqest)
+	}
+}
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
 <h4>Switches</h4>
 
 <div>
@@ -1271,8 +1317,7 @@ The following is another ping-pong example which is implemented
 by using the select mechanism.
 In this example, one of the two channel variables involved
 in the select block is <code>nil</code>.
-The <code>case</code> branch corresponding the nil channel
-will not get selected for sure.
+The <code>case</code> branch corresponding the nil channel will not get selected for sure.
 We can think such <code>case</code> branchs are in off status.
 In the end of each loop step,
 the on/off statuses of the two <code>case</code> branchs are switched.
@@ -1314,6 +1359,10 @@ func main() {
 	Play("B:", table, true)
 }
 </code></pre>
+
+<p>
+</p>
+
 </div>
 
 <h4>Control Code Exection Possibility Weights</h4>
