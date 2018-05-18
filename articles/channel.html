@@ -999,13 +999,13 @@ There are several steps to execute a select block:
 	The default branch is always put at the last position.
 </li>
 <li>
-	ort all involved channels to avoid deadlock in the next step.
+	sort all involved channels to avoid deadlock in the next step.
 	No duplicate channels are in the first <code>N</code> channels of the sorted result,
 	where <code>N</code> is the number of involved channels in the select block.
-	Below, <b><i>the sorted lock orders</i></b> mean the  the first <code>N</code> ones.
+	Below, <b><i>the sorted lock order</i></b> mean for the  the first <code>N</code> ones.
 </li>
 <li>
-	lock all involved channels by the sorted lock orders in last step.
+	lock all involved channels by the sorted lock order in last step.
 </li>
 <li>
 	poll each cases in the select block by the randomized case orders:
@@ -1015,16 +1015,17 @@ There are several steps to execute a select block:
 		Go to step 12.
 	</li>
 	<li>
-		if the corresponding channel operation is non-blocked, perform the channel operation and unlock all channels, then execute the corresponding case body.
+		if the corresponding channel operation is non-blocked, perform the channel operation and unlock all channels,
+		then execute the corresponding <code>case</code> branch body.
 		The channel operation may wake up another blocked goroutine.
 		Go to step 12.
 	</li>
 	<li>
-		if the case is the default branch, then unlock all channels and execute default body.
+		if the case is the default branch, then unlock all channels and execute the default body.
 		Go to step 12.
 	</li>
 	</ol>
-	(up to here, there must be no default branch and all case channel operations are blocked.)
+	(Up to here, there must be not a default branch and all case channel operations are blocked.)
 </li>
 <li>
 	push (enqueue) the current goroutine (with the case channel operation information) into
@@ -1033,7 +1034,7 @@ There are several steps to execute a select block:
 	for the involved channels in multiple cases may be the same one.
 </li>
 <li>
-	block the current goroutine and unlock all channels by the sorted lock orders.
+	block the current goroutine and unlock all channels by the sorted lock order.
 </li>
 <li>
 	..., in blocking state, waiting other channel operations to wake up the current goroutine, ...
@@ -1045,7 +1046,7 @@ There are several steps to execute a select block:
 	In the cooperation, the current goroutine will be dequeued from the receiving/sending goroutine queue of the channel.
 </li>
 <li>
-	lock all involved channels by the sorted lock orders.
+	lock all involved channels by the sorted lock order.
 </li>
 <li>
 	dequeue the current goroutine from the receiving goroutine queue or sending goroutine queue of the involved channel in each case operation,
@@ -1053,8 +1054,7 @@ There are several steps to execute a select block:
 	<li>if the current goroutine is waken up by a channel close operation, go to step 5.</li>
 	<li>if the current goroutine is waken up by a channel send/receive operation,
 		the corresponding case of the cooperating receive/send operation has already been found in the dequeuing process,
-		so just unlock all channels by the sorted lock orders
-		and execute the corresponding case body.
+		so just unlock all channels by the sorted lock order and execute the corresponding case body.
 	</li>
 	</ol>
 </li>
