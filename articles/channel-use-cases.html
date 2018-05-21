@@ -100,7 +100,7 @@ func sumSquares(a, b int32) int32 {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	
+
 	a, b := longTimeRequest(), longTimeRequest()
 	fmt.Println(sumSquares(<-a, <-b))
 }
@@ -143,11 +143,11 @@ func sumSquares(a, b int32) int32 {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	
+
 	ra, rb := make(chan int32), make(chan int32)
 	go longTimeRequest(ra)
 	go longTimeRequest(rb)
-	
+
 	fmt.Println(sumSquares(<-ra, <-rb))
 }
 </code></pre>
@@ -160,11 +160,11 @@ we don't need two channels to transfer results.
 Using one channel is okay.
 
 <pre class="line-numbers"><code class="language-go">...
-	
+
 	results := make(chan int32, 2) // can be buffered or not
 	go longTimeRequest(results)
 	go longTimeRequest(results)
-	
+
 	fmt.Println(sumSquares(<-results, <-results))
 }
 </code></pre>
@@ -215,7 +215,7 @@ func source(c chan<- int32) {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	
+
 	startTime := time.Now()
 	c := make(chan int32, 5) // need a buffered channel
 	for i := 0; i < cap(c); i++ {
@@ -304,7 +304,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	
+
 	done := make(chan struct{})
 	go func() { // the sorting goroutine
 		sort.Slice(values, func(i, j int) bool {
@@ -312,9 +312,9 @@ func main() {
 		})
 		done <- struct{}{} // notify sorting is done
 	}()
-	
+
 	// do some other things ...
-	
+
 	<- done // waiting here for notification
 	fmt.Println(values[0], values[len(values)-1])
 }
@@ -359,9 +359,9 @@ func main() {
 		<- done // receive a value from the done channel, to
 		        // unblock the second send in main goroutine.
 	}()
-	
+
 	// do some other things ...
-	
+
 	done <- struct{}{} // block here until a receive is made.
 	fmt.Println(" world!")
 }
@@ -395,12 +395,12 @@ func worker(id int, ready <-chan struct{}, done chan<- struct{}) {
 
 func main() {
 	log.SetFlags(0)
-	
+
 	ready, done := make(chan struct{}), make(chan struct{})
 	go worker(0, ready, done)
 	go worker(1, ready, done)
 	go worker(2, ready, done)
-	
+
 	time.Sleep(time.Second * 2) // simulate an initialzation phase
 	// 1-to-N notifications.
 	ready <- struct{}{}; ready <- struct{}{}; ready <- struct{}{}
@@ -547,21 +547,21 @@ import "fmt"
 
 func main() {
 	mutex := make(chan struct{}, 1) // the capacity must be one
-	
+
 	counter := 0
 	increase := func() {
 		mutex <- struct{}{} // lock
 		counter++
 		<-mutex // unlock
 	}
-	
+
 	increase1000 := func(done chan<- struct{}) {
 		for i := 0; i < 1000; i++ {
 			increase()
 		}
 		done <- struct{}{}
 	}
-	
+
 	done := make(chan struct{})
 	go increase1000(done)
 	go increase1000(done)
@@ -626,13 +626,13 @@ func (bar Bar) ServeConsumer(customerId int) {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	
+
 	bar24x7 := make(Bar, 10) // the bar has 10 seats
 	// Place seats in an bar.
 	for seatId := 0; seatId < cap(bar24x7); seatId++ {
 		bar24x7 <- Seat(seatId) // none of the sends will block
 	}
-	
+
 	for customerId := 0; ; customerId++ {
 		time.Sleep(time.Second)
 		go bar24x7.ServeConsumer(customerId)
@@ -670,13 +670,13 @@ func (bar Bar) ServeConsumerAtSeat(customerId int, seat Seat) {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	
+
 	bar24x7 := make(Bar, 10) // the bar has 10 seats
 	// Place seats in an bar.
 	for seatId := 0; seatId < cap(bar24x7); seatId++ {
 		bar24x7 <- Seat(seatId) // none of the sends will block
 	}
-	
+
 	for customerId := 0; ; customerId++ {
 		time.Sleep(time.Second)
 		seat := <- bar24x7 // need a seat to serve next consumer
@@ -714,7 +714,7 @@ func (bar Bar) ServeConsumer(c Consumer) {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	
+
 	bar24x7 := make(Bar, 10) // can serve most 10 consumers
 	for customerId := 0; ; customerId++ {
 		time.Sleep(time.Second)
@@ -819,12 +819,12 @@ func main() {
 		}
 		done <- struct{}{}
 	}
-	
+
 	done := make(chan struct{})
 	go increase1000(done)
 	go increase1000(done)
 	<-done; <-done
-	
+
 	request := make(chan int, 1)
 	counter <- request
 	fmt.Println(<-request) // 2000
@@ -985,7 +985,7 @@ import "fmt"
 func main() {
 	type Book struct{id int}
 	bookshelf := make(chan Book, 3)
-	
+
 	for i := 0; i < cap(bookshelf) * 2; i++ {
 		select {
 		case bookshelf <- Book{id: i}:
@@ -994,7 +994,7 @@ func main() {
 			fmt.Println("failed to put book")
 		}
 	}
-	
+
 	for i := 0; i < cap(bookshelf) * 2; i++ {
 		select {
 		case book := <-bookshelf:
@@ -1197,7 +1197,7 @@ The following code shows how to make a request with timeout.
 <pre class="line-numbers"><code class="language-go">func requestWithTimeout(timeout time.Duration) (int, error) {
 	c := make(chan int)
 	go doRequest(c) // may need a long time to response
-	
+
 	select {
 	case data := <-c:
 		return data, nil
@@ -1277,7 +1277,7 @@ const BurstLimit = 5 // 1 means bursts are not supported.
 
 func handleRequests(requests <-chan Request) {
 	throttle := make(chan time.Time, BurstLimit)
-	
+
 	go func() {
 		tick := time.NewTicker(time.Second / RateLimit)
 		defer tick.Stop()
@@ -1288,7 +1288,7 @@ func handleRequests(requests <-chan Request) {
 			}
 		}
 	}()
-	
+
 	for reqest := range requests {
 		<-throttle
 		go handle(reqest)
@@ -1445,7 +1445,7 @@ Here is a list of some module job examples in practice:
 <li>
 	data validation/filtering.
 </li>
-<!--- // general duty of modules
+<!-- // general duty of modules
 <li>
 	data fan-in/fan-out.
 </li>
@@ -1794,8 +1794,6 @@ func Printer(input <-chan uint64) {
 </code></pre>
 
 <p>
-</p>
-
 </p>
 
 <h4>Data Flow System Assembling</h4>

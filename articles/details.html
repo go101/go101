@@ -224,7 +224,7 @@ some are shown in the following sections.
 	Standard packages related:
 	<ul>
 	<li>
-		<a href="reflection.html#deep-equal">The result of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</a>
+		<a href="reflection.html#deep-equal">The results of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</a>
 	</li>
 	<li>
 		<a href="#check-file-existent">We should use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists.</a>
@@ -237,6 +237,7 @@ some are shown in the following sections.
 	</li>
 	</ul>
 </li>
+</ul>
 </div>
 
 <p class="anchor" id="import-package-multiple-times"></p>
@@ -279,13 +280,13 @@ An example:
 
 func main() {
 	// Container composite literals and map elements are all unaddressable.
-	
+
 	// Take container element addresses.
 	_ = &[]int{1}[0] // ok
 	_ = &[5]int{}[0] // error: cannot take the address of [5]int literal[0]
 	_ = &(&[5]int{})[0] // ok
 	_ = &(*&[5]int{})[0] // ok
-	
+
 	// Modify container element values.
 	map[int]int{}[1] = 9
 	[]int{1,2,3}[1] = 9
@@ -314,7 +315,7 @@ An example:
 
 func main() {
 	// Literal values and map elements are unaddressable in Go.
-	
+
 	// The following lines fail to compile.
 	/*
 	_ = [...]int{6, 7, 8, 9}[1:3]  // error: slice of unaddressable value
@@ -323,7 +324,7 @@ func main() {
 	_ = ma["abc"][1:3]  // error: slice of unaddressable value
 	_ = &(ma["abc"][0]) // error: cannot take element address
 	*/
-	
+
 	// The following lines compile okay.
 	_ = []int{6, 7, 8, 9}[1:3]
 	_ = &([]int{6, 7, 8, 9}[0])
@@ -350,7 +351,7 @@ func main() {
 	var a = math.Sqrt(-1.0)
 	fmt.Println(a)      // NaN
 	fmt.Println(a == a) // false
-	
+
 	var x = 0.0
 	var y1, z1 = 1 / x, 2 / x
 	var y2, z2 = -1 / x, -2 / x
@@ -378,7 +379,7 @@ import "math"
 func main() {
 	var a = math.NaN()
 	fmt.Println(a)      // NaN
-	
+
 	var m = map[float64]int{}
 	m[a] = 123
 	v, present := m[a]
@@ -386,11 +387,11 @@ func main() {
 	m[a] = 789
 	v, present = m[a]
 	fmt.Println(v, present) // 0 false
-	
+
 	fmt.Println(m) // map[NaN:&lt;nil&gt; NaN:&lt;nil&gt;]
 	delete(m, a) // no-op
 	fmt.Println(m) // map[NaN:&lt;nil&gt; NaN:&lt;nil&gt;]
-	
+
 	for k, v := range m {
 		fmt.Println(k, v)
 	}
@@ -418,9 +419,9 @@ import "time"
 
 func main() {
 	bigarr := [1 << 20]int{}
-	
+
 	type I interface{}
-	
+
 	// i0, i1 and i2 are three equal interfaces.
 	var i0 I = bigarr // the dynamic value of i0 is a copy of bigarr.
 	var i1 I = bigarr // the dynamic value of i1 is also a copy of bigarr.
@@ -432,7 +433,7 @@ func main() {
 	_ = i0 == i1
 	duration := time.Since(startTime)
 	fmt.Println("duration for (i0 == i1):", duration)
-	
+
 	startTime = time.Now()
 	_ = i1 == i2
 	duration = time.Since(startTime)
@@ -452,7 +453,7 @@ duration for (i1 == i2): 609ns
 <p class="anchor" id="interface-copy-complexity"></p>
 <h3>About the time complexity of copying a non-nil interface value</h3>
 
-<!---
+<!--
 https://github.com/golang/go/issues/17181
 -->
 
@@ -490,14 +491,14 @@ import "fmt"
 func main() {
 	const N = 123
 	var n = N
-	
+
 	var m = map[int]string {
 		N: "abc",
 		// N: "xyz", // error: duplicate key N in map literal
 		n: "hello", // ok
 		n: "bye", // ok
 	}
-	
+
 	fmt.Println(m[N])
 }
 </code></pre>
@@ -532,17 +533,17 @@ func main() {
 	n := [10]struct{}{}
 	o := [10]struct{}{}
 	p := [10]struct{}{}
-	
+
 	fmt.Println(&x, &y, &o, &p)
-	
+
 	// For the standard Go compiler (1.10),
 	// x, y, o and p escape to heap,
 	// but a, b, m and n are allocated on stack.
-	
+
 	fmt.Println(&a == &b) // false
 	fmt.Println(&x == &y) // true
 	fmt.Println(&a == &x) // false
-	
+
 	fmt.Println(&m == &n) // false
 	fmt.Println(&o == &p) // true
 	fmt.Println(&n == &p) // false
@@ -599,7 +600,7 @@ func main() {
 <p>
 </p>
 
-Similarly, 
+Similarly,
 <ul>
 <li>
 	the element type of a slice type can be the slice type itself,
@@ -622,7 +623,7 @@ func main() {
 	type M map[string]M
 	type C chan C
 	type F func(F) F
-	
+
 	s := S{0:nil}
 	s[0] = s
 	m := M{"Go": nil}
@@ -631,7 +632,7 @@ func main() {
 	c <- c; c <- c; c <- c
 	var f F
 	f = func(F)F {return f}
-	
+
 	_ = s[0][0][0][0][0][0][0][0]
 	_ = m["Go"]["Go"]["Go"]["Go"]
 	<-<-<-c
@@ -662,7 +663,7 @@ func main() {
 	if T{} == (T{123, 789}) {}
 	if (T{}) == T{123, 789} {}
 	*/
-	
+
 	// We must add parentheses like the following two lines to
 	// make code compile okay.
 	if (T{} == T{123, 789}) {}
@@ -789,7 +790,7 @@ func main() {
 	p.x = 34   // okay
 	pp.x = 56  // error: type PP has no field or method x
 	tpp.x = 78 // error: type **T has no field or method x)
-	
+
 	tp.m()  // okay. Type *T also has a "m" method.
 	p.m()   // error: type P has no field or method m
 	pp.m()  // error: type PP has no field or method m
@@ -838,7 +839,7 @@ func (s S) about() string {
 }
 </code></pre>
 
-then, 
+then,
 <ul>
 <li>
 	values of the two respective types <code>S</code> from the two packages
@@ -866,7 +867,7 @@ func main() {
 	var y bar.S
 	var _ foo.I = x
 	var _ bar.I = y
-	
+
 	// The following lines fail to compile.
 	x = foo.S(y)
 	y = bar.S(x)
@@ -1057,7 +1058,7 @@ func main() {
 
 Run it:
 
-<pre class="output"><code>$ go run a.go 
+<pre class="output"><code>$ go run a.go
 exit status 1
 $ echo $?
 1
@@ -1098,7 +1099,7 @@ func main() {
 
 </div>
 
-<!---
+<!--
 
 https://github.com/golang/go/issues/14232
 the capacity of []byte(aString) and []rune(aString) may be larger than
