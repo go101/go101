@@ -165,12 +165,13 @@ func main() {
 		f F
 	}
 	tx := reflect.TypeOf(x)
-	fmt.Println(tx.Kind()) // struct
+	fmt.Println(tx.Kind())     // struct
 	fmt.Println(tx.NumField()) // 2
 	tf := tx.Field(1).Type
-	fmt.Println(tf.Kind()) // func
-	fmt.Println(tf.IsVariadic()) // false
+	fmt.Println(tf.Kind())               // func
+	fmt.Println(tf.IsVariadic())         // false
 	fmt.Println(tf.NumIn(), tf.NumOut()) // 2 1
+	fmt.Println(tf.NumMethod())          // 1
 	ts, ti, tb := tf.In(0), tf.In(1), tf.Out(0)
 	fmt.Println(ts.Kind(), ti.Kind(), tb.Kind()) // string int bool
 }
@@ -208,22 +209,34 @@ func main() {
 	tt := reflect.StructOf([]reflect.StructField{
 		{Name: "Age", Type: reflect.TypeOf("abc")},
 	})
-	fmt.Println(tt) // struct { Age string }
+	fmt.Println(tt)            // struct { Age string }
+	fmt.Println(tt.NumField()) // 1
 }
 </code></pre>
 
 <p>
-Note, up to now (Go 1.10), there are no ways to create interface types through reflection.
-This is a known limitation of Go reflection.
-Another limitation is, although we can create a struct type embedding other types
-as anonymous fields through reflection, the struct type will not obtain
-the methods of the embedded types.
 </p>
 
 <p>
 There are more <code>reflect.Type</code> methods which are not used
 in above examples, please read the <code>reflect</code> package
 documentation for their usages.
+</p>
+
+<p>
+Note, up to now (Go 1.10), there are no ways to create interface types through reflection.
+This is a known limitation of Go reflection.
+<p>
+
+<p>
+Another limitation is, although we can create a struct type embedding other types as anonymous fields
+through reflection, the struct type may or may not obtain the methods of the embedded types,
+and creating a struct type with anonymous fields even might panic at run time.
+In other words, the behavior of creating struct types with anonymous fields is partially compiler dependent.
+</p>
+
+<p>
+The third limitation is we can't declare new types through reflection.
 </p>
 
 </div>
@@ -483,21 +496,21 @@ please read the <code>reflect</code> package documentation for their usages.
 <h3>More Reflection Related Details</h3>
 
 <p class="anchor" id="deep-equal"></p>
-<h4>The Results Of <code>reflect.DeepEqual(x, y)</code> And <code>x == y</code> May Be Different.</h4>
+<h4>The Results Of <code>reflect.DeepEqual(x, y)</code> And <code>x == y</code> May Be Different</h4>
 
 <div>
 <p>
 The function call <code>reflect.DeepEqual(x, y)</code> will always return
-<code>false</code> of the types of its two arguments are different,
+<code>false</code> if the types of its two arguments are different,
 whereas <code>x == y</code> may return <code>true</code> even if
 the types of the two operands are different.
 </p>
 
 <p>
-Another difference between the two is, the function call
-<code>reflect.DeepEqual(x, y)</code> is not expected to panic generally,
-whereas <code>x == y</code> will panic if the two operands are both
-interface values and their dynamic types are identical and uncomprable.
+The second difference is a <code>DeepEqual</code> call with
+two pointer argument values of the same type returns whether or not
+the two respective values referenced by the two pointers are deep equal.
+So the call might return <code>true</code> even if the two pointers are not equal.
 </p>
 
 <p>
@@ -505,7 +518,20 @@ The third difference is the result of a <code>DeepEqual</code> call may be not
 correct if the compared two arguments are in the same cyclic reference chain.
 </p>
 
-An example show the three differences.
+<p>
+The fourth difference is, the function call
+<code>reflect.DeepEqual(x, y)</code> is not expected to panic generally,
+whereas <code>x == y</code> will panic if the two operands are both
+interface values and their dynamic types are identical and uncomprable.
+</p>
+
+<p>
+Note, a <code>DeepEqual</code> call with
+two function argument values returns <code>true</code> only if
+the two functions are both <code>nil</code> and their types are identical.
+</p>
+
+An example showing these differences:
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -519,11 +545,19 @@ func main() {
 	fmt.Println(reflect.DeepEqual(x, y)) // false
 	fmt.Println(x == y)                  // true
 
+	z := Book{123}
+	fmt.Println(reflect.DeepEqual(&z, &y)) // true
+	fmt.Println(&z == &y)                  // false
+
 	type T struct{p *T}
 	t := &T{&T{nil}}
 	t.p.p = t // form a cyclic reference chain.
 	fmt.Println(reflect.DeepEqual(t, t.p)) // true
 	fmt.Println(t == t.p)                  // false
+	
+	var f1, f2 func() = nil, func(){}
+	fmt.Println(reflect.DeepEqual(f1, f1)) // true
+	fmt.Println(reflect.DeepEqual(f2, f2)) // false
 
 	var a, b interface{} = []int{1, 2}, []int{1, 2}
 	fmt.Println(reflect.DeepEqual(a, b)) // true
