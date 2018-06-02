@@ -20,7 +20,9 @@ is the path of the `go` folder under the home directory.
 
 ```
 $ go101
-Server started: http://localhost:55555
+Server started:
+   http://localhost:55555 (non-cached version)
+   http://127.0.0.1:55555 (cached version)
 ```
 
 The start page should be opened in a browser automatically.
