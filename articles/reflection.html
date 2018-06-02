@@ -84,26 +84,26 @@ import "fmt"
 import "reflect"
 
 func main() {
-	var c <-chan map[*string][]byte
+	type A = [16]int16
+	var c <-chan map[A][]byte
 	tc := reflect.TypeOf(c)
 	fmt.Println(tc.Kind())    // chan
 	fmt.Println(tc.ChanDir()) // <-chan
 	tm := tc.Elem()
 	ta, tb := tm.Key(), tm.Elem()
-	fmt.Println(tm.Kind(), ta.Kind(), tb.Kind()) // map ptr slice
+	fmt.Println(tm.Kind(), ta.Kind(), tb.Kind()) // map array slice
 	tx, ty := ta.Elem(), tb.Elem()
 
 	// byte is an alias of uint8
-	fmt.Println(tx.Kind(), ty.Kind()) // string uint8
-	fmt.Println(ty.Bits(), "bits")    // 16 bits
-
-	// []byte and string values are convertible to each other's type.
-	fmt.Println(tx.ConvertibleTo(tb)) // true
-	fmt.Println(tb.ConvertibleTo(tx)) // true
+	fmt.Println(tx.Kind(), ty.Kind()) // int16 uint8
+	fmt.Println(tx.Bits(), ty.Bits()) // 16 8
+	fmt.Println(tx.ConvertibleTo(ty)) // true
+	fmt.Println(tb.ConvertibleTo(ta)) // false
 
 	// Slice and map types are uncomparable.
 	fmt.Println(tb.Comparable()) // false
 	fmt.Println(tm.Comparable()) // false
+	fmt.Println(ta.Comparable()) // true
 	fmt.Println(tc.Comparable()) // true
 }
 </code></pre>
@@ -111,43 +111,47 @@ func main() {
 <p>
 </p>
 
-Another example:
+In the above example, we use the method <code>Elem</code> to get
+the element types of some container types (a channel type, a map type,
+a slice type and a array type).
+In fact, we can also use this method to get the base type of a pointer type.
+For example,
 
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 import "reflect"
 
-type A [5]interface{}
-var x [5]interface{}
+type T []interface{m()}
+func (T) m() {}
 
 func main() {
-	var p *A
-	tp := reflect.TypeOf(p)
-	fmt.Println(tp.Kind()) // ptr
-	ta := tp.Elem()
-	fmt.Println(ta.Kind()) // array
-
-	// The type of x is an unnamed type.
-	tx := reflect.TypeOf(x)
-	fmt.Println(tx.AssignableTo(ta)) // true
-
-	// Get an interface Type indirectly.
-	ti := ta.Elem()
-	fmt.Println(ti.Kind()) // interface
+	tp := reflect.TypeOf(new(interface{}))
+	tt := reflect.TypeOf(T{})
+	fmt.Println(tp.Kind(), tt.Kind()) // ptr slice
+	
+	// Get two interface Types indirectly.
+	ti, tim := tp.Elem(), tt.Elem()
+	fmt.Println(ti.Kind(), tim.Kind()) // interface interface
+	
+	fmt.Println(tt.Implements(tim))  // true
+	fmt.Println(tp.Implements(tim))  // false
+	fmt.Println(tim.Implements(tim)) // false
 
 	// All types implement any blank interface type.
-	fmt.Println(tp.Implements(ti)) // true
-	fmt.Println(ta.Implements(ti)) // true
-	fmt.Println(tx.Implements(ti)) // true
-	fmt.Println(ti.Implements(ti)) // true
+	fmt.Println(tp.Implements(ti))  // true
+	fmt.Println(tt.Implements(ti))  // true
+	fmt.Println(tim.Implements(ti)) // true
+	fmt.Println(ti.Implements(ti))  // true
 }
 </code></pre>
 
 <p>
 </p>
 
-The third example:
+We can get the field type and method information of a type through reflection.
+We can also get the parameter and result type information of a function type
+through reflection.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -294,7 +298,7 @@ func main() {
 	p := &n
 	vp := reflect.ValueOf(p)
 	fmt.Println(vp.CanSet(), vp.CanAddr()) // false false
-	vn := vp.Elem()
+	vn := vp.Elem() // get the value referenced by vp
 	fmt.Println(vn.CanSet(), vn.CanAddr()) // true true
 	vn.Set(reflect.ValueOf(789)) // <=> vn.SetInt(789)
 	fmt.Println(n) // 789
@@ -359,6 +363,7 @@ func InvertSlice(args []reflect.Value) (result []reflect.Value) {
 }
 
 func Bind(p interface{}, f func ([]reflect.Value) []reflect.Value) {
+	// Get dynamic Values of interface Values by using the Elem method.
 	invert := reflect.ValueOf(p).Elem()
 	invert.Set(reflect.MakeFunc(invert.Type(), f))
 }
@@ -375,6 +380,10 @@ func main() {
 </code></pre>
 
 <p>
+Note, from the above several examples, we should learn that
+the <code>Elem</code> method of the <code>reflect.Value</code> type
+can not only be used to get the value referenced by a pointer value,
+it can also be used to get the dynamic value of an interface value.
 </p>
 
 If a <code>reflect.Value</code> represents a function (or method) value,
@@ -616,6 +625,10 @@ For example, with this voilation, we can use the functions in the
 </div>
 
 <!--
+
+bug setcion in reflect docs
+
+interface type numbe methods, non-exported, ...
 
 
 https://github.com/golang/go/issues/15924
