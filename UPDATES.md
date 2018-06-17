@@ -1,10 +1,16 @@
 
 
 
+### 1.10.g (2018/Jun/02)
+
+* published [About Go 101](https://go101.org/article/101-about.html).
+* published [Acknowledgements](https://go101.org/article/acknowledgements.html).
+* updated [license](LICENSE).
+
 ### 1.10.f (2018/May/15)
 
 * published [Relections in Go](https://go101.org/article/reflection.html).
-* added a channel use case [Relections in Go](https://go101.org/article/channel-use-cases.html#rate-limiting).
+* added a channel use case: [rate limiting](https://go101.org/article/channel-use-cases.html#rate-limiting).
 
 
 ### 1.10.e (2018/Apr/28)
