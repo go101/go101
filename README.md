@@ -3,13 +3,22 @@ The book also tries to help gophers understand Go deeply and thoroughly.
 
 ### Install And Update
 
+Run
+
 ```
 $ go get -u github.com/go101/go101
 ```
 
-*(NOTE: if your last `go get -u github.com/go101/go101` command run
-was before May 5th, 2018, please run this command again to install
-the latest `go101` program.)*
+or
+
+```
+$ go get -u gitlab.com/go101/go101
+```
+
+to install and update ***Go 101***.
+
+*(NOTE: if your last `go get -u` command run was before **May 5th, 2018**,
+please run this command again to install the latest `go101` program.)*
 
 ### Run Locally
 
