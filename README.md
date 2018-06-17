@@ -7,9 +7,9 @@ The book also tries to help gophers understand Go deeply and thoroughly.
 $ go get -u github.com/go101/go101
 ```
 
-NOTE: if your last `go get -u github.com/go101/go101` command run
+***(NOTE: if your last `go get -u github.com/go101/go101` command run
 was before May 5th, 2018, please run this command again to install
-the latest `go101` program.
+the latest `go101` program.)***
 
 ### Run Locally
 
@@ -30,7 +30,8 @@ If it is not opened, please visit http://localhost:55555.
 
 ### Some Notes
 
-* The book is still not finished. Several articles are missing and many finished articles need correcting.
-* Translations are welcome, but for the last note, it may not be the proper time to do so.
+* The book is in beta phase now. Many articles still need correcting.
+* Translations are welcome, but for the last note, it may not (but will soon) be the proper time to do so.
 * Chinese translation version is maintained by myself ([@TapirLiu](https://twitter.com/tapirliu)).
-* A more relexed license is coming soon.
+* There are some articles are hosted on the project wiki.
+* Please read [UPDATES.md](UPDATES.md) for update history.
