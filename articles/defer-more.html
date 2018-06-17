@@ -145,6 +145,27 @@ Which one looks cleaner? apparently, the one with the deferrd calls,
 though a little. And it is less bug prone,
 what about if any if <code>f.Close()</code> calls in the other one is missed? ;)
 </p>
+
+The following is another example to show deferred calls can make code less bug prone.
+If the <code>doSomething</code> calls panic in the following example,
+the function <code>f2</code> will exit by leaving the Metex unlocked.
+So the function <code>f1</code> is less bug prone.
+
+<pre class="line-numbers"><code class="language-go">var m sync.Metex
+
+func f1() {
+	m.Lock()
+	defer m.Unlock()
+	doSomething()
+}
+
+func f2() {
+	m.Lock()
+	doSomething()
+	m.Unlock()
+}
+</code></pre>
+
 </div>
 
 <h3>Performance Losses Caused By Deferring Function Calls</h3>
@@ -157,14 +178,28 @@ deferred function calls will cause some performance losses at run time,
 in particular for deferred function calls within loop code blocks.
 </p>
 
-For example, in the following example, method <code>IncreaseB</code> is
-much more efficient than <code>IncreaseA</code>.
+For example, in the following example, the methods <code>CounterB</code>
+and <code>IncreaseB</code> are much more efficient than the methods
+<code>CounterA</code> and <code>IncreaseA</code>.
 
 <pre class="line-numbers"><code class="language-go">import "sync"
 
 type T struct {
 	mu sync.Mutex
 	n  int64
+}
+
+func (t *T) CounterA() int64 {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.n
+}
+
+func (t *T) CounterB() (count int64) {
+	t.mu.Lock()
+	count = t.n
+	t.mu.Unlock()
+	return
 }
 
 func (t *T) IncreaseA() {
@@ -175,7 +210,7 @@ func (t *T) IncreaseA() {
 
 func (t *T) IncreaseB() {
 	t.mu.Lock()
-	t.n++
+	t.n++ // this line will not panic for sure
 	t.mu.Unlock()
 }
 </code></pre>
