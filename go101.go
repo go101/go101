@@ -158,7 +158,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
 		return
 	}
-	
+
 	if isLocal {
 		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 	} else {
@@ -274,21 +274,48 @@ func gitPull() {
 	}
 }
 
-func goGet() {
-	_, err := runShellCommand(time.Minute/2, "go", "get", "-u", "github.com/go101/go101")
+func goGet(pkgPath string) {
+	_, err := runShellCommand(time.Minute/2, "go", "get", "-u", pkgPath)
 	if err != nil {
-		log.Println("go get -u:", err)
+		log.Println("go get -u "+pkgPath+":", err)
 	} else {
-		log.Println("go get -u succeeded.")
+		log.Println("go get -u " + pkgPath + " succeeded.")
 	}
 }
 
 func (go101 *Go101) Update() {
 	<-time.After(time.Minute * 5)
-	goGet() // gitPull()
+
+	output, err := runShellCommand(time.Minute/2, "git", "remote")
+	if err != nil {
+		log.Println("list git remotes error:", err)
+		return
+	}
+	k := bytes.IndexRune(output, '\n')
+	if k < 0 {
+		log.Println("find git remote failed:", output)
+		return
+	}
+
+	configItem := "remote." + string(bytes.TrimSpace(output[:k])) + ".url"
+	output, err = runShellCommand(time.Minute/2, "git", "config", "--get", configItem)
+	if err != nil {
+		log.Println("get "+configItem+" error:", err)
+		return
+	}
+	a, b := bytes.Index(output, []byte("://")), bytes.Index(output, []byte(".git"))
+	if a += 3; a < 3 {
+		a = 0
+	}
+	if b < 0 {
+		b = len(output)
+	}
+
+	pkgPath := string(output[a:b])
+	goGet(pkgPath) // gitPull()
 	for {
 		<-time.After(time.Hour * 24)
-		goGet() // gitPull()
+		goGet(pkgPath) // gitPull()
 	}
 }
 
