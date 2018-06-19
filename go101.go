@@ -352,12 +352,16 @@ func findGo101ProjectRoot() string {
 		return "."
 	}
 
-	pkg, err := build.Import("github.com/go101/go101", "", build.FindOnly)
-	if err != nil {
-		log.Fatal("Can't find pacakge: github.com/go101/go101")
-		return "."
+	for _, name := range []string{
+		"gitlab.com/go101/go101", "gitlab.com/Go101/go101",
+		"github.com/go101/go101", "github.com/Go101/go101",
+	} {
+		pkg, err := build.Import(name, "", build.FindOnly)
+		if err == nil {
+			return pkg.Dir
+		}
 	}
-	return pkg.Dir
+	return "."
 }
 
 func isLocalRequest(r *http.Request) bool {
