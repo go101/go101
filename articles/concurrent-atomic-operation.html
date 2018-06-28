@@ -2,22 +2,14 @@
 
 <p>
 Atomic operations are more primitive than other synchronization techniques.
-Atomic operations are lockless and generally implemented at hardware level.
-In fact, atomic operations are often used in implementing other synchronization techniques.
-</p>
-
-<p>
-One design goal of Go language is to easy using.
-So unlike C++ and some other languages,
-Go doesn't provide low level ways to control memory ordering
-in using atomic operations.
-The <code>sync/atomic</code> standard package provides
-some functions and the <code>atomic.Value</code> type to do atomic operations.
+They are lockless and generally implemented at hardware level.
+In fact, they are often used in implementing other synchronization techniques.
 </p>
 
 <p>
 Please note, many examples below are not concurrent programs,
-they are just for atomic function demonstration purpose.
+they are just for demonstration and education purpose, to show how to use the
+atomic functions provided in the <code>sync/atomic</code> standard package.
 </p>
 
 <p class="anchor" id="overview"></p>
@@ -44,8 +36,10 @@ func SwapInt32(addr *int32, new int32) (old int32)
 func CompareAndSwapInt32(addr *int32, old, new int32) (swapped bool)
 </code></pre>
 
-Except for <code>AddT</code>, the other four functions mentioned above also provided for
-<a href="unsafe.html">type <code>unsafe.Pointer</code></a>.
+The following four atomic functions are provided for (safe) pointer types.
+As Go 1 doesn't support custom generic now, these functions are implemented
+through the <a href="unsafe.html">unsafe pointer type</a> <code>unsafe.Pointer</code>
+(the Go counterpart of C <code>void*</code>).
 <pre class="line-numbers"><code class="language-go">func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
 func StorePointer(addr *unsafe.Pointer, val unsafe.Pointer)
 func SwapPointer(addr *unsafe.Pointer, new T) (old unsafe.Pointer)
@@ -53,31 +47,29 @@ func CompareAndSwapPointer(addr *unsafe.Pointer, old, new unsafe.Pointer) (swapp
 </code></pre>
 
 <p>
-Values of any pointer type can be converted to <code>unsafe.Pointer</code>, and vice versa.
-So we can view <code>unsafe.Pointer</code> as any pointer type, just like the <Code>void*</Code> in C.
-The above foure functions can be used to atomic pointer operations.
-The reason of why there is not a <code>AddPointer</code> function is
-pointer types don't support arithmetic operations in Go.
+There is not the <code>AddPointer</code> function for pointers,
+as Go pointers don't support arithmetic operations.
 </p>
 
 The <code>sync/atomic</code> standard package also provides a type <code>Value</code>.
-Type <code>*Value</code> has two methods, <code>Load</code> and <code>Store</code>.
+Its corresponding pointer type <code>*Value</code> has two methods, <code>Load</code> and <code>Store</code>.
 A <code>Value</code> value can be used to atomically load and store values of any type.
 <pre class="line-numbers"><code class="language-go">func (v *Value) Load() (x interface{})
 func (v *Value) Store(x interface{})
 </code></pre>
 
 <p>
-Followings are some examples to show how to use the atomic operations provided in Go.
+The remaining of this article shows some examples on how to use the atomic operations provided in Go.
 </p>
 
 <p class="anchor" id="integer"></p>
-<h3>Atomic Operations On Integer Values</h3>
+<h3>Atomic Operations For Integers</h3>
 
 <div>
 The following example shows how to do the <code>add</code> atomic operation
 on an <code>int32</code> value by using the <code>AddInt32</code> function.
-In this example, 1000 new goroutines are created by the main goroutine.
+In this example, 1000 new concurrent goroutines are created by the main goroutine.
+Each of the new created goroutine increases the integer <code>n</code> by one.
 Atomic operations guarantee that there are no data races among these goroutines.
 In the end, <code>1000</code> is guaranteed to be printed.
 
@@ -105,9 +97,13 @@ func main() {
 }
 </code></pre>
 
+<p>
+</p>
+
 The <code>StoreT</code> and <code>LoadT</code> atomic functions are often used
-to implement the setter and getter methods of a type if the values of the type
-are accessed concurrently. For example,
+to implement the setter and getter methods of (the corresponding pointer type of)
+a type if the values of the type are accessed concurrently.
+For example,
 
 <pre class="line-numbers"><code class="language-go">type Page struct {
 	views uint32
@@ -122,38 +118,39 @@ func (page *Page) Views() uint32 {
 }
 </code></pre>
 
+<p>
+</p>
+
 For signed types <code>int32</code> and <code>int64</code>,
-the second arguments for an <code>AddT</code> function calls can be a negative value,
-to do atomic decrease operations.
-But how to do decrease atomic operations for values of an unsigned type <code>T</code>,
+the second argument for an <code>AddT</code> function call can be a negative value,
+to do an atomic decrease operation.
+But how to do atomic decrease operations for values of an unsigned type <code>T</code>,
 such as <code>uint32</code>, <code>uint64</code> and <code>uintptr</code>?
-There are two circumstances for the second unsigned arguments:
+There are two circumstances for the second unsigned arguments.
 <ol>
 <li>
-	for an unsigned variable <code>v</code> of type <code>T</code>,
+	For an unsigned variable <code>v</code> of type <code>T</code>,
 	<code>-v</code> is legal in Go.
-	So we can just pass <code>-v</code> as the second arguments of <code>AddT</code> calls.
+	So we can just pass <code>-v</code> as the second argument of an <code>AddT</code> call.
 </li>
 <li>
-	for a positive constant integer <code>c</code>,
-	<code>-v</code> is illegal to be used as the second arguments of <code>AddT</code> calls.
-	We can used <code>^T(c-1)</code> as the second arguments instead.
+	For a positive constant integer <code>c</code>,
+	<code>-v</code> is illegal to be used as the second argument of an <code>AddT</code> call
+	(where <code>T</code> denotes an unsigned integer type).
+	We can used <code>^T(c-1)</code> as the second argument instead.
 </li>
 </ol>
 
 <p>
-We can also assign a constant integer to an unsigned variable <code>v</code>,
-then pass <code>-v</code> as the second argument,
-but this workaround is less efficient than the <code>^T(c-1)</code> trick.
 </p>
 
 <p>
-This <code>^T(c-1)</code> trick also works for unsigned variables,
-but <code>^T(v-1)</code> is less efficient than <code>-v</code>.
+This <code>^T(c-1)</code> trick also works for an unsigned variable <code>v</code>,
+but <code>^T(v-1)</code> is less efficient than <code>T(-v)</code>.
 </p>
 
 <p>
-In the form <code>^T(c-1)</code>, if <code>c</code> is a typed value
+In the trick <code>^T(c-1)</code>, if <code>c</code> is a typed value
 and its type matches the second perameter type of function <code>AddT</code>,
 then the form can shortened as <code>^(c-1)</code>.
 </p>
@@ -193,15 +190,15 @@ func main() {
 </code></pre>
 
 <p>
-The <code>SwapT</code> functions are like the <code>StoreT</code> functions,
-but return the old values.
+A <code>SwapT</code> function call is like a <code>StoreT</code> function call,
+but returns the old value.
 </p>
 
 <p>
-The <code>CompareAndSwapT</code> functions only apply store operations
-when the current values match the passed old values.
-The <code>bool</code> return results of the <code>CompareAndSwapT</code>
-functions indicate whether or not the store operations are applied.
+A <code>CompareAndSwapT</code> function call only applies the store operation
+when the current value matches the passed old value.
+The <code>bool</code> return result of the <code>CompareAndSwapT</code>
+function call indicates whether or not the store operation is applied.
 </p>
 
 Example:
@@ -224,6 +221,9 @@ func main() {
 </code></pre>
 
 <p>
+</p>
+
+<p>
 Please note, up to now (Go 1.10), atomic operations for 64-bit words,
 a.k.a., <code>int64</code> and <code>uint64</code> values,
 require the 64-bit words are 8-byte aligned in memory.
@@ -233,7 +233,7 @@ Please read <a href="memory-layout.html">memory layout</a> for details.
 </div>
 
 <p class="anchor" id="integer"></p>
-<h3>Atomic Operations On Pointer Values</h3>
+<h3>Atomic Operations For Pointers</h3>
 
 <div>
 <p>
@@ -282,29 +282,29 @@ func main() {
 
 <p>
 Yes, it is quite verbose to use the pointer atomic functions.
-In fact, not only are the uses verbose, but they are not protected by
+In fact, not only are the uses verbose, they are also not protected by
 <a href="https://golang.org/doc/go1compat">the Go 1 compatibility guidelines</a>,
 for these uses require to import the <code>unsafe</code> standard package.
 </p>
 
 <p>
-Personally, I think the possibility is small that the valid pointer value
-atomic operations used in the above example will become invalid later.
-Even if they becomes invalid later, the <code>go fix</code> command in
-the official Go SDK should fix them with a later alternative new valid way.
+Personally, I think the possibility is small that the legal pointer value
+atomic operations used in the above example will become illegal later.
+Even if they become illegal later, the <code>go fix</code> command in
+the official Go SDK should fix them with a later alternative new legal way.
 But, this is just my opinion, which is not authoritative.
 </p>
 
 <p>
-If you do warry about the future validity of the pointer atomic operations used
+If you do warry about the future legality of the pointer atomic operations used
 in the above example, you can use the atomic operations introduced in the next
-section for pointers, though the to be introduced operations are a little less
+section for pointers, though the to be introduced operations are less
 efficient than the ones introduced in the current section.
 </p>
 </div>
 
 <p class="anchor" id="integer"></p>
-<h3>Atomic Operations On Values Of Arbitrary Types</h3>
+<h3>Atomic Operations For Values Of Arbitrary Types</h3>
 
 <div>
 <p>
@@ -321,16 +321,16 @@ The input parameter type and output result type of the <code>Load</code> and <co
 methods are both <code>interface{}</code>.
 So a call of the <code>Store</code> can take a value of any type.
 But for an addressable <code>Value</code> value <code>v</code>,
-once <code>v.Store</code>, a shorthand of <code>(&amp;v).Store</code>,
+once <code>v.Store</code> (a shorthand of <code>(&amp;v).Store</code>)
 has ever been called,
 then the subsequent <code>v.Store</code> calls must also take argument values
-of the same type as the first <code>v.Store</code> call,
-otherwise, panic will hanppen.
+of the same type as the argument type of the first <code>v.Store</code> call,
+otherwise, panic will occur.
 A <code>nil</code> <code>interface{}</code> argument will also
 make a <code>v.Store</code> call panic.
 </p>
 
-Example (not a concurrent one, just for demo purpose):
+Example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -354,7 +354,7 @@ func main() {
 <p>
 We can also use the atomic pointer functions explained in the last section
 to do atomic operations for values of any type, with one more level indirection.
-Both ways have their repective advantages and disadvantages.
+Both ways have their respective advantages and disadvantages.
 Which way should be used depends on the requirements in practice.
 </p>
 
@@ -363,7 +363,9 @@ Which way should be used depends on the requirements in practice.
 <h3>Memory Order Guarantee Made By Atomic Operations In Go</h3>
 
 <p>
-The offical documentations don't specify any memory order guarantees
+For easy using, Go atomic operations provided in the <code>sync/atomic</code>
+standard package are designed without any relations to memory ordering.
+At least the offical documentations don't specify any memory order guarantees
 made by the <code>sync/atomic</code> standard package.
 Please read <a href="memory-model.html#atomic">Go memory model</a> for details.
 </p>
