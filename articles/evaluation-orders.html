@@ -13,36 +13,72 @@ Before learning expression evaluation orders under all kinds of scenarios,
 let's learn what is <b><i>the usual order</i></b>.
 </p>
 
-Go specification doesn't describe much on what is the usual order.
-From the examples provided in Go specification,
-I think the the usual order means, in a statement,
-<ul>
-<li>
-	an <a href="expressions-and-statements.html#expressions">expression</a>
-	is evaluated after the evaluations of its sub-expressions.
-	(The expression depends on its sub-expressions.)
-</li>
-<li>
-	function calls, method calls and channel receive operations
-	which have no dependency relations with each other
-	are evaluated by their lexical left-to-right and up-to-down order.
-	(Function call, method call and channel receive operation
-	are several kinds of expressions.)
-</li>
-</ul>
+Go specification describes <b><i>the usual order</i></b> as
+
+<div class="alert alert-success">
+...,
+when evaluating the operands of an expression, assignment, or return statement,
+all function calls, method calls, and (channel) communication operations
+are evaluated in lexical left-to-right order. 
+</div>
 
 <p>
 Please note that an explicit conversion <code>T(x)</code> is not a function call.
 </p>
 
 <p>
-The evaluation order of other kinds of expressions which have no
-dependency relations with each other in a statement is not specified.
+In addition, from common sense, 
+an <a href="expressions-and-statements.html#expressions">expression</a>
+is guaranteed to be evaluated after all the evaluations of its sub-expressions,
+for the expression depends on its sub-expressions.
 </p>
+
+In the following assignment, assume <code>z</code> is an expression and
+<code>f</code> is one of its method.
+
+<pre><code class="language-go">y[z.f()], ok = g(h(a, b), i()+x[j()], <-c), k()
+</code></pre>
+
+Compilers should guarantee the following orders.
+<ul>
+<li>
+	The function calls, method calls and channel communication operations
+	happen in the order <code>z.f()</code>, <code>h()</code>, <code>i()</code>,
+	<code>j()</code>, <code>&lt;-c</code>, <code>g()</codE>, and <code>k()</code>.
+</li>
+<li>
+	<code>h()</code> is evaluated after the evaluations of expressions <code>a</code> and <code>b</code>.
+</li>
+<li>
+	<code>y[]</code> is evaluated after the evaluations of <code>z.f()</code>.
+</li>
+<li>
+	<code>z.f()</code> is evaluated after the evaluations of expression <code>z</code>.
+</li>
+<li>
+	<code>x[]</code> is evaluated after the evaluations of <code>j()</code>.
+</li>
+</ul>
+
+However, the following orders are not specified.
+<ul>
+<li>
+	The relative evaluation order of expressions <code>a</code> and <code>b</code>.
+</li>
+<li>
+	The relative evaluation order of expressions <code>x[]</code> and <code>&lt;-c</code>.
+</li>
+<li>
+	The relative evaluation order of expression <code>y</code> and any of
+	the followings: <code>h()</code>, <code>i()</code>, <code>j()</code>,
+	<code>&lt;-c</code>, <code>g()</codE>, <code>k()</code>.
+</li>
+</ul>
+
 
 </div>
 
-<h3>Evaluation Orders In <code>=</code> Assignments</h3>
+<h3>Evaluation Orders In Assignment Statements</h3>
 
 <div>
 <p>
@@ -52,7 +88,7 @@ a map index expression, or the blank identifier.
 In most cases, we don't need to care about the evaluation order rules
 of the expressions involved in multi-valued assignments.
 But for some special cases, we really should understand the rules
-to know the assignment results clearly.
+to get the the expected assignment results.
 </p>
 
 <p>
@@ -75,21 +111,22 @@ where each <code>Lx</code> may be
 	if the corresponding left side item is also the blank identifier.
 </li>
 <li>
-	a form of <code>*Px</code>, if the corresponding left side item
-	is neither a map index expression nor the blank identifier.
-	<code>Px</code> is a (pointer) value of any pointer type.
+	a form of <code>Mx[Kx]</code>,
+	if the corresponding left side item is a map index expression.
+	<code>Mx</code> is a map value and <code>Kx</code> is a value
+	of the key type of the map value.
 </li>
 <li>
-	a form of <code>(*PMx)[Kx]</code>,
-	if the corresponding left side item is a map index expression.
-	<code>PMx</code> is a (pointer) value of a pointer type
-	which base type is a map type and <code>Kx</code> is a value
-	of the key type of the map type.
+	a form of <code>*Px</code>, if the corresponding left side item
+	is neither a map index expression nor the blank identifier.
+	<code>Px</code> is a (pointer) value of a certain pointer type.
+	If for any reason, an address can't be retrieved from the
+	corresponding left side item, <code>Px</code> is a nil pointer.
 </li>
 </ul>
 
 <p>
-and, every <code>Px</code>, <code>PMx</code>, <code>Kx</code> and
+and, every <code>Px</code>, <code>Mx</code>, <code>Kx</code> and
 <code>Rx</code> is an elementary value which can't be evaluated further.
 They are all hidden temporary values which are only referenced
 in the elementary form of the assignment.
@@ -99,54 +136,9 @@ in the elementary form of the assignment.
 In the carry-out phase, solo assignments, <code>L0 = R0</code>,
 <code>L1 = R1</code>, ..., <code>Ln = Rn</code>,
 are carried out in left-to-right order.
+Whenever a nil <code>Mx</code> or a nil <code>Px</code> is encountered,
+the assignment exection is terminated and a panic occurs.
 <p/>
-
-For example, in the following assignment, at the preparation phase,
-the evaluations of <code>f()</code>, <code>h()</code>, <code>i()</code>,
-<code>j()</code>, <code>&lt;-c</code>, <code>g()</code>, and <code>k()</code>
-happen in lexical left-to-right order.
-
-<pre><code class="language-go">y[f()], ok = g(h(), i()+x[j()], <-c), k()
-</code></pre>
-
-<p>
-By the dependency relations, the evluation of the container element indexing
-expression <code>x[]</code> should happen between the evluations of
-the function calls <code>j()</code> and <code>g()</code>.
-</p>
-
-<p>
-The relative evaluation order of <code>y</code> and any other expression
-in the above assignment is not specified.
-The evaluation of <code>x</code> happens before <code>g()</code>
-and <code>k()</code> for sure, but the relative evaluation order of
-<code>x</code> and <code>&lt;-c</code> (or <code>f()</code>, <code>h()</code>,
-<code>i()</code>, <code>j()</code>) is not specified.
-</p>
-
-In the following example, the relative order of the expression
-<code>x+1</code> and <code>f(&x)</code> is not specified.
-The example may output <code>100 99</code> or <code>1 99</code>.
-
-
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	f := func (p *int) int {
-		*p = 99
-		return *p
-	}
-	
-	x := 0
-	y, z := x+1, f(&x)
-	fmt.Println(y, z)
-}
-</code></pre>
-
-<p>
-</p>
 
 Assume <code>a</code> and <code>b</code> are two addressable
 elementary values, the following assignment
@@ -170,13 +162,26 @@ R0 := a; R1 := b
 <p>
 </p>
 
-The following is another example, in which <code>x[0]</code> instead of
+Here is another example, in which <code>x[0]</code> instead of
 <code>x[1]</code> is modified.
 
 <pre class="line-numbers"><code class="language-go">	x := []int{0, 0}
 	i := 0
 	i, x[i] = 1, 2
 	fmt.Println(x) // [2 0]
+</code></pre>
+
+The phases for the assignment at line <i>3</i> are shown below.
+
+<pre class="line-numbers"><code class="language-go">// The preparation phase:
+P0 := &i; P1 := &x[0];
+R0 := 1; R1 := 2
+
+// The elementary form: *P0, *P1 = R0, R1
+
+// The carry-out phase:
+*P0 = R0
+*P1 = R1
 </code></pre>
 
 <p>
@@ -231,11 +236,34 @@ The following example rotates all elements in a slice for one index.
 <p>
 </p>
 
-The last example in this section:
+Another example:
 
 <pre class="line-numbers"><code class="language-go">	x := []int{123}
 	x, x[0] = nil, 456        // will not panic
 	x, x[0] = []int{123}, 789 // will panic
+</code></pre>
+
+<p>
+</p>
+
+In the following example, the relative order of the expression
+<code>x+1</code> and <code>f(&x)</code> is not specified.
+The example may output <code>100 99</code> or <code>1 99</code>.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	f := func (p *int) int {
+		*p = 99
+		return *p
+	}
+	
+	x := 0
+	y, z := x+1, f(&x)
+	fmt.Println(y, z)
+}
 </code></pre>
 
 <p>
@@ -260,9 +288,8 @@ and the left-hand expression must not be the blank identifier.
 <h3>Evaluation Orders In composite Literals</h3>
 
 <div>
-
-The expressions in a composite literal are evaluated in the usual order
-mentioned above.
+Each composite literal is an expression, so the sub-expressions
+in a composite literal are evaluated in the usual order mentioned above.
 Several examples from Go specification:
 
 <pre class="line-numbers"><code class="language-go">	a := 1
@@ -288,7 +315,7 @@ Several examples from Go specification:
 <div>
 
 <p>
-The expressions in the argument list of a function call
+Each function call is an expression, so the argument list of a function call
 are evaluated in the usual order mentioned above.
 </p>
 

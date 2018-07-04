@@ -18,7 +18,7 @@ $ go get -u github.com/go101/go101
 to install and update ***Go 101***.
 
 *(NOTE: if your last `go get -u` command run was before __May 5th, 2018__,
-please run this command again to install the latest `go101` program.
+please run this command again to install the latest `go101` program.)*
 
 ### Run Locally
 
