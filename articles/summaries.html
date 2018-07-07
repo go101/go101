@@ -436,13 +436,13 @@ Following values can't be taken addresses:
 <div class="alert alert-success">
 Please note, there is a syntax sugar, <code>&T{}</code>, in Go.
 It is a short form of <code>tmp := T{}; (&tmp)</code>,
-so <code>&T{}</code> is legal doesn't mean
+so <code>&T{}</code> is legal doesn't mean the composite literal
 <code>T{}</code> is addressable.
 </div>
 <p></p>
 
 <div>
-BTW, following values can be taken addresses:
+BTW, following values can be taken addresses (except the just mentioned composite literals):
 <ul>
 <li>variables</li>
 <li>fields of addressable structs</li>
@@ -668,9 +668,38 @@ Please read <a href="string.html#string-concatenation">strings in Go</a> for det
 
 <!--
 
+Fatal errors which can be recovered:
+* https://play.golang.org/p/bYrfLTzXpc_o bad Mutex.Unlock call
+* create goroutine with nil function
+* memory allcaotion fails
+
+The optimizations made by gc
+* len([]rune(str)) // since Go 1.11
+* string ...
+  []byte <-> stirng
+  len([]rune(string))
+  string + string
+  ...
+* since Go 1.11, https://github.com/golang/go/issues/21266#issuecomment-384706868
+  possible future append(s, make([]T)) optimiation
+  https://docs.google.com/presentation/d/1tpeJZFObkeick4CF-mx0L3CeCgvT15B96aJeRpxEPcE/preview#slide=id.g3bc6fcf60c_0_62
+* memclr
+* interface copy
+* interface dynamic pointer value
+* 4 fields struct is much faster than more field struct
+  https://docs.google.com/presentation/d/1tpeJZFObkeick4CF-mx0L3CeCgvT15B96aJeRpxEPcE/preview#slide=id.g3bc6fcf60c_0_157
+* BCE
+  https://docs.google.com/presentation/d/1tpeJZFObkeick4CF-mx0L3CeCgvT15B96aJeRpxEPcE/preview#slide=id.g3bc6fcf60c_0_169
+
+
 short and standard variable declaration comparison
 
 differences between built-in functions and custom functions.
+  * generic
+  * built-in function returns can't be omitted
+  * builtin-in functions can't be used as values, they have no types.
+  * built-in doon't need to be imported before using them, even their identifiers starts with lower..
+  * 
 
 built-in function list
 
@@ -682,6 +711,8 @@ values of which kinds of types can be for-ranged.
 ways to return a function: naturally return, return keyword, panic, runtime.Goexit()
 
 the form <code>v[k]</code> can be used to access element of value of which kinds of types?
+
+
 
 -->
 
