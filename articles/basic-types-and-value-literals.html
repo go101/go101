@@ -24,10 +24,10 @@ Go supports following built-in basic types:
 	and <code>uinptr</code>.
 </li>
 <li>
-	two built-in floating-point numeric types: <code>float32</code>, <code>float64</code>.
+	two built-in floating-point numeric types: <code>float32</code> and <code>float64</code>.
 </li>
 <li>
-	two built-in complex numeric types: <code>complex64</code>, <code>complex128</code>.
+	two built-in complex numeric types: <code>complex64</code> and <code>complex128</code>.
 </li>
 <li>
 	one built-in string type: <code>string</code>.
@@ -63,7 +63,7 @@ Go also support two built-in alias types,
 The integer types whose names starting with an <code>u</code> are unsigned types.
 Values of unsigned types are always non-negative.
 The number in the name of a type means how many binary bits
-a value of the type will occupy in memory.
+a value of the type will occupy in memory at run time.
 For example, every value of the <code>uint8</code> occupies 8 bits in memory.
 So the largest <code>uint8</code> value is <code>255</code> (2<sup>8</sup>-1),
 the largest <code>int8</code> value is <code>127</code> (2<sup>7</sup>-1), and
@@ -80,9 +80,7 @@ So the size of an <code>uint32</code> value is four bytes.
 The sizes of <code>int</code> and <code>uint</code> values in memory
 are operation system dependent, either 32 or 64 bits.
 The size of <code>uintptr</code> value must be large enough to
-store the uninterpreted bits of a pointer value.
-We can learn more about pointers from the article
-<a href="pointer.html">pointers in Go</a> later.
+store the uninterpreted bits of any memory address.
 </p>
 
 <p>
@@ -98,7 +96,7 @@ In memroy, all floating-point numeric values in Go are stored in
 <p>
 A boolean value represents a truth.
 There are only two possible boolean values in memory,
-they are denoted by the two predeclared built-in named constants,
+they are denoted by the two predeclared named constants,
 <code>false</code> and <code>true</code>.
 Name constants will be introduced in <a href="">the next article</a>.
 </p>
@@ -156,15 +154,14 @@ Each type has a zero value.
 The zero value of a type can be viewed as the default value of the type.
 <ul>
 <li>
-	The zero value of a boolean type is represented
-	by the predeclared <code>false</code> constant.
+	The zero value of a boolean type a false truth.
 </li>
 <li>
 	The zero value of a numeric type is zero, though zeros of
 	different numeric types may have different sizes in memory.
 </li>
 <li>
-	The zero value of a string type is an empty string (<code>""</code>).
+	The zero value of a string type is an empty string.
 </li>
 </ul>
 </div>
@@ -196,6 +193,45 @@ But we should know that the two are not literals in the strict sense.
 <p>
 As above has mentioned, zero values of boolean types
 are denoted with the predeclared <code>false</code> constant.
+</p>
+
+<h4>Integer Value Literals</h4>
+
+<div>
+There are three integer value literal forms,
+the decimal (base 10) form, the octal (base 8) form and the hex (base 16) form.
+For example, the following three integer literals
+all denote <code>15</code> in decimal.
+
+<pre><code class="language-go">0xF // the hex form (must start with a "0x" or "0X")
+017 // the octal form (must start with a "0")
+15  // the decimal form (mustn't start with a "0")
+</code></pre>
+
+<p></p>
+
+The following program will print two <code>true</code> texts.
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	println(15 == 017) // true
+	println(15 == 0xF) // true
+}
+</code></pre>
+</div>
+
+<p>
+Note, the two <code>==</code> are the equal-to comparison operator,
+which will be introduced in <a href="operators.html">common operators</a>.
+</p>
+
+<p>
+Generally, zero values of integer types are denoted as <code>0</code>
+in literal, though there are many other legal literals for integer zero values,
+such as <code>00</code> and <code>0x0</code>.
+In fact, the zero value literals introduced in the current article
+for other kinds of numeric types can also
+represent the zero value of any integer type.
 </p>
 
 <h4>Floating-Point Value Literals</h4>
@@ -233,7 +269,7 @@ represent the zero value of any floating-point type.
 <h4>Imaginary Value Literals</h4>
 
 <div>
-An imaginary literal consists of a floating-point literal or decimal integer
+An imaginary literal consists of a floating-point or decimal integer literal
 followed by the lower-case letter <code>i</code>.
 Examples:
 <pre><code class="language-go">1.23i
@@ -248,8 +284,6 @@ Examples:
 <p></p>
 
 Imaginary literals are used to represent the imaginary parts of complex values.
-The real and imaginary parts of a complex value
-must be of the same floating-point type.
 Here are some literals to denote complex values:
 <pre><code class="language-go">1 + 2i       // == 1.0 + 2.0i
 1. - .1i     // == 1.0 + -0.1i
@@ -258,7 +292,6 @@ Here are some literals to denote complex values:
 </code></pre>
 
 <p></p>
-</div>
 
 <p>
 The standard literals for zero values of complex types are
@@ -269,54 +302,17 @@ for other kinds of numeric types can also
 represent the zero value of any complex type.
 </p>
 
-<h4>Integer Value Literals</h4>
-
-<div>
-There are three integer value literal forms,
-the decimal (base 10) form, the octal (base 8) form and the hex (base 16) form.
-For example, the following three integer literals
-all denote <code>15</code> in decimal.
-
-<pre><code class="language-go">// The following three integer literals all denote 15 in decimal.
-15  // the decimal form (mustn't start with a "0")
-017 // the octal form (must start with a "0")
-0xF // the hex form (must start with a "0x")
-</code></pre>
-
-<p></p>
-
-The following program will print two <code>true</code> texts.
-<pre class="line-numbers"><code class="language-go">package main
-
-func main() {
-	println(15 == 017) // true
-	println(15 == 0xF) // true
-}
-</code></pre>
-
-<p>
-Note, the two <code>==</code> are the equal-to comparison operator,
-which will be introduced in <a href="operators.html">common operators</a>.
-</p>
-
-<p>
-Generally, zero values of integer types are denoted as <code>0</code>
-in literal, though there are many other legal literals for integer zero values,
-such as <code>00</code> and <code>0x0</code>.
-In fact, the zero value literals introduced in the current article
-for other kinds of numeric types can also
-represent the zero value of any integer type.
-</p>
-
 </div>
 
 <h4>Rune Value Literals</h4>
 
 <p>
 Rune types, including custom defined rune types and
-the built-in <code>rune</code> type, are special integer types,
+the built-in <code>rune</code> type (a.k.a., <code>int32</code> type),
+are special integer types,
 so all rune values can be denoted by the integer literals introduced above.
-But rune values have one more form of literals, which is called rune literal.
+On the other hand, many values of all kinds of integer types can also be
+represented by rune literals introduced below in the current subsection.
 </p>
 
 <p>
@@ -327,7 +323,7 @@ composed of more than one break points each.
 </p>
 
 <div>
-A rune literal is expressed as one or more characters enclosed in single quotes.
+A rune literal is expressed as one or more characters enclosed in a pair of quotes.
 The enclosed characters denote one Unicode break point value.
 There are some minor variants of the rune literal form.
 The most popular form of rune literals is just to enclose the characters denoted
@@ -337,20 +333,13 @@ by rune values between two single quotes. For example
 '众' // a Chinese character
 </code></pre>
 
-The rune literal has several variant forms.
-For example, the following rune literals are equivalent to <code>'a'</code>
-(the Unicode value of character "a" is 97).
+The following rune literal variants are equivalent to <code>'a'</code>
+(the Unicode value of character <code>a</code> is 97).
 <pre><code class="language-go">'\141'   // 141 is the octal representation of decimal number 97
 '\x61'   // 61 is the hex representation of decimal number 97
 '\u0061'
 '\U00000061'
 </code></pre>
-
-<p>
-In other words, each of the four rune literal variants
-will be escaped to the character <code>a</code>,
-or to a byte value <code>0x61</code>.
-</p>
 
 <p>
 Please note, <code>\</code> must be followed by exactly three octal digits,
@@ -379,15 +368,16 @@ func main() {
 In fact, the four variant rune literal forms just mentioned
 are rarely used for rune values in practice.
 They are occasionally used in interpreted string literals
-(see the next section).
+(see the next subsection for details).
 </p>
 
-In a rune literal, if a <code>\</code> character is followed by another
-character which is not a digital character, <code>x</code>,
-<code>u</code> and <code>U</code>, then the two successive characters
+If a rune literal is composed by two characters (not including the two quotes),
+the first ine is the <code>\</code> character and the second one is not
+a digital character, <code>x</code>, <code>u</code> and <code>U</code>,
+then the two successive characters
 will be escaped as one special character.
 The possible character pairs to be escaped are:
-<pre><code class="language-go">\a   (Unicode 0007) alert or bell
+<pre><code class="language-go">\a   (Unicode value 0x07) alert or bell
 \b   (Unicode value 0x08) backspace
 \f   (Unicode value 0x0C) form feed
 \n   (Unicode value 0x0A) line feed or newline
@@ -407,12 +397,12 @@ An example:
 	println('\r') // 13
 	println('\'') // 39
 
-	println('\n' == 10)    // true
+	println('\n' == 10)     // true
 	println('\n' == '\x0A') // true
 </code></pre>
 
 <p>
-There are many literals which can denote the values of rune types,
+There are many literals which can denote the zero values of rune types,
 such as <code>\000</code>, <code>\x00</code>, <code>\u0000</code>, etc.
 In fact, we can also use any numeric literal introduced above to represent
 the values of rune types, such as <code>0</code>, <code>0x0</code>,
@@ -457,10 +447,6 @@ rune literals.
 The character sequence of <code>\</code>, <code>\x</code>,
 <code>\u</code> and <code>\U</code> followed by several octal or hex digits
 introduced in the last section can also be used in interpreted string literals.
-Please note that, in interpreted string literals,
-the octal or hex values following <code>\</code> and <code>\x</code>
-will be viewed as byte values instead of Unicode code points.
-A Unicode code point may be represented with 1-4 bytes.
 
 <pre class="line-numbers"><code class="language-go">// The following interpreted string literals are equivalent.
 "\141\142\143"
@@ -506,32 +492,37 @@ But again, we should know that the two are not literals in the strict sense.
 </p>
 
 <p>
-From the above section, we have learned that the zero value of a numeric type
-can be represented by several kinds of literals.
-In fact, many other values can be also represented by several kinds of literals.
-The following table lists some basic numeric literals
-and the types which values can be represented by each of these literals.
+A numeric literal can be used to represent as an integer value only if it needn't to be rounded.
+For example, <code>1.23e2</code> can represent as values of any basic integer types,
+but <code>1.23</code> can't represent as values of any basic integer types.
+Rounding is allowed when using a numeric literal to represent as non-integer basic numeric values.
 </p>
 
+<p>
+Each basic numeric type has a representable value range.
+So, if a literal overflows the value range of a type,
+then the literal is not representable as values of the type.
+</p>
 
+Some examples:
 <table class="table table-bordered text-center" style="width: auto !important;">
 <thead>
 	<tr class="active">
 	<th class="text-center" style="white-space: nowrap;">The Literal</th>
-	<th class="text-center">The Types Which Values The Literal Can Represent</th>
+	<th class="text-center">The Types Which Values The Literal Can Represent (At Run Time)</th>
 	</tr>
 </thead>
 <tbody>
 	<tr>
 		<td scope="row" style="vertical-align: middle; white-space: nowrap;" class="text-center"><code>256</code></td>
 		<td style="vertical-align: middle;" class="text-left">
-			All basic numeric types except the ones belong to the kinds of <code>int8</code> and <code>uint8</code>.
+			All basic numeric types except int8 and uint8 types.
 		</td>
 	</tr>
 	<tr>
 		<td scope="row" style="vertical-align: middle; white-space: nowrap;" class="text-center"><code>255</code></td>
 		<td style="vertical-align: middle;" class="text-left">
-			All basic numeric types except the ones belong to the kind of <code>int8</code>.
+			All basic numeric types except int8 types.
 		</td>
 	</tr>
 	<tr>
@@ -570,7 +561,7 @@ and the types which values can be represented by each of these literals.
 	<tr>
 		<td scope="row" style="vertical-align: middle; white-space: nowrap;" class="text-center"><code>3.5e38</code></td>
 		<td style="vertical-align: middle;" class="text-left">
-			All basic floating-point and complex numeric types except the ones belong to the kinds of <code>float32</code> and <code>complex64</code>.
+			All basic floating-point and complex numeric types except float32 and complex64 types.
 		</td>
 	</tr>
 	<tr>
@@ -597,37 +588,23 @@ and the types which values can be represented by each of these literals.
 	representable as values of any basic integer types.
 </li>
 <li>
-	The maximum IEEE-754 <code>float32</code> value is
-	<code>3.40282346638528859811704183484516925440e+38</code>,
+	The maximum IEEE-754 float32 value which can be represented accurately
+	is <code>3.40282346638528859811704183484516925440e+38</code>,
 	so <code>3.5e38</code> is not representable as values of
-	any <code>float32</code> and <code>complex64</code> types.
+	any float32 and complex64 types.
 </li>
 <li>
-	The max IEEE-754 <code>float64</code> value is
-	<code>1.797693134862315708145274237317043567981e+308</code>,
+	The max IEEE-754 float64 value which can be represented accurately
+	is <code>1.797693134862315708145274237317043567981e+308</code>,
 	so <code>2e+308</code> is not representable as
 	values of any <code>float64</code> and <code>complex128</code> types.
 </li>
 <li>
-	Each basic numeric type has a maximum and a minimum values respectively.
-	So, if a literal overflows the value range of a type,
-	then the literal is not representable as values of the type.
-</li>
-<li>
-	Another note, <code>1.23e2</code> can represent values of
-	any basic integer types, but <code>1.23</code> can't.
-	The rule is, a literal can only be able to represent a value of an integer type
-	without rounding and the literal doesn't overflow the value range of the integer type.
-</li>
-<li>
 	In the end, please note, although <code>0x10000000000000000</code>
-	can represent values of <code>float32</code> types,
-	however it can't represent any <code>float32</code> values accurately in memory.
-	In other words, it will be rounded to the closest <code>float32</code> value which can be
+	can represent values of float32 types,
+	however it can't represent any float32 values accurately in memory.
+	In other words, it will be rounded to the closest float32 value which can be
 	represented accurately in memory when it is used as values of float32 types.
-</li>
-<li>
-	Yes, rounding is allowed when using a literal to represent non-integer numeric values.
 </li>
 </ul>
 </div>
