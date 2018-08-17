@@ -311,7 +311,7 @@ func (go101 *Go101) Update() {
 		b = len(output)
 	}
 
-	pkgPath := string(output[a:b])
+	pkgPath := string(bytes.TrimSpace(output[a:b]))
 	goGet(pkgPath) // gitPull()
 	for {
 		<-time.After(time.Hour * 24)

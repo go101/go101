@@ -88,6 +88,7 @@ type                               alignment guarantee
 bool, byte, uint8, int8            1
 uint16, int16                      2
 uint32, int32, float32, complex64  4
+arrays and structs                 depend on element types and field types
 other types                        size of a native word
 </pre>
 <p>
@@ -148,7 +149,7 @@ So, on very old CPU architectures, 64-bit atomic functions are not supported.
 Programs will panic when 64-bit atomic functions are called on such platforms.
 If a program is expected to support these architectures,
 <code>sync.Mutex</code> should be used instead to synchronize 64-bit words.
-<code>sync.Mutex</code> is less efficient than atomic functions.
+Methods of <code>sync.Mutex</code> are less efficient than atomic functions.
 </p>
 
 <p>
@@ -319,15 +320,18 @@ func (c *Counter) Value() uint64 {
 By using this solution, the <code>Counter</code> type can be embedded in other user types safely,
 even on 32-bit architectures.
 The drawback of this solution is there are seven bytes being wasted for every value of <code>Counter</code> type.
-For the standard compiler, <a href="https://github.com/golang/go/blob/master/src/sync/waitgroup.go#L23">a <code>[12]byte</code> value can used instead</a>,
-which only waste four bytes.
+The <code>sync</code> standard package uses
+<a href="https://github.com/golang/go/blob/master/src/sync/waitgroup.go#L23">a <code>[3]uint32</code> value to do this trick instead</a>.
 </p>
 
+<!--
 <p><i>
 (BTW, the solution in the just mentioned standard package assumes that any Go compiler
 should make sure the alignment guarantees of 64-bit words must be 4N on any architectures.
 However, I can't find the guarantee written in any official Go documentation.)
 </i></p>
+-->
+
 </div>
 
 <h3>Future Possible Change</h3>
@@ -360,7 +364,7 @@ For the current version (v1.10) of the standard Go compiler,
 are one-native-word sized.
 The full list of value sizes of different types settled
 by the standard Go compiler are listed in
-<a href="memory-layout.html#value-sizes">this article</a>.
+<a href="value-copy-cost.html#value-sizes">this article</a>.
 </p>
 </div>
 
@@ -411,10 +415,10 @@ their value sizes are different.
 </p>
 </div>
 
-<div>
+<p>
 One interesting fact for the standard Go compiler
 is that sometimes zero sized fields may affect structure padding.
 Please read <a href="unofficial-faq.html#final-zero-size-field">this question in the unoffcial Go FAQ</a>
 for details.
-</div>
+</p>
 

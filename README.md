@@ -17,7 +17,7 @@ $ go get -u github.com/go101/go101
 
 to install and update ***Go 101***.
 
-*(NOTE: if your last `go get -u` command run was before __May 5th, 2018__,
+*(NOTE: if your last `go get -u` command run was before __July 28th, 2018__,
 please run this command again to install the latest `go101` program.)*
 
 ### Run Locally
@@ -40,6 +40,7 @@ If it is not opened, please visit http://localhost:55555.
 ### Some Notes
 
 * The book is in beta phase now. Many articles still need correcting.
-* Translations are welcome, but for the last note, it may not (but will soon) be the proper time to do so.
-* Chinese translation version is maintained by myself ([@TapirLiu](https://twitter.com/tapirliu)).
+* Translations are welcome. Pease read [LICENSE](LICENSE) and note that
+  [Chinese translation version](https://github.com/Golang101/golang101)
+  (not finished yet) is maintained by myself.
 * Please read [UPDATES.md](UPDATES.md) for update history.

@@ -5,6 +5,14 @@ This article will introduce constant and variable declarations in Go.
 The concept of untyped values and explicit conversions will also be introduced.
 </p>
 
+<p>
+The literals introduced in <a href="basic-types-and-value-literals.html">the
+last article</a> are all called unnamed constants (or literal constants),
+except <code>false</code> and <code>true</code>,
+which are two predeclared (built-in) named constants.
+Custom named constant declarations will be be introduced below in this article.
+</p>
+
 <p class="anchor" id="untyped-value"></p>
 <h3>Untyped Values And Typed Values</h3>
 
@@ -22,10 +30,7 @@ We will learn more about <code>nil</code> in other Go 101 articles later.
 </p>
 
 <p>
-The basic value literals (also called literal constants) introduced in
-the last article (<a href="basic-types-and-value-literals.html">basic types
-and their value literals</a>) are all untyped values.
-In fact, in Go,
+All literal constants (unnamed constants) are untyped values. In fact, in Go,
 most untyped values are literal constants and named constants (that is introduced
 in this article). The other untyped values include the just mentioned
 <code>nil</code> and some boolean results returned by some operations
@@ -64,31 +69,27 @@ The default type of a literal constant is determined by its literal form.
 
 
 <p class="anchor" id="explicit-conversion"></p>
-<h3>Explicit Conversions Of Constants</h3>
+<h3>Explicit Conversions Of Untyped Constants</h3>
 
 <p>
 Like many other languages, Go also supports value conversions.
 We can use the form <code>T(v)</code> to convert a value <code>v</code>
 to the type denoted by <code>T</code>
 (or simply speaking, type <code>T</code>).
+Go compilers view <code>T(v)</code> as a typed value of type <code>T</code>.
 Surely, for a certain type <code>T</code>,
 to make the conversion <code>T(v)</code> legal,
 the value <code>v</code> can't be arbitrary.
 If the conversion <code>T(v)</code> is legal,
-Go compilers view <code>T(v)</code> as a typed value of type <code>T</code>.
 </p>
 
 <p>
-The next section will introduce named constants.
-The basic value literals introduced in <a href="basic-types-and-value-literals.html#basic-value-literals">
-the last article</a> is called literal constants, or unnamed constants.
-We will learn that each named constant also denote a literal constant
-in the next section.
-A constant in Go must be a boolean, numeric or string value.
+The following mentioned rules apply for both the literal constans introduced in
+the last article and the untyped named constants which will be introduced soon.
 </p>
 
 <div>
-For a constant value <Code>v</code>,
+For an untyped constant value <code>v</code>,
 there are two scenarios where <code>T(v)</code> is legal.
 <ol>
 <li>
@@ -98,10 +99,10 @@ there are two scenarios where <code>T(v)</code> is legal.
 	The result value is a typed constant of type <code>T</code>.
 </li>
 <li>
-	The default type of <code>v</code>is an integer type
-	and <code>T</code> is a string type.
+	The default type of <code>v</code>is an integer type (<code>int</code>
+	or <code>rune</code>) and <code>T</code> is a string type.
 	The result of <code>T(v)</code> is a string of type <code>T</code>
-	and contains the UTF-8 representation of the integer.
+	and contains the UTF-8 representation of the integer as a Unicode break point.
 	Integer values outside the range of valid Unicode code points
 	result a string represented by <code>"\uFFFD"</code>
 	(a.k.a., <code>"\xef\xbf\xbd"</code>).
@@ -153,7 +154,7 @@ string(66+0i) // the default type of 66+0i is complex128 (not an integer type).
 
 <div class="note">
 <p>
-From the above examples, we know that a basic value literal,
+From the above examples, we know that an untype constant,
 (for example <code>-1e1000</code> and <code>0x10000000000000000</code>),
 may even not be able to represent as a value of its default type.
 </p>
@@ -166,6 +167,10 @@ be written as <code>(T)(v)</code> to avoid ambiguities.
 For example, <code>T</code> is an unnamed pointer type.
 We can learn more about pointers in the article
 <a href="pointer.html">pointers in Go</a> later.
+</p>
+
+<p>
+We will learn more explicit conversion rules later in other Go 101 articles.
 </p>
 
 </div>
@@ -214,16 +219,10 @@ More type deduction rules and cases will be introduced in other articles.
 <h3>Constant Declarations</h3>
 
 <div>
-<p>
-The literals introduced in <a href="basic-types-and-value-literals.html">the
-last article</a> are all called unnamed constants,
-except <code>false</code> and <code>true</code>,
-which are two predeclared (built-in) named constants.
-This section will introduce how to declare custom named constants.
-</p>
 
 <p>
-Like unnamed constants, named constants can also only be
+Unnamed constants are all boolean, numeric and string values.
+Like unnamed constants, named constants can also be only
 boolean, numeric and string values.
 The keyword <code>const</code> is used to declare named constants.
 The following program contains some constant declarations.
@@ -231,7 +230,7 @@ The following program contains some constant declarations.
 
 <pre class="line-numbers"><code class="language-go">package main
 
-// Declare a single constant.
+// Declare two individual constants.
 // Yes, non-ASCII letters can be used in identifiers.
 const π = 3.1416
 const Pi = π // equivalent to: Pi == 3.1416
@@ -253,8 +252,6 @@ func main() {
 <p>
 Go specification calls each of the lines containing a <code>=</code> symbol in
 the above constant declaration group as a <b><i>constant specification</i></b>.
-In the following part of this section,
-each constant specification will be called a <b><i>logic code line</i></b>.
 </p>
 
 <p>
@@ -267,9 +264,9 @@ Operators will be introduced in the next article,
 
 <p>
 The <code>=</code> symbol means "assign".
-So each logic code line in a constant declaration
+So each constant specification in a constant declaration
 can be viewed as an assignment.
-However, more strictly speaking, we should interpret each logic code line
+However, more strictly speaking, we should interpret each constant specification
 as a declared identifier is bound to a corresponding basic value literal.
 Please read the last section in the current article for more explanations.
 </p>
@@ -306,7 +303,7 @@ We also often call package-level constants as global constants.
 <p>
 The declaration orders of two package-level constants are not important.
 In the above example, the declaration orders of
-<code>No</code> and <Code>Yes</code> can be exchanged.
+<code>No</code> and <code>Yes</code> can be exchanged.
 </p>
 
 <p>
@@ -337,7 +334,7 @@ const (
 </code></pre>
 
 <p>
-If multiple typed constants are declared in the same one logic code line,
+If multiple typed constants are declared in the same constant specification,
 then their types must be the same, just as the constants
 <code>A</code> and <code>B</code> in the above example.
 </p>
@@ -382,8 +379,8 @@ For each <code>uint</code> value has only 32 bits on 32-bit OSes.
 <pre class="line-numbers"><code class="language-go">const MaxUint uint = (1 << 64) - 1
 </code></pre>
 
-Then, to declare a typed <code>uint</code> constant and bind
-the largest <code>uint</code> value to it,
+Then how to declare a typed <code>uint</code> constant and bind
+the largest <code>uint</code> value to it? Use the following way instead.
 
 <pre class="line-numbers"><code class="language-go">const MaxUint = ^uint(0)
 </code></pre>
@@ -411,11 +408,11 @@ const Is32bitOS = ^uint(0) >> 32 == 0
 <div>
 
 <p>
-In a group-style constant declaration, except the first logic line,
-other logic lines can be incomplete.
-An incomplete logic line doesn't contain the <code>=</code> symbol.
+In a group-style constant declaration, except the first constant specification,
+other constant specifications can be incomplete.
+An incomplete constant specification doesn't contain the <code>=</code> symbol.
 Compilers will autocomplete the incomplete lines for us by
-copying the missing part from the first preceding complete logic line.
+copying the missing part from the first preceding complete constant specification.
 For example, at compile time, compilers will automatically
 complete the following code
 </p>
@@ -457,17 +454,20 @@ The autocomplete feature plus the <code>iota</code> constant generator
 feature brings much convenience to Go programming.
 <code>iota</code> is a predeclared constant
 which can only be used in other constant declarations.
-It is declared as</p>
+It is declared as
+</p>
+
 <pre class="line-numbers"><code class="language-go">const iota = 0
 </code></pre>
+
 
 <p>
 But the value of an <code>iota</code> in code may be not always <code>0</code>.
 When the predeclared <code>iota</code> constant is used in
 a custom constant declaration, at compile time,
 within the custom constant declaration,
-its value will be reset to <code>0</code> at the first logic line of each group of constants
-and will increase <code>1</code> logic line by logic line.
+its value will be reset to <code>0</code> at the first constant specification of each group of constants
+and will increase <code>1</code> constant specification by constant specification.
 So <code>iota</code> is only useful in group-style constant declarations.
 </p>
 
@@ -660,24 +660,24 @@ make code more readable.
 
 <div>
 <p>
-In the above variable declarations, the sign <Code>=</code> means assignment.
+In the above variable declarations, the sign <code>=</code> means assignment.
 Once a variable is declared, we can modify its value by using pure value assignments.
 Like variable declarations, multiple values can be assigned in a pure assignment.
 <p>
 
 <p>
 Later, if we say <b><i><code>x</code> is assignable to <code>y</code></i></b>,
-what we mean is <code>x</code> is mutable, and the types of <code>x</code> and
-<code>y</code> are identical, <code>y</code> can be implicitly converted to
-the type of <code>x</code>, or <code>y</code> is
+what we mean is <code>y</code> is mutable, and the types of <code>x</code> and
+<code>y</code> are identical, <code>x</code> can be implicitly converted to
+the type of <code>y</code>, or <code>y</code> is
 the blank identifier <code>_</code>.
 If <code>y</code> is not the blank identifier <code>_</code>,
 it must be either addressable, or a map index syntax.
-(Map types will introduced later.)
+(Memory addresses and map types will be introduced and explained later.)
 </p>
 
 <p>
-Constants (immutable values) are all unaddressable, so they can't appear
+Constants are immutable and unaddressable values, so they can't appear
 at the left sides of pure value assignments.
 Variables are all addressable, so they can appear
 at the left sides of pure value assignments.
@@ -696,13 +696,13 @@ y = x   // error: type mismatch
 z = y   // okay
 _ = y   // okay
 
-x, y = 69, 1.23           // okay
-x, y = y, x               // error: type mismatch
-x, y = int(y), float32(x) // okay
 z, y = y, z               // okay
 _, y = y, z               // okay
 z, _ = y, z               // okay
 _, _ = y, z               // okay
+x, y = 69, 1.23           // okay
+x, y = y, x               // error: type mismatch
+x, y = int(y), float32(x) // okay
 </code></pre>
 
 <p>
@@ -747,12 +747,16 @@ func main() {
 }
 </code></pre>
 
-<p>There are several differences between short and standard variable declarations.</p>
+<p>
+There are several differences between short and standard variable declarations.
+</p>
 <ol>
 <li>
-	In the short declaration form, the "var" keyword and
-	variable types must be omitted. And the assignment sign
-	must be <code>:=</code> instead of <code>=</code>.
+	In the short declaration form, the <code>var</code> keyword and
+	variable types must be omitted.
+</li>
+<li>
+	The assignment sign must be <code>:=</code> instead of <code>=</code>.
 </li>
 <li>
 	In the short variable declaration, old variables and new
@@ -763,7 +767,7 @@ func main() {
 
 <div class="note">
 <p>
-Please note, there is a limit for short variable declarations.
+Please note, comparing to pure assignments, there is a limit for short variable declarations.
 <b>In a short variable declaration, all items at the left of the
 <code>:=</code> sign must pure identifiers.</b>
 This means some other assignable items,
@@ -786,12 +790,11 @@ or a variable specification with initial values
 in a standard variable declaration.
 </p>
 
-<h4>Each Local Declared Variable Must Be Used At Least Once</h4>
+<h4>Each Local Declared Variable Must Be Used At Least Once Effectively</h4>
 
 <div>
 <p>
-Please note, for the standard Go compiler,
-local variables are not allowed to be declared and be unused.
+Please note, the standard Go compiler and gccgo both don't allow local variables declared but not used.
 Package-level variables have no such limit.
 </p>
 
@@ -892,7 +895,17 @@ and learn other addressable and unaddressable values from other articles later.
 <h3>Explicit Conversions On Non-Constant Numeric Values</h3>
 
 <div>
+
 <p>
+In Go, two typed values of two different basic types
+can't be assigned to each other.
+In other words, the types of the destination and source values in an
+assignment must be identical if the two values are both basic values.
+If the type of the source basic value is not same as the type of
+the destination basic value, then the source value must be explicitly
+converted to the type of the destination value.
+</p>
+
 As above has mentioned, non-constant integer values can be converted to strings.
 Here we introduce two more legal non-constant numeric values
 related conversion cases.
@@ -930,6 +943,7 @@ converted to the type of the destination value.
 
 <p>In the following example, the intended implicit conversions
 at line <i>4</i> and line <i>11</i> both don't work.</p>
+
 <pre class="line-numbers"><code class="language-go">const a = -1.23
 var b = a        // the type of b is deduced as float64.
 var x = int32(a) // error: constant 1.23 truncated to integer.
@@ -993,7 +1007,6 @@ func main() {
 </code></pre>
 
 <p>
-Declared types and functions can also be shadowed.
 </p>
 
 <p>
@@ -1014,6 +1027,48 @@ Code blocks and identifier scopes will be explained in detail in
 </div>
 
 <h3>More About Constant Declarations</h3>
+
+<h4>The Value Denoted By An Untyped Constant Can Overflow Its Default Type</h4>
+
+<div>
+
+For example, the following code compile okay.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+// 3 untyped named constants
+const n = 1 << 64
+const r = 'a' + 0x7FFFFFFF
+const x = 2e+308
+
+func main() {
+	_ = n >> 2
+	_ = r - 0x7FFFFFFF
+	_ = x / 2
+}
+</code></pre>
+
+<p>
+</p>
+
+But the the following code does't compile.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+// 3 typed named constants
+const n int = 1 << 64           // constant overflows int
+const r rune = 'a' + 0x7FFFFFFF // constant overflows rune
+const x float64 = 2e+308        // constant overflows float64
+
+func main() {}
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
+<h4>Each Named Constant Identifier Will Be Replaced With Its Bound Literal Value At Compile Time</h4>
 
 <p>
 Constant declarations can be viewed as enhanced <code>#define</code> macros in C.
