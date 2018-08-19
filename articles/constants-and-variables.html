@@ -706,13 +706,13 @@ x, y = int(y), float32(x) // okay
 </code></pre>
 
 <p>
-The last line in the above example uses explicit conversions to
+The code at last line in the above example uses explicit conversions to
 make the corresponding destination and source values matched.
 The explicit conversion rules for non-constant numeric values
 are introduced below.
 </p>
 
-Go doesn't support assignment chain. For example, the following code is illegal.
+<p>Go doesn't support assignment chain. For example, the following code is illegal.</p>
 <pre class="line-numbers"><code class="language-go">var a, b int
 a = b = 123 // syntax error
 </code></pre>
@@ -724,9 +724,9 @@ a = b = 123 // syntax error
 <h4>Short Variable Declaration Forms</h4>
 
 <div>
-We can also use short variable declaration forms to declare variables.
+<p>We can also use short variable declaration forms to declare variables.
 Short variable declarations can only be used to declare local variables.
-Let's view an example which uses some short variable declarations.
+Let's view an example which uses some short variable declarations.</p>
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -765,6 +765,7 @@ There are several differences between short and standard variable declarations.
 </li>
 </ol>
 
+<div class="note">
 <p>
 Please note, comparing to pure assignments, there is a limit for short variable declarations.
 <b>In a short variable declaration, all items at the left of the
@@ -776,6 +777,7 @@ These items include qualified identifiers, container elements,
 pointer dereferences and struct field selectors.
 Pure assignments have no such limit.
 </p>
+</div>
 
 </div>
 
@@ -801,7 +803,7 @@ If a local variable is only ever used as destination values,
 it will also be viewed as unused.
 </p>
 
-For example, compiling the following program,
+<p>For example, in the following program, <code>r</code> is only used as destination.</p>
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -815,18 +817,17 @@ func main() {
 }
 </code></pre>
 
-will result to the following compilation errors
-(assume the source file is name <code>example-unused.go</code>):
+<p>Compiling the above program will result to the following compilation errors
+(assume the source file is name <code>example-unused.go</code>):</p>
 
 <pre class="output"><code>./example-unused.go:6:6: r declared and not used
 ./example-unused.go:7:16: s declared and not used
 </code></pre>
 
 <p>
-</p>
-
 The fix is easy, we can assign <code>r</code> and <code>s</code>
 to blank identifiers to avoid compilation errors.
+</p>
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -842,13 +843,20 @@ func main() {
 }
 </code></pre>
 
+<p>
+Generally, the above fix is not recommended to be used in production code.
+It should be used in development/debug phase only.
+It is not a good habit to leave unused local variables in code,
+for unused local variables have negative effects on both code readability and program execution performance.
+</p>
+
 </div>
 
 <h4>Dependency Relations Of Package-Level Variables Affect Their Initialization Order</h4>
 
 <div>
 
-For the following example,
+<p>For the following example,</p>
 
 <pre class="line-numbers"><code class="language-go">var x, y = a+1, 5         // 8 5
 var a, b, c = b+1, c+1, y // 7 6 5 8
@@ -865,8 +873,10 @@ Here, the <code>+</code> symbol is the addition operator,
 which will be introduced in the next article. 
 </p>
 
+<p>
 Package-level variables can't be depended circularly in their declaration.
 The following code fails to compile.
+</p>
 
 <pre class="line-numbers"><code class="language-go">var x, y = y, x
 </code></pre>
@@ -876,8 +886,7 @@ The following code fails to compile.
 <h3>Value Addressability</h3>
 
 <p>
-In Go, some values are addressable.
-Addressable values can be taken addresses.
+In Go, some values are addressable (there is an address to find them).
 All variables are addressable and all constants are unaddressable.
 We can learn more about addresses and pointers from the article
 <a href="pointer.html">pointers in Go</a>
@@ -901,6 +910,7 @@ converted to the type of the destination value.
 As above has mentioned, non-constant integer values can be converted to strings.
 Here we introduce two more legal non-constant numeric values
 related conversion cases.
+</p>
 <ul>
 <li>
 	Non-constant floating-point and integer values can be explicitly
@@ -922,8 +932,9 @@ the fraction part of the floating-point value will be discarded
 (towards zero) when it is converted to the integer type.
 </p>
 
-In the following example, the intended implicit conversions
-at line <i>4</i> and line <i>11</i> both don't work.
+<p>In the following example, the intended implicit conversions
+at line <i>4</i> and line <i>11</i> both don't work.</p>
+
 <pre class="line-numbers"><code class="language-go">const a = -1.23
 var b = a        // the type of b is deduced as float64.
 var x = int32(a) // error: constant 1.23 truncated to integer.
@@ -935,7 +946,7 @@ const k int16 = 255
 var n = k            // the type of n is deduced as int16.
 var f = uint8(k + 1) // error: constant 256 overflows uint8.
 var g uint8 = n + 1  // error: cannot assign int16 to uint8.
-var h = uint8(n + 1) // okay: h == 0, and the type of h is uint8.
+var h = uint8(n + 1) // okay: h equals to 0, and the type of h is uint8.
                      //       (n+1) overflows uint8 and is truncated.
 </code></pre>
 
@@ -953,13 +964,13 @@ More implicit conversion rules will be introduced in other articles later.
 
 <div>
 
-In Go, we can use a pair of <code>{</code> and <code>}</code> to form a code block.
+<p>In Go, we can use a pair of <code>{</code> and <code>}</code> to form a code block.
 A code block can nest other code blocks.
 A variable or a named constant declared in an inner code block will shadow
 the variables and constants declared with the same name in outer code blocks.
 For examples, the following program declares three distinct variables,
 all of them are called <code>x</code>.
-An inner <code>x</code> shadows an outer one.
+An inner <code>x</code> shadows an outer one.</p>
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -1094,6 +1105,3 @@ func main() {
 <p></p>
 
 </div>
-
-
-
