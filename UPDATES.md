@@ -1,6 +1,12 @@
 
 
 
+
+### 1.11.a (2018/Sep/01)
+
+* mention 1.11 new `wasm` GOARCH in [More Go Related Knowledges](https://go101.org/article/more.html#cross-platform-compiling).
+* mention 1.11 new `go mod` command in [The Official Go SDK](https://go101.org/article/go-sdk.html).
+
 ### 1.10.g (2018/Jun/02)
 
 * published [About Go 101](https://go101.org/article/101-about.html).

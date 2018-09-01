@@ -34,20 +34,22 @@ From left to right,
 </li>
 <li>
 	the third portion is the input parameter declaration list,
-	which is enclosed in a <code>()</code>.
+	which is enclosed in a pair of <code>()</code>.
 </li>
 <li>
 	the fourth portion is the output (or return) result declaration list.
 	Go functions can return multiple results.
 	For this specified example,
-	the result definition list is also enclosed in a <code>()</code>.
+	the result definition list is also enclosed in a pair of <code>()</code>.
+	However, for some cases, <code>()</code> in result definition lists
+	are optional (see below for details).
 </li>
 <li>
 	the last portion is the function body,
-	which is enclosed in <code>{}</code>.
+	which is enclosed in a pair of <code>{}</code>.
 	In a function body,
-	the <code>return</code> keyword is used to end the normal forward
-	execution flow and enter the exiting phase (see the next section).
+	the <code>return</code> keyword is used to end the normal forward execution flow
+	and enter the exiting phase (see the next section) of a call of the function.
 </li>
 </ol>
 
@@ -65,13 +67,13 @@ their corresponding function bodies.
 </p>
 
 <p>
-The names in the result declaration list of a function declaration can be
+The names in the result declaration list of a function declaration can/must be
 present or absent all together. Either case is used common in practice.
 If a result is defined with a name, then then result is called a named result,
-otherwise, it is called an unnamed result.
+otherwise, it is called an anonymous result.
 </p>
 
-When all the results in a function declaration are unnamed,
+When all the results in a function declaration are anonymous,
 then, within the corresponding function body,
 the <code>return</code> keyword must be followed by a sequence of return values,
 each of them corresponds to a result declaration of the function declaration.
@@ -88,7 +90,7 @@ For example, the following function declaration is equivalent to the above one.
 In fact, the names in the parameter declaration list of a function declaration
 can be also be omitted all together,
 if all the parameters are never used within the corresponding function body.
-However, such circumstance is very rare in practice.
+However, anonymous parameters are rarely used in practice.
 </p>
 
 <p>
@@ -115,27 +117,25 @@ For example, the following function will always print <code>0 false</code>.
 
 If the types of some successive parameters or results in a function declaration
 are the same one, then the types of the former parameters or results can be absent.
-For example, the above two function declarations are equivalent to
+For example, the above two function declarations with the name <code>SquaresOfSumAndDiff</code> are equivalent to
 <pre class="line-numbers"><code class="language-go">func SquaresOfSumAndDiff(a, b int64) (s, d int64) {
 	return (a+b) * (a+b), (a-b) * (a-b)
+	// The above line is equivalent to the following line
+	// s = (a+b) * (a+b); d = (a-b) * (a-b); return
 }
 </code></pre>
 
 <p>
-Here, the type of the parameter <code>a</code> is not specified,
-for its type is the same as the parameter <code>b</code>.
-The same situation for the result <code>s</code>.
-And please note, even if both the two results are named,
+Please note, even if both the two results are named,
 the <code>return</code> keyword can be followed with return values.
 </p>
 
 <p>
 If the result declaration list in a function declaration only contains
-one unnamed result declaration, then the result declaration list doesn't
-need to be enclosed in a <code>()</code>.
-In particular, if the function declaration has no return results,
-then the result declaration list can be omitted totally.
-The parameter declaration list can never be omitted,
+one anonymous result declaration, then the result declaration list doesn't
+If the function declaration has no return results,
+then the result declaration list portion can be omitted totally.
+The parameter declaration list portion can never be omitted,
 even if the number of parameters of the declared function is zero.
 </p>
 
@@ -147,12 +147,12 @@ Here are more function declaration examples.
 }
 
 // This function has no parameters.
-func versionString() string {
-	return "go1.10"
+func VersionString() string {
+	return "go1.0"
 }
 
-// This function has no results. And the parameter names
-// are all amitted for we don't care about them.
+// This function has no results. And all of its parameters
+// are anonymous, for we don't care about them.
 func doNothing(string, int) {
 }
 </code></pre>
@@ -163,12 +163,14 @@ func doNothing(string, int) {
 <p>
 One fact we have learned from the earlier articles in Go 101 is that
 the <code>main</code> entry function in each Go program is declared
-wothout parameters and results.
+without parameters and results.
 </p>
 
 <p>
-Please note that, functions must be declared at package level.
+Please note that, functions must be directly declared at package level.
 In other words, a function can't be declared within the body of another function.
+In a later section, we will learn that we can define anonymous functions in bodies of other functions.
+But anonymous functions are not function declarations.
 </p>
 </div>
 
@@ -180,18 +182,18 @@ In other words, a function can't be declared within the body of another function
 <p>
 A declared function can be called through its name plus an argument list.
 The argument list must be enclosed in a <code>()</code>.
-Each argument corresponds to a parameter definition.
+Each single-value argument corresponds to a parameter declaration.
 </p>
 
 <p>
 The type of an argument is not required to be identical with the corresponding parameter type.
 The only requirement for the argument is
 it must be <a href="constants-and-variables.html#assignment">assignable</a>
-to the corresponding parameter type.
+(a.k.a., implicitly convertible) to the corresponding parameter type.
 </p>
 
-The following is a full example to show how to call other declared functions
-in the <code>main</code> entry function.
+The following is a full example to show how to call some declared functions.
+
 <pre class="line-numbers"><code class="language-go">package main
 
 func SquaresOfSumAndDiff(a int64, b int64) (int64, int64) {
@@ -203,15 +205,8 @@ func CompareLower4bits(m, n uint32) (r bool) {
 	return
 }
 
-func versionString() string {
-	return "v1.0"
-}
-
-func doNothing(string, int32) {
-}
-
 // Initialize a package-level variable with a function call.
-var v = versionString()
+var v = VersionString()
 
 func main() {
 	println(v) // v1.0
@@ -222,16 +217,25 @@ func main() {
 	// "Go" is deduced as a string, and 1 is deduced as an int32.
 	doNothing("Go", 1)
 }
+
+func VersionString() string {
+	return "v1.0"
+}
+
+func doNothing(string, int32) {
+}
 </code></pre>
 
 <p>
+From the above example, we can learn that a function can be either declared
+before or after any of its calls.
 </p>
 </div>
 
 <p>
 Function calls can be deferred and invoked in new goroutines
 (green threads) in Go.
-Please read the next article
+Please read the article
 <a href="control-flows-more.html">deferred function calls
 and goroutines</a> for details.
 </p>
@@ -268,12 +272,12 @@ func main() {
 	
 	// This anonymous function has no results.
 	func(a, b int) {
-		println("a*a + b*b =", a*a + b*b)
+		println("a*a + b*b =", a*a + b*b) // a*a + b*b = 25
 	}(x, y) // pass arguments.
 	
 	// This anonymous function has no parameters and results.
 	func() {
-		println("x*x + y*y =", x*x + y*y)
+		println("x*x + y*y =", x*x + y*y) // x*x + y*y = 25
 	}() // no arguments are needed.
 }
 </code></pre>
@@ -307,7 +311,7 @@ We can call these functions without importing any packages.
 We can use the built-in <code>real</code> and <code>imag</code> functions
 to get the real and imaginary parts of a complex value.
 We can use the built-in <code>complex</code> function to produce a complex value.
-Please note, if any of the arguments of a call to any of the three functions
+Please note, if any of the arguments of a call to any of the two functions
 are all constants, then the call will be evaluated at compile time,
 and the result value of the call is also a constant.
 In particular, if any of the arguments is an untype constant,
