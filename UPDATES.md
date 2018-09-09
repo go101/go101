@@ -2,6 +2,10 @@
 
 
 
+### 1.11.b (2018/Sep/09)
+
+* published [Go Tips 101](https://go101.org/article/tips.html).
+
 ### 1.11.a (2018/Sep/01)
 
 * mention 1.11 new `wasm` GOARCH in [More Go Related Knowledges](https://go101.org/article/more.html#cross-platform-compiling).
