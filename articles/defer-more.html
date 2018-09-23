@@ -216,12 +216,28 @@ func (t *T) IncreaseB() {
 </code></pre>
 
 <p>
+In the B-version functions, we should guarantee that the code between the
+<code>Lock</code> and <code>Unlock</code> calls will never panic.
 </p>
 
+<p>
+Generally, the A-version functions are recommended to be used in practice.
+We should only adopt the B versions when we really care about
+the performance of the involved functions.
+</p>
+
+</div>
+
+<p class="anchor" id="kind-of-resource-leaking"></p>
+<h3>Kind-Of Resource Leaking By Deferring Function Calls</h3>
+
+<div>
+
 A very large deferred call stack may also consume much memory.
-Sometimes, we can make some deferred function calls get executed earlier
-to avoid accumulating too many deferred calls.
-For example,
+The unexecuted deferred calls may prevent some resources from being released.
+For example, if there are many files needed to be handled in a call to the following function,
+then a large quantity of file handlers will be not get released in time.
+
 <pre class="line-numbers"><code class="language-go">func writeManyFile(files []File) error {
 	for _, file := range files {
 		f, err := os.Open(file.path)
@@ -245,7 +261,10 @@ For example,
 }
 </code></pre>
 
-can be rewrittn and optimized as
+
+For such cases, we can use an anonymous function to enclose the deferred calls
+so that the deferred function calls will get executed earlier. For example,
+the above function can be rewrittn and optimized as
 
 <pre class="line-numbers"><code class="language-go">func writeManyFile(files []File) error {
 	for _, file := range files {
@@ -272,11 +291,6 @@ can be rewrittn and optimized as
 </code></pre>
 
 <p>
-</p>
-
-<p>
-Currently, if you really care about the performance of your programs,
-you can try to avoid using unnecessary deferred function calls.
 </p>
 
 </div>
