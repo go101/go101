@@ -7,10 +7,16 @@ Index
 	<a href="#force-to-use-keyed-struct-literals">How to force package users to use struct composite literals with field names?</a>
 </li>
 <li>
-	<a href="#dont-use-multivalue-assignments-with-dependencies">Don't use mult-value assignments with dependencies between expressions.</a>
+	<a href="#make-struct-type-uncomparable">How to make a struct type uncomparable?</a>
+</li>
+<li>
+	<a href="#dont-use-multivalue-assignments-with-dependencies">Don't use multi-value assignments with dependencies between expressions.</a>
 </li>
 <li>
 	<a href="#simulate-loop-from-0-to-n">How to simulate <code>for i in 0..N</code> in some other languages?</a>
+</li>
+<li>
+	<a href="#reset-pointers-for-dead-elements">We should reset the pointers in the element slots which are freed up in all kinds of slice manipulations to avoid memory leaking if we can't make sure if the freed-up element slots will be reused later.</a>
 </li>
 <li>
 	<a href="#avoid-copying-values-of-some-types">Values of some types in standard packages are not expected to be copied.</a>
@@ -28,6 +34,9 @@ Index
 	<a href="#use-three-index-subslice-form">We should use the three-index subslice form at some scenarios.</a>
 </li>
 <li>
+	<a href="#assert-implementation">Make sure and show a custom defined type implements a specified interface type.</a>
+</li>
+<li>
 	<a href="#execute-deferred-calls-earlier">Use anonymous functions to make some deferred function calls be executed earlier.</a>
 </li>
 <li>
@@ -39,10 +48,16 @@ Index
 <li>
 	<a href="#detect-word-size-at-compile-time">How to detect native word size at compile time?</a>
 </li>
-<!--li>
-	<a href="#make-using-of-bce">Make optimizations by using BCE (bounds check elimination).</a>
-</li-->
+<li>
+	<a href="#64bit-alignment-guarantee">How to guarantee that the first pointer argument of a 64-bit atomic function call is always 64-bit aligned on 32-bit architectures?</a>
+</li>
+<li>
+	<a href="#make-use-of-bce">Make optimizations by using BCE (bounds check elimination).</a>
+</li>
 </ul>
+
+
+
 
 
 
@@ -80,19 +95,56 @@ func main() {
 }
 </code></pre>
 
+<p>
+</p>
+
+<p>
+Please try not to place the zero-size non-exported field as the last field in the struct,
+for <a href="<a href="unofficial-faq.html#final-zero-size-field">doing so might enlarge the size of the struct type</a>.
+</p>
+
+</div>
+
+
+
+<p class="anchor" id="make-struct-type-uncomparable"></p>
+<h3>How to make a struct type uncomparable?</h3>
+
+<div>
+Simetimes, we want to avoid a custom struct type being used a map key types,
+then we can put a field of a non-exported zero-size uncomparable type
+in a struct type to make the struc type uncomparable.
+For example:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type T struct {
+	Dummy        [0]func()
+	AnotherField int
+}
+
+func main() {
+	var a, b T
+	_ = a == b // compile error: invalid operation: a == b
+}
+</code></pre>
+
+<p>
+</p>
 </div>
 
 
 
 <p class="anchor" id="dont-use-multivalue-assignments-with-dependencies"></p>
-<h3>Don't use mult-value assignments with dependencies between expressions.</h3>
+<h3>Don't use multi-value assignments with dependencies between the involved expressions.</h3>
 
 <div>
 
 <p>
 Currently (Go 1.11), there are
 <a href="https://github.com/go101/go101/wiki/Some-evaluation-orders-in-multi-value-assignments-are-unspecified">some evaluation orders in multi value assignments are unspecified</a> and there are <a href="https://github.com/go101/go101/wiki/An-ambiguity-of-%28or-dispute-on%29-the-evaluation-order-of-LHS-%28left-hand-side%29-items-in-a-multi-value-assignment">some disputes and bugs</a> in the standard Go compiler and gccgo compiler when there are dependencies existing between the expressions invloved in a multi-value assignment.
-So try to avoid using mult-value assignments with dependencies between expressions.
+So try to split a multi-value assignment into multiple single value assignments
+if there are, or you can't make sure whether or not there are, dependencies between the involved expressions.
 </p>
 
 </div>
@@ -127,6 +179,15 @@ func main() {
 </code></pre>
 
 </div>
+
+
+
+<p class="anchor" id="reset-pointers-for-dead-elements"></p>
+<h3>We should reset the pointers in the element slots which are freed up in all kinds of slice manipulations to avoid memory leaking if we can't make sure if the freed-up element slots will be reused later.</h3>
+
+<p>
+Please read <a href="container.html#memclr">array/slice <code>memclr</code> optimization</a>, how to <a href="container.html#delete-slice-elements">delete slice elements</a> and <a href="memory-leaking.html#dead-slice-elements">kind-of memory leaking caused by not resetting pointers in dead slice elements</a> for details.
+</p>
 
 
 
@@ -303,6 +364,55 @@ in <a href="https://github.com/go101/go101/wiki/The-capacity-of-the-result-byte-
 
 
 
+<p class="anchor" id="assert-implementation"></p>
+<h3>Make sure and show a custom defined type implements a specified interface type.</h3>
+
+<div>
+<p>
+We can assign a value of the custom defined type to a variable of type of the specified interface type
+to make sure the custom type implements the specified interface type, and more importantly,
+to show the custom type is intended to implement which interface types.
+Sometimes, writing docs in runnable code is much better than in comments.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package myreader
+
+import "io"
+
+type MyReader uint16
+
+func NewMyReader() *MyReader {
+	var mr MyReader
+	return &mr
+}
+
+func (mr *MyReader) Read(data []byte) (int, error) {
+	switch len(data) {
+	default:
+		*mr = MyReader(data[0]) << 8 | MyReader(data[1])
+		return 2, nil
+	case 2:
+		*mr = MyReader(data[0]) << 8 | MyReader(data[1])
+	case 1:
+		*mr = MyReader(data[0])
+	case 0:
+	}
+	return len(data), io.EOF
+}
+
+// Any of the following three lines assures
+// type *MyReader implements io.Reader.
+var _ io.Reader = NewMyReader()
+var _ io.Reader = (*MyReader)(nil)
+func _() {_ = io.Reader(nil).(*MyReader)}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+
+
 <p class="anchor" id="execute-deferred-calls-earlier"></p>
 <h3>Use anonymous functions to make some deferred function calls be executed earlier.</h3>
 
@@ -369,113 +479,162 @@ const WordBits = 32 << (^uint(0) >> 63) // 64 or 32
 </div>
 
 
-<!--
-<p class="anchor" id="assert-implementation"></p>
-<h3>How to verify a type <code>T</code> implements an interface type <code>I</code> at compile time?</h3>
+
+<p class="anchor" id="64bit-alignment-guarantee"></p>
+<h3>How to guarantee that the first pointer argument of a 64-bit atomic function call is always 64-bit aligned on 32-bit architectures?</h3>
 
 <div>
+Please read <a href="memory-layout.html">Go value memory layouts</a> for details.
+</div>
 
-<pre class="line-numbers"><code class="language-go">var 
+
+
+<p class="anchor" id="avoid-boxing-large-size-values"></p>
+<h3>Avoid boxing large-size values into interface values.</h3>
+
+<div>
+<p>
+When a non-interface value is assigned to an interface value, a copy of the non-interface value will be boxed into the interface value.
+The copy cost depends on the size of the non-interface value. The larger the size, the higher the copy cost.
+So please try to avoid boxing large-size values into interface values.
+</p>
+
+For example, in the following example, the cost of the latter two print calls
+are muich lower than the former two.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var a [1000]int
+	
+	// This cost of the two lines are high.
+	fmt.Println(a)                   // a is copied
+	fmt.Printf("Type of a: %T\n", a) // a is copied
+	
+	// The cost of the two lines are low.
+	fmt.Printf("%v\n", a[:])
+	fmt.Println("Type of a:", fmt.Sprintf("%T", &a)[1:])
+}
 </code></pre>
 
 <p>
 </p>
 
 </div>
--->
 
 
-<!--
-<p class="anchor" id="make-using-of-bce"></p>
-<h3>Make optimizations by using BCE (bounds check elimination).</h3>
+
+<p class="anchor" id="make-use-of-bce"></p>
+<h3>Optimize Go code by making use of BCE (bounds check elimination).</h3>
 
 <div>
 
 <p>
 Please read <a href="bounds-check-elimination.html">this article</a> to get
-how BEC is supported in Go now.
-In that article, <a href="bounds-check-elimination.html#slice-comparison">an example</a>
-is provided to show how to make using of BCE to compare two slices efficiently.
-Following will show more optimization examples by utilizing BCE.
-</p>
+what is BCE and how well BCE is supported in Go now.
+That article also show some examples on how to making use of BCE to do code optimization.
+Here, another example is provide:
 
-The following example shows how to efficiently get the number of same prefixed bytes in two strings.
+<pre class="line-numbers"><code class="language-go">package main
 
-<pre class="line-numbers"><code class="language-go">var 
+import (
+	"strings"
+	"testing"
+)
+
+func NumSameBytes_1(x, y string) int {
+	if len(x) > len(y) {
+		x, y = y, x
+	}
+	for i := 0; i < len(x); i++ {
+		if x[i] != y[i] {
+			return i
+		}
+	}
+	return len(x)
+}
+
+func NumSameBytes_2(x, y string) int {
+	if len(x) > len(y) {
+		x, y = y, x
+	}
+	if len(x) <= len(y) { // more code but more efficient
+		for i := 0; i < len(x); i++ {
+			if x[i] != y[i] { // bound check elimated
+				return i
+			}
+		}
+	}
+	return len(x)
+}
+
+var x = strings.Repeat("hello", 100) + " world!"
+var y = strings.Repeat("hello", 99) + " world!"
+
+func BenchmarkNumSameBytes_1(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = NumSameBytes_1(x, y)
+	}
+}
+
+func BenchmarkNumSameBytes_2(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = NumSameBytes_2(x, y)
+	}
+}
 </code></pre>
+
+In the above example, function <code>NumSameBytes_2</code> is more efficient than function <code>NumSameBytes_1</code>.
+The benchmark result:
+
+
+<pre class="output"><code>BenchmarkNumSameBytes_1-4   	10000000	       669 ns/op
+BenchmarkNumSameBytes_2-4   	20000000	       450 ns/op
+</code></pre>
+
 
 <p>
 </p>
 
-In the following example, function <code>f1<code> is more efficient than function <code>f2<code>.
-
-<pre class="line-numbers"><code class="language-go">
-</code></pre>
 
 </div>
--->
-
 
 
 <!--
-<p class="anchor" id="64bit-alignment-guarantee"></p>
-<h3>How to guarantee that the first pointer argument of a 64-bit atomic function call is always 64-bit aligned on 32-bit architectures?</h3>
-
-<div>
-
-From the article <a href="memory-layout.html">memory layouts</a>,
-we learn that int64 and uint64 values on 32-bit architectures are not
-always guaranteed to be safe to do 64-bit atomic operations.
-For example, in the following program, the 64-bit atomic operations
-in the <code>fa</code> and <code>fb</code> functions are safe,
-but the 64-bit atomic operation in the <code>fc</code> function
-is not guaranteed to be safe.
-
-<pre class="line-numbers"><code class="language-go">
-</code></pre>
-
-<p>
-</p>
-
-Then how to guarantee the 64-bit atomic operation in the <code>fc</code>
-function is always safe? We can use a way which is used in
-<a href="https://golang.org/src/sync/waitgroup.go?s=574:929#L10">the implementaion</a>
-of the <code>sync.WaitGroup</code> type.
-Please read the following code for details.
-
-<pre class="line-numbers"><code class="language-go">
-</code></pre>
-
-<p>
-</p>
-
-</div>
-
-https://github.com/golang/go/issues/27577
--->
-
-
-
-<!--
-
-tools
-* -trimpath, https://medium.com/@aerokite/trim-gopath-from-stack-trace-88b7402c8b47
-
 
 try to avoid unnecessary synchronization, for example, make data only be used in one goroutine.
 math/rand.NewSource() are faster but not concurrent safe.
 but Bytes() method is not fast
 
-use types without pointer components as container elements would ... the burden of GC.
 
 try to avoid using large-sized types as
 * map key and element types,
 * interface dynamic types: don't use string or large size values as error
 * channel element types
 
-avoid boxing large-size values and copy interface values with large-size dynamic values
-avoid print large size value with fmt.PrintXXX functions.
-    arguments will be copied.
+
+
+
+use types without pointer components as container elements would ... the burden of GC.
+
+... GC burdan by reusing values
+
+unnamed types have better readibilities, don't use their alias or types defined from them without sspecial reasons.
+
+use {} to shrink scope of identifiers as needed.
+use {} to create a nested block to shadow identifiers declared in outer blocks.
+
+intermediate results should be stored out of the benchmark function
+
+
+select may slow: https://twitter.com/melvinodsa/status/1031434710184939522
+
+
+<p class="anchor" id="embed-unexported-alias-of-exported-type"></p>
+<h3>Embedding an unexported alias of an exported type to avoiding the corresponding anonymous field being modified in user packages.</h3>
+
 
 try to share Transport for http.Client values. (need a go practice article)
 avoid using the http.Get, ..., functions directly.
@@ -494,53 +653,8 @@ avoid using the http.Get, ..., functions directly.
         // Transport.DisableKeepAlives were set.
 
 
-... GC burdan by reusing values
-
-
-
-
-
-
-
-
-
-unnamed types have better readibilities, don't use their alias or types defined from them without sspecial reasons.
-
-use {} to shrink scope of identifiers as needed.
-use {} to create a nested block to shadow identifiers declared in outer blocks.
-
-
-intermediate results should be stored out of the benchmark function
-
-
-select may slow: https://twitter.com/melvinodsa/status/1031434710184939522
-
-
-
-
-var _ I = T{}       // assert T implements I
-var _ I = (*T)(nil) // assert *T implements I
-
-
-
-how to use a typed integer constant to represent the max value of that integer type?
-
-<p class="anchor" id="embed-unexported-alias-of-exported-type"></p>
-<h3>Embedding an unexported alias of an exported type to avoiding the corresponding anonymous field being modified in user packages.</h3>
-
-<div>
-<p>
-A Go source file can imports the same package multiple times,
-but the import names must be different.
-These same-pacakge imports reference the same package instance.
-</p>
-
-For example:
-<pre class="line-numbers"><code class="language-go">func main() {
-	fmt.Println(&inout.EOF == &io.EOF) // true
-}
-</code></pre>
-</div>
-
 -->
+
+
+
 

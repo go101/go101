@@ -4,6 +4,13 @@
 
 ### 1.11.b (2018/Sep/09)
 
+* add a new tip [How to make a struct type uncomparable?](https://go101.org/article/tips.html#make-struct-type-uncomparable).
+* add a new tip [Try to reset pointers in freed-up slice elements](https://go101.org/article/tips.html#reset-pointers-for-dead-elements).
+* add a new tip [Make optimizations by using BCE](https://go101.org/article/tips.html#make-using-of-bce).
+* remove "Precedences Of Unary Operators" from [Syntax/Semantics Exceptions In Go](https://go101.org/article/exceptions.html).
+
+### 1.11.b (2018/Sep/09)
+
 * published [Go Tips 101](https://go101.org/article/tips.html).
 
 ### 1.11.a (2018/Sep/01)
