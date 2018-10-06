@@ -9,10 +9,12 @@ except the <code>builtin</code> standard code package.
 This article will explain code packages and package imports in Go.
 </p>
 
+<p class="anchor" id="import"></p>
 <h3>Introduction Of Package Import</h3>
 
 <div>
 Let's view a small program which imports a standard code package.
+(Assume the source code of this program is stored in a file named <code>simple-import-demo.go</code>.)
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -23,25 +25,29 @@ func main() {
 }
 </code></pre>
 
-Some Explanations:
+Some explanations:
 <ul>
 <li>
-	The third line imports the <code>fmt</code> standard package.
-	There are many format functions declared in this package for other packages to use.
+	The first line specifies the name of the package containing the source file <code>simple-import-demo.go</code>.
+	The <code>main</code> entry function of a program must be put in a package named <code>main</code>.
+</li>
+<li>
+	The third line imports the <code>fmt</code> standard package by using the <code>import</code> is a keyword.
+	The identifier <code>fmt</code> is the package name.
+	It is also used as the import name of, and represents, this standard package in the scope of containing source file.
+	(Import names will be explained a below section.)
+	There are many format functions declared in this standard package for other packages to use.
 	The <code>Println</code> function is one of them.
 	It will print the string representations of
 	an arbitrary number of arguments to the standard output.
-	For each <code>fmt.Println</code> call,
-	a space character will be inserted between
-	each two consecutive string representations
-	and a newline character is printed at the end.
 </li>
 <li>
 	The sixth line calls the <code>Println</code> function.
-	Note that the function name is prefixed a <code>fmt.</code> in the call,
+	Note that the function name is prefixed with a <code>fmt.</code> in the call,
 	where <code>fmt</code> is the name of the package which contains the called function.
-	The form <code>fmt.Println</code> is called a
+	The form <code>aImportName.AnExportedIdentifier</code> is called a
 	<a href="https://golang.org/ref/spec#Qualified_identifiers">qualified identifier</a>.
+	<code>AnExportedIdentifier</code> is called an unqualified identifier.
 </li>
 <li>
 	A <code>fmt.Println</code> function call has no requirements
@@ -49,10 +55,15 @@ Some Explanations:
 	will be deduced as values of their respective default types,
 	<code>string</code>, <code>int</code> and <code>string</code>.
 </li>
+<li>
+	For each <code>fmt.Println</code> call,
+	a space character is inserted between
+	each two consecutive string representations
+	and a newline character is printed at the end.
+</li>
 </ul>
 
-Assume the solo source file of this program is <code>simple-import-demo.go</code>,
-run this program will get the following output:
+Run this program, we will get the following output:
 <pre class="output"><code>$ go run simple-import-demo.go
 Go has 25 keywords.
 </code></pre>
@@ -74,8 +85,11 @@ The built-in functions, <code>print</code> and <code>println</code>,
 have similar functionalites as the corresponding functions in the
 <code>fmt</code> standard package.
 Built-in functions can be used without importing any packages.
-However, the two built-in functions are not recommended
-to be used in production enviroments,
+<p>
+
+<p>
+Note, the two built-in functions, <code>print</code> and <code>println</code>,
+are not recommended to be used in production enviroments,
 for they are not guaranteed to stay in the future Go versions.
 </p>
 
@@ -111,9 +125,8 @@ This package provides some functions to produce pseudo-random numbers.
 Some explanations:
 <ul>
 <li>
-	the last token in an import path will be used as the first part in a qualified identifier.
-	In this example, <code>rand.</code> instead of <code>math/rand.</code> is used
-	as the prefix of the <code>Uint32</code> function call.
+	In this example, the package name <code>rand</code> is used as the import name
+	of the imported <code>math/rand</code> standard package.
 	A <code>rand.Uint32()</code> call will return
 	a random <code>uint32</code> integer number.
 </li>
@@ -169,7 +182,7 @@ Some explanations:
 <li>
 	this example imports one more package,
 	the <code>time</code> standard package,
-	which provides many time realated utilities.
+	which provides many time related utilities.
 </li>
 <li>
 	function <code>time.Now()</code> returns the current time,
@@ -217,11 +230,31 @@ In Go 101, only the following listed format verbs will be used.
 	<code>%s</code>, which will be replaced with the string representation of the corresponding argument.
 	The corresponding argument should be a string or byte slice.
 </li>
+<li>
+	Format verb <code>%%</code> represents a percent sign.
+</li>
 </ul>
-</div>
+
+An example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	a, b := 123, "Go"
+	fmt.Printf("a == %v == 0x%x, b == %s\n", a, a, b)
+	fmt.Printf("type of a: %T, type of b: %T\n", a, b)
+	fmt.Printf("1%% 50%% 99%%\n")
+}
+</code></pre>
+
+Output:
+<pre class="output"><code>a == 123 == 0x7b, b == Go
+type of a: int, type of b: string
+1% 50% 99%
+</code></pre>
 
 <p>
-Format verb <code>%%</code> represent a percent sign.
 </p>
 
 <p>
@@ -232,134 +265,219 @@ We can also run <code>go doc fmt</code> to view the documentation of the <code>f
 and run <code>go doc fmt.Printf</code> to view the documentation of the <code>fmt.Printf</code> function,
 in a terminal.
 </p>
+</div>
 
-<h3>About Package Folder Names</h3>
+<h3>Package Folder, Package Import Path And Package Dependencies</h3>
 
+<div>
 <p>
 A code package may be composed of several source files.
 These source files are located in the same folder.
-Generally, a folder corresponds to one code package, and vice versa.
+The source files in a folder (not including subfolders) must belong to the same package.
+So, a folder corresponds to a code package, and vice versa.
+The folder containing the source files of a code package is called the folder of the package. 
 </p>
 
 <p>
-The <a href="go-sdk.html">official Go tools</a> recommend,
-and often require, the folder
-containing a third-party package to be put in the <code>src</code>
-folder under any path specified in the <code>GOPATH</code> environment variable.
-The import path of the third-party package is the relative path of
-the package folder to the <code>src</code> folder.
-The seperators in the path must be always <code>/</code> and can't be <code>\</code>.
-For example, if the path of a package is <code>OneGoPath/src/a/b/pkg</code>
-(or <code>OneGoPath\src\a\b\pkg</code> on Windows),
-then its import path is <code>/a/b/pkg</code>.
+Depending on different scenarios, a folder with name <code>vendor</code> might be viewed
+as a special folder. The following paragraphs will explain its specificity.
+</p>
+
+The lastest Go SDK (v1.11) introduces a module feature.
+Now, we can let a code package support the module feature or not.
+Go SDK 1.11 introduces a <code>GO111MODULE</code> environment variable.
+The default value of this environment variable is <code>auto</code>.
+Its two other potential values are <code>on</code> and <code>off</code>.
+If the value of the <code>GO111MODULE</code> environment variable is <code>on</code>,
+then all code packages support the module feature.
+If the value of the <code>GO111MODULE</code> environment variable is <code>off</code>,
+then all code packages don't support the module feature.
+If the value of the <code>GO111MODULE</code> environment variable is <code>auto</code>,
+then only the packages which satisfy both of the following two conditions upport the module feature.
+<ol>
+<li>
+	the package folder must be outside all the <code>src</code> subfolders
+	under the paths specified in the <code>GOPATH</code> environment variable.
+</li>
+<li>
+	the package folder contains a <code>go.mod</code> file
+	or is below a directory containing a <code>go.mod</code> file. 
+</li>
+</ol>
+
+<p>
+For a package which doesn't support the module feature, generally,
+it is below a <code>GOPATH/src</code> directory.
+The import path of such a package is the relative path to
+the <code>GOPATH/src</code> directory or some <code>vendor</code> folder.
+</p>
+
+Assume all the packages in the following hierarchical directory structure
+don't support the module feature, then
+<ul>
+<li>
+	the import paths of the two <code>foo</code> packages are both <code>w/foo</code>.
+</li>
+<li>
+	the import paths of the <code>x</code>, <code>y</code> and <code>z</code> packages
+	are <code>x</code>, <code>x/y</code> and <code>x/z</code>, respectively.
+</li>
+</ul>
+
+Note,
+<ul>
+<li>
+	when the file <code>y.go</code> imports a package with import path as <code>w/foo</code>,
+	the imported package is the package with folder <code>GOPATH/src/x/y/vendor/w/foo</code>.
+</li>
+<li>
+	when the <code>x.go</code> or <code>z.go</code> file imports a package with import path <code>w/foo</code>,
+	the imported package is the package with folder <code>GOPATH/src/x/vendor/w/foo</code>.
+</li>
+</ul>
+
+<pre><code class="language-go">_ GOPATH
+  |_ src
+     |_ x
+        |_ vendor
+        |  |_ w
+        |     |_ foo
+        |        |_ foo.go    // package foo
+        |_ y
+        |  |_ vendor
+        |  |  |_ w
+        |  |     |_ foo
+        |  |        |_ foo.go // package foo
+        |  |_ y.go            // package y
+        |_ z
+        |  |_ z.go            // package z
+        |_ x.go               // package x
+</code></pre>
+
+<p>
 </p>
 
 <p>
-A standard package has a higher import priority than a third-party package
-if their import paths are identical.
-So please try to avoid using the import path of a standard package
-as the import path of a third-party package.
+For a package which doesn't support the module feature,
+its corresponding <code>go.mod</code> must specify the import path of
+the innermost folder containing the <code>go.mod</code> file.
+The format of specifying the import path is <code>module ImportPath</code>.
+Only the <code>vendor</code> folder which share the same parent folder with
+the <code>go.mod</code> file is viewed as a special folder.
+</p>
+
+Assume all the packages in the following hierarchical directory structure
+support the module feature, then
+<ul>
+<li>
+	The import path of the first <code>foo</code> package is <code>w/foo</code>.
+	The <code>MyProject/vendor</code> folder is viewed as a special folder.
+</li>
+<li>
+	The import path of the other  <code>foo</code> package is<code>example.com/mypkg/x/y/vendor/w/foo</code>.
+	Note, the <code>MyProject/x/y/vendor</code> folder is viewed as a normal package folder.
+</li>
+<li>
+	The import paths of the <code>x</code>, <code>y</code> and <code>z</code> packages
+	are <code>example.com/mypkg/x</code>, <code>example.com/mypkg/x/y</code> and <code>example.com/mypkg/x/z</code>, respectively.
+</li>
+</ul>
+
+Note, when the <code>x.go</code>, <code>y.go</code> or <code>z.go</code> file imports a package with import path <code>w/foo</code>,
+the imported package is always the package with folder <code>MyProject/vendor/w/foo</code>.
+
+<pre><code class="language-go">_ MyProject
+     |_ go.mod                // module example.com/mypkg
+     |_ vendor
+     |  |_ w
+     |     |_ foo
+     |        |_ foo.go       // package foo
+     |_ x
+        |_ y
+        |  |_ vendor
+        |  |  |_ w
+        |  |     |_ foo
+        |  |        |_ foo.go // package foo
+        |  |_ y.go            // package y
+        |_ z
+        |  |_ z.go            // package z
+        |_ x.go               // package x
+</code></pre>
+
+<p>
+</p>
+
+<p>
+When one source file in a package import another package,
+we say the importing package depends on the imported package. 
+</p>
+
+<p>
+Go doesn't support circular dependency.
+If package <code>a</code> depends on package <code>b</code>
+and package <code>b</code> depends on package <code>c</code>,
+then source files in package <code>c</code> can't import package <code>a</code> and <code>b</code>,
+and source files in package <code>b</code> can't import package <code>a</code>.
+</p>
+
+<p>
+Surely, source files in a package can't, and don't need to, import the package itself.
 </p>
 
 <p>
 Later, we will call the packages each of which contains
 the <code>main</code> entry functions as <b>program packages</b>,
 and call other packages as <b>library packages</b>.
-The names of program packages must be all <code>main</code>.
+The name of a program package must be <code>main</code>.
 </p>
 
 <p>
-The name of folder containing a package
-is not required to be the same as the package name.
-However, for library packages, it will make package users confused if the name
-of a package is different from the name of the package folder.
-For example, if the name of a package is <code>foo</code> but its import path is
-<code>x/y/bar</code>, then to call a function <code>F</code> in the package,
-people may expect to use the qualified identifier <code>bar.F</code>.
-However, in fact the correct qualified identifier is <code>foo.F</code>.
-Package users must open the package source files to check what
-the real name of the imported package is.
-So please try to make the two names identical for every library package.
+The name of the folder of a package is not required to be the same as the package name.
+However, for a library package, it will make package users confused if the name
+of the package is different from the name of the folder of the package.
+The cause of the confusion is the default import path of a package is the name of the package
+but what is contained in the import path of the package is the folder name of the package.
+So please try to make the two names identical for each library package.
 </p>
 
 <p>
-<code>main</code> packages are not recommended to be imported as library packages.
-Although Go specification doesn't forbid importing <code>main</code> packages,
-the official Go tools do (at least for Go SDK 1.11).
-In practice, to avoid confusing,
-it is best never to use <code>main</code> packages as library packages.
-One the other hand, it is recommended to give each program package folder
+On the other hand, it is recommended to give each program package folder
 a meaningful name other than its package name, <code>main</code>.
 </p>
-
-<div>
-The official Go SDK will view package folders named as <code>internal</code>
-and <code>vendor</code> as special package folders.
-<ul>
-<li>
-	An <code>internal</code> package can only be imported by the packages
-	which folders contains (either directly or indirectly) the
-	<code>internal</code> package folder.
-	In other words, a package can't import an <code>internal</code> package
-	which is not located in the subtree of the folder of the package.
-</li>
-<li>
-	The <code>vendor</code> folder under a package folder is used to
-	store the dependency packages of the package.
-	Please view the <a href="https://golang.org/cmd/go/#hdr-Vendor_Directories">
-	official documentation</a> for details.
-</li>
-</ul>
-
 </div>
-
-<h3>Package Load Order</h3>
-
-<p>
-Go doesn't support circular dependency.
-If package <code>a</code> imports package <code>b</code>
-and package <code>b</code> imports package <code>c</code>,
-then package <code>c</code> can't import package <code>a</code> and <code>b</code>,
-package <code>b</code> also can't import package <code>a</code>.
-</p>
-
-<p>
-A package also can't import itself.
-</p>
-
-<p>
-At run time, packages are loaded by their dependency orders.
-A package will be loaded before all the packages which import it.
-Each Go program contains only one program package,
-which is the last package being loaded at run time.
-</p>
 
 <h3>The <code>init</code> Functions</h3>
 
 <p>
-There can be multiple functions named as <code>init</code> declared in one package,
-even in one source code file.
-The functions named as <code>init</code> must have no any
+There can be multiple functions named as <code>init</code> declared in a package,
+even in a source code file.
+The functions named as <code>init</code> must have not any
 input parameters and return results.
 </p>
 
 <p>
-The <code>init</code> functions in a package will be called
-once and only once sequentially when the package is loaded.
-However, the invocation order of these <code>init</code> functions
-is not specified in Go specification.
-So there shouldn't be dependency relations between the
-<code>init</code> functions in one package.
+Note, at the top package-level block, the <code>init</code> identifier
+can only be used in function declarations.
+We can't declare package-level variable/constants/types which names are <code>init</code>.
 </p>
 
 <p>
-For the standard Go compiler, the <code>init</code> functions in a source file
-will be called from top to down.
+The <code>init</code> functions in a package will be called
+once and only once when the package is loaded.
+However, the invocation order of these <code>init</code> functions
+in a package is not specified in Go specification.
+So please avoid dependency relations between the
+<code>init</code> functions in a package.
+</p>
+
+<p>
+At run time, a package will be loaded after all its dependency packages are loaded.
+Each package will be loaded once and only once.
 </p>
 
 <p>
 All <code>init</code> functions in all involved packages in a program
-will be called sequentially.
+will be invoked sequentially.
 An <code>init</code> function in an importing package
 will be called after all the <code>init</code> functions
 declared in the dependency packages of the importing package for sure.
@@ -368,8 +486,8 @@ before invoking the <code>main</code> entry function.
 </p>
 
 <p>
-All package-level variables in a package are initialized before
-any <code>init</code> function is invoked.
+All package-level variables declared in a package are initialized before
+any <code>init</code> function declared in the same package is invoked.
 </p>
 
 <div>
@@ -405,8 +523,6 @@ bye
 </code></pre>
 
 <p>
-All package-level variables declared in a pacakge are initialized before
-any <code>init</code> function declared in the same pacakge is called.
 </p>
 
 </div>
@@ -423,9 +539,9 @@ In fact, the full form of an import declaration is
 
 <p>
 where <code>importname</code> is optional,
-its default value is the real name of the imported package.
-In fact, the prefix token used in qualified identifiers is
-the <code>importname</code>.
+its default value is the name (not the folder name) of the imported package.
+If the <code>importname</code> presents in an import declaration,
+then the prefix token used in qualified identifiers is <code>importname</code>.
 </p>
 
 <p>
@@ -485,8 +601,8 @@ Example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
-	. "fmt"
-	. "time"
+	"fmt"
+	"time"
 )
 
 func main() {
@@ -504,7 +620,7 @@ Generally, dot imports are not recommended to be used in formal projects.
 </p>
 
 <p>
-The <code>importname</code> in the full form import declaration can be blank identifier
+The <code>importname</code> in the full form import declaration can be the blank identifier
 (<code>_</code>). Such imports are called anonymous imports.
 The importing source files can't use the exported resources in anonymously imported packages.
 The purpose of anonymous imports is to initialize the imported packages
@@ -529,14 +645,13 @@ func main() {
 <h3>Each Non-anonymous Import Must Be Used Once</h3>
 
 <div>
-Except anonymous imports, at least one exported elements in
-other imports must be used at once.
+Except anonymous imports, other imports must be used at once.
 For example, the following example fails to compile.
 <pre class="line-numbers"><code class="language-go">package main
 
 import "net/http"    // error: imported and not used
 import . "time"      // error: imported and not used
-import format "fmt"  // okay: used once below
+import format "fmt"  // okay: it is used once below
 import _ "math/rand" // okay: anonymous packages are not required to be used
 
 func main() {
@@ -545,3 +660,59 @@ func main() {
 </code></pre>
 
 </div>
+
+<!--
+<h3>Package Import Paths</h3>
+
+todo: it is some a chaos currently. It would be good to finish this section at Go 1.12.
+
+<div>
+<p>
+Before Go SDK 1.11, the <a href="go-sdk.html">official Go tools</a> recommend,
+and often require, the folder containing a third-party package to be put in the <code>src</code>
+folder under any path specified in the <code>GOPATH</code> environment variable.
+The import path of the third-party package is the relative path of
+the package folder to the <code>src</code> folder.
+The seperators in the path must be always <code>/</code> and can't be <code>\</code>.
+For example, if the path of a package is <code>OneGoPath/src/a/b/pkg</code>
+(or <code>OneGoPath\src\a\b\pkg</code> on Windows),
+then its import path is <code>a/b/pkg</code>.
+</p>
+
+<p>
+Since Go SDK 1.6 (experimented since 1.5), each code package folder
+can contain a <code>vendor</code> subfolder, which is used to store
+the dependency packages of that code package.
+The packages under the <code>vendor</code> subfolder have a higher priorty
+in package look-up.
+</p>
+
+<p>
+Since Go SDK 1.11, the official Go tools start to support modules.
+The <code>GOPATH</code> environment variable is still kept
+but Go package source code can be put anywhere.
+A new environment variable <code>GO111MODULE</code> is used to 
+
+Go source code can be put anywhere and <code>GOPATH</code> environment variable is not required
+
+GO111MODULE
+</p>
+
+<p>
+A standard package has a higher import priority than a third-party package
+if their import paths are identical.
+So please try to avoid using the import path of a standard package
+as the import path of a third-party package.
+</p>
+
+
+
+</div>
+-->
+
+
+
+
+
+
+
