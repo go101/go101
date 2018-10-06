@@ -40,7 +40,7 @@ Index
 	<a href="#execute-deferred-calls-earlier">Use anonymous functions to make some deferred function calls be executed earlier.</a>
 </li>
 <li>
-	<a href="#assert-at-compile-time">Several ways to guarantee a constant <code>N</code> is not smaller than another constant <code>M</code> at compile time.</a>
+	<a href="#assert-at-compile-time">Some compile-time assertion tricks.</a>
 </li>
 <li>
 	<a href="#declare-max-int-uint">How to declare maximum int and uint constants?</a>
@@ -100,7 +100,7 @@ func main() {
 
 <p>
 Please try not to place the zero-size non-exported field as the last field in the struct,
-for <a href="<a href="unofficial-faq.html#final-zero-size-field">doing so might enlarge the size of the struct type</a>.
+for <a href="unofficial-faq.html#final-zero-size-field">doing so might enlarge the size of the struct type</a>.
 </p>
 
 </div>
@@ -360,6 +360,12 @@ Another scenario at which we should use three-index subslice form is mentioned
 in <a href="https://github.com/go101/go101/wiki/The-capacity-of-the-result-byte-%28or-rune%29-slice-of-a-conversion-from-a-string-is-undefined">this wiki article</a>.
 </p>
 
+<p>
+One drawback of three-index subslice forms is they are some verbose.
+In fact, I ever made <a href="https://github.com/golang/go/issues/25638">a proposal</a>
+to make it less verbose, but it was declined.
+</p>
+
 </div>
 
 
@@ -427,20 +433,50 @@ Please read <a href="defer-more.html#kind-of-resource-leaking">this article</a> 
 
 
 <p class="anchor" id="assert-at-compile-time"></p>
-<h3>Several ways to guarantee a constant <code>N</code> is not smaller than another constant <code>M</code> at compile time.</h3>
+<h3>Some compile-time assertion tricks.</h3>
 
 <div>
 
+Several ways to guarantee a constant <code>N</code> is not smaller than another constant <code>M</code> at compile time:
+
 <pre class="line-numbers"><code class="language-go">const N, M = 8, 8
 
-// Any of the following line can guarantee n >= M
+// Any of the following line can guarantee N >= M
 var _ [N-M]int
 type _ [N-M]int
 const _ uint = N-M
 func _([N-M]int){}
 </code></pre>
 
+One more way which is stolen from <a href="https://twitter.com/lukechampine/status/1026695476811390976">@lukechampine</a>.
+It makes use of the rule that <a href="container.html#value-literals">duplicated constant keys can't appear in the same composite literal</a>.
+
+<pre class="line-numbers"><code class="language-go">var _ = map[bool]struct{}{false: struct{}{}, N>=M: struct{}{}}
+</code></pre>
+
+The above way looks some verbose but it is more general. It can be used to assert any conditions.
+It can be less vervose but needs a little more (negligible) memory:
+
+<pre class="line-numbers"><code class="language-go">var _ = map[bool]int{false: 0, M>=N: 1}
+</code></pre>
+
 <p>
+</p>
+
+Similarly, ways to assert two integer constants equal to each other:
+
+<pre class="line-numbers"><code class="language-go">var _ [N-M]int; var _ [M-N]int
+type _ [N-M]int; type _ [M-N]int
+const _, _ uint = N-M, M-N
+func _([N-M]int, [M-N]int) {}
+
+var _ = map[bool]int{false: 0, M==N: 1}
+
+var _ [N-M]int = [M-N]int{}
+</code></pre>
+
+<p>
+The last line is also inspired by one of Luke Champine's tweets.
 </p>
 
 </div>
@@ -467,6 +503,8 @@ const MaxInt = int(^uint(0) >> 1)
 <h3>How to detect native word size at compile time?</h3>
 
 <div>
+
+This tip is Go unrelated.
 
 <pre class="line-numbers"><code class="language-go">const Is64bitArch = ^uint(0) >> 63 == 1
 const Is32bitArch = ^uint(0) >> 63 == 0
@@ -509,17 +547,21 @@ import "fmt"
 func main() {
 	var a [1000]int
 	
-	// This cost of the two lines are high.
+	// This cost of the two lines is high.
 	fmt.Println(a)                   // a is copied
 	fmt.Printf("Type of a: %T\n", a) // a is copied
 	
-	// The cost of the two lines are low.
+	// The cost of the two lines is low.
 	fmt.Printf("%v\n", a[:])
 	fmt.Println("Type of a:", fmt.Sprintf("%T", &a)[1:])
 }
 </code></pre>
 
 <p>
+</p>
+
+<p>
+About value sizes of different types, please read <a href="value-copy-cost.html">value copy costs in Go</a>.
 </p>
 
 </div>
@@ -535,7 +577,7 @@ func main() {
 Please read <a href="bounds-check-elimination.html">this article</a> to get
 what is BCE and how well BCE is supported in Go now.
 That article also show some examples on how to making use of BCE to do code optimization.
-Here, another example is provide:
+Here, another example is provided:
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -562,7 +604,7 @@ func NumSameBytes_2(x, y string) int {
 	}
 	if len(x) <= len(y) { // more code but more efficient
 		for i := 0; i < len(x); i++ {
-			if x[i] != y[i] { // bound check elimated
+			if x[i] != y[i] { // bound check eliminated
 				return i
 			}
 		}
@@ -598,11 +640,18 @@ BenchmarkNumSameBytes_2-4   	20000000	       450 ns/op
 <p>
 </p>
 
+<p>
+Please note, there are many small improvements in each main release of the standard Go compiler (gc).
+The trick used in the above example doesn't work for Go SDK versions earlier than 1.11.
+And future gc versions may become smarter so that the trick will become unnecessary.
+</p>
 
 </div>
 
 
 <!--
+
+use named returns, better readibility
 
 try to avoid unnecessary synchronization, for example, make data only be used in one goroutine.
 math/rand.NewSource() are faster but not concurrent safe.
@@ -615,6 +664,7 @@ try to avoid using large-sized types as
 * channel element types
 
 
+fmt.Print(v) // values referenced by v escape to heap
 
 
 use types without pointer components as container elements would ... the burden of GC.
