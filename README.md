@@ -1,5 +1,5 @@
 <b>Go 101</b> is a book focusing on Go syntax/semantics and all kinds of details.
-The book also tries to help gophers understand Go deeply and thoroughly.
+The book also tries to help gophers gain a deep and thorough understanding of Go
 
 ### Install And Update
 

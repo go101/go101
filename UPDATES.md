@@ -2,7 +2,7 @@
 
 
 
-### 1.11.b (2018/Sep/09)
+### 1.11.c (2018/Sep/22)
 
 * add a new tip [How to make a struct type uncomparable?](https://go101.org/article/tips.html#make-struct-type-uncomparable).
 * add a new tip [Try to reset pointers in freed-up slice elements](https://go101.org/article/tips.html#reset-pointers-for-dead-elements).
