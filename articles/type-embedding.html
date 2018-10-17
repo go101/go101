@@ -119,7 +119,7 @@ The above rules for which types can be embedded are unnecessarily restricted and
 which makes it some hard to describe them clearly in brief.
 It looks they are intended to avoid types without methods being embedded.
 However, at the same time, they also already allow many types without methods to be embedded,
-such as built-in basic types and alias of many unnamed types.
+such as built-in basic types and aliases of many unnamed types.
 There is <a href="https://github.com/golang/go/issues/24062">a proposal</a> trying to simplify the rules but it was declined.
 The rule specified in the proposal is quite simple and doesn't do any harm:
 <b>if a type can provide an unqualified name, then the type can be embedded</b>.
@@ -458,7 +458,7 @@ For such cases,
 <li>
 	if there are more than one full-form selectors with the shallowest depth,
 	then none of those full-form selectors can be shortened as <code>x.y</code>.
-	We say those full-form selectors with the shallowest depth are <b>colliding</b>.
+	We say those full-form selectors with the shallowest depth are <b>colliding</b> with each other.
 </li>
 </ul>
 
@@ -489,7 +489,7 @@ type C struct {
 </code></pre>
 
 The following code doesn't compile.
-The reasons is selector <code>v1.A.x</code> and <code>v1.B.x</code> are collided,
+The reasons is selector <code>v1.A.x</code> collides with <code>v1.B.x</code> are collided with each other,
 so both of them can't be shortened to <code>v1.x</code>.
 The same sotuation is for selector <code>v1.A.y</code> and <code>v1.B.y</code>.
 
@@ -542,7 +542,7 @@ In fact,
 <ul>
 <li>
 	for each method of an embedded type,
-	if the selectors to that method neither collide nor are shadowed
+	if the selectors to that method neither collide with nor are shadowed
 	by other selectors, then compilers will implicitly declare
 	a correspoding method for the embedding struct type.
 	And consequently, compiler will also
@@ -553,7 +553,7 @@ In fact,
 <li>
 	assume a struct type <code>S</code> embeds a named type <code>T</code>,
 	for each method of type <code>*T</code>,
-	if the selectors to that method neither collide nor are shadowed
+	if the selectors to that method neither collide with nor are shadowed
 	by other selectors, then compilers will implicitly declare
 	a correspoding method for type <code>*S</code>.
 </li>
@@ -562,21 +562,22 @@ In fact,
 Simply speaking,
 <ul>
 <li>
-	both type <code>struct{T}</code> and type <code>*struct{T}</code>
-	will obtain (inherit) all the methods of type <code>T</code>.
+	type <code>struct{T}</code> obtains (inherit) all the methods of type <code>T</code>.
 </li>
 <li>
-	type <code>*struct{T}</code> will obtain (inherit)
-	all the methods of type <code>*T</code> as well.
+	type <code>*struct{T}</code> obtains (inherit) all the methods of type <code>*T</code>.
 </li>
 <li>
-	both type <code>struct{*T}</code> and type <code>*struct{*T}</code>
-	will obtain (inherit) all the methods of type <code>*T</code>.
-	As the method set of type <code>T</code> is a subset of type <code>*T</code>,
-	we can also say both type <code>struct{*T}</code> and <code>*struct{*T}</code>
-	will obtain (inherit) all the methods of type <code>T</code>.
+	both type <code>struct{*T}</code> and <code>*struct{*T}</code>
+	also obtain (inherit) all the methods of type <code>*T</code>.
 </li>
 </ul>
+
+<p>
+Note, as <a href="method.html#method-set">the method set of type <code>T</code> is always a subset of
+the method set of type <code>*T</code></a>, we can also say all the three types <code>*struct{T}</code>,
+<code>struct{*T}</code> and <code>*struct{*T}</code> obtain (inherit) all the methods of type <code>T</code>.
+</p>
 
 Here are the implicitly declared methods for type <code>Singer</code>
 and type <code>*Singer</code>.

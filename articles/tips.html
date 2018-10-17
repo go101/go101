@@ -123,9 +123,11 @@ type T struct {
 	AnotherField int
 }
 
+var x map[T]int // compile error: invalid map key type T
+
 func main() {
 	var a, b T
-	_ = a == b // compile error: invalid operation: a == b
+	_ = a == b // compile error: invalid operation:
 }
 </code></pre>
 
@@ -441,15 +443,17 @@ Several ways to guarantee a constant <code>N</code> is not smaller than another 
 
 <pre class="line-numbers"><code class="language-go">const N, M = 8, 8
 
-// Any of the following line can guarantee N >= M
-var _ [N-M]int
-type _ [N-M]int
-const _ uint = N-M
+// Any of the following lines can guarantee N >= M
+func _(x []int) {_ = x[M-N]}
+func _(){_ = []int{M-N: 0}}
 func _([N-M]int){}
+var _ [N-M]int
+const _ uint = N-M
+type _ [N-M]int
 </code></pre>
 
 One more way which is stolen from <a href="https://twitter.com/lukechampine/status/1026695476811390976">@lukechampine</a>.
-It makes use of the rule that <a href="container.html#value-literals">duplicated constant keys can't appear in the same composite literal</a>.
+It makes use of the rule that <a href="container.html#value-literals">duplicate constant keys can't appear in the same composite literal</a>.
 
 <pre class="line-numbers"><code class="language-go">var _ = map[bool]struct{}{false: struct{}{}, N>=M: struct{}{}}
 </code></pre>
@@ -461,6 +465,8 @@ It can be less vervose but needs a little more (negligible) memory:
 </code></pre>
 
 <p>
+NOTE: currently, <a href="https://github.com/golang/go/issues/28104">gccgo 8.2.0 has a bug</a> which allows duplicate constant keys in composite literals.
+So this trick doesn't work for gccgo now. This bug will be fixed in a later gccgo version.
 </p>
 
 Similarly, ways to assert two integer constants equal to each other:
@@ -471,6 +477,9 @@ const _, _ uint = N-M, M-N
 func _([N-M]int, [M-N]int) {}
 
 var _ = map[bool]int{false: 0, M==N: 1}
+
+var _ = [1]int{M-N: 0} // the only valid index is 0
+var _ = [1]int{}[M-N]  // the only valid index is 0
 
 var _ [N-M]int = [M-N]int{}
 </code></pre>
@@ -666,6 +675,8 @@ try to avoid using large-sized types as
 
 fmt.Print(v) // values referenced by v escape to heap
 
+
+sync.Pool, sync.Map
 
 use types without pointer components as container elements would ... the burden of GC.
 

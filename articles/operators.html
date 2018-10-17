@@ -177,7 +177,7 @@ Go supports six bitwise binary arithmetic operators:
 			<p>
 			The two operands must be both values of the same integer type.
 			</p>
-			
+
 			Mechanism explanations (a value with the subscript <code>2</code> is the binary literal form of the value):
 			<ul>
 			<li>
@@ -229,7 +229,7 @@ Go supports six bitwise binary arithmetic operators:
 			(or an <a href="type-system-overview.html#typed-and-untyped-values">untyped</a>
 			integer constant which is representable as an <code>uint</code> value).
 			</p>
-			
+
 			Mechanism explanations:
 			<ul>
 			<li>
@@ -241,7 +241,7 @@ Go supports six bitwise binary arithmetic operators:
 				results <code>1<sub>2</sub></code>
 			</li>
 			</ul>
-			
+
 			<p>
 			If the left operand is (or is viewed as) a signed integer,
 			then the sign bit (the highest bit) in the left operand
@@ -420,16 +420,16 @@ Whether it is typed or untyped depends on specific scenarios.
 	then the type of the result is the same as the type of the left operand.
 </li>
 <li>
-	If the left operand is an untyped value (generally a constant) and the
-	right operand is a constant, the left operand will be always treated as an
-	integer value. If its default type is not an integer type,
-	it must be representable as an untyped integer, and its default
-	type will be viewed as <code>int</code>.
-	The result is also an untyped value and its default type is the same as the left operand.
+	If the left operand is an untyped value and the right operand is a constant,
+	then the left operand will be always treated as an integer value,
+	if its default type is not an integer type, it must be representable as an untyped integer
+	and its default type will be viewed as <code>int</code>.
+	For such cases, the result is also an untyped value and
+	the default type of the result is the same as the left operand.
 </li>
 <li>
 	If the left operand is an untyped value and the right operand
-	is a non-constant (unsigned) integer, the left operand will be first
+	is a non-constant (unsigned) integer, then the left operand will be first
 	converted to the type it would assume if the bitwise shift operator
 	operation were replaced by its left operand alone.
 	The result is a typed value whose type is the assumed type.
@@ -438,9 +438,9 @@ Whether it is typed or untyped depends on specific scenarios.
 
 Example:
 <pre class="line-numbers"><code class="language-go">func main() {
-	const X, Y, Z = 2, 'A', 3i // three untyped values. 
-							   // Default types: int, rune, complex64.
-	
+	const X, Y, Z = 2, 'A', 3i // three untyped values.
+	                           // Default types: int, rune, complex64.
+
 	var a, b int = X, Y // two typed values.
 
 	d := X + Y // the type of d is the default type of Y: rune (int32).
@@ -448,7 +448,7 @@ Example:
 	f := a * b // the type of f is the types of a and b: int.
 	g := Z * Y // the type of g is the default type of Z: complex64.
 
-	println(X, Y, Z)	// 2 65 (+0.000000e+000+3.000000e+000i)
+	println(X, Y, Z)    // 2 65 (+0.000000e+000+3.000000e+000i)
 	println(d, e, f, g) // 67 63 130 (+0.000000e+000+1.950000e+002i)
 }
 </code></pre>
@@ -458,7 +458,7 @@ Example:
 
 Another example (bitwise shift operations):
 <pre class="line-numbers"><code class="language-go">const N = 2
-const A = 3.0 << N	     // A == 6, its default type is int.
+const A = 3.0 << N       // A == 6, its default type is int.
 const B = int8(3.0) << N // B == 6, it is typed and its type is int8.
 
 var m = uint(32)
@@ -467,18 +467,18 @@ var x int64 = 1 << m  // the type of 1 is deduced as int64, not int.
 var y = int64(1 << m) // the type of 1 is deduced as int64, not int.
 var z = int64(1) << m
 
-// The following lines fail to compile.
+// The following two lines fail to compile.
 /*
-var _ = 3.0 << m // error: shift of type float64
-const _ = 1 << B // error: the right operand must be unsigned.
+var _ = 1.23 << m // error: shift of type float64
+const _ = 1 << B  // error: the right operand must be unsigned.
 */
 </code></pre>
 
 <p>
 The last rule for bitwise shift operator operation is to avoid some operations
 returning different results on different architectures.
-For example, the bitwise operation at line <i>8</i> will return different results
-between 32-bit architectures and 64-bit architectures
+For example, the bitwise operation at line <i>8</i> (or line <i>7<</i>) will
+return different results between 32-bit architectures and 64-bit architectures
 if the operand <code>1</code> is deduced as
 <code>int</code> instead of <code>int64</code>,
 which may produce some bugs hard to detect.
@@ -500,11 +500,14 @@ var _ = float64(1 << m)
 </code></pre>
 
 The reason of the last two lines failing to compile is they are both
-equivalent to the following line:
+equivalent to the followings two line:
 
 <pre class="line-numbers"><code class="language-go">var _ = float64(1) << m
+var _ = 1.0 << m // error: shift of type float64
 </code></pre>
 
+<p>
+</p>
 </div>
 
 <h4>About Overflows</h4>
@@ -532,8 +535,8 @@ const R = 'a' + 0x7FFFFFFF		    // okay, though R overflows rune.
 
 // Operation results or conversion results are typed values.
 // These lines all fail to compile.
-var e = X				 // error: untyped constant X overflows int.
-var h = R				 // error: constant 2147483744 overflows rune.
+var e = X                // error: untyped constant X overflows int.
+var h = R                // error: constant 2147483744 overflows rune.
 const Y = 128 - int8(1)  // error: 128 overflows int8
 const Z = uint8(255) + 1 // error: the result 256 overflow uint8.
 </code></pre>
@@ -637,7 +640,7 @@ func main() {
 	a++ // okay
 	b-- // okay
 	c++ // okay
-	
+
 	// The following three lines fail to compile.
 	/*
 	_ = a++
@@ -752,11 +755,11 @@ We can use the <code>!=</code> operator introduced in the next sub-section as th
 </p>
 
 Mechanism explanations:
-<pre><code class="language-go">// x	  y	 x && y	 x || y	!x	 !y
-true	true	true	   true	 false  false
-true	false   false	  true	 false  true
-false   true	false	  true	 true   false
-false   false   false	  false	true   true
+<pre><code class="language-go">// x    y       x && y   x || y   !x      !y
+true    true    true     true     false   false
+true    false   false    true     false   true
+false   true    false    true     true    false
+false   false   false    false    true    true
 </code></pre>
 
 <p>
@@ -790,20 +793,8 @@ Go supports six comparison binary operators:
 			equal to
 		</td>
 		<td style="vertical-align: middle;" class="text-left" rowspan="2">
-			<p>
-			If the two operands are both typed, then their types must be the same one,
-			or one operand can be implicitly converted to the type of the other operand.
-			</p>
-
-			<p>
-			If only one operand is typed, then the other untyped operand must be able to
-			be implicitly converted to the type of the typed operand.
-			</p>
-
-			<p>
-			If the two operands are both untyped, the they must be both untyped booleans,
-			both untyped strings or both untyped numeric values.
-			</p>
+			Generally, the types of its two operands must be the same.
+			For detailed rules, please read <a href="value-conversions-assignments-and-comparisons.html#comparison-rules">comparison rules in Go</a>.
 		</td>
 	</tr>
 	<tr>

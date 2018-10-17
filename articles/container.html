@@ -197,7 +197,7 @@ map[string]int{"C": 1972, "Python": 1991, "Java", 1995, "Go": 2009}
 <p>
 </p>
 
-There are some variants for array and slice composite literals:
+There are several variants for array and slice composite literals:
 <pre class="line-numbers"><code class="language-go">// The followings slice composite literals are all equivalent.
 []string{"break", "continue", "fallthrough"}
 []string{0: "break", 1: "continue", 2: "fallthrough"}
@@ -215,7 +215,7 @@ There are some variants for array and slice composite literals:
 
 <p>
 In the last two literals, the <code>...</code>s mean we want to let compilers
-deduce the lengths of array values represented by the literals.
+deduce the lengths for the corresponding array values.
 </p>
 
 <p>
@@ -226,14 +226,13 @@ be assignable to the corresponding map key type.
 </p>
 
 <p>
-From above examples, we know that element indexes (keys)
+From the above examples, we know that element indexes (keys)
 are optional in array and slice composite literals.
 If an index is present,
-it is not needed to be typed value of the key type <code>int</code>.
-But it must be a non-negative constant representable
-by a value of type <code>int</code>.
+it is not needed to be a typed value of the key type <code>int</code>.
+But it must be a non-negative constant representable as a value of type <code>int</code>.
 And if it is typed, its type must be a basic integer type.
-An element which index is absent uses the previous element's index plus one.
+<b>An element which index is absent uses the previous element's index plus one as its index</b>.
 If the index of the first element is absent, its index is zero.
 </p>
 
@@ -472,13 +471,13 @@ func main() {
 	var a [16]byte
 	var s []int
 	var m map[string]int
-	
+
 	fmt.Println(a == a)   // true
 	fmt.Println(m == nil) // true
 	fmt.Println(s == nil) // true
 	fmt.Println(nil == map[string]int{}) // false
 	fmt.Println(nil == []int{})          // false
-	
+
 	// The following lines fail to compile.
 	/*
 	_ = m == m
@@ -570,19 +569,19 @@ func main() {
 	fmt.Println (a[2], s[1], m["abc"])    // access
 	a[2], s[1], m["abc"] = 999, true, 567 // modify
 	fmt.Println (a[2], s[1], m["abc"])    // access
-	
+
 	n, present := m["hello"]
 	fmt.Println(n, present, m["hello"]) // 0 false 0
 	n, present = m["abc"]
 	fmt.Println(n, present, m["abc"]) // 567 true 567
 	m = nil
 	fmt.Println(m["abc"]) // 0
-	
+
 	// The two lines fail to compile.
 	/*
 	_ = a[3]  // invalid array index 3 (out of bounds)
 	_ = s[-1] // invalid slice index -1 (index must be non-negative)
-	*/	
+	*/
 
 	// Each of the following lines causes a panic.
 	_ = a[n]         // panic: runtime error: index out of range
@@ -626,12 +625,12 @@ func main() {
 	m1 := m0
 	m1[0] = 2
 	fmt.Println(m0, m1) // map[0:2 1:8 2:9] map[0:2 1:8 2:9]
-	
+
 	s0 := []int{7, 8, 9}
 	s1 := s0
 	s1[0] = 2
 	fmt.Println(s0, s1) // [2 8 9] [2 8 9]
-	
+
 	a0 := [...]int{7, 8, 9}
 	a1 := a0
 	a1[0] = 2
@@ -652,7 +651,7 @@ The capacity of an array is always equal to the length of the array.
 The capacity of a map is unlimited.
 So, in practice, only capacities of slice values are meaningful.
 The capacity of a slice is always equal to or larger than the length of the slice.
-The meaning of slice capacities will be explained in the next section.
+The meaning of slice capacities will be explained in the next next section.
 </p>
 
 <p>
@@ -1026,7 +1025,7 @@ func main() {
 	m["C"] = 1972
 	m["Go"] = 2009
 	fmt.Println(m, len(m)) // map[C:1972 Go:2009] 2
-	
+
 	// Make new slices.
 	s := make([]int, 3, 5)
 	fmt.Println(s, len(s), cap(s)) // [0 0 0] 3 5
@@ -1059,6 +1058,7 @@ create map and slice values.
 It is not totally a nonsense to allocate a zero value of an array type
 with the built-in <code>new</code> fucntion.
 However, it is seldom to do this in practice,
+for it is more convenient to use composite literals to allocate arrays. 
 </p>
 
 Example:
@@ -1123,7 +1123,7 @@ func main() {
 	fmt.Println(*pa2, *ps1) // 99 true
 	ps0 := &[]string{"Go", "C"}[0]
 	fmt.Println(*ps0) // Go
-	
+
 	m := map[int]bool{1: true}
 	_ = m
 	// The following lines fail to compile.
@@ -1173,11 +1173,11 @@ func main() {
 	mt["John"] = T{age: 29}
 	ma := map[int][5]int{}
 	ma[1] = [5]int{1: 789}
-	
+
 	// Accessments are ok
 	fmt.Println(ma[1][1]) // 789
 	fmt.Println(mt["John"].age) // 29
-	
+
 	// The following two modifications fail to compile.
 	/*
 	ma[1][1] = 123      // error: cannot assign to a[1][1]
@@ -1206,15 +1206,15 @@ func main() {
 	mt["John"] = T{age: 29}
 	ma := map[int][5]int{}
 	ma[1] = [5]int{1: 789}
-	
+
 	t := mt["John"] // a temporary copy
 	t.age = 30
 	mt["John"] = t // overwrite it back
-	
+
 	a := ma[1] // a temporary copy
 	a[1] = 123
 	ma[1] = a // overwrite it back
-	
+
 	fmt.Println(ma[1][1], mt["John"].age) // 123 30
 }
 </code></pre>
@@ -1411,7 +1411,7 @@ func main() {
 	fmt.Println(n, dest) // 3 [5 6 7]
 	n = copy(dest[1:], dest)
 	fmt.Println(n, dest) // 2 [5 5 6]
-	
+
 	a := [4]int{} // an array
 	n = copy(a[:], src)
 	fmt.Println(n, a) // 4 [5 6 7 8]
@@ -1506,12 +1506,12 @@ func main() {
 	for lang, year := range m {
 		fmt.Printf("%v: %v \n", lang, year)
 	}
-	
+
 	a := [...]int{2, 3, 5, 7, 11}
 	for i, prime := range a {
 		fmt.Printf("%v: %v \n", i, prime)
 	}
-	
+
 	s := []string{"go", "defer", "goto", "var"}
 	for i, keyword := range s {
 		fmt.Printf("%v: %v \n", i, keyword)
@@ -1817,11 +1817,11 @@ import "fmt"
 
 func main() {
 	var a [100]int
-	
+
 	for i, n := range &a { // copying a pointer is cheap
 		fmt.Println(i, n)
 	}
-	
+
 	for i, n := range a[:] { // copying a slice is cheap
 		fmt.Println(i, n)
 	}
@@ -1841,15 +1841,15 @@ import "fmt"
 
 func main() {
 	var p *[5]int // nil
-	
+
 	for i, _ := range p { // okay
 		fmt.Println(i)
 	}
-	
+
 	for i := range p { // okay
 		fmt.Println(i)
 	}
-	
+
 	for i, n := range p { // panic
 		fmt.Println(i, n)
 	}
@@ -1926,6 +1926,10 @@ one-iteration-variable <code>for-range</code> loop block
 to an <a href="https://github.com/golang/go/issues/5373">internal
 <code>memclr</code> call</a>, generally which is faster
 than resetting each element one by one.
+</p>
+
+<p>
+The optimization was adopted in the standard Go compiler 1.5.
 </p>
 
 The optimization also works if the ranged container is a slice. Sadly,
@@ -2006,10 +2010,10 @@ import (
 func main() {
 	s := make([]int, 2, 6)
 	fmt.Println(len(s), cap(s)) // 2 6
-	
+
 	reflect.ValueOf(&s).Elem().SetLen(3)
 	fmt.Println(len(s), cap(s)) // 3 6
-	
+
 	reflect.ValueOf(&s).Elem().SetCap(5)
 	fmt.Println(len(s), cap(s)) // 3 5
 }
@@ -2281,7 +2285,7 @@ for details.
 
 
 
- 
+
 
 
 
