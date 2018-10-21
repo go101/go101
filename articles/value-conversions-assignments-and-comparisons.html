@@ -62,7 +62,7 @@ Given a non-interface value <code>x</code> and a non-interface type <code>T</cod
 <li>
 	if <code>Tx</code> and <code>T</code> share the same underlying type (ignoring struct tags),
 	then <code>x</code> can be explicitly converted to <code>T</code>,
-	in particular if either <code>Tx</code> or <code>T</code> is not an defined type
+	in particular if either <code>Tx</code> or <code>T</code> is not a defined type
 	and they underlying types are identical (considering struct tags),
 	then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
 </li>
@@ -554,6 +554,15 @@ In other words, two values are comparable
 if one can be implicitly converted to the type of the other.
 </p>
 
+<p><i>
+NOTE: currently (Go 1.11), if one of the two operands in a comparison is an interface value,
+and the other operand is a non-interface value of an uncomparable type which implements the former operand interface type,
+both the standard Go compiler (gc) and gccgo fail to compile the comparison.
+This <a href="https://github.com/golang/go/issues/28164">might be a bug of gc and gccgo</a>, or not.
+When this issue is clarfied and it is proved it is not a bug, the above comparison rule descriptions
+will get adjusted accordingly.
+</i></p>
+
 The above rule doesn't cover all circumstances.
 What about if both of the two operands in a comparison are untyped constant values?
 The additional rules are simple:
@@ -576,7 +585,6 @@ The results of comparing two untyped constant values obey intuition.
 <p>
 Any comparison results an untyped boolean value.
 </p>
-
 </div>
 
 <p class="anchor" id="comparison-restrictions"></p>
@@ -686,7 +694,7 @@ Assume two values are comparable, and they have the same type <code>T</code>
 <p>
 Please note, comparing two interfaces with the same uncomparable dynamic type
 produces a panic.
-A sub-comparison of the first three cases mentioned above may also
+A sub-comparison of the first three cases mentioned above may also be
 an interface value comparison.
 So comparisons of the first three cases may be also possible to produce panics.
 <p>

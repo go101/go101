@@ -287,7 +287,7 @@ The lastest Go SDK (v1.11) introduces a module feature.
 Now, we can let a code package support the module feature or not.
 Go SDK 1.11 introduces a <code>GO111MODULE</code> environment variable.
 The default value of this environment variable is <code>auto</code>.
-Its two other potential values are <code>on</code> and <code>off</code>.
+Its two other possible values are <code>on</code> and <code>off</code>.
 If the value of the <code>GO111MODULE</code> environment variable is <code>on</code>,
 then all code packages support the module feature.
 If the value of the <code>GO111MODULE</code> environment variable is <code>off</code>,
@@ -306,7 +306,7 @@ then only the packages which satisfy both of the following two conditions upport
 </ol>
 
 <p>
-For a package which doesn't support the module feature, generally,
+For a package doesn't support the module feature, generally,
 it is below a <code>GOPATH/src</code> directory.
 The import path of such a package is the relative path to
 the <code>GOPATH/src</code> directory or some <code>vendor</code> folder.
@@ -358,12 +358,14 @@ Note,
 </p>
 
 <p>
-For a package which doesn't support the module feature,
+For a package supports the module feature,
 its corresponding <code>go.mod</code> must specify the import path of
 the innermost folder containing the <code>go.mod</code> file.
 The format of specifying the import path is <code>module ImportPath</code>.
 Only the <code>vendor</code> folder which share the same parent folder with
-the <code>go.mod</code> file is viewed as a special folder.
+the <code>go.mod</code> file is viewed as a special folder,
+but please note that the packages under the top-level <code>vendor</code> folder will be ignored
+if the build option <code>-mod=vendor</code> of <code>go</code> command tools is not provided in building.
 </p>
 
 Assume all the packages in the following hierarchical directory structure
@@ -405,6 +407,8 @@ the imported package is always the package with folder <code>MyProject/vendor/w/
 </code></pre>
 
 <p>
+Note, if a package folder contains a <code>go.mod</code> file,
+please don't put other <code>go.mod</code> files in its subfolders.
 </p>
 
 <p>
@@ -425,10 +429,10 @@ Surely, source files in a package can't, and don't need to, import the package i
 </p>
 
 <p>
-Later, we will call the packages each of which contains
-the <code>main</code> entry functions as <b>program packages</b>,
+Later, we will call the packages named with <code>main</code>
+and containing <code>main</code> entry functions as <b>program packages</b>,
 and call other packages as <b>library packages</b>.
-The name of a program package must be <code>main</code>.
+Each Go program should contain one and only one program package.
 </p>
 
 <p>
@@ -621,7 +625,7 @@ Generally, dot imports are not recommended to be used in formal projects.
 
 <p>
 The <code>importname</code> in the full form import declaration can be the blank identifier
-(<code>_</code>). Such imports are called anonymous imports.
+(<code>_</code>). Such imports are called anonymous imports (some articles elsewhere also call them blank imports).
 The importing source files can't use the exported resources in anonymously imported packages.
 The purpose of anonymous imports is to initialize the imported packages
 (each of <code>init</code> functions in the anonymously imported packages will be called once).
@@ -642,7 +646,7 @@ func main() {
 </code></pre>
 </div>
 
-<h3>Each Non-anonymous Import Must Be Used Once</h3>
+<h3>Each Non-Anonymous Import Must Be Used Once</h3>
 
 <div>
 Except anonymous imports, other imports must be used at once.
