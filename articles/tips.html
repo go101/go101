@@ -10,7 +10,7 @@ Index
 	<a href="#make-struct-type-uncomparable">How to make a struct type uncomparable?</a>
 </li>
 <li>
-	<a href="#dont-use-multivalue-assignments-with-dependencies">Don't use multi-value assignments with dependencies between expressions.</a>
+	<a href="#dont-use-assignments-with-expression-dependencies">Don't use value assignments with dependencies between expressions.</a>
 </li>
 <li>
 	<a href="#simulate-loop-from-0-to-n">How to simulate <code>for i in 0..N</code> in some other languages?</a>
@@ -34,10 +34,10 @@ Index
 	<a href="#use-three-index-subslice-form">We should use the three-index subslice form at some scenarios.</a>
 </li>
 <li>
-	<a href="#assert-implementation">Make sure and show a custom defined type implements a specified interface type.</a>
+	<a href="#execute-deferred-calls-earlier">Use anonymous functions to make some deferred function calls be executed earlier.</a>
 </li>
 <li>
-	<a href="#execute-deferred-calls-earlier">Use anonymous functions to make some deferred function calls be executed earlier.</a>
+	<a href="#assert-implementation">Make sure and show a custom defined type implements a specified interface type.</a>
 </li>
 <li>
 	<a href="#assert-at-compile-time">Some compile-time assertion tricks.</a>
@@ -137,16 +137,49 @@ func main() {
 
 
 
-<p class="anchor" id="dont-use-multivalue-assignments-with-dependencies"></p>
-<h3>Don't use multi-value assignments with dependencies between the involved expressions.</h3>
+<p class="anchor" id="dont-use-assignments-with-expression-dependencies"></p>
+<h3>Don't use value assignments with dependencies between expressions.</h3>
 
 <div>
 
 <p>
 Currently (Go 1.11), there are
-<a href="https://github.com/go101/go101/wiki/Some-evaluation-orders-in-multi-value-assignments-are-unspecified">some evaluation orders in multi value assignments are unspecified</a> and there are <a href="https://github.com/go101/go101/wiki/An-ambiguity-of-%28or-dispute-on%29-the-evaluation-order-of-LHS-%28left-hand-side%29-items-in-a-multi-value-assignment">some disputes and bugs</a> in the standard Go compiler and gccgo compiler when there are dependencies existing between the expressions invloved in a multi-value assignment.
+<a href="https://github.com/go101/go101/wiki/Some-evaluation-orders-in-multi-value-assignments-are-unspecified">some evaluation orders in multi-value assignments are unspecified</a>
+and there are <a href="https://github.com/go101/go101/wiki/An-ambiguity-of-%28or-dispute-on%29-the-evaluation-order-of-LHS-%28left-hand-side%29-items-in-a-multi-value-assignment">some disputes and bugs</a>
+in the standard Go compiler and gccgo compiler when there are dependencies existing between the expressions invloved in a multi-value assignment.
 So try to split a multi-value assignment into multiple single value assignments
 if there are, or you can't make sure whether or not there are, dependencies between the involved expressions.
+</p>
+
+In fact, in some bad-written signle-value assignments, there are also expression evaluation order ambiguities.
+For example, the following program might print <code>[7 0 9]</code>, <code>[0 8 9]</code>,
+or <code>[7 8 9]</code>, depending on compiler implementations.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+var a = &[]int{1, 2, 3}
+var i int
+func f() int {
+	i = 1
+	a = &[]int{7, 8, 9}
+	return 0
+}
+
+func main() {
+	// The evaluation order of "a", "i" and "f()" is not specified.
+	(*a)[i] = f()
+	fmt.Println(*a)
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+In other words, a function call in a value assignment shouldn't affect
+the evaluation results of the non-function-call expressions in the same assignment.
 </p>
 
 </div>
@@ -234,8 +267,8 @@ import "sync"
 
 func f(m sync.Mutex) { // warning: f passes lock by value: sync.Mutex
 	m.Lock()
+	defer m.Unlock()
 	// do something ...
-	m.Unlock()
 }
 </code></pre>
 
@@ -372,6 +405,19 @@ to make it less verbose, but it was declined.
 
 
 
+<p class="anchor" id="execute-deferred-calls-earlier"></p>
+<h3>Use anonymous functions to make some deferred function calls be executed earlier.</h3>
+
+<div>
+
+<p>
+Please read <a href="defer-more.html#kind-of-resource-leaking">this article</a> for details.
+</p>
+
+</div>
+
+
+
 <p class="anchor" id="assert-implementation"></p>
 <h3>Make sure and show a custom defined type implements a specified interface type.</h3>
 
@@ -421,23 +467,13 @@ func _() {_ = io.Reader(nil).(*MyReader)}
 
 
 
-<p class="anchor" id="execute-deferred-calls-earlier"></p>
-<h3>Use anonymous functions to make some deferred function calls be executed earlier.</h3>
-
-<div>
-
-<p>
-Please read <a href="defer-more.html#kind-of-resource-leaking">this article</a> for details.
-</p>
-
-</div>
-
-
-
 <p class="anchor" id="assert-at-compile-time"></p>
 <h3>Some compile-time assertion tricks.</h3>
 
 <div>
+<p>
+Beside the above one, there are more compile-time assertion tricks.
+</p>
 
 Several ways to guarantee a constant <code>N</code> is not smaller than another constant <code>M</code> at compile time:
 

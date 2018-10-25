@@ -2,6 +2,14 @@
 
 
 
+### 1.11.d (2018/Oct/18)
+
+* remove "Comparing Interface Values" from [Syntax/Semantics Exceptions In Go](https://go101.org/article/exceptions.html).
+* add "Comparisons 2" to [Syntax/Semantics Exceptions In Go](https://go101.org/article/exceptions.html).
+* modify some descriptions for
+  * [comparison rules]((https://go101.org/article/value-conversions-assignments-and-comparisons.html#comparison-rules)
+  * [package hierarchy]((https://go101.org/article/packages-and-imports.html#package)
+
 ### 1.11.c (2018/Sep/22)
 
 * add a new tip [How to make a struct type uncomparable?](https://go101.org/article/tips.html#make-struct-type-uncomparable).

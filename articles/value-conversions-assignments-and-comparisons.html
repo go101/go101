@@ -63,7 +63,7 @@ Given a non-interface value <code>x</code> and a non-interface type <code>T</cod
 	if <code>Tx</code> and <code>T</code> share the same underlying type (ignoring struct tags),
 	then <code>x</code> can be explicitly converted to <code>T</code>,
 	in particular if either <code>Tx</code> or <code>T</code> is not a defined type
-	and they underlying types are identical (considering struct tags),
+	and their underlying types are identical (considering struct tags),
 	then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
 </li>
 <li>
@@ -126,19 +126,27 @@ func main() {
 	type IntPtr *int
 	type MyIntPtr *MyInt
 
-	var pi = new(int) // type is *int
+	var pi = new(int) // the type of pi is *int
 	var ip IntPtr = pi // ok, same underlying type
 
 	// var _ *MyInt = pi // can't convert implicitly
 	var _ = (*MyInt)(pi) // ok, must explicitly
 
-	// var _ MyIntPtr = pi  // can't convert implicitly
-	// var _ = MyIntPtr(pi) // can't convert explicitly
+	// Values of *int can't be converted to MyIntPtr directly,
+	// but can indirectly.
+	/*
+	var _ MyIntPtr = pi  // can't convert implicitly
+	var _ = MyIntPtr(pi) // can't convert explicitly
+	*/
 	var _ MyIntPtr = (*MyInt)(pi)  // ok
 	var _ = MyIntPtr((*MyInt)(pi)) // ok
 
-	// var _ MyIntPtr = ip  // can't convert implicitly
-	// var _ = MyIntPtr(ip) // can't convert explicitly
+	// Values of IntPtr can't be converted to MyIntPtr directly,
+	// but can indirectly.
+	/*
+	var _ MyIntPtr = ip  // can't convert implicitly
+	var _ = MyIntPtr(ip) // can't convert explicitly
+	*/
 	var _ MyIntPtr = (*MyInt)((*int)(ip))  // ok
 	var _ = MyIntPtr((*MyInt)((*int)(ip))) // ok
 }
@@ -169,15 +177,23 @@ func main() {
 	cb = ca // ok, same underlying type
 	ca = cb // ok, same underlying type
 
+	// The 4 lines compile okay for the 2nd rule.
 	var _, _ chan<- string = ca, cb // ok
 	var _, _ <-chan string = ca, cb // ok
-	var _ C1 = cb // ok
-	var _ C2 = cb // ok
+	var _ C1 = cb                   // ok
+	var _ C2 = cb                   // ok
 
-	// var _ = C1(ca) // compile error
-	// var _ = C2(ca) // compile error
+	// Values of C can't be converted to C1 and C2 directly.
+	/*
+	var _ = C1(ca) // compile error
+	var _ = C2(ca) // compile error
+	*/
+	
+	// Values of C can be converted to C1 and C2 indirectly.
 	var _ = C1((chan<- string)(ca)) // ok
 	var _ = C2((<-chan string)(ca)) // ok
+	var _ C1 = (chan<- string)(ca)  // ok
+	var _ C2 = (<-chan string)(ca)  // ok
 }
 </code></pre>
 </div>
@@ -424,11 +440,6 @@ func main() {
 
 <h4>8. String Related Conversion Rules</h4>
 
-<p>
-Below, string types means the types whose underlying types are the built-in string type,
-and integer types means the types whose underlying types are the built-in integer types,
-</p>
-
 <div class="well">
 If the type (or default type) of a value is an interger type,
 then the value can be explicitly converted to string types.
@@ -436,13 +447,13 @@ then the value can be explicitly converted to string types.
 
 <div class="well">
 A string value can be explicitly converted to a slice type
-whose underlying type is <code>[]byte</code> (a.k.a, <code>[]uint8</code>),
+whose underlying type is <code>[]byte</code> (a.k.a., <code>[]uint8</code>),
 and vice versa.
 </div>
 
 <div class="well">
 A string value can be explicitly converted to a slice type
-whose underlying type is <code>[]rune</code> (a.k.a, <code>[]int32</code>),
+whose underlying type is <code>[]rune</code> (a.k.a., <code>[]int32</code>),
 and vice versa.
 </div>
 
@@ -450,10 +461,10 @@ and vice versa.
 Please read <a href="string.html#conversions">strings in Go</a> for details and examples.
 </p>
 
-<h4>9. unsafe.Pointer Related Conversion Rules</h4>
+<h4>9. Unsafe Pointers Related Conversion Rules</h4>
 
 <p>
-Above conversion rules can be broken by <code>unsafe.Pointer</code> related conversion rules.
+Above conversion rules can be broken by unsafe pointers related conversion rules.
 </p>
 
 <div class="well">
@@ -544,93 +555,69 @@ Go specification
 </p>
 
 <div class="alert alert-success">
-in any comparison, the first operand must be assignable to
-the type of the second operand, or vice versa.
+In any comparison, the first operand must be assignable to the type of the second operand, or vice versa.
 </div>
 
 <p>
 So, the comparison rule is much like the assignment rule.
 In other words, two values are comparable
 if one can be implicitly converted to the type of the other.
+Right? Almost, for there is an exception for the above basic comparison rule.
 </p>
 
-<p><i>
-NOTE: currently (Go 1.11), if one of the two operands in a comparison is an interface value,
-and the other operand is a non-interface value of an uncomparable type which implements the former operand interface type,
-both the standard Go compiler (gc) and gccgo fail to compile the comparison.
-This <a href="https://github.com/golang/go/issues/28164">might be a bug of gc and gccgo</a>, or not.
-When this issue is clarfied and it is proved it is not a bug, the above comparison rule descriptions
-will get adjusted accordingly.
-</i></p>
+<!--
+https://github.com/golang/go/issues/28164#issuecomment-430733364
+-->
+<div class="alert alert-danger">
+If one of the two operands in a comparison is an interface value,
+and the other operand is a non-interface value of an
+<a href="type-system-overview.html#types-not-support-comparison">uncomparable type</a>
+(which should implement the former operand interface type),
+then the comparison is invalid, even if the non-interface value
+can be implicitly converted to the interface type.
+</div>
 
-The above rule doesn't cover all circumstances.
-What about if both of the two operands in a comparison are untyped constant values?
+<p>
+Note, although generally, values of slice/map/function types don't support comparisons,
+they can be compared with untyped nil values (a.k.a., bare <code>nil</code> identifiers).
+</p>
+
+The above described basic rule doesn't cover all circumstances.
+What about if both of the two operands in a comparison are untyped (constant) values?
 The additional rules are simple:
 <ul>
 <li>
-	untyped boolean values can be compared with untyped boolean values;
+	untyped boolean values can be compared with untyped boolean values.
 </li>
 <li>
-	untyped numeric values can be compared with untyped numeric values;
+	untyped numeric values can be compared with untyped numeric values.
 </li>
 <li>
-	untyped string values can be compared with untyped string values,
+	untyped string values can be compared with untyped string values.
 </li>
 </ul>
 
 <p>
-The results of comparing two untyped constant values obey intuition.
+The results of comparing two untyped values obey intuition.
+</p>
+
+<p>
+Note, an untyped nil value can't be compared with another untyped nil value.
 </p>
 
 <p>
 Any comparison results an untyped boolean value.
 </p>
-</div>
 
-<p class="anchor" id="comparison-restrictions"></p>
-<h4>Comparison Restrictions</h4>
+Examples:
 
-<div>
-Currently (Go 1.11), there are some restrictions for the above comparison rules:
-<ul>
-<li>
-	map, slice and function types don't support comparison.
-	(But values of these types can be compared to the bare <code>nil</code> identifier).
-</li>
-<li>
-	any struct type with a field whose type is uncomparable
-	and any array type which element type is uncomparable also doesn't support comparison.
-</li>
-<li>
-	bare <code>nil</code> identifiers (untyped <code>nil</code> values) can't be compared with each other.
-</li>
-</ul>
-
-<p>
-</p>
-
-Here are some uncomparable types.
-<pre class="line-numbers"><code class="language-go">[]int
-map[string]bool
-func() int
-struct{x map[int]int} // one field element type is uncomparable
-[5][]int              // array element type is uncomparable
-</code></pre>
-
-<p>
-</p>
-
-Comparison restriction examples:
 <pre class="line-numbers"><code class="language-go">package main
 
-// The types of the following variables are all uncomparable.
+// Some variables of uncomparable types.
 var s []int
 var m map[int]int
 var f func()()
-var t struct {
-	s []int
-	n int
-}
+var t struct {x []int}
 var a [5]map[int]int
 
 func main() {
@@ -642,15 +629,23 @@ func main() {
 	_ = t == t
 	_ = a == a
 	_ = nil == nil
+	_ = s == interface{}(nil)
+	_ = m == interface{}(nil)
+	_ = f == interface{}(nil)
 	*/
 
 	// The following lines compile okay.
 	_ = s == nil
 	_ = m == nil
 	_ = f == nil
+	_ = 123 == interface{}(nil)
+	_ = true == interface{}(nil)
+	_ = "abc" == interface{}(nil)
 }
 </code></pre>
-<p></p>
+
+<p>
+</p>
 
 </div>
 
@@ -662,12 +657,53 @@ Assume two values are comparable, and they have the same type <code>T</code>
 (if they have different types, one of them must be implicitly convertible to the type of the other).
 <ol>
 <li>
+	If <code>T</code> is a boolean type,
+	then the two values are equal only if they are both <code>true</code> or both <code>false</code>.
+</li>
+<li>
+	If <code>T</code> is an integer type,
+	then the two values are equal only if they have the same bytes representations in memory.
+</li>
+<li>
+	If <code>T</code> is a floating-point type,
+	then the two values are equal only if any of the following conditions is satisfied:
+	<ul>
+	<li>
+		they are both <code>+Inf</code>.
+	</li>
+	<li>
+		they are both <code>-Inf</code>.
+	</li>
+	<li>
+		they each is either <code>-0.0</code> or <code>+0.0</code>.
+	</li>
+	<li>
+		they are both not <code>NaN</code> and they have the same bytes representations in memory.
+	</li>
+	</ul>
+</li>
+<li>
+	If <code>T</code> is a complex type,
+	then the two values are equal only if their real parts (as floating-point values)
+	and imaginary parts (as floating-point values) are both equal.
+</li>
+<li>
+	If <code>T</code> is a pointer type (either safe or unsafe),
+	then the two values are equal only if they both reference the same value
+	or they are both nil pointers.
+</li>
+<li>
+	If <code>T</code> is a channel type, the two channel values are equal
+	if they both reference the same underlying channel structure
+	or they are both nil channels.
+</li>
+<li>
 	If <code>T</code> is a struct type, then
 	<a href="struct.html#comparison">each pair of the corresponding
 	fields of the two struct values will be compared</a>.
 </li>
 <li>
-	If <code>T</code> is an array type,then
+	If <code>T</code> is an array type, then
 	<a href="container.html#comparison">each pair of the corresponding
 	elements of the two array values will be compared</a>.
 </li>
@@ -678,16 +714,6 @@ Assume two values are comparable, and they have the same type <code>T</code>
 <li>
 	If <code>T</code> is a string type, please read
 	<a href="string.html#comparison">how two string values are compared</a>.
-</li>
-<li>
-	If <code>T</code> is a boolean, numeric or pointer
-	(either safe or unsafe), then each pair of the corresponding bytes
-	occupied in memory by the two values will be compared.
-	The two values are equal only if all the byte comparisons result true.
-</li>
-<li>
-	If <code>T</code> is a channel type, the two channel values are equal
-	if they both reference the same underlying channel structure.
 </li>
 </ol>
 

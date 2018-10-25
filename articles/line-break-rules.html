@@ -188,18 +188,18 @@ They can't be used as expressions.
 For example, the following code is invalid.
 
 <pre class="line-numbers"><code class="language-go">func f() {
-	a : = 0
-	println(a++)
-	println(a--)
+	a := 0
+	println(a++) // error: unexpected ++, expecting comma or )
+	println(a--) // error: unexpected --, expecting comma or )
 }
 </code></pre>
 
-The reason why the above code is invalie is for compilers will view it as
+The reason why the above code is invalid is compilers will view it as
 
 <pre class="line-numbers"><code class="language-go">func f() {
-	a : = 0
-	println(a++;)
-	println(a--;)
+	a := 0;
+	println(a++;);
+	println(a--;);
 }
 </code></pre>
 
@@ -207,8 +207,8 @@ The reason why the above code is invalie is for compilers will view it as
 </p>
 
 Another consequence of the simicolon insertion rules is we must put the
-dot <code>.</code> signs at the end of code line if we break a method call
-chain into miltiple lines.
+dot <code>.</code> signs at the end of code line if we wantto break
+a method call chain into miltiple lines.
 
 <pre class="line-numbers"><code class="language-go">	anObject.
 		MethodA().
@@ -226,7 +226,7 @@ We can't write the above method call chain as
 
 Compilers will insert a simicolon at the end of each line
 in the modified version, so the above code is equivalent to
-the following code which is invalid obviously.
+the following code which is obviously invalid.
 
 <pre class="line-numbers"><code class="language-go">	anObject;
 		.MethodA();
@@ -330,36 +330,18 @@ and <code>go vet</code>, often for your code.
 
 For a rare case. the semicolon insertion rules also make some code look valid
 but invalid actually.
-For example, the following two code snippets both fail to compile.
+For example, the following code snippet fails to compile.
 
-<pre class="line-numbers"><code class="language-go">func fa() {
-	var c chan bool
-	select {
-	case <-c:
-	{
-		goto A
-		A: // compiles okay
-	}
-	case <-c:
-		goto B
-		B: // syntax error: missing statement after label
-	case <-c:
-		goto C
-		C: // compiles okay
-	}
-}
-</code></pre>
-
-<pre class="line-numbers"><code class="language-go">func fb() {
-	switch 3 {
-	case 2:
-		goto B
-		B: // syntax error: missing statement after label
+<pre class="line-numbers"><code class="language-go">func f(x int) {
+	switch x {
 	case 1:
 	{
 		goto A
 		A: // compiles okay
 	}
+	case 2:
+		goto B
+		B: // syntax error: missing statement after label
 	case 0:
 		goto C
 		C: // compiles okay
@@ -368,23 +350,43 @@ For example, the following two code snippets both fail to compile.
 </code></pre>
 
 <p>
-The two compilation errors indicate that there must be
+The compilation error message indicates that there must be
 a statement following a label declaration.
-But it looks each label in the above two examples
-aren't followed by a statement.
-Why are only the two <code>B:</code> label declarations are invalid?
+But it looks none label in the above two examples is followed by a statement.
+Why is only the <code>B:</code> label declaration invalid?
 The reason is, by the simicolon insertion rules mentioned above,
-compilers will insert a simicolon at the end of
-each of the valid label declarations,
-but not at the ends of the two <code>B:</code> label declarations.
-Each <code>;</code> inserted can be viewed as a blank statement,
-which is why the <code>A:</code> and <code>C:</code>
-label declarations are all valid.
+compilers will insert a simicolon before each of the <code>}</code> characters
+following the <code>A:</code> and <code>C:</code> label declarations.
+As the following code shows.
+
+
+
+<pre class="line-numbers"><code class="language-go">func f(x int) {
+	switch x {
+	case 1:
+	{
+		goto A
+		A: // compiles okay
+	;}
+	case 2:
+		goto B
+		B: // syntax error: missing statement after label
+	case 0:
+		goto C
+		C: // compiles okay
+	;}
+}
+</code></pre>
+
+Each simicolon inserted can be viewed as a blank statement,
+which is why the <code>A:</code> and <code>C:</code> label declarations
+are both valid but the <code>B:</code> label declaration is not
+(<code>case 0:</code> is not a statement).
 </p>
 
 <p>
 We can manually insert a simicolon (a blank statement) at the end of
-each of the two <code>B:</code> label declarations to make them compile okay.
+each of the <code>B:</code> label declaration to make it compile okay.
 </p>
 
 As label declarations are also statements, the following code is valid,
@@ -419,7 +421,7 @@ otherwise, the comma is required to be present.
 Compilers will not insert commas automatically for any case.
 </p>
 
-For example, the following code is valid.
+For example, the following code snippet is valid.
 
 <pre class="line-numbers"><code class="language-go">func f1(a int, b string,) (x bool, y int,) {
 	return true, 789
@@ -438,7 +440,7 @@ var _, _ = f1(123, "Go",  // the last comma is required
 var _, _ = f1(123, "Go")
 </code></pre>
 
-However, the following code is invalid,
+However, the following code snippet is invalid,
 for compilers will insert a semicolon for each line in the code,
 except the second line.
 
