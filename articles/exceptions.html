@@ -39,6 +39,10 @@ The basic rule doesn't apply to calls of some built-in functions with multiple i
 including <code>copy</code>, <code>delete</code>, <code>print</code> and <code>println</code> functions.
 A calls to any of these functions can't take a solo multi-return function call as the only argument.
 </div>
+<!--
+https://github.com/golang/go/issues/15992
+https://github.com/golang/go/issues/20656
+-->
 
 <p><i>
 (The basic rule may <a href="https://github.com/golang/go/issues/15992">apply to</a>
@@ -575,7 +579,7 @@ func main() {
 </code></pre>
 </div>
 
-<h3>Comparison</h3>
+<h3>Comparisons</h3>
 
 <div>
 The basic rule:
@@ -591,7 +595,7 @@ Map, slice and function types don't support comparison.
 
 Exception in exception:
 <div class="alert alert-success">
-Map, slice and function values can be compared to the <code>nil</code> identifier.
+Map, slice and function values can be compared to the bare <code>nil</code> identifier.
 </div>
 
 Example:
@@ -619,6 +623,29 @@ func main() {
 </code></pre>
 </div>
 
+<h3>Comparisons 2</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+In any comparison, if one operand can be assignable to the type of the other, then the comparison is valid.
+</div>
+
+<div>
+Exception:
+<div class="alert alert-success">
+If one of the two operands in a comparison is an interface value,
+and the other operand is a non-interface value of an
+<a href="type-system-overview.html#types-not-support-comparison">uncomparable type</a>
+(which should implement the former operand interface type),
+then the comparison is invalid, even if the non-interface value
+can be implicitly converted to the interface type.
+</div>
+
+Please read <a href="value-conversions-assignments-and-comparisons.html#comparison-rules"></a> for examples.
+</div>
+
+<!--
 <h3>Comparing Interface Values</h3>
 
 <div>
@@ -647,10 +674,11 @@ func main() {
 	//_ = x == x // will panic
 	//_ = y == y // will panic
 	_ = x == z // false, will not panic
-	_ = x == y   // false, will not panic
+	_ = x == y // false, will not panic
 }
 </code></pre>
 </div>
+-->
 
 <h3>The Blank Composite Literals</h3>
 
