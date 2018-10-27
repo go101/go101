@@ -467,32 +467,8 @@ We can't declare package-level variable/constants/types which names are <code>in
 </p>
 
 <p>
-The <code>init</code> functions in a package will be called
-once and only once when the package is loaded.
-However, the invocation order of these <code>init</code> functions
-in a package is not specified in Go specification.
-So please avoid dependency relations between the
-<code>init</code> functions in a package.
-</p>
-
-<p>
-At run time, a package will be loaded after all its dependency packages are loaded.
-Each package will be loaded once and only once.
-</p>
-
-<p>
-All <code>init</code> functions in all involved packages in a program
-will be invoked sequentially.
-An <code>init</code> function in an importing package
-will be called after all the <code>init</code> functions
-declared in the dependency packages of the importing package for sure.
-All <code>init</code> functions will be called
-before invoking the <code>main</code> entry function.
-</p>
-
-<p>
-All package-level variables declared in a package are initialized before
-any <code>init</code> function declared in the same package is invoked.
+At run time, each <code>init</code> function will be (sequentially) invoked once
+and only once (before invoking the <code>main</code> entry function).
 </p>
 
 <div>
@@ -532,7 +508,61 @@ bye
 
 </div>
 
-<h3>Full Package Import Form</h3>
+<p class="anchor" id="initialization-order"></p>
+<h3>Resource Initialization Order</h3>
+
+<div>
+<p>
+At run time, a package will be loaded after all its dependency packages.
+Each package will be loaded once and only once.
+</p>
+
+<p>
+All <code>init</code> functions in all involved packages in a program
+will be invoked sequentially.
+An <code>init</code> function in an importing package
+will be invoked after all the <code>init</code> functions
+declared in the dependency packages of the importing package for sure.
+All <code>init</code> functions will be invoked
+before invoking the <code>main</code> entry function.
+</p>
+
+<p>
+The invocation order of the <code>init</code> functions in the same source file
+is from top to bottom. Go specification recommends, but not requires, to invoke
+the <code>init</code> functions in different source files of the same package
+by the lexical file name order of their containing source files.
+So it is not a good idea to have dependency relations between
+two <code>init</code> functions in two different source files.
+</p>
+
+<p>
+All package-level variables declared in a package are initialized before
+any <code>init</code> function declared in the same package is invoked.
+</p>
+
+A package-level variable is initialized after all of its depended variables.
+For esxample, in the following code snippet, the intializations the four
+package-level variables happen in the order <code>y</code>, <code>z</code>,
+<code>x</code>, and <code>w</code>.
+
+<pre class="line-numbers"><code class="language-go">func f() int {
+	return z + y
+}
+
+func g() int {
+	return y/2
+}
+
+var (
+	w       = x
+	x, y, z = f(), 123, g()
+)
+</code></pre>
+
+</div>
+
+<h3>Full Package Import Forms</h3>
 
 <div>
 
