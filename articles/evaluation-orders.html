@@ -1,29 +1,39 @@
 ﻿<h1>Expression Evaluation Orders</h1>
 
-<pre>
-NOTE: this article is not finished.
-
-todo: go spec: 
-* At package level, initialization dependencies override the left-to-right rule for individual initialization expressions,
-  but not for operands within each expression: 
-* Floating-point operations within a single expression are evaluated according to the associativity of the operators. 
-  Explicit parentheses affect the evaluation by overriding the default associativity
-</pre>
-
 <p>
 This article will explain <a href="expressions-and-statements.html">expression</a>
 evaluation orders in all kinds of scenarios.
 </p>
 
+<h3>An Expresssion Is Evaluated After The Expressions It Depends On</h3>
+
+<div>
+This rule is easy to comprehend.
+An apparent example is an expression is evaluated later than its sub-expressions.
+For example, in a function call <code>f(x, y[n])</code>,
+<ul>
+<li>
+	<code>f()</code> is evaulated later than its depended expressions,
+	including <code>f</code>, <code>x</code> and <code>y[n]</code>.
+</li>
+<li>
+	the evalation of the expression <code>y[n]</code> is later than
+	the evaluations of <code>x</code> and <code>y</code>.
+</li>
+</ul>
+
+<p>
+Please read <a href="packages-and-imports.html#initialization-order">program resoruce initialization order</a>
+for another example on package-level variable initialization orders.
+</p>
+
+</div>
+
 <h3>The Usual Order</h3>
 
 <div>
-<p>
-Before learning expression evaluation orders under all kinds of scenarios,
-let's learn what is <b><i>the usual order</i></b>.
-</p>
 
-Go specification describes <b><i>the usual order</i></b> as
+For the evaluations within a function body, Go specification says
 
 <div class="alert alert-success">
 ...,
@@ -33,23 +43,47 @@ are evaluated in lexical left-to-right order.
 </div>
 
 <p>
-Please note that an explicit conversion <code>T(x)</code> is not a function call.
+The just described order is called <b><i>the usual order</i></b>.
 </p>
 
 <p>
-In addition, from common sense, 
-an <a href="expressions-and-statements.html#expressions">expression</a>
-is guaranteed to be evaluated after all the evaluations of its sub-expressions,
-for the expression depends on its sub-expressions.
+Please note that an explicit value conversion <code>T(x)</code> is not a function call.
 </p>
 
-In the following assignment, assume <code>z</code> is an expression and
-<code>f</code> is one of its method.
+For example, in an expression <code>[]int{x, fa(), fb(), y}</code>,
+assume <code>x</code> and <code>y</code> are two variables,
+<code>fa</code> and <code>fb</code> are two functions, then the call <code>fa()</code>
+is guaranteed to be evaluated before <code>fb()</code>.
+However, the following the evaluation orders are unspecified in Go specification:
+<ul>
+<li>
+	the evaluation order of <code>x</code> (or <code>y</code>) and <code>fa()</code> (or <code>fb()</code>).
+</li>
+<li>
+	the evaluation order of <code>x</code>, <code>y</code>, <code>fa</code> and <code>fb</code>.
+</li>
+</ul>
+
+Another example, the following assignment, is demoed in Go specification.
 
 <pre><code class="language-go">y[z.f()], ok = g(h(a, b), i()+x[j()], <-c), k()
 </code></pre>
 
-Compilers should guarantee the following orders.
+where
+<ul>
+<li>
+	<code>c</code> is a channel expression and will be evaluation to a channel value.
+</li>
+<li>
+	<code>g</code>, <code>h</code>, <code>i</code>, <code>j</code> and <code>k</code>
+	are function expressions.
+</li>
+<li>
+	<code>f</code> is a method of expression <code>z</code>.
+</li>
+</ul>
+
+Also considering the rule mentioned in the last section, compilers should guarantee the following evaluation orders at run time.
 <ul>
 <li>
 	The function calls, method calls and channel communication operations
@@ -60,105 +94,115 @@ Compilers should guarantee the following orders.
 	<code>h()</code> is evaluated after the evaluations of expressions <code>a</code> and <code>b</code>.
 </li>
 <li>
-	<code>y[]</code> is evaluated after the evaluations of <code>z.f()</code>.
+	<code>y[]</code> is evaluated after the evaluation of <code>z.f()</code>.
 </li>
 <li>
-	<code>z.f()</code> is evaluated after the evaluations of expression <code>z</code>.
+	<code>z.f()</code> is evaluated after the evaluation of expression <code>z</code>.
 </li>
 <li>
-	<code>x[]</code> is evaluated after the evaluations of <code>j()</code>.
+	<code>x[]</code> is evaluated after the evaluation of <code>j()</code>.
 </li>
 </ul>
 
-However, the following orders are not specified.
+However, the following orders (and more others) are not specified.
 <ul>
 <li>
-	The relative evaluation order of expressions <code>a</code> and <code>b</code>.
+	The evaluation order of <code>y</code>, <code>z</code>, <code>g</code>,
+	<code>h</code>, <code>a</code>, <code>b</code>, <code>x</code>,
+	<code>i</code>, <code>j</code>, <code>c</code> and <code>k</code>.
 </li>
 <li>
-	The relative evaluation order of expressions <code>x[]</code> and <code>&lt;-c</code>.
-</li>
-<li>
-	The relative evaluation order of expression <code>y</code> and any of
-	the followings: <code>h()</code>, <code>i()</code>, <code>j()</code>,
-	<code>&lt;-c</code>, <code>g()</codE>, <code>k()</code>.
+	The evaluation order of <code>y[]</code>, <code>x[]</code> and <code>&lt;-c</code>.
 </li>
 </ul>
 
+By the above introduced rules, we know the following delcared variables <code>x</code>,
+<code>m</code> and <code>n</code> (also demoed in Go specification)
+will be initialized with ambiguous values.
+
+<pre class="line-numbers"><code class="language-go">	a := 1
+	f := func() int { a++; return a }
+
+	// x may be [1, 2] or [2, 2]: evaluation order 
+	// between a and f() is not specified.
+	x := []int{a, f()}
+
+	// m may be {2: 1} or {2: 2}: evaluation order
+	// between the two map assignments is not specified.
+	m := map[int]int{a: 1, a: 2}
+
+	// n may be {2: 3} or {3: 3}: evaluation order
+	// between the key and the value is not specified.
+	n := map[int]int{a: f()}
+</code></pre>
+
+<p>
+</p>
 
 </div>
 
 <h3>Evaluation Orders In Assignment Statements</h3>
 
 <div>
+
+Beside the usual order, Go specification specifies more on the expression evaluation order in an assignment:
+
+<div class="alert alert-success">
+The assignment proceeds in two phases.
+First, the operands of index expressions and pointer indirections
+(including implicit pointer indirections in selectors) on the left
+and the expressions on the right are all evaluated in the usual order.
+Second, the assignments are carried out in left-to-right order.
+</div>
+
 <p>
-We know that multiple values can be assigned in one assignment in Go.
-Each left-hand side item in a <code>=</code> assignment must be addressable,
-a map index expression, or the blank identifier.
-In most cases, we don't need to care about the evaluation order rules
-of the expressions involved in multi-valued assignments.
-But for some special cases, we really should understand the rules
-to get the expected assignment results.
+Later, we call the first phase as evaluation phase and the second phase as carry-out phase.
+At the evaluation phase, all expressions involved in that assignment are evaluated
+by the rules mentioned in last two sections.
 </p>
 
 <p>
-Each assignment will experience two phases at run time,
-the preparation phase and the carry-out phase.
-At the preparation phase, all expressions involved in that assignment
-are evaluated in the usual order mentioned above.
+Go specification doesn't specify clearly how the operands in the mentioned expressions
+on the left should be exactly evaluated, which ever caused
+<a href="https://github.com/golang/go/issues/23188#issuecomment-403951267">some</a>
+<a href="https://github.com/golang/go/issues/15620">disputes</a>.
+So, hrere, this article will explain more on the evaluation orders in value assignments.
+<p>
+
+<p>
+To make the following explanations convenient,
+if the map value of a map index destination expression in an assignment is a not addressable,
+we can think the map value has already been saved in and replaced by a temporary map value
+before executing the assignment.
 </p>
 
-Just after the preparation phase and before the carry-out phase of an assignment,
-the assignment is rewritten as the following elementary form:
-
-<pre><code class="language-go">L0, L1, ..., Ln = R0, R1, ..., Rn
-</code></pre>
-
-where each <code>Lx</code> may be
+In the end of the evaluation phase, just before the carry-out phase starts,
+each destination expression on the left of an assignment
+will be further evaluated as its elementary form.
+Different destination expressions have different elementary forms.
 <ul>
 <li>
-	the blank identifier <code>_</code>,
-	if the corresponding left side item is also the blank identifier.
+	If a destination expression is a blank identifier, then its elementary form is still a blank identifier.
 </li>
 <li>
-	a form of <code>Mx[Kx]</code>,
-	if the corresponding left side item is a map index expression.
-	<code>Mx</code> is a map value and <code>Kx</code> is a value
-	of the key type of the map value.
+	If a destination expression is a map index expression <code>m[k]</code>,
+	then its elementary form is <code>(*maddr)[k]</code>,
+	where <code>maddr</code> is the address of <code>m</code>.
 </li>
 <li>
-	a form of <code>*Px</code>, if the corresponding left side item
-	is neither a map index expression nor the blank identifier.
-	<code>Px</code> is a (pointer) value of a certain pointer type.
-	If for any reason, an address can't be retrieved from the
-	corresponding left side item, <code>Px</code> is a nil pointer.
+	For other cases, the destination expression must be addressable,
+	then its elementary form is a dereference to the destination expression.
 </li>
 </ul>
 
-<p>
-and, every <code>Px</code>, <code>Mx</code>, <code>Kx</code> and
-<code>Rx</code> is an elementary value which can't be evaluated further.
-They are all hidden temporary values which are only referenced
-in the elementary form of the assignment.
-</p>
-
-<p>
-In the carry-out phase, solo assignments, <code>L0 = R0</code>,
-<code>L1 = R1</code>, ..., <code>Ln = Rn</code>,
-are carried out in left-to-right order.
-Whenever a nil <code>Mx</code> or a nil <code>Px</code> is encountered,
-the assignment exection is terminated and a panic occurs.
-<p/>
-
-Assume <code>a</code> and <code>b</code> are two addressable
-elementary values, the following assignment
+Assume <code>a</code> and <code>b</code> are two addressable variables of the same type, the following assignment
 
 <pre class="line-numbers"><code class="language-go">	a, b = b, a
 </code></pre>
 
-will go through the following two phases.
+will be executed like the following steps:
 
-<pre class="line-numbers"><code class="language-go">// The preparation phase:
+<pre class="line-numbers"><code class="language-go">// The evaluation phase:
 P0 := &a; P1 := &b
 R0 := a; R1 := b
 
@@ -172,8 +216,7 @@ R0 := a; R1 := b
 <p>
 </p>
 
-Here is another example, in which <code>x[0]</code> instead of
-<code>x[1]</code> is modified.
+Here is another example, in which <code>x[0]</code> instead of <code>x[1]</code> is modified.
 
 <pre class="line-numbers"><code class="language-go">	x := []int{0, 0}
 	i := 0
@@ -181,9 +224,9 @@ Here is another example, in which <code>x[0]</code> instead of
 	fmt.Println(x) // [2 0]
 </code></pre>
 
-The phases for the assignment at line <i>3</i> are shown below.
+The decomposed execution steps for the line <i>3</i> shown below are like:
 
-<pre class="line-numbers"><code class="language-go">// The preparation phase:
+<pre class="line-numbers"><code class="language-go">// The evaluation phase:
 P0 := &i; P1 := &x[0];
 R0 := 1; R1 := 2
 
@@ -197,7 +240,7 @@ R0 := 1; R1 := 2
 <p>
 </p>
 
-An example which is a little complex.
+An example which is a little more complex.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -214,9 +257,12 @@ func main() {
 }
 </code></pre>
 
-The phases for the assignment at line <i>10</i> are shown below.
+<p>
+</p>
 
-<pre class="line-numbers"><code class="language-go">// The preparation phase:
+The decomposed execution steps for the line <i>10</i> shown below are like:
+
+<pre class="line-numbers"><code class="language-go">// The evaluation phase:
 P0 := &s; PM1 := &m; K1 := "Go"; P2 := p; P3 := &s[2]
 R0 := []int{2, 2, 2}; R1 := s[1]; R2 := m["Go"]; R3 := 5
 // now, R1 == 1, R2 == 0
@@ -256,9 +302,16 @@ Another example:
 <p>
 </p>
 
-In the following example, the relative order of the expression
+<p>
+Although it is legal, it is not recommanded to use complex multi-value assignments in Go,
+for they have negative effects on both complication speed and execution performance.
+</p>
+
+Not all orders are specified in Go specification for value assignments,
+so some bad written code may result different results.
+In the following example, the expression order of
 <code>x+1</code> and <code>f(&x)</code> is not specified.
-The example may output <code>100 99</code> or <code>1 99</code>.
+So the example may print <code>100 99</code> or <code>1 99</code>.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -279,66 +332,9 @@ func main() {
 <p>
 </p>
 
-</div>
-
-<h3>Evaluation Orders In <code>op=</code> Assignments</h3>
-
-<p>
-The expression evaluation rules of an assignment <code>x op= y</code>
-is almost the same as the general assignment <code>x = x op y</code>.
-The only difference is the expression <code>x</code> is only evaluated once.
-<p>
-
-<p>
-Both the left- and right-hand expression lists of an <code>op=</code> assignment
-must contain exactly one single-valued expression,
-and the left-hand expression must not be the blank identifier.
-</p>
-
-<h3>Evaluation Orders In composite Literals</h3>
-
-<div>
-Each composite literal is an expression, so the sub-expressions
-in a composite literal are evaluated in the usual order mentioned above.
-Several examples from Go specification:
-
-<pre class="line-numbers"><code class="language-go">	a := 1
-	f := func() int { a++; return a }
-
-	// x may be [1, 2] or [2, 2]: evaluation order 
-	// between a and f() is not specified.
-	x := []int{a, f()}
-
-	// m may be {2: 1} or {2: 2}: evaluation order
-	// between the two map assignments is not specified.
-	m := map[int]int{a: 1, a: 2}
-
-	// n may be {2: 3} or {3: 3}: evaluation order
-	// between the key and the value is not specified.
-	n := map[int]int{a: f()}
-</code></pre>
-
-</div>
-
-<h3>Evaluation Orders Of Function Arguments</h3>
-
-<div>
-
-<p>
-Each function call is an expression, so the argument list of a function call
-are evaluated in the usual order mentioned above.
-</p>
-
-<p>
-For example, in the following example, the first argument, <code>f()</code>,
-of the function call <code>fmt.Println()</code> is guaranteed to be evaluated
-before the last <code>f()</code>. But the relative evaluation order
-of the second argument <code>y</code> and the two <code>f()</code>
-is not specified.
-<p>
-
-<code>1 7 2</code>, <code>1 8 2</code> and <code>1 9 2</code> are
-all legal outputs for the following program.
+The following is another example which will print ambiguous results. 
+It may print <code>1 7 2</code>, <code>1 8 2</code> and <code>1 9 2</code>,
+depending on different compiler implementations.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -364,12 +360,12 @@ func main() {
 
 <div>
 
-The expression evaluation order in a <code>switch-case</code> code block
-has been <a href="control-flows.html#switch-case">described before</a>.
+The expression evaluation order in a <code>switch-case</code> code block has been
+<a href="control-flows.html#switch-case">described before</a>.
 Here just shows an example.
-Simply speaking, before a branch is entered,
-the expressions in a <code>switch-case</code> code block
-are evaluated in source order.
+Simply speaking, before a branch code block is entered, the case expressions
+will evaluated and compared with the switch expression one by one,
+until a comparation results <code>true</code>.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -429,9 +425,8 @@ doesn't affect the just described expression evaluation order rule.
 </p>
 
 <p>
-The left-hand-side expression of each receive statement will not be evaluated
-before executing the <code>select</code> statement.
-It will be evaluated if that receive statement is selected later.
+The left-hand-side expression of each receive statement will only be
+evaluated if that receive statement is selected.
 The left-hand-side expressions of the unselected receive statements
 will never be evaluated.
 </p>
