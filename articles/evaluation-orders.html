@@ -8,7 +8,7 @@ evaluation orders in all kinds of scenarios.
 <h3>An Expresssion Is Evaluated After The Expressions It Depends On</h3>
 
 <div>
-This rule is easy to comprehend.
+This is easy to comprehend.
 An apparent example is an expression is evaluated later than its sub-expressions.
 For example, in a function call <code>f(x, y[n])</code>,
 <ul>
@@ -18,7 +18,7 @@ For example, in a function call <code>f(x, y[n])</code>,
 </li>
 <li>
 	the evalation of the expression <code>y[n]</code> is later than
-	the evaluations of <code>x</code> and <code>y</code>.
+	the evaluations of <code>n</code> and <code>y</code>.
 </li>
 </ul>
 
@@ -172,7 +172,7 @@ So, hrere, this article will explain more on the evaluation orders in value assi
 <p>
 To make the following explanations convenient,
 if the map value of a map index destination expression in an assignment is a not addressable,
-we can think the map value has already been saved in and replaced by a temporary map value
+we can think the map value has already been saved in and replaced by a temporary addressable map value
 before executing the assignment.
 </p>
 
@@ -191,7 +191,7 @@ Different destination expressions have different elementary forms.
 </li>
 <li>
 	For other cases, the destination expression must be addressable,
-	then its elementary form is a dereference to the destination expression.
+	then its elementary form is a dereference to the address of the destination expression.
 </li>
 </ul>
 
@@ -304,7 +304,7 @@ Another example:
 
 <p>
 Although it is legal, it is not recommanded to use complex multi-value assignments in Go,
-for they have negative effects on both complication speed and execution performance.
+for their readabilities are not good and they have negative effects on both complication speed and execution performance.
 </p>
 
 Not all orders are specified in Go specification for value assignments,
@@ -431,18 +431,20 @@ The left-hand-side expressions of the unselected receive statements
 will never be evaluated.
 </p>
 
-In the following example, the calls <code>fp("abc")</code>
-and <code>fp("def")</code> will never be evaluated.
+In the following example, the call <code>fp("abc")</code> will never be evaluated,
+for its corresponding receive statement <code>&lt;-fc("def", false)</code> will not be selected.
 
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	fc := func(info string) chan int {
+	fc := func(info string, write bool) chan int {
 		fmt.Println("fc:", info)
 		c := make(chan int, 1)
-		c <- 456
+		if write {
+			c <- 456
+		}
 		return c
 	}
 	fv := func(n int) int {
@@ -455,25 +457,27 @@ func main() {
 	}
 	
 	select {
-	case *fp("abc") = <-fc("ijk"):
-	case fc("pqr") <- fv(123):
-	case fc("xyz") <- fv(789):
+	case *fp("abc") = <-fc("def", false):
+	case *fp("ijk") = <-fc("mno", true):
+	case fc("pqr", true) <- fv(123):
+	case fc("xyz", true) <- fv(789):
 	}
 }
 </code></pre>
 
 The output of the above program:
-<pre class="output"><code>fc: ijk
+<pre class="output"><code>fc: def
+fc: mno
 fc: pqr
 fv: 123
 fc: xyz
 fv: 789
-fp: abc
+fp: ijk
 </code></pre>
 
 <p>
-If the first case is never selected in the above example,
-then the expression <code>*fp("abc")</code> will never get evaluated.
+Note that the expression <code>*fp("ijk")</code> is the last evaluated expression in the above example.
+It is evaluated after its corresponding receive statement <code>&lt;-fc("def", true)</code> is selected.
 </p>
 
 </div>
