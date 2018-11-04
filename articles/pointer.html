@@ -22,7 +22,7 @@ The size of a native word is 4 (bytes) on 32-bit architectures and 8 (bytes)
 on 64-bit architectures.
 So the theoretical maximum memory space size is 2<sup>32</sup> bytes,
 a.k.a. 4GB (1GB == 2<sup>30</sup> bytes), on 32-bit architectures,
-and is 2<sup>34</sup>GB (16 exibytes) on 64-bit architectures.
+and is 2<sup>34</sup>GB (16 exabytes) on 64-bit architectures.
 </p>
 
 <p>
@@ -34,20 +34,14 @@ such as <code>0x1234CDEF</code>.
 
 <p>
 The address of a value means the start address of the memory segment
-occupied by the <a href="type-system-overview.html#value-part">direct part</a>
-of the value.
-</p>
-
-<p>
-The next article, <a href="value-part.html">value parts</a>,
-will introduce values of which kinds of types may
-have indirect underlying parts.
+occupied by the <a href="value-part.html">direct part</a> of the value.
 </p>
 
 <h3>What Are Pointers?</h3>
 
 <p>
-A pointer is a special value, which can storage a memory address.
+Pointer is one kind of type in Go. A pointer is a value of some pointer type.
+A pointer value can storage a memory address.
 In fact, we often call a memory address as a pointer, and vice versa.
 </p>
 
@@ -101,14 +95,24 @@ No addresses are stored in nil pointer values.
 </p>
 
 <p>
-A pointer value of a pointer type whose base type is <code>T</code>
-can be called a <code>T</code> pointer.
-The value located at (the address stored in) a non-nil
-<code>T</code> pointer will be always viewed as
-a value of type <code>T</code> by compilers.
+A value of a pointer type whose base type is <code>T</code> can only store the addresses of values of type <code>T</code>.
 </p>
 
 </div>
+
+<h3>About The Word "Reference"</h3>
+
+<p>
+In Go 101, the word "reference" indicates a relation.
+For example, if a pointer value stores the address of another value,
+then we can say the pointer value (directly) references the other value,
+and the other value has at least one reference.
+The uses of the word "reference" in Go 101 are consistent with Go specification.
+</p>
+
+<p>
+When a pointer value references another value, we also often say the pointer value points to the other value.
+</p>
 
 <h3>How To Get A Pointer Value And What Are Addressable Values?</h3>
 
@@ -118,16 +122,14 @@ There are two ways to get a non-nil pointer value.
 <li>
 	The built-in <code>new</code> function can be used to allocate memory for a value
 	of any type. <code>new(T)</code> will allocate memory for a <code>T</code> value
-	and return the address of the <code>T</code> value.
+	(an anonymous variable) and return the address of the <code>T</code> value.
 	The allocated value is a zero value of type <code>T</code>.
 	The returned address is viewed as a pointer value of type <code>*T</code>.
 </li>
 <li>
-	We can also take the addresses of some values in Go.
-	Values can be taken addresses are called addressable values.
+	We can also take the addresses of values which are addressable in Go.
 	For an addressable value <code>t</code> of type <code>T</code>,
-	we can use the expression <code>&amp;t</code> to
-	take the address of <code>t</code>,
+	we can use the expression <code>&amp;t</code> to take the address of <code>t</code>,
 	where <code>&amp;</code> is the operator to take value addresses.
 	The type of <code>&amp;t</code> is viewed as <code>*T</code>.
 </li>
@@ -135,21 +137,16 @@ There are two ways to get a non-nil pointer value.
 </div>
 
 <p>
-All variables are addressable and all constants are unaddressable.
-Not all values stored in memory at run time are addressable in Go.
-We can learn other addressable and unaddressable values from other articles later.
+Now we just need know that all variables are addressable.
+Constants, function calls and explicit conversion results are all unaddressable.
+We will learn other addressable and unaddressable values from other articles later.
 If you have already been familar with Go, you can read
 <a href="summaries.html#not-addressable">this summary</a> to get
 the lists of addressable and unaddressable values in Go.
 </p>
 
 <p>
-Although addressable values can be modified,
-their addressess are immutable in their respective lifetime.
-</p>
-
-<p>
-The next section will show how to get pointer values.
+The next section will show an example on how to get pointer values.
 </p>
 
 <h3>Pointer Dereference</h3>
@@ -182,9 +179,11 @@ func main() {
 	// x is a copy of the value at the address stored in p0.
 	x := *p0
 	p1, p2 := &x, &x      // both take address of x.
+	                      // x, *p1 and *p2 represnet the same value.
 	fmt.Println(p1 == p2) // true
 	fmt.Println(p0 == p1) // false
 	p3 := &*p0            // <=> p3 := &(*p0)
+	                      // Now, p3 and p0 store the same address.
 	fmt.Println(p0 == p3) // true
 	*p0, *p1 = 123, 789
 	fmt.Println(*p2, x, *p3) // 789 789 123
@@ -206,16 +205,6 @@ used in the above program.
 </p>
 </div>
 
-<h3>About The Word "Reference"</h3>
-
-<p>
-In Go 101, the word "reference" indicates a relation.
-For example, if a pointer value stores the address of another value,
-then we can say the pointer value (directly) references the other value,
-and the other value has at least one reference.
-The uses of the word "reference" in Go 101 are consistent with Go specification.
-</p>
-
 <h3>Why Do We Need Pointers?</h3>
 
 <div>
@@ -225,8 +214,8 @@ Let's view an example firstly.
 
 import "fmt"
 
-func double(a int) {
-	a += a
+func double(x int) {
+	x += x
 }
 
 func main() {
@@ -237,13 +226,10 @@ func main() {
 </code></pre>
 
 <p>
-The <code>double</code> function is the above example is expected to modify
+The <code>double</code> function in the above example is expected to modify
 the input argument by doubling it. However, it fails. Why?
-Because all value assignments, including function argument passing,
-are value copying in Go.
-What the <code>double</code> function modified is a copy of the input argument.
-Modifications on (the direct part of) a copy of an original value
-don't affect the original value.
+Because all value assignments, including function argument passing, are value copying in Go.
+What the <code>double</code> function modified is a copy (<code>x</code>) of variable <code>a</code> but not variable <code>a</code>.
 </p>
 
 One solution to fix the above <code>double</code> function is let it return
@@ -254,9 +240,9 @@ The following example shows another solution, by using a pointer parameter.
 
 import "fmt"
 
-func double(a *int) {
-	*a += *a
-	a = nil // This line is just for education purpose.
+func double(x *int) {
+	*x += *x
+	x = nil // This line is just for education purpose.
 }
 
 func main() {
@@ -271,9 +257,9 @@ func main() {
 
 <p>
 We can find that, by changing the parameter to a pointer type,
-the passed pointer argument and its copy reference the same same,
-so the modification on the referenced value, the local variable
-<code>a</code>, can be reflected out of the <code>double</code> function.
+the passed pointer argument <code>&amp;a</code> and its copy <code>x</code> used in the function body both reference the same value,
+so the modification on <code>*x</code> is equivalent to a modification on <code>*p</code>, a.k.a., variable <code>a</code>.
+In other words, the modification in the <code>double</code> function body can be reflected out of the function now.
 </p>
 
 <p>
@@ -308,22 +294,24 @@ so return the address of a local variable is absolutely safe in Go.
 <h3>Restrictions On Pointers In Go</h3>
 
 <p>
-For safety reasons,
-Go makes some restrictions to guarantee pointers in Go are always legal and safe.
+For safety reasons, Go makes some restrictions to pointers (comparing to pointers in C language).
 By applying these restrictions, Go keeps the benefits of pointers,
 and avoids the dangerousness of pointers at the same time.
 </p>
 
-<h4>Pointer Values Don't Support Arithmetic Operations</h4>
+<h4>Go Pointer Values Don't Support Arithmetic Operations</h4>
 
 <div>
 <p>
 In Go, pointers can't do arithmetic operations.
-If <code>p</code> is a pointer to a numeric value,
-<code>*p++</code> will be treated as <code>(*v)++</code> by Go compilers.
-One explanation is <code>p++</code> is illegal in Go.
-In fact, the best explanation is the precedences of the address-taken operator
-<code>&amp;</code> and the pointer dereference operator <code>*</code> are both higher than
+For a pointer <code>p</code>, <code>p++</code> and <code>p-2</code> are both illegal.
+</p>
+
+<p>
+If <code>p</code> is a pointer to a numeric value, compilers will view
+<code>*p++</code> is a legal statement and treat it as <code>(*p)++</code>.
+In other word,  the precedences of  the address-taken operator <code>&amp;</code>
+and the pointer dereference operator <code>*</code> are both higher than
 the increment operator <code>++</code> and decrement operator <code>--</code>.
 </p>
 
@@ -358,13 +346,14 @@ func main() {
 <h4>A Pointer Value Can't Be Converted To An Arbitrary Pointer Type</h4>
 
 <div>
-In Go, a pointer value of pointer type <code>T1</code> can be directly converted
+In Go, a pointer value of pointer type <code>T1</code> can be directly and explicitly converted
 to another pointer type <code>T2</code> only if either of the following two conditions
 is get satisfied.
 <ol>
 <li>
 	The underlying types of type <code>T1</code> and <code>T2</code> are identical (ignoring struct tags),
-	in particular if either <code>T1</code> and <code>T2</code> is a non-defined type
+	in particular if either <code>T1</code> and <code>T2</code> is a
+	<a href="type-system-overview.html#non-defined-type">non-defined</a> type
 	and they underlying types are identical (considering struct tags),
 	then the conversion can be implicit.
 	(Struct types and values will be explained in
@@ -376,13 +365,13 @@ is get satisfied.
 </li>
 </ol>
 
-By example:
+For example, for the below shown pointer types:
 <pre class="line-numbers"><code class="language-go">type MyInt int64
 type Ta    *int64
 type Tb    *MyInt
 </code></pre>
 
-For the 4 pointer types shown above,
+the following facts exist:
 <ol>
 <li>
 	values of type <code>*int64</code> can be implicitly converted to type <code>Ta</code>,
@@ -406,7 +395,7 @@ For the 4 pointer types shown above,
 </ol>
 
 <p>
-None values of the 4 pointer types can be converted to type <code>*uint64</code>, in any safe ways.
+None values of these pointer types can be converted to type <code>*uint64</code>, in any safe ways.
 </p>
 </div>
 
@@ -423,7 +412,7 @@ are satisified.
 <li>
 	One pointer value can be implicitly converted to the pointer type of the other.
 	In other words, the underlying types of the two types must be identical
-	and either of the two types of the two Go pointers must be an unnamed type.
+	and either of the two types of the two Go pointers must be an undefined type.
 </li>
 <li>
 	One and only one of the two pointers is represented with the bare (untyped) <code>nil</code> identifier.

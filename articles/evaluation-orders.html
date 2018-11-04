@@ -419,65 +419,53 @@ in source order, upon starting executing the <code>select</code> statement.
 </p>
 
 <p>
-Whether or not the <code>select-case</code> code block will make
-the current goroutine enter blocking state, or which branch is selected,
-doesn't affect the just described expression evaluation order rule.
-</p>
-
-<p>
-The left-hand-side expression of each receive statement will only be
-evaluated if that receive statement is selected.
+The left-hand-side expression of each receive case operation will only be
+evaluated if that receive operation is selected.
 The left-hand-side expressions of the unselected receive statements
 will never be evaluated.
 </p>
 
-In the following example, the call <code>fp("abc")</code> will never be evaluated,
-for its corresponding receive statement <code>&lt;-fc("def", false)</code> will not be selected.
+In the following example, the expression <code>*fptr("aaa")</code> will never be evaluated,
+for its corresponding receive operation <code>fchan("bbb", nil)</code> will not be selected.
 
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	fc := func(info string, write bool) chan int {
-		fmt.Println("fc:", info)
-		c := make(chan int, 1)
-		if write {
-			c <- 456
-		}
+	c := make(chan int, 1)
+	c <- 0
+	fchan := func(info string, c chan int) chan int {
+		fmt.Println(info)
 		return c
 	}
-	fv := func(n int) int {
-		fmt.Println("fv:", n)
-		return n
-	}
-	fp := func(info string) *int {
-		fmt.Println("fp:", info)
+	fptr := func(info string) *int {
+		fmt.Println(info)
 		return new(int)
 	}
 	
 	select {
-	case *fp("abc") = <-fc("def", false):
-	case *fp("ijk") = <-fc("mno", true):
-	case fc("pqr", true) <- fv(123):
-	case fc("xyz", true) <- fv(789):
+	case *fptr("aaa") = <-fchan("bbb", nil): // blocking
+	case *fptr("ccc") = <-fchan("ddd", c):   // non-blocking
+	case fchan("eee", nil) <- *fptr("fff"):  // blocking
+	case fchan("ggg", nil) <- *fptr("hhh"):  // blocking
 	}
 }
 </code></pre>
 
 The output of the above program:
-<pre class="output"><code>fc: def
-fc: mno
-fc: pqr
-fv: 123
-fc: xyz
-fv: 789
-fp: ijk
+<pre class="output"><code>bbb
+ddd
+eee
+fff
+ggg
+hhh
+ccc
 </code></pre>
 
 <p>
-Note that the expression <code>*fp("ijk")</code> is the last evaluated expression in the above example.
-It is evaluated after its corresponding receive statement <code>&lt;-fc("def", true)</code> is selected.
+Note that the expression <code>*fptr("ccc")</code> is the last evaluated expression in the above example.
+It is evaluated after its corresponding receive operation <code>&lt;-fchan("ddd", c)</code> is selected.
 </p>
 
 </div>
