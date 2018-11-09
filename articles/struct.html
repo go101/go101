@@ -2,16 +2,20 @@
 
 <p>
 Same as C, Go also supports struct types.
-This article will introduce the basic knowledges of struct types in Go.
+This article will introduce the basic knowledges of struct types and values in Go.
 </p>
 
 <h3>Struct Types And Struct Type Literals</h3>
 
 <div>
+<p>
 Each unnamed struct type literal starts with a <code>struct</code> keyword
 which is following by a sequence of field definitions enclosed in a <code>{}</code>.
 Each field definition is composed of a name and a type.
 The number of fields of a struct type can be zero.
+<p>
+
+The following is an unnamed struct type literal:
 <pre class="line-numbers"><code class="language-go">struct {
 	title  string
 	author string
@@ -20,7 +24,7 @@ The number of fields of a struct type can be zero.
 </code></pre>
 
 <p>
-The above struct has three fields. The types of the two fields
+The above struct type has three fields. The types of the two fields
 <code>title</code> and <code>author</code> are both <code>string</code>.
 The type of the <code>pages</code> field is <code>int</code>.
 </p>
@@ -37,7 +41,12 @@ Consecutive fields with the same type can be declared together.
 </code></pre>
 
 <p>
-The size of a struct type is the sum of the sizes of all its field types.
+The size of a struct type is the sum of the sizes of all its field types plus the number of some padding bytes.
+The padding bytes are used to align the memory addresses of some fields.
+We can learn padding and memory address alignments in <a href="memory-layout.html">a later article</a>.
+</p>
+
+<p>
 The size of a zero-field struct type is zero.
 </p>
 
@@ -59,14 +68,7 @@ in the process of encoding struct values into JSON texts or decoding JSON texts 
 The functions in the <code>encoding/json</code> standard package will
 only encode and decode the exported struct fields, which is why
 the first letters of the field names in the above example are all upper cased.
-If the field tags are not specified, then the corresponding field names in JSON texts
-will be same as the field names in code.
 </p>
-
-<p><i>
-(BTW, the <code>omitempty</code> word in a field tag means the field can be absent
-from the JSON texts if the value of the field is a zero value or a blank container value.)
-</i></p>
 
 <p>
 It is not a good idea to use field tags as comments.
@@ -93,19 +95,19 @@ We can view non-exported struct fileds as private/protected member variables.
 </p>
 
 <p>
-The field tags and the order of the field declarations matter for a struct type.
+The field tags and the order of the field declarations in a struct type matter for the identity of the struct type.
 Two unnamed struct types are identical only if they have the same sequence of field declarations.
 Two field declarations are identical only if their respective names,
 their respective types and their respective tags are all identical.
 Please note, <b>two non-exported struct field names from
-different packages are always viewed as two different names</b>.
+different packages are always viewed as two different names.</b>
 </p>
 
+<p>
+A struct type can't have a field of the struct type itself, either directly or recursively.
+</p>
 
 <!--
-A struct type can't have a field of the struct type itself,
-either directly or recursively.
-
 https://github.com/golang/go/issues/18640
 -->
 
@@ -129,24 +131,24 @@ two variants of struct composite literal forms:
 <ol>
 <li>
 	<code>S{0, false}</code>.
-	In this form, none field names are present but all field values must be present
+	In this variant, none field names are present but all field values must be present
 	by the field declaration orders.
 </li>
 <li>
 	<code>S{x: 0, y: false}</code>, <code>S{y: false, x: 0}</code>,
 	<code>S{x: 0}</code>, <code>S{y: false}</code> and <code>S{}</code>.
-	In this form, each field item is optional to be present.
+	In this variant, each field item is optional to be present and the order of the field items is not important.
 	The values of the absent fields will be set as the zero values of their respective types.
 	But if a field item is present, it must be presented with the <code>FieldName: FieldValue</code> form.
 	The order of the field items in this form doesn't matter.
-	The zero value form <code>S{}</code> is used most often in practice.
+	The form <code>S{}</code> is the most used zero value representation of type <code>S</code>.
 </li>
 </ol>
 
 <p>
-If <code>S</code> is a struct type imported from library packages,
+If <code>S</code> is a struct type imported from another package,
 it is recommended to use the second form,
-for the library maintainers may add fields for the type <code>S</code> later,
+for the maintainer of the other package may add new fields for the type <code>S</code> later,
 which will make the uses of first forms become invalid.
 </p>
 
@@ -158,6 +160,7 @@ Surely, we can also use the struct composite literals to represent non-zero stru
 For a value <code>v</code> of type <code>S</code>, we can use
 <code>v.x</code> and <code>v.y</code>, which are called selectors,
 to access the field values of <code>v</code>.
+Later, we call the dot <code>.</code> in a selector as the field accessment operator.
 </p>
 
 An example:
@@ -174,17 +177,18 @@ type Book struct {
 
 func main() {
 	book := Book{"Go 101", "Tapir", 256}
-	fmt.Println(book.pages) // 256
+	fmt.Println(book) // {Go 101 Tapir 256}
 
 	// Create a book value with another form.
 	book = Book{} // title and author are both "", pages is 0
 	book = Book{author: "Tapir"} // title is "" and pages is 0
 	book = Book{author: "Tapir", pages: 256, title: "Go 101"}
 
-	// Initialize a struct value without
-	// using composite literals.
+	// Initialize a struct value by using selectors.
 	var book2 Book // <=> book2 := Book{}
-	book2.title = "Go 202"
+	book2.author = "Tapir Liu"
+	book2.pages = 300
+	fmt.Println(book.pages) // 300
 }
 </code></pre>
 
@@ -259,18 +263,22 @@ func main() {
 		Pages int
 	}
 	var book = Book{} // book is addressable
-	p := &book.Pages  // take the address of the "Pages" field
+	p := &book.Pages
 	*p = 123
 	fmt.Println(book) // {123}
 
+	// The following two lines fail to compile,
+	// for Book{}.Pages is not addressable.
 	/*
-	Book{}.Pages = 123 // This line doesn't compile,
-	                   // for "Book{}" is unaddressable.
+	Book{}.Pages = 123
+	p = &(Book{}.Pages) // <=> p = &(Book{}.Pages)
 	*/
 }
 </code></pre>
 
 <p>
+Please, the precedence of the field accessment operator <code>.</code>
+in a selector is higher than the address-taken operator <code>&amp;</code>.
 </p>
 </div>
 
@@ -295,24 +303,17 @@ func main() {
 	// Book{100} is unaddressable but can be taken address.
 	p := &Book{100} // <=> tmp := Book{100}; p := &tmp
 	p.Pages = 200
-	// The following line fails to compile.
-	// The reason is Book{100} is not addressable,
-	// so its field, Pages, is also not addressable,
-	/*
-	_ = &Book{100}.Pages
-	*/
 }
 </code></pre>
 </div>
 
-<h3>Use Struct Pointers Like Struct Values</h3>
+<h3>In Selectors, Struct Pointers Can Be Used As Struct Values</h3>
 
 <div>
 <p>
 Unlike C, in Go, there is not the <code>-&gt;</code> operator for accessing
 struct fields through struct pointers.
-In Go, the struct field accessment operator for struct fields is also
-the dot sign <code>.</code>.
+In Go, the <code>-&gt;</code> operator is also represented with the dot sign <code>.</code>.
 </p>
 
 For example:
@@ -322,9 +323,9 @@ func main() {
 	type Book struct {
 		pages int
 	}
-	book1 := &Book{100} // book1 is a poiner.
-	book2 := new(Book)  // book2 is another pointer.
-	book2.pages = book1.pages
+	book1 := &Book{100} // book1 is a struct poiner
+	book2 := new(Book)  // book2 is another struct pointer
+	book2.pages = book1.pages // use struct pointers as structs
 }
 </code></pre>
 
@@ -339,13 +340,20 @@ func main() {
 <p>
 Most struct types are comparable types, except the ones who have fields of
 <a href="type-system-overview.html#types-not-support-comparison">uncomparable types</a>.
-When comparing two struct values of the same type,
-each pair of their corresponding fields will be compared.
-The two struct values are equal only if all of their corresponding fields are equal.
 </p>
 
 <p>
-Two struct values are comparable only if they can be assigned to each other.
+Two struct values are comparable only if they can be assigned to each other and their types are both comparable.
+In other words, two struct values can be compared with each other only if
+the (comparable) types of the two struct values
+have the identical underlying type (considering field tags)
+and at least one of the two types is non-defined.
+</p>
+
+<p>
+When comparing two struct values of the same type,
+each pair of their corresponding fields will be compared.
+The two struct values are equal only if all of their corresponding fields are equal.
 </p>
 
 <h3>About Struct Value Conversions</h3>
@@ -361,7 +369,7 @@ and their underlying types are identical (considering field tags),
 then the conversions between the values of them can be implicit.
 </p>
 
-Given struct types <code>S0</code>, <code>S1</code>, <code>S2</code>
+Given struct types <code>S0</code>, <code>S1</code>, <code>S2</code>,
 <code>S3</code> and <code>S4</code> in the following code snippet,
 <ul>
 <li>
@@ -416,6 +424,10 @@ type S2 = struct { // S2 is a (non-defined) alias type
 	x int "bar"
 	y bool
 }
+
+// If field tags are ignored, the underlying types of
+// S3(S4) and S1 are same. If field tags are considered,
+// the underlying types of S3(S4) and S1 are different.
 type S3 S2 // S3 is a defined type
 type S4 S3 // S4 is a defined type
 
@@ -440,7 +452,7 @@ only if one of them can implicitly converted to the type of the other.
 
 </div>
 
-<h3>Annoymous Structs</h3>
+<h3>Annoymous Struct Types Can Be Used In Field Declarations</h3>
 
 <div>
 <p>
@@ -452,7 +464,7 @@ in composite literals.
 
 An example:
 <pre class="line-numbers"><code class="language-go">var aBook = struct {
-	author struct {
+	author struct { // the type of this field is an anonymous struct type
 		firstName, lastName string
 		gender              bool
 	}
@@ -465,7 +477,7 @@ An example:
 	}{
 		firstName: "Mark",
 		lastName: "Twain",
-	},
+	}, // the type in the composite literal is an anonymous struct type
 	title: "The Million Pound Note",
 	pages: 96,
 }

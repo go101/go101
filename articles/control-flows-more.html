@@ -5,7 +5,7 @@ This article will introduce goroutines and deferred function calls.
 Goroutine and deferred function call are two unique features in Go.
 Panic and recover mechanism will also be simply explained in this article.
 Not all knowledge relating to the these features is covered in the
-current article, other ones will be introduced in other articles later.
+current article, more will be introduced in other articles later.
 </p>
 
 <h3>Goroutines</h3>
@@ -27,8 +27,7 @@ So using goroutines is the only way to do concurrent programing
 </p>
 
 <p>
-Each Go program starts with only one goroutine,
-we call it the main goroutine, at the beginning.
+Each Go program starts with only one goroutine, we call it the main goroutine.
 A goroutine can create new goroutines.
 It is super easy to create a new goroutine in Go,
 just make a function call follow a <code>go</code> keyword,
@@ -44,7 +43,9 @@ The following is an example which creates two new goroutines
 in the main goroutine.
 In the example, <code>time.Duration</code> is a custom type defined
 in the <code>time</code> standard package.
-It is defined as the built-in type <code>int64</code>.
+Its underlying type (see <a href="type-system-overview.html#underlying-type">the next article</a>)
+is the built-in type <code>int64</code>.
+
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -57,7 +58,7 @@ func SayGreetings(greeting string, times int) {
 	for i := 0; i < times; i++ {
 		log.Println(greeting)
 		d := time.Second * time.Duration(rand.Intn(5)) / 2
-		time.Sleep(d)
+		time.Sleep(d) // sleep awhile (from 0 to 2.5 seconds)
 	}
 }
 
@@ -71,7 +72,7 @@ func main() {
 </code></pre>
 
 Quite easy. Right? We do concurrent programming now!
-The above program will have three user created goroutines running
+The above program may have three user created goroutines running
 simultaneously at its peak at run time.
 Let's run it. One possible output result:
 
@@ -87,7 +88,8 @@ hi!
 </p>
 
 <p>
-When the main goroutine exits, the whole program also exits.
+When the main goroutine exits, the whole program also exits,
+even if there are still some other goroutines which have not existed yet.
 </p>
 
 <p>
@@ -125,15 +127,21 @@ the <code>WaitGroup</code> type in the <code>sync</code> standard package,
 to do synchronizations between the two new goroutines and the main goroutine.
 </p>
 
-<p>
-The <code>WaitGroup</code> type has three methods, <code>Add</code>,
-<code>Done</code> and <code>Wait</code>.
-This type will be explained detailedly later in another article.
-Here we can simply think the <code>Add</code> method is used to register
-number of new tasks, the <code>Done</code> method is used to notify
-that a task is finished, and the <code>Wait</code> method makes the caller
-goroutine become blocking until all registered tasks are finished.
-</p>
+The <code>WaitGroup</code> type has three methods (special functions, will be explained later):
+<code>Add</code>, <code>Done</code> and <code>Wait</code>.
+This type will be explained in detail later in another article later.
+Here we can simply think
+<ul>
+<li>
+	the <code>Add</code> method is used to register the number of new tasks.
+</li>
+<li>
+	the <code>Done</code> method is used to notify that a task is finished.
+</li>
+<li>
+	and the <code>Wait</code> method makes the caller goroutine become blocking until all registered tasks are finished.
+</li>
+</ul>
 
 Example:
 <pre class="line-numbers"><code class="language-go">package main
@@ -153,7 +161,7 @@ func SayGreetings(greeting string, times int) {
 		d := time.Second * time.Duration(rand.Intn(5)) / 2
 		time.Sleep(d)
 	}
-	wg.Done() // notify a task is finished.
+	wg.Done() // &lt;=&gt; wg.Add(-1). Notify a task is finished.
 }
 
 func main() {
@@ -192,7 +200,7 @@ The following picture depicts a possible lifecycle of a goroutine.
 </p>
 
 <p>
-A goroutine in sleeping (by calling <code>time.Sleep</code> function)
+Note, a goroutine in sleeping (by calling <code>time.Sleep</code> function)
 or waiting the response of a syscall or a network connection
 is viewed as staying in running state.
 </p>
@@ -242,8 +250,7 @@ The output:
 </code></pre>
 
 <p>
-Later, we will learn more operations which will make goroutines
-enter blocking state.
+Later, we will learn more operations which will make goroutines enter blocking state.
 </p>
 
 </div>
@@ -275,7 +282,7 @@ again when it has been executed for a while (a very small piece of time).
 <p>
 Please notes, for explanation simplicity, the sub-states shown in the above
 picture will be not mentioned in other articles in Go 101.
-And, in Go 101, the sleeping and system calling sub-states are not viewed
+And again, in Go 101, the sleeping and system calling sub-states are not viewed
 as sub-states of the blocking state.
 </p>
 
@@ -302,7 +309,16 @@ For the standard Go runtime, before Go 1.5, the default initial value of this nu
 but since Go 1.5, the default initial value of this number is equal to
 the number of logical CPUs avaiable for the current running program.
 The default initial value (the number of logical CPUs) is the best choice for most programs.
-The default initial value can also be set through the <code>GOMAXPROCS</code> environment variable.
+But some file IO heavy programs, a <code>GOMAXPROCS</code> value larger than <code>runtime.NumCPU()</code> may be helpful.
+</p>
+
+<p>
+The default initial value of <code>runtime.GOMAXPROCS</code> can also be set through the <code>GOMAXPROCS</code> environment variable.
+</p>
+
+<p>
+At any time, the number of goroutines in the executing sub-state is no more than
+the smaller one of <code>runtime.NumCPU</code> and <code>runtime.GOMAXPROCS</code>.
 </p>
 
 <p class="anchor" id="defer"></p>
@@ -319,16 +335,17 @@ must be discarded in the function call statement.
 <p>
 When a function call is deferred, it is not executed immediately.
 It will be push into a defer-call stack maintained by its caller goroutine.
-When a function call <code>fc</code> returns and enters its exiting phase,
-all the deferred function calls pushed in the function call (<code>fc</code>)
+After a function call <code>fc(...)</code> returns and enters its
+<a href="function-declarations-and-calls.html#existing-phase">exiting phase</a>,
+all the deferred function calls pushed in the function call (<code>fc...</code>)
 (which has not exited yet) will be executed,
-by their inverse orders being pushed into the defer-call stack.
+by their inverse order being pushed into the defer-call stack.
 Once all these deferred calls are executed,
-the function call <code>fc</code> exits.
+the function call <code>fc(...)</code> exits.
 </p>
 
 Here is a simple example to show how to use deferred function calls.
-In the example, <code>defer</code> are keywords.
+
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -349,12 +366,11 @@ The third line.
 <p>
 </p>
 
-Each goroutine maintain two call stacks,
-the normal-call stack and defer-call stack.
+In fact, each goroutine maintain two call stacks, the normal-call stack and defer-call stack.
 <ul>
 <li>
 	For two adjacent function calls in the normal-call stack of a goroutine,
-	The later pushed one is called by the earlier pushed one.
+	the later pushed one is called by the earlier pushed one.
 	The bottom function call in the normal-call stack is the function call
 	following the <code>go</code> keyword.
 </li>
@@ -397,8 +413,8 @@ func main() {
 </p>
 </div>
 
-<p class="anchor" id="defer-modify-resutls"></p>
-<h3>Deferred Anonymous Functions Can Modify The Named Return Results Of Nesting Functions</h3>
+<p class="anchor" id="defer-modify-results"></p>
+<h3>Deferred Function Calls Can Modify The Named Return Results Of Nesting Functions</h3>
 
 <div>
 For example,
@@ -453,9 +469,9 @@ evaluated at the moment when the function call is invoked.
 </ul>
 
 <p>
-The arguments of each function call nested in a deferred function call
-or a goroutine function call are evaluated at the moment when that nested
-function call is invoked.
+The expressions enclosed within the body of an anonymous function call,
+whether the call is a general call or a deferred/goroutine call,
+will not be evaluated at the moment when the anonymous function call is invoked.
 </p>
 
 Here is an example.
@@ -542,8 +558,7 @@ func main() {
 </code></pre>
 
 <p>
-By the way, it is not a good idea to do synchronizations by using
-<code>time.Sleep</code> calls.
+By the way, it is not a good idea to do synchronizations by using <code>time.Sleep</code> calls in formal projects.
 If the program runs on a computer which CPUs are occupied by many other
 programs running on the computer, the new created goroutine may never
 get chances to execute before the program exits.
@@ -558,8 +573,8 @@ to do synchronizations in formal projects.
 <h3>Panic And Recover</h3>
 
 <p>
-Go doesn't support exception throwing, instead,
-explicit error handling is preferred to use in Go programming.
+Go doesn't support exception throwing and catching,
+instead explicit error handling is preferred to use in Go programming.
 However, in fact, Go supports an exception throw/catch alike mechanism.
 The mechanism is called panic/recover.
 </p>
@@ -568,27 +583,23 @@ The mechanism is called panic/recover.
 We can call the built-in <code>panic</code> function to create a panic
 to make the current goroutine enter panicking status.
 The panic is only alive within the current goroutine.
-There may be multiple panics coexisting in a goroutine.
 </p>
-
-<p>
-Panics can be recovered by using the built-in <code>recover</code> function.
-Once all panics in a goroutine are recovered,
-the goroutine will enter normal calm status again.
-<p>
 
 <p>
 Panicking is another way to make a function return.
-One a panic shows in a function call, the function call returns immediately
-and enter its exiting phase. The deferred function calls pushed in the
-function call will get executed, by their inverse orders being pushed.
-A <code>recover</code> function can only recover the panic
-if it is called in one of the deferred function call.
+One a panic is produced in a function call, the function call returns immediately
+and enter its exiting phase. The deferred function calls pushed in the defer-call stack
+in the function call will get executed, by their inverse order being pushed.
 </p>
 
 <p>
-If a panicking goroutine exits without being recovered,
-it will make the whole program crash.
+By calling the built-in <code>recover</code> function in a deferred call,
+an alive panic in the current goroutine can be removed
+so that the current goroutine will enter normal calm status again.
+<p>
+
+<p>
+If a panicking goroutine exits without being recovered, it will make the whole program crash.
 </p>
 
 The built-in <code>panic</code> and <code>recover</code> functions are
@@ -618,6 +629,9 @@ Here is an example shows how to create a panic and how to recover the panic.
 import "fmt"
 
 func main() {
+	defer func() {
+		fmt.Println("exit nornally.")
+	}()
 	fmt.Println("hi!")
 	defer func() {
 		v := recover()
@@ -632,6 +646,7 @@ The output:
 
 <pre class="output"><code>hi!
 recovered: bye!
+exit nornally.
 </code></pre>
 
 <p>
@@ -702,7 +717,7 @@ in other later Go 101 articles.
 
 <p>
 We can learn <a href="panic-and-recover-use-cases.html">some panic/recover use cases</a>
-and <a href="panic-and-recover-more.html">more about panic and recover mechanism</a> later.
+and <a href="panic-and-recover-more.html">more about panic/recover mechanism</a> later.
 </p>
 
 <h3>Some Fatal Errors Are Not Panics And Unrecoverable</h3>

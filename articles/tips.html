@@ -486,6 +486,9 @@ func _([N-M]int){}
 var _ [N-M]int
 const _ uint = N-M
 type _ [N-M]int
+
+// If M and N are guarenteed to be positive integers.
+var _ uint = M/N - 1
 </code></pre>
 
 One more way which is stolen from <a href="https://twitter.com/lukechampine/status/1026695476811390976">@lukechampine</a>.
@@ -522,6 +525,21 @@ var _ [N-M]int = [M-N]int{}
 
 <p>
 The last line is also inspired by one of Luke Champine's tweets.
+</p>
+
+How to to assert a constant string is not blank.
+
+<pre class="line-numbers"><code class="language-go">
+type _ [len(Version)-1]int
+var _ = map[bool]int{false: 0, Version != "": 1}
+var _ = aStringConstant[:1]
+var _ = aStringConstant[0]
+const _ = 1/len(aStringConstant)
+</code></pre>
+
+
+<p>
+The last line is stolen from Jan Mercl's <a href="https://groups.google.com/d/msg/golang-nuts/w1-JQMaH7c4/qzBFSPImBgAJ">clever idea</a>.
 </p>
 
 </div>
@@ -698,10 +716,11 @@ And future gc versions may become smarter so that the trick will become unnecess
 
 use named returns, better readibility
 
+define exported error values as constants, or maybe can make using of declared function values
+
 try to avoid unnecessary synchronization, for example, make data only be used in one goroutine.
 math/rand.NewSource() are faster but not concurrent safe.
 but Bytes() method is not fast
-
 
 try to avoid using large-sized types as
 * map key and element types,
@@ -749,6 +768,8 @@ avoid using the http.Get, ..., functions directly.
         // TCP connections between requests to the same hosts, as if
         // Transport.DisableKeepAlives were set.
 
++setting GOMAXPROCS with a value larger than NumCPUs is good for the performance of a program sometimes^M
++https://news.ycombinator.com/item?id=18350362^
 
 -->
 
