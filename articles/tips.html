@@ -180,6 +180,7 @@ func main() {
 <p>
 In other words, a function call in a value assignment shouldn't affect
 the evaluation results of the non-function-call expressions in the same assignment.
+Please read <a href="evaluation-orders.html">evaluation orders in Go</code> for details.
 </p>
 
 </div>
@@ -714,6 +715,8 @@ And future gc versions may become smarter so that the trick will become unnecess
 
 <!--
 
+select{}
+
 use named returns, better readibility
 
 define exported error values as constants, or maybe can make using of declared function values
@@ -744,9 +747,7 @@ use {} to create a nested block to shadow identifiers declared in outer blocks.
 
 intermediate results should be stored out of the benchmark function
 
-
 select may slow: https://twitter.com/melvinodsa/status/1031434710184939522
-
 
 <p class="anchor" id="embed-unexported-alias-of-exported-type"></p>
 <h3>Embedding an unexported alias of an exported type to avoiding the corresponding anonymous field being modified in user packages.</h3>
@@ -771,6 +772,33 @@ avoid using the http.Get, ..., functions directly.
 +setting GOMAXPROCS with a value larger than NumCPUs is good for the performance of a program sometimes^M
 +https://news.ycombinator.com/item?id=18350362^
 
+simulate subPackages
+	package foo / import "a.b/foo"
+	type SubPkg_ struct{}
+	var SubPkg SubPkg_
+	func (SubPkg_) FunctionX()
+	func (SubPkg_) FunctionY()
+	
+	package main
+	import "a.b/foo"
+	func main() {
+		foo.SubPkg.FunctionX()
+	}
+
+req.WithContext(context.WithValue(req.Context(), paramsKeyType{}, Params{path, tokens})) is slow
+https://github.com/golang/go/issues/28737
+
+how to embed an exported type as a non-export field?
+so that package users can modify the field.
+	type embeddedType = ExportedType
+
+use make() instead of composite literals to initilize map and slice
+if the accurate or approiximate number of elements is known.
+
+If the types of some results of a function are identifier,
+it would be better to use named results for "code as docs"
+
+manually adjust struct field positions to save memory.
 -->
 
 
