@@ -27,7 +27,7 @@ Fortunately, the needs to defer built-in function calls
 As far as I know, only the calls to the built-in <code>append</code> function
 may be needed to defer sometimes.
 For this case, we can defer a call to an anonymous function
-which wrapps the <code>append</code> call.
+which wraps the <code>append</code> call.
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -48,7 +48,7 @@ func main() {
 <div>
 The called function in a deferred function call may be a nil function value.
 For such a case, the panic will occur before the deferred call is
-pushed into the deferred call stack of the currrent goroutine. An example:
+pushed into the deferred call stack of the current goroutine. An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -67,7 +67,7 @@ func main() {
 </p>
 
 <p>
-The argumnts of a deferred function call are
+The arguments of a deferred function call are
 <a href="#argument-evaluation-moment">also evaluated before</a>
 the deferred call is pushed into the deferred call stack
 of the currrent goroutine.
@@ -141,17 +141,17 @@ https://joeshaw.org/dont-defer-close-on-writable-files/
 -->
 
 <p>
-Which one looks cleaner? apparently, the one with the deferrd calls,
+Which one looks cleaner? apparently, the one with the deferred calls,
 though a little. And it is less bug prone,
-what about if any if <code>f.Close()</code> calls in the other one is missed? ;)
+what about if any of <code>f.Close()</code> calls in the other one is missed? ;)
 </p>
 
 The following is another example to show deferred calls can make code less bug prone.
 If the <code>doSomething</code> calls panic in the following example,
-the function <code>f2</code> will exit by leaving the Metex unlocked.
+the function <code>f2</code> will exit by leaving the Mutex unlocked.
 So the function <code>f1</code> is less bug prone.
 
-<pre class="line-numbers"><code class="language-go">var m sync.Metex
+<pre class="line-numbers"><code class="language-go">var m sync.Mutex
 
 func f1() {
 	m.Lock()
@@ -173,7 +173,7 @@ func f2() {
 <div>
 <p>
 It is not always good to use deferred function calls.
-Up to now (Go 1.11), for the offical Go compiler,
+Up to now (Go 1.11), for the official Go compiler,
 deferred function calls will cause some performance losses at run time,
 in particular for deferred function calls within loop code blocks.
 </p>
@@ -236,9 +236,9 @@ the performance of the involved functions.
 A very large deferred call stack may also consume much memory.
 The unexecuted deferred calls may prevent some resources from being released.
 For example, if there are many files needed to be handled in a call to the following function,
-then a large quantity of file handlers will be not get released in time.
+then a large number of file handlers will be not get released in time.
 
-<pre class="line-numbers"><code class="language-go">func writeManyFile(files []File) error {
+<pre class="line-numbers"><code class="language-go">func writeManyFiles(files []File) error {
 	for _, file := range files {
 		f, err := os.Open(file.path)
 		if err != nil {
@@ -264,9 +264,9 @@ then a large quantity of file handlers will be not get released in time.
 
 For such cases, we can use an anonymous function to enclose the deferred calls
 so that the deferred function calls will get executed earlier. For example,
-the above function can be rewrittn and optimized as
+the above function can be rewritten and optimized as
 
-<pre class="line-numbers"><code class="language-go">func writeManyFile(files []File) error {
+<pre class="line-numbers"><code class="language-go">func writeManyFiles(files []File) error {
 	for _, file := range files {
 		if err := func() error {
 			f, err := os.Open(file.path)
