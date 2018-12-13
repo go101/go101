@@ -98,7 +98,7 @@ some are shown in the following sections.
 		<a href="#append-slice-elements">The result slice of an <code>append</code> function call may share some elements with the original slice, or not.</a>
 	</li>
 	<li>
-		<a href="#subslice">The length of a subslice may be larger than the base slice the subslice is derived from.</a>
+		<a href="#subslice">The length of a subslice may be larger than the base slice the subslice derives from.</a>
 	</li>
 	<li>
 		<a href="#derive-from-nil-slice">Deriving a subslice from a nil slice is ok if all the indexes used in the subslice expression are zero. The result subslice is also a nil slice.</a>
@@ -111,6 +111,9 @@ some are shown in the following sections.
 	</li>
 	<li>
 		<a href="#modify-slice-length-and-capacity-seperately">The length and capacity of a slice can be modified seperately.</a>
+	</li>
+	<li>
+		<a href="#indexes-in-composite-literals"">The indexes in slice and array composite literals must be constants and non-negative.</a>
 	</li>
 	<li>
 		<a href="#constant-keys-in-composite-literals"">The constant indexes or keys in slice/array/map composite literals can't be duplicate.</a>
@@ -216,7 +219,7 @@ some are shown in the following sections.
 	<li>
 		<a href="#some-evaluation-order-are-compiler-dependent">Some expression evaluation orders in Go are compiler implementation dependent.</a>
 	</li>
-	
+
 	</ul>
 </li>
 <li>
@@ -302,19 +305,19 @@ For example:
 	}
 
 	var x, y chan int
-	
+
 	select {
 	case <-x:
 	case y <- 1:
 	default:
 	}
-	
+
 	select {
 	case <-x:
 	default:
 	case y <- 1:
 	}
-	
+
 	select {
 	default:
 	case <-x:
@@ -471,7 +474,7 @@ For example, the following program fails to compile.
 			goto End
 		}
 		r++
-		
+
 		End: // syntax error: missing statement after label
 	default:
 		r = 1
@@ -489,7 +492,7 @@ To make it compile okay, the <code>case</code> branch code block should be expli
 			goto End
 		}
 		r++
-		
+
 		End:
 	}
 	default:
@@ -508,7 +511,7 @@ Alternatively, we can let a semicolon follow the label <code>End:</code>:
 			goto End
 		}
 		r++
-		
+
 		End:;
 	default:
 		r = 1
@@ -537,7 +540,7 @@ func F() (r int) {
 	defer func() {
 		r = 789
 	}()
-	
+
 	return 123 // <=> r = 123; return
 }
 
@@ -647,10 +650,10 @@ func main() {
 	var t T
 	p := &t.x // <=> p := &(t.x)
 	fmt.Printf("%T\n", p) // *int
-	
+
 	*p++ // <=> (*p)++
 	*p-- // <=> (*p)--
-	
+
 	t.y = p
 	a := *t.y
 	fmt.Printf("%T\n", a) // int
@@ -702,7 +705,7 @@ func main() {
 	var b Tb
 	// Direct conversion is impossible.
 	//a = Ta(b) // error: fail to compile
-	
+
 	// But indirect conversion is possible.
 	y := (*MyInt)(b)
 	x := (*int64)(y)
@@ -938,7 +941,7 @@ Please read <a href="container.html#element-addition-deletion">this</a> for deta
 </p>
 
 <p class="anchor" id="subslice"></p>
-<h3>The length of a subslice may be larger than the base slice the subslice is derived from.</h3>
+<h3>The length of a subslice may be larger than the base slice the subslice derives from.</h3>
 
 <div>
 
@@ -1000,7 +1003,7 @@ func main() {
 	var s []int // nil
 	for range s {
 	}
-	
+
 	var m map[string]int // nil
 	for range m {
 	}
@@ -1041,6 +1044,22 @@ func main() {
 We can modify the length and capacity of a slice seperately through the reflection way.
 Please read <a href="container.html#modify-slice-length-and-capacity">this</a> for details.
 </p>
+
+<p class="anchor" id="indexes-in-composite-literals"></p>
+<h3>The indexes in slice and array composite literals must be constants and non-negative.</h3>
+
+<div>
+For example, the following code fails to compile.
+
+<pre class="line-numbers"><code class="language-go">var k = 1
+var x = [2]int{k: 1} // error: index must be non-negative integer constant
+var y = []int{k: 1}  // error: index must be non-negative integer constant
+</code></pre>
+
+<p>
+Note, the keys in map composite literals are not required to be constants.
+</p>
+</div>
 
 <p class="anchor" id="constant-keys-in-composite-literals"></p>
 <h3>The constant indexes or keys in slice/array/map composite literals can't be duplicate.</h3>
@@ -1140,8 +1159,7 @@ func main() {
 
 <div>
 This reason is <code>NaN != NaN</code> (see the above detail).
-The elements with <code>NaN</code> as key can only be found out
-in a <code>for-range</code> loop.
+The elements with <code>NaN</code> as key can only be found out in a <code>for-range</code> loop.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -1733,7 +1751,7 @@ func main() {
 <h3>The <code>flag</code> standard package treats boolean command flags differently than integer and string flags.</h3>
 
 <div>
-There are three forms to pass command arguments.
+There are three forms to pass flag options.
 <ol>
 <li>
 	<code>-flag</code>, for boolean flags only.
@@ -1910,42 +1928,14 @@ func main() {
 
 io/ioutil since Go 1.11
 
-    The TempFile function now supports specifying where the random characters in the filename are placed. 
-    If the prefix argument includes a "*", the random string replaces the "*". 
-    For example, a prefix argument of "myname.*.bat" will result in a random filename such as "myname.123456.bat". 
+    The TempFile function now supports specifying where the random characters in the filename are placed.
+    If the prefix argument includes a "*", the random string replaces the "*".
+    For example, a prefix argument of "myname.*.bat" will result in a random filename such as "myname.123456.bat".
     If no "*" is included the old behavior is retained, and the random digits are appended to the end.
 
 go links 101
    https://stackoverflow.com/questions/7044944/jquery-javascript-to-detect-os-without-a-plugin
    https://golang.org/pkg/syscall/ list all OS/arch pages
-
-go cmd/tools 101
-
-     go build -gcflags "all=-trimpath=`pwd`" 
-        https://medium.com/@aerokite/trim-gopath-from-stack-trace-88b7402c8b47
-
-    benchstat
-    
-    go vet -shadow: undocumented yet
-
-    official ones:
-      -gcflags "-m -m -m -m"
-      -gcflags "-m -m -m"
-      -gcflags "-m -m"
-      -gcflags "-m"
-    
-    ssa:
-    GOSSAFUNC=main GOOS=linux GOARCH=amd64 go build -gcflags “-S” simple.go
-
-    conventions in Go
-
-	    pakage xxx // abd.xyz.xxx
-
-	    _example.go
-	    _test.go
-	    func TestXXX
-
-	    _x64, _osx
 
 //godo/doc/builder
 var windowsOnlyPackages = map[string]bool{
@@ -1977,7 +1967,7 @@ go practices
 	  * https://mb-14.github.io/tech/2018/10/24/gomarkov.html
 	* net
 	  * https://old.reddit.com/r/golang/comments/9r4sb3/using_go_for_networking/
-	* 
+	*
 
 go101 tools
 	* golf
