@@ -88,8 +88,8 @@ Other duties in concurrent programming include
 </ul>
 
 <p>
-Most operations in Go are not synchronized, in other words,
-they are not thread-safe.
+Most operations in Go are not synchronized.
+I n other words, they are not concurrency-safe.
 These operations include value assignments, argument passing and
 container element manipulations, etc.
 There are only a few operations which are synchronized,
@@ -107,17 +107,17 @@ So later we use goroutines to represent computations.
 
 <p>
 One suggestion (made by <i>Rob Pike</i>) for concurrent programming is
-<b>don't (let goroutines) communicate by sharing memory,
+<b>don't (let computations) communicate by sharing memory,
 (let them) share memory by communicating (through channels)</b>.
-The channel mechanism is a result of this philosophy.
 </p>
 
 <p>
 Communicating by sharing memory and sharing memory by communicating
-are two patterns in concurrent programming.
+are two programming manners in concurrent programming.
 When goroutines communicate by sharing memory, we need use some
 tranditional concurrency synchronization techniques, such as mutex locks,
 to protect the shared memory to prevent data races.
+We can use channels to implement sharing memory by communicating.
 </p>
 
 <p>
@@ -156,9 +156,7 @@ but Go channels don't prevent programmers from writing bad concurrent code.
 Although Go also supports tranditional concurrency synchronization techniques.
 only channel is first-level citizen in Go. Channel is one kind of types in Go,
 so we can use channels without importing any packages.
-On the other hand,
-<a href="concurrent-synchronization-overview.html">those
-tranditional concurrency synchronization techniques</a> are provided
+On the other hand, hose tranditional concurrency synchronization techniques are provided
 in the <code>sync</code> and <code>sync/atomic</code> standard packages.
 </p>
 
@@ -176,9 +174,8 @@ the scenarios which channels are not best for.
 
 <div>
 <p>
-Channel types are composite types. Like array, slice and map,
-each channel type has an element type.
-All data to be sent to the channel must be values of the element type.
+Like array, slice and map, each channel type has an element type.
+A channel can only transfer values of the element type of (the type of) the channel.
 </p>
 
 Channel types can be bi-directional or single-directional.
@@ -204,18 +201,18 @@ Assume <code>T</code> is an arbitrary type,
 </p>
 
 <p>
-Values of bidirectional channel type <code>chan T</code> can be converted to
+Values of bidirectional channel type <code>chan T</code> can be implicitly converted to
 both send-only type <code>chan&lt;- T</code> and
-receive-only type <code>&lt;-chan T</code>, but not vice versa.
+receive-only type <code>&lt;-chan T</code>, but not vice versa (even if explicitly).
 Values of send-only type <code>chan&lt;- T</code> can't be converted to
 receive-only type <code>&lt;-chan T</code>, and vice versa.
 Note that the <code>&lt;-</code> signs in channel type literals are modifiers.
 </p>
 
 <p>
-Each channel has a capacity, which will be explained in the section after next.
-A channel with a zero capacity is called unbuffered channel and
-a channel with a non-zero capacity is called buffered channel.
+Each channel value has a capacity, which will be explained in the section after next.
+A channel value with a zero capacity is called unbuffered channel and
+a channel value with a non-zero capacity is called buffered channel.
 </p>
 
 <p>
@@ -252,7 +249,7 @@ The result of comparing them is <code>true</code>.
 
 <div>
 <p>
-There are five operations we can perform on a channel.
+There are five channel specified operations.
 Assume the channel is <code>ch</code>,
 their syntaxes and function calls of these operations are listed here.
 </p>
@@ -264,7 +261,7 @@ their syntaxes and function calls of these operations are listed here.
 	<p>
 	where <code>close</code> is a built-in function.
 	The argument of a <code>close</code> function call must be a channel value,
-	and the channel value must not be a receive-only channel.
+	and the channel <code>ch</code> must not be a receive-only channel.
 	</p>
 </li>
 <li>
@@ -274,7 +271,8 @@ their syntaxes and function calls of these operations are listed here.
 </code></pre>
 	<p>
 	where <code>v</code> must be a value which is assignable to
-	the element type of channel <code>ch</code>.
+	the element type of channel <code>ch</code>,
+	and the channel <code>ch</code> must not be a receive-only channel.
 	Note that here <code>&lt;-</code> is a channel-send operator.
 	</p>
 </li>
@@ -283,9 +281,10 @@ their syntaxes and function calls of these operations are listed here.
 <pre><code class="language-go">&lt;-ch
 </code></pre>
 	A channel receive operation always returns at least one result,
-	which is a value of the element type of the channel.
+	which is a value of the element type of the channel,
+	and the channel <code>ch</code> must not be a send-only channel.
 	Note that here <code>&lt;-</code> is a channel-receive operator.
-	(Its representation is the same as a channel-send operator.)
+	Yes, its representation is the same as a channel-send operator.
 
 	<p>
 	</p>
@@ -293,13 +292,16 @@ their syntaxes and function calls of these operations are listed here.
 	For most scenarios, a channel receive operation is viewed as
 	a single-valued expression.
 	However, when a channel operation is used as the only source value
-	expression in an assignment, it can be viewed as a multi-valued
-	expression and result a second optional untyped boolean value,
-	which indicates whether or not the first result is sent
-	before the channel is closed.
+	expression in an assignment, it can result a second optional
+	untyped boolean value and become a multi-valued expression.
+	The untyped boolean value indicates whether or not
+	the first result is sent before the channel is closed.
 	(Below we will learn that we can receive unlimited number of values
 	from a closed channel.)
-	For example,
+
+	<p>
+	</p>
+	Two channel receive operations which are used as source values in assignments:
 <pre><code class="language-go">v = &lt;-ch
 v, sentBeforeClosed = &lt;-ch
 </code></pre>
@@ -337,7 +339,7 @@ v, sentBeforeClosed = &lt;-ch
 
 <p>
 All these operations are already synchronized,
-so no further synchronizations are needed to perform these operations.
+so no further synchronizations are needed to safely perform these operations.
 However, like most other operations in Go,
 channel value assignments are not synchronized.
 Similarly, assigning the received value to another value is also
@@ -353,17 +355,16 @@ In fact, the two operations are seldom used in practice.
 </p>
 
 <p>
-The rules for channel send, receive and close operations will be
-introduced and explained in the following sections.
+Channel send, receive and close operations will be explained in detail in the next section.
 </p>
 
 </div>
 
-<p class="anchor" id="simple-rule-summary"></p>
-<h3>A Simple Summary Of Channel Operation Rules</h3>
+<p class="anchor" id="channel-operation-explanations"></p>
+<h3>Detailed Explanations For Channel Operations</h3>
 
 <div>
-To make the explanations for channel operation rules simple and clear,
+To make the explanations for channel operations simple and clear,
 in the remaining of this article,
 channels will be classified into three categories:
 <ol>
@@ -379,10 +380,8 @@ channels will be classified into three categories:
 </ol>
 
 <p>
-The following a table simply describes the rules for all kinds of operations
+The following table simply summarizes the behaviors for all kinds of operations
 applying on nil, closed and not-closed non-nil channels.
-More detailed explanations will made in
-<a href="#full-rule-explanations">a later section</a>.
 </p>
 
 <table class="table table-bordered text-center" style="width: auto !important;">
@@ -416,7 +415,7 @@ More detailed explanations will made in
 </tbody>
 </table>
 
-For the five unlabelled cases, the rules are very clear.
+For the five unlabelled cases, the behaviors are very clear.
 <ul>
 <li>
 	Closing a nil or a already closed channel
@@ -433,18 +432,21 @@ For the five unlabelled cases, the rules are very clear.
 </ul>
 
 <p>
-The following will make more explanations for the four labelled cases.
+The following will make more explanations for the four labelled cases (A, B, C and D).
 </p>
 
+<p>
 To better understand channel types and values and to make the some explanations
-easier, knowing the rough internal structures of internal channel objects
-is very helpful. We can think each channel maintains three queues internally:
+easier, learning the rough internal structures of internal channel objects
+is very helpful.
+</p>
 
+We can think each channel maintains three queues (all can viewed as FIFO queues) internally:
 <ol>
 <li>
 	the receiving goroutine queue.
 	The queue is a linked list without size limitation.
-	Goroutines in this queue are called blocked receiving goroutines on this channel.
+	Goroutines in this queue are all in blocking state and waiting to receive values from that channel.
 	<!-- not true
 	The addresses of the values which are prepared to store the received
 	values are also stored in the queue along with each goroutine.
@@ -453,58 +455,62 @@ is very helpful. We can think each channel maintains three queues internally:
 <li>
 	the sending goroutine queue.
 	The queue is also a linked list without size limitation.
-	Goroutines in this queue are called blocked sending goroutines on this channel.
-	The addresses of values these goroutines are trying to send are also
-	stored in the queue along with each goroutine.
+	Goroutines in this queue are all in blocking state and waiting to send values to that channel.
+	The value (or the address of the value, depending on compiler implementation)
+	each goroutine is trying to send is also stored in the queue along with that goroutine.
 </li>
 <li>
 	the value buffer queue. This is a circular queue.
 	Its size is equal to the capacity of the channel.
+	The types of the values stored in this buffer queue are all the element type of that channel.
 	If the current number of values stored in the value buffer queue of the channel
 	reaches the capacity of the channel, the channel is called in full status.
 	If no values are stored in the value buffer queue of the channel currently,
 	the channel is called in empty status.
-	For a zero-capacity channel, it is always in both full and empty status.
+	For a zero-capacity (unbuffered) channel, it is always in both full and empty status.
 </li>
 </ol>
 
+<p>
+Each channel internally holds a mutex lock which is used to avoid data races in all kinds of operations.
+</p>
 
-[<u>Channel rule case A</u>]:
-when a goroutine tries to receive a value from a not-closed non-nil channel,
-the goroutine first tries to acquire the lock accociated with the channel,
+<u><b>Channel operation case A</b>:
+when a goroutine <code>Gr</code> tries to receive a value from a not-closed non-nil channel</u>,
+the goroutine <code>Gr</code> will acquire the lock accociated with the channel firstly,
 then do the following steps until one condition is satisfied.
 <ol>
 <li>
 	If the value buffer queue of the channel is not empty, in which
 	case the receiving goroutine queue of the channel must be empty,
-	the goroutine will receive (by unshifting) a value
+	the goroutine <code>Gr</code> will receive (by unshifting) a value
 	from the value buffer queue.
 	If the sending goroutine queue of the channel is also not empty,
 	a sending goroutine will be unshifted out of the sending goroutine queue
 	and resumed to running state again.
 	The value the just unshifted sending goroutine trying to send
 	will be pushed into the value buffer queue of the channel.
-	The receiving goroutine continues running.
+	The receiving goroutine <code>Gr</code> continues running.
 	For this scenario, the channel send operation
 	is called a <b>non-blocking operation</b>.
 </li>
 <li>
-	Otherwise, if the value buffer queue of the channel is empty but
-	the sending goroutine queue of the channel is not empty,
+	Otherwise (the value buffer queue of the channel is empty),
+	if the sending goroutine queue of the channel is not empty,
 	in which case the channel must be an unbuffered channel,
-	the receiving goroutine will unshift a sending goroutine from the
+	the receiving goroutine <code>Gr</code> will unshift a sending goroutine from the
 	sending goroutine queue of the channel and receive the value
 	the just unshifted sending goroutine trying to send.
 	The just unshifted sending goroutine will get unblocked
 	and resumed to running state again.
-	The receiving goroutine continues running.
+	The receiving goroutine <code>Gr</code> continues running.
 	For this scenario, the channel send operation
 	is called a <b>non-blocking operation</b>.
 </li>
 <li>
 	If value buffer queue and the sending goroutine queue
 	of the channel are both empty,
-	the goroutine will be pushed into the receiving goroutine queue
+	the goroutine <code>Gr</code> will be pushed into the receiving goroutine queue
 	of the channel and enter (and stay in) blocking state.
 	It may be resumed to running state when another goroutine
 	sends a value to the channel later.
@@ -513,36 +519,36 @@ then do the following steps until one condition is satisfied.
 </li>
 </ol>
 
-[<u>Channel rule case B</u>]:
-when a goroutine tries to send a value to a not-closed non-nil channel,
-the goroutine first tries to acquire the lock accociated with the channel,
+<u><b>Channel rule case B</b>:
+when a goroutine <code>Gs</code> tries to send a value to a not-closed non-nil channel</u>,
+the goroutine <code>Gs</code> will acquire the lock accociated with the channel firstly,
 then do the following steps until one step condition is satisfied.
 <ol>
 <li>
 	If the receiving goroutine queue of the channel is not empty,
 	in which case the value buffer queue of the channel must be empty,
-	the sending goroutine will unshift a receiving goroutine
+	the sending goroutine <code>Gs</code> will unshift a receiving goroutine
 	from the receiving goroutine queue of the channel
 	and send the value to the just unshifted receiving goroutine.
 	The just unshifted receiving goroutine will get unblocked
 	and resumed to running state again.
-	The sending goroutine continues running.
+	The sending goroutine <code>Gs</code> continues running.
+	For this scenario, the channel send operation
+	is called a <b>non-blocking operation</b>.
+</li>
+<li>
+	Otherwise (the receiving goroutine queue is empty),
+	if the value buffer queue of the channel is not full,
+	in which case the sending goroutine queue must be also empty,
+	the value the sending goroutine <code>Gs</code> trying to send will be pushed into
+	the value buffer queue, and the sending goroutine <code>Gs</code> continues running.
 	For this scenario, the channel send operation
 	is called a <b>non-blocking operation</b>.
 </li>
 <li>
 	If the receiving goroutine queue is empty
-	and the value buffer queue of the channel is not full,
-	in which case the sending goroutine queues must be also empty,
-	the value the sending goroutine trying to send will be pushed into
-	the value buffer queue, and the sending goroutine continues running.
-	For this scenario, the channel send operation
-	is called a <b>non-blocking operation</b>.
-</li>
-<li>
-	If the receiving goroutine queue is empty
-	and the value buffer queue of the channel is full,
-	the sending goroutine will be pushed into the sending goroutine queue
+	and the value buffer queue of the channel is already full,
+	the sending goroutine <code>Gs</code> will be pushed into the sending goroutine queue
 	of the channel and enter (and stay in) blocking state.
 	It may be resumed to running state when another goroutine
 	receives a value from the channel later.
@@ -552,21 +558,22 @@ then do the following steps until one step condition is satisfied.
 </ol>
 
 <p>
-Once a non-nil channel is closed, sending a value to the channel will
-produce a runtime panic in the current goroutine,
-and the send operation is viewed as a <b>non-blocking operation</b>.
+Above has mentioned, once a non-nil channel is closed, sending a value to the channel will
+produce a runtime panic in the current goroutine.
+Note, sending data to a closed channel is viewed as a <b>non-blocking operation</b>.
 </p>
 
-[<u>Channel rule case C</u>]:
-when a goroutine tries to close a not-closed non-nil channel,
+<u><b>Channel operation case C</b>:
+when a goroutine tries to close a not-closed non-nil channel</u>,
+once the goroutine has acquired the lock of of the channel,
 both of the following two steps will be performed by the following order.
 <ol>
 <li>
 	If the receiving goroutine queue of the channel is not empty,
 	in which case the value buffer of the channel must be empty,
 	all the goroutines in the receiving goroutine queue of
-	the channel will be unshifted one by one and each of them will
-	receive a zero value of the element type of the channel.
+	the channel will be unshifted one by one, each of them will
+	receive a zero value of the element type of the channel and be resumed to running state.
 </li>
 <li>
 	If the sending goroutine queue of the channel is not empty,
@@ -579,17 +586,19 @@ both of the following two steps will be performed by the following order.
 </ol>
 
 <p>
-[<u>Channel rule case D</u>]:
-after a channel is closed,
-channel receive operations on the channel will never block.
+<u><b>Channel operation case D</b>:
+after a non-nil channel is closed,
+channel receive operations on the channel will never block</u>.
 The values in the value buffer of the channel can still be received.
 Once all the values in the value buffer are taken out and received,
 infinite zero values of the element type of the channel will received
 by any of following receive operations on the channel.
 As above has mentioned,
-the second return result of a channel receive operation is an untype boolean
+the optional second return result of a channel receive operation is an untype boolean
 value which indicates whether or not the first result (the received value)
 is sent before the channel is closed.
+If the second return result is <code>false</code>,
+then the first return result (the received value) must be a zero value of the element type of the channel.
 </p>
 
 <p>
@@ -606,10 +615,10 @@ and the goroutine was blocked for being pushed into the queue at a
 then the goroutine will be resumed to running state at the step <i>9</i> of the
 <a href="#select-implementation"><code>select</code> control flow code block execution</a>.
 It may be dequeued from the corresponding goroutine queues of
-several goroutines involved in the <code>select</code> control flow code block.
+several channels involved in the <code>select</code> control flow code block.
 </p>
 
-By the rules listed above, we can get some facts about the internal queues of a channel.
+According to the explanations listed above, we can get some facts about the internal queues of a channel.
 <ul>
 <li>
 	If the channel is closed,
@@ -642,7 +651,7 @@ By the rules listed above, we can get some facts about the internal queues of a 
 
 <div>
 <p>
-Let's view some channel use examples to consume the above introduced rules.
+Let's view some channel use examples to enhance the understanding by reading the last section.
 </p>
 
 A simple request/response example.
@@ -650,17 +659,28 @@ The two goroutines in this exampe talk with each other
 through an unbuffered channel.
 <pre class="line-numbers"><code class="language-go">package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 func main() {
 	c := make(chan int) // an unbuffered channel
-	go func() {
-		x := <- c // blocking here until a value is received.
-		c <- x*x  // blocking here until the result is received.
-	}()
-	c <- 3   // blocking here until the value is received.
-	y := <-c // blocking here until the result is received.
-	fmt.Println(y) // 9
+	go func(ch chan<- int, x int) {
+		time.Sleep(time.Second)
+		// <-ch    // this operation fails to compile.
+		ch <- x*x  // blocking here until the result is received
+	}(c, 3)
+	done := make(chan struct{})
+	go func(ch <-chan int) {
+		n := <-ch      // blocking here until 9 is sent
+		fmt.Println(n) // 9
+		// ch <- 123   // this operation fails to compile
+		time.Sleep(time.Second)
+		done <- struct{}{}
+	}(c)
+	<-done // blocking here until a value is sent to channel "done"
+	fmt.Println("bye")
 }
 </code></pre>
 
@@ -668,8 +688,7 @@ func main() {
 </p>
 
 A demo of using a buffered channel.
-This program is not a concurrent one.
-Once the channel is closed, infinite values can be received from it.
+This program is not a concurrent one, it just shows how to use buffered channels.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -741,10 +760,14 @@ for more channel use examples.
 <h3>Channel Element Values Are Transferred By Copy</h3>
 
 <p>
-When a value is sent to or receive from a channel,
-a value copy occurs.
+When a value is transferred from one goroutine to another goroutine,
+the value will be copied at least one time.
+If the transferred value ever stayed in the value buffer of a channel,
+then two copies will happen in the transfer process.
+One copy happens when the value is copied from the sender goroutine into the value buffer,
+the other happens when the value is copied from the value buffter to the receiver goroutine.
 Like value assignments and function argument passing,
-when a value is copied, <a href="value-part.html#about-value-copy">only
+when a value is transferred, <a href="value-part.html#about-value-copy">only
 its direct part is copied</a>.
 </p>
 
@@ -752,9 +775,7 @@ its direct part is copied</a>.
 For the standard Go compiler,
 the size of channel element types must be smaller than <code>65536</code>.
 However, generally, we shouldn't create channels with large-size element types,
-for all channel send and receive operations will copy the transferred values.
-When an element value is passed from one goroutine to another,
-two value copies will be made.
+to avoid too large copy cost in the process of transferring values between goroutines.
 So if the passed value size is too large,
 it is best to use a pointer element type instead,
 to avoid a large value copy cost.
@@ -778,9 +799,9 @@ In fact, a goroutine can be only garbage collected when it has already exited.
 
 <div>
 <p>
-Note, channel send operations and receive operations are
+Channel send operations and receive operations are
 <a href="expressions-and-statements.html#simple-statements">simple statements</a>.
-A channel receive operation can also be used as a single-valued expression.
+A channel receive operation can be always used as a single-valued expression.
 Simple statements and expressions can be used at certain portions of
 <a href="control-flows.html">basic control flow blocks</a>.
 </p>
@@ -821,15 +842,15 @@ func main() {
 </div>
 
 <p class="anchor" id="range"></p>
-<h3>For-Range On Channels</h3>
+<h3><code>for-range</code> On Channels</h3>
 
 <div>
 The <code>for-range</code> control flow code block applies to channels.
 The loop will try to iteratively receive the values sent to a channel,
-until the channel is closed and no more values are still in its value buffer queue.
-Unlike the <code>for range</code> syntax on arrays, slices and maps,
-most one iteration variable is allowed to be present
-in the <code>for range</code> syntax on channels.
+until the channel is closed and its value buffer queue becomes blank.
+Unlike the <code>for-range</code> syntax on arrays, slices and maps,
+most one iteration variable, which is used to store the received values,
+is allowed to be present in the <code>for-range</code> syntax on channels.
 
 <pre class="line-numbers"><code class="language-go">for v = range aChannel {
 	// use v
@@ -869,14 +890,14 @@ shown in the last section can be simplified to
 <h3><code>select-case</code> Control Flow Code Blocks</h3>
 
 <div>
-There is a <code>select-case</code> code block syntax which is specially designed for channels in Go.
-The syntax is much like the <code>switch</code> block syntax, for example,
-there can be multiple <code>case</code> branches and at most one
+There is a <code>select-case</code> code block syntax which is specially designed for channels.
+The syntax is much like the <code>switch-case</code> block syntax.
+For example, there can be multiple <code>case</code> branches and at most one
 <code>default</code> branch in the <code>select-case</code> code block.
 But there are also some obvious differences between them.
 <ul>
 <li>
-	No statements and expressions are allowed to follow the <code>select</code> keyword
+	No expressions and statements are allowed to follow the <code>select</code> keyword
 	(before <code>{</code>).
 </li>
 <li>
@@ -885,23 +906,23 @@ But there are also some obvious differences between them.
 <li>
 	Each statement following a <code>case</code> keyword in a <code>select-case</code> code block
 	must be either a channel receive operation or a channel send operation statement.
+	A channel receive operation can appear as the source value of a simple assignment statement.
+	Later, a channel operation following a <code>case</code> keyword will be called a <code>case</code> operation.
 </li>
 <li>
-	In case of there are some non-blocking channel operations followed
-	<code>case</code> keywords in a <code>select-case</code> code block,
-	Go runtime will <b>randomly select one of non-blocking channel operations to execute</b>,
+	In case of there are some non-blocking <code>case</code> operations,
+	Go runtime will <b>randomly select one of them to execute</b>,
 	then continue to execute the corresponding <code>case</code> branch.
 </li>
 <li>
-	In case of all the channel operations followed the <code>case</code> keywords
+	In case of all the <code>case</code> operations
 	in a <code>select-case</code> code block are blocking operations,
 	the <code>default</code> branch will be selected to execute
 	if the <code>default</code> branch is present.
 	If the <code>default</code> branch is absent,
 	the current goroutine will be pushed into the corresponding
-	sending goroutine queue and receiving goroutine queue of
-	every channels involved in the channel operations
-	followed <code>case</code> keywords,
+	sending goroutine queue or receiving goroutine queue of
+	every channel involved in all <code>case</code> operations,
 	then enter blocking state.
 </li>
 </ul>
@@ -964,6 +985,7 @@ func main() {
 
 The following example has 50% possibility to panic.
 Both of the two <code>case</code> operations are non-blocking in this example.
+
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
@@ -982,6 +1004,7 @@ func main() {
 <p class="anchor" id="select-implementation"></p>
 <h3>The Implementation Of The Select Mechanism</h3>
 
+<div>
 <p>
 The select mechanism in Go is an important and unique feature.
 Here the steps of <a href="https://github.com/golang/go/blob/master/src/runtime/select.go">the
@@ -992,54 +1015,60 @@ select mechanism implementation by the official Go runtime</a> are listed.
 If the step ids change, please also update the above reference ones.
 -->
 
-<div>
-There are several steps to execute a select block:
+There are several steps to execute a <code>select-case</code> block:
 <ol>
 <li>
-	evaluate all involved channels and values to be potentially sent, from top to bottom and left to right.
+	evaluate all involved channel expressions and value expressions to be potentially sent in <code>case</code> operations, 
+	from top to bottom and left to right.
+	Destination values for receive operations (as source values) in assignments needn't to be evaluated at this time.
 </li>
 <li>
-	randomize the case orders for polling (the default branch is treated as a special case).
-	The corresponding channels of the orders may be duplicate.
-	The default branch is always put at the last position.
+	randomize the branch orders for polling in step <i>5</i>.
+	The <code>default</code> branch is always put at the last position in the result order.
+	Channels may be duplicate in the <code>case</code> operations.
 </li>
 <li>
-	sort all involved channels to avoid deadlock in the next step.
-	No duplicate channels are in the first <code>N</code> channels of the sorted result,
-	where <code>N</code> is the number of involved channels in the select block.
-	Below, <b><i>the sorted lock order</i></b> mean for the  the first <code>N</code> ones.
+	sort all involved channels in the <code>case</code> operations to avoid deadlock in the next step.
+	No duplicate channels stay in the first <code>N</code> channels of the sorted result,
+	where <code>N</code> is the number of involved channels in the <code>case</code> operations.
+	Below, the <b><i>channel lock order</i></b> is a concept for the first <code>N</code> channels in the sorted result.
 </li>
 <li>
-	lock all involved channels by the sorted lock order in last step.
+	lock (a.k.a., acquire the locks of) all involved channels by the channel lock order produced in last step.
 </li>
 <li>
-	poll each cases in the select block by the randomized case orders:
+	poll each branch in the select block by the randomized order produced in step <i>2</i>:
 	<ol>
 	<li>
-		if the corresponding channel operation is a send-value-to-closed-channel operation, unlock all channels and panic.
-		Go to step 12.
+		if this is a <code>case</code> branch and
+		the corresponding channel operation is a send-value-to-closed-channel operation,
+		unlock all channels by the inverse channel lock order and make the currrent goroutine panic.
+		Go to step <i>12</i>.
 	</li>
 	<li>
-		if the corresponding channel operation is non-blocked, perform the channel operation and unlock all channels,
+		if this is a <code>case</code> branch and
+		the corresponding channel operation is non-blocking,
+		perform the channel operation and unlock all channels by the inverse channel lock order,
 		then execute the corresponding <code>case</code> branch body.
-		The channel operation may wake up another blocked goroutine.
-		Go to step 12.
+		The channel operation may wake up another goroutine in blocking state.
+		Go to step <i>12</i>.
 	</li>
 	<li>
-		if the case is the default branch, then unlock all channels and execute the default body.
-		Go to step 12.
+		if this is the <code>default</code> branch,
+		then unlock all channels by the inverse channel lock order and execute the <code>default</code> branch body.
+		Go to step <i>12</i>.
 	</li>
 	</ol>
-	(Up to here, there must be not a default branch and all case channel operations are blocked.)
+	(Up to here, the <code>default</code> branch is absent and all <code>case</code> operations are blocking operations.)
 </li>
 <li>
-	push (enqueue) the current goroutine (with the case channel operation information) into
-	the receiving or sending goroutine queue of the involved channel in each case operation.
-	The current goroutine may be pushed into the queues of a channel multiple times,
+	push (enqueue) the current goroutine (along with the information of the corresponding <code>case</code> branch)
+	into the receiving or sending goroutine queue of the involved channel in each <code>case</code> operation.
+	The current goroutine may be pushed into the queues of a channel for multiple times,
 	for the involved channels in multiple cases may be the same one.
 </li>
 <li>
-	block the current goroutine and unlock all channels by the sorted lock order.
+	make the current goroutine enter blocking state and unlock all channels by the inverse channel lock order.
 </li>
 <li>
 	..., in blocking state, waiting other channel operations to wake up the current goroutine, ...
@@ -1047,19 +1076,27 @@ There are several steps to execute a select block:
 <li>
 	the current goroutine is waken up by another channel operation in another goroutine.
 	The other operation may be a channel close operation or a channel send/receive operation.
-	If it is a channel send/receive operation, there must be a case channel receive/send operation cooperating with it.
+	If it is a channel send/receive operation,
+	there must be a <code>case</code> channel receive/send operation
+	(in the current being explained <code>select-case</code> block) cooperating with it (by transferring a value).
 	In the cooperation, the current goroutine will be dequeued from the receiving/sending goroutine queue of the channel.
 </li>
 <li>
-	lock all involved channels by the sorted lock order.
+	lock all involved channels by the channel lock order.
 </li>
 <li>
-	dequeue the current goroutine from the receiving goroutine queue or sending goroutine queue of the involved channel in each case operation,
+	dequeue the current goroutine from the receiving goroutine queue or sending goroutine queue of the involved channel
+	in each <code>case</code> operation,
 	<ol>
-	<li>if the current goroutine is waken up by a channel close operation, go to step 5.</li>
-	<li>if the current goroutine is waken up by a channel send/receive operation,
-		the corresponding case of the cooperating receive/send operation has already been found in the dequeuing process,
-		so just unlock all channels by the sorted lock order and execute the corresponding case body.
+	<li>
+		if the current goroutine is waken up by a channel close operation, go to step <i>5</i>.
+	</li>
+	<li>
+		if the current goroutine is waken up by a channel send/receive operation,
+		the corresponding <code>case</code> branch of the cooperating receive/send operation
+		has already been found in the dequeuing process,
+		so just unlock all channels by the inverse channel lock order
+		and execute the corresponding <code>case</code> branch.
 	</li>
 	</ol>
 </li>
@@ -1094,12 +1131,18 @@ From the implementation, we know that
 
 <p>
 We can find more channel use cases in <a href="channel-use-cases.html">this article</a>.
+</p>
+
+<p>
 Although channels can help us write
 <a href="channel-closing.html">correct concurrent code easily</a>,
 like other data synchronization techniques,
-channels will not prevent you from
+channels will not prevent us from
 <a href="concurrent-common-mistakes.html">writing improper concurrent code</a>.
-And channel may be not always the best solution for all use cases for data synchronizations.
+</p>
+
+<p>
+Channel may be not always the best solution for all use cases for data synchronizations.
 Please read <a href="concurrent-synchronization-more.html">this article</a>
 and <a href="concurrent-atomic-operation.html">this article</a>
 for more synchronization techniques in Go.
