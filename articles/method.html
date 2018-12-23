@@ -3,19 +3,17 @@
 <p>
 Go supports some object-orient programming features.
 Method is one of these features.
-A method is a special function which has a receiver parameter (see below).
-This article will explain method related concepts in Go.
+This article will introduce method related concepts in Go.
 </p>
 
 <h3>Method Declarations</h3>
 
 <div>
-In Go, we can (explicitly) declare a method for type
-<code>T</code> and <code>*T</code>,
+In Go, we can (explicitly) declare a method for type <code>T</code> and <code>*T</code>,
 where <code>T</code> must satisfiy 4 conditions:
 <ol>
 <li>
-	<code>T</code> must be a defined type;
+	<code>T</code> must be a <a href="type-system-overview.html#non-defined-type">defined type</a>;
 </li>
 <li>
 	<code>T</code> must be defined in the same package as the method declaration;
@@ -31,14 +29,13 @@ where <code>T</code> must satisfiy 4 conditions:
 </ol>
 
 <p>
-<code>T</code> is called the receiver base types of all methods declared
-for both type <code>T</code> and <code>*T</code>.
-(Below will explain what are receivers.)
+Type <code>T</code> and <code>*T</code> are called the receiver type of the respective methods declared for them.
+Type <code>T</code> is called the receiver base types of all methods declared for both type <code>T</code> and <code>*T</code>.
 </p>
 
 <p>
-We can also declare methods for alias types of the <code>T</code>
-and <code>*T</code> types specified above.
+Note, we can also declare methods for <a href="type-system-overview.html#type-alias">alias types</a>
+of the <code>T</code> and <code>*T</code> types specified above.
 The effect is the same as declaring methods for the <code>T</code>
 and <code>*T</code> types themselves.
 </p>
@@ -47,7 +44,7 @@ and <code>*T</code> types themselves.
 If a method is declared for a type, we can say the type has (or owns) the method.
 </p>
 
-From the above listed conditions, we will get the conclusion that
+From the above listed conditions, we will get the conclusions that
 we can never (explicitly) declare methods for
 <ul>
 <li>
@@ -59,8 +56,9 @@ we can never (explicitly) declare methods for
 	Please read <a href="interface.html">the next article</a> for details.
 </li>
 <li>
-	unnamed types except the pointer types <code>*T</code> which are described above,
-	including unnamed array, map, slice, function, channel and struct types.
+	<a href="type-system-overview.html#non-defined-type">non-defined types</a>
+	except the pointer types <code>*T</code> which are described above,
+	including all kinds of <a href="type-system-overview.html#named-type">unnamed</a> composite types.
 	However, if an unnamed struct type embeds other types which have methods,
 	then compiler will implicitly declare some methods for the unnamed struct type
 	and the unnamed pointer type whose base type is the unnamed struct type.
@@ -71,16 +69,15 @@ we can never (explicitly) declare methods for
 <p>
 A method declaration is similar to a function declaration,
 but it has an extra parameter declaration part.
-The extra parameter is called a receiver parameter.
-Each method must be declared with one and only one receiver parameter.
+The extra parameter part can contain one and only one parameter of the receiver type of the method.
+The only one parameter is called a receiver parameter of the method declaration.
 The receiver parameter must be enclosed in a <code>()</code>
 and declared between the <code>func</code> keyword and the method name.
-The type of the receiver parameter is called the receiver type of that method.
 </p>
 
 Here are some method declaration examples:
-<pre class="line-numbers"><code class="language-go">// Age and int are two distinct types.
-// We can't declare methods for int, but can for Age.
+<pre class="line-numbers"><code class="language-go">// Age and int are two distinct types. We can't declare
+// methods for int and *int, but can for Age and *Age.
 type Age int
 func (age Age) LargerThan(a Age) bool {
 	return age > a
@@ -148,10 +145,8 @@ The reason will be explained below.
 Method names can be the blank identifier <code>_</code>.
 A type can have multiple methods with the blank identifier as names.
 But such methods can never be called.
-</p>
-
-<p>
 Only exported methods can be called from other packages.
+Method calls will be introduced in a later section.
 </p>
 
 <p class="anchor" id="method-as-function"></p>
@@ -177,13 +172,13 @@ In each of the two implicit function declarations, the receiver parameter
 is removed from its correponding method declaration and inserted
 into the normal parameter list as the first one.
 The function bodies of the two implicitly declared functions
-are the same as their corresponding method bodies.
+is the same as their corresponding method explicit bodies.
 </p>
 
-The implict method names, <code>Book.Pages</code> and <code>(*Book).SetPages</code>,
+The implicit function names, <code>Book.Pages</code> and <code>(*Book).SetPages</code>,
 are both of the form <code>TypeDenotation.MethodName</code>.
 As identifiers in Go can't contain the period special characters,
-the two implict function names are not legal identifiers,
+the two implicit function names are not legal identifiers,
 so the two functions can't be dclared explicitly.
 They can only be declared by compiler implicitly,
 but they can be called in user code:
@@ -207,6 +202,22 @@ func main() {
 	// Call the two implicit decalred functions.
 	(*Book).SetPages(&book, 123)
 	fmt.Println(Book.Pages(book)) // 123
+}
+</code></pre>
+
+<p>
+</p>
+
+In fact, compilers not only declare the two implicit functions,
+they also rewrite the two corresponding explicit declared methods
+to let the two methods call the two implicit functions in the method bodies.
+Like the following code shows:
+
+<pre class="line-numbers"><code class="language-go">func (b Book) Pages() int {
+	return Book.pages(b)
+}
+func (b *Book) SetPages(pages int) {
+	(*Book).SetPages(b, pages)
 }
 </code></pre>
 
@@ -308,15 +319,15 @@ The order of the method prototypes in a method set is not important for the meth
 
 <p>
 For a method set, if every method prototype in it is also in another method set,
-then we say the former method set is a subset of the latter one.
-If two method sets are subsets of each other,
+then we say the former method set is a subset of the latter one, and the latter one is the superset of the former one.
+If two method sets are subsets (or supersets) of each other,
 then we say the two method sets are identical.
 </p>
 
 <p>
 Given a type <code>T</code>, assume it is neither a pointer type nor an
 interface type, for <a href="#implicit-pointer-methods">the reason</a>
-mentioned above, the method set of a type <code>T</code> is always
+mentioned in the last section, the method set of a type <code>T</code> is always
 a subset of the method set of type <code>*T</code>.
 For example, the method set of the <code>Book</code> type shown above is a
 subset of the method set of the <code>*Book</code> type.
@@ -324,9 +335,8 @@ subset of the method set of the <code>*Book</code> type.
 
 <p>
 Please note, <b>non-exported method names, which start with lower-case letters,
-from different packages will be always viewed as two different method names</b>.
-In other words, a method prototype with a non-exported method name is always
-different from any prototype from other packages.
+from different packages will be always viewed as two different method names,
+even if the two method names are the same in literal.</b>
 </p>
 
 <p>
@@ -335,13 +345,12 @@ About polymorphism, please read <a href="interface.html">the next article</a>
 (interfaces in Go) for details.
 </p>
 
-
 The method sets of the following types are always blank:
 <ul>
 <li>built-in basic types.</li>
 <li>defined pointer types.</li>
-<li>unnamed pointer types whose base types are interface or pointer types.</li>
-<li>unnamed array, slice, map, function and channel types.</li>
+<li>pointer types whose base types are interface or pointer types.</li>
+<li>undefined array, slice, map, function and channel types.</li>
 </ul>
 
 <p>
@@ -354,13 +363,10 @@ The method sets of the following types are always blank:
 
 <p>
 Methods are special functions in fact.
-When a method is declared for a type, then each value of the type
-will own an immutable member of a function type.
-The member name is the same as the method name.
-The function type is the same as the function declared
-with the form of the method declaration but without the receiver part.
-The member is often called a member function.
-The member function can also be called the method of its corresponding value.
+Methods are often called member functions.
+When a type owns a method, each value of the type will own an immutable member of function type.
+The member name is the same as the method name and the type of the member is the same as
+the function declared with the form of the method declaration but without the receiver part.
 </p>
 
 <p>
@@ -395,16 +401,19 @@ func main() {
 	// &book has an implicit method.
 	fmt.Printf("%T \n", (&book).Pages)    // func() int
 
+	// Call the three methods.
 	(&book).SetPages(123)
-	fmt.Println(book.Pages()) // 123
-	// Call the impliict method of &book.
+	book.SetPages(123)           // equivalent to the last line
+	fmt.Println(book.Pages())    // 123
 	fmt.Println((&book).Pages()) // 123
 }
 </code></pre>
 
 <p>
+<!--
 In the above example, the value <code>book</code> is called the base value of both
 the receiver arguments of the <code>Pages</code> and <code>SetPages</code> method calls.
+-->
 </p>
 
 <p><i>
@@ -413,16 +422,16 @@ to call methods with pointer receivers,
 so <code>(&amp;book)-&gt;SetPages(123)</code> is illegal in Go.)
 </i></p>
 
-Method calls make Go programs clean and more readable.
-In fact, the above example can be cleaner.
-The line <code>(&amp;book).SetPages(123)</code> in the above example
-can be simplified to <code>book.SetPages(123)</code>.
-But how can this happen?
-After all, the value <code>book</code> has not a method called <code>SetPages</code>.
+<p>
+Wait! Why does the line <code>book.SetPages(123)</code> in the above example compile okay?
+After all, the method <code>SetPages</code> is not declared for the <code>book</code> type.
 Aha, this is just a syntactic sugar to make progrmaming convenient.
-This sugar only works for addressable values of type <code>Book</code>.
-Compiler will automitically take the addresses of the addressable values
+This sugar only works for addressable receivers of type <code>Book</code>.
+Compiler will automitically take the addresses of the addressable receivers
 when they are passed as the receiver arguments of the <code>SetPages</code> method calls.
+</p>
+
+<!--
 <pre class="line-numbers"><code class="language-go"> ...
 
 // Function results are not addressable in Go.
@@ -439,6 +448,7 @@ func main() {
 	MakeBook().SetPages(123)
 }
 </code></pre>
+-->
 
 <!--
 In fact, the method value <code>book.Pages</code>
@@ -494,9 +504,9 @@ func main() {
 	_ = (StringSet(nil)).Has("key") // will not panic
 	_ = ((*Age)(nil)).IsNil()       // will not panic
 
-	// This line will panic. But the panic is not caused
-	// by invoking the method. It is caused by the nil
-	// pointer dereference within the method body.
+	// This following line will panic. But the panic is
+	// not caused by invoking the method. It is caused by
+	// the nil pointer dereference within the method body.
 	((*Age)(nil)).Increase()
 }
 </code></pre>
@@ -533,6 +543,9 @@ func main() {
 }
 </code></pre>
 
+<p>
+</p>
+
 Another example:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -559,6 +572,9 @@ func main() {
 	fmt.Println(books) // [{500} {456}]
 }
 </code></pre>
+
+<p>
+</p>
 
 Some off topic, if the two lines in the orders of
 the above <code>Modify</code> method are exchanged, then both of the modifications
@@ -617,27 +633,20 @@ here are some factors needed to be considered to make decisions.
 	Too many pointer copies may cause heavier workload for garbage colllector.
 </li>
 <li>
-	If the value size of a receiver type is large,
+	If the size of a value receiver type is large,
 	then the receiver argument copy cost may be not neglectable.
-	In particular if the passed argument is an interface value
-	(please read <a href="interface.html#polymorphism">polymorphism</a> for details),
-	there will be two copies made in the argument passing.
-	Here we just need to know that
-	pointer values are all <a href="value-copy-cost.html">small sized values</a>.
-	In fact, for the standard Go compiler and runtime,
-	types other than array and struct types are all small sized types.
-	Struct types with very few fields are also small sized.
+	Pointer types are all <a href="value-copy-cost.html">small-size</a> types.
 </li>
 <li>
-	Mixing value receivers and pointer receivers for the same base type
-	is more likely to cause data races if the declared methods
-	are called concurrently in multiple goroutines.
+	Declaring methods of both value receivers and pointer receivers
+	for the same base type is more likely to cause data races
+	if the declared methods are called concurrently in multiple goroutines.
 </li>
 <li>
 	Values of the types in the <code>sync</code> standard package
 	should not be copied, so defining methods with value receivers for
-	sturct types which embedding the types in the <code>sync</code>
-	standard package is problematic.
+	sturct types which <a href="type-embedding.html">embedding</a>
+	the types in the <code>sync</code> standard package is problematic.
 </li>
 </ul>
 </div>

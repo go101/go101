@@ -3,20 +3,19 @@
 <p>
 From the article <a href="struct.html">structs in Go</a>,
 we know that a struct type can have many fields.
-Each of the fields is composed of one field name and one field type.
+Each field is composed of one field name and one field type.
 In fact, sometimes, a struct field can be composed of one field type only.
-Such fields are called embedded fields.
-Some articles also call embedded fields as anonymous fields.
+The way to declare struct fields is called type embedding.
 </p>
 
 <p>
-This article will explain the intention of type embedding and all kinds of details in type embedding.
+This article will explain the purpose of type embedding and all kinds of details in type embedding.
 </p>
 
 <h3>What Does Type Embedding Look Like?</h3>
 
 <div>
-Here is an example of type embedding:
+Here is an example demonstrating type embedding:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "net/http"
@@ -47,7 +46,7 @@ Each type embedding forms an embedded field.
 <p>
 Embedded fields are also called as anonymous fields.
 However, in fact, each embedded field has a name specified implicitly.
-The <a href="packages-and-imports.html#import">unqualified</a> type name
+The <a href="https://golang.org/ref/spec#Qualified_identifiers">unqualified</a> type name
 of an embedded field acts as the name of the field.
 For example, the names of the five embedded fields in the above examples are
 <code>string</code>, <code>error</code>, <code>int</code>, <code>P</code>,
@@ -59,12 +58,12 @@ and <code>Header</code>, respectively.
 <h3>Which Types Can be Embedded?</h3>
 
 <div>
-The current Go specification (v1.11) <a href="https://golang.org/ref/spec#Struct_types">says</a>
+The current Go specification (version 1.11) <a href="https://golang.org/ref/spec#Struct_types">says</a>
 
 <div class="alert alert-info">
-An embedded field must be specified as a type name T
-or as a pointer to a non-interface type name *T,
-and T itself may not be a pointer type.
+An embedded field must be specified as a type name <code>T</code>
+or as a pointer to a non-interface type name <code>*T</code>,
+and <code>T</code> itself may not be a pointer type.
 </div>
 
 <p>
@@ -83,13 +82,13 @@ The following descriptions are more accurate on which types can and can't be emb
 A type can be embeded if it satisfies any of the following three conditions.
 <ol>
 <li>
-	The type is a <a href="type-system-overview.html#named-type">named type</a> which is not a pointer type.
+	A <a href="type-system-overview.html#named-type">named type</a> which is not a pointer type.
 </li>
 <li>
-	The type is an unnamed pointer type which based type is a named type but neither a pointer nor interface type.
+	An unnamed pointer type which based type is a named type but neither a pointer nor interface type.
 </li>
 <li>
-	The type is an alias type of a type of the second case.
+	An alias type of a type of the second case.
 </li>
 </ol>
 </div>
@@ -115,7 +114,7 @@ the following types can't be embedded.
 </div>
 
 <p>
-The above rules for which types can be embedded are unnecessarily restricted and complicated,
+The above rules for which types can be embedded are some over-restricted and unnecessarily complicated,
 which makes it some hard to describe them clearly in brief.
 It looks they are intended to avoid types without methods being embedded.
 However, at the same time, they also already allow many types without methods to be embedded,
@@ -125,7 +124,7 @@ The rule specified in the proposal is quite simple and doesn't do any harm:
 <b>if a type can provide an unqualified name, then the type can be embedded</b>.
 </p>
 
-Following lists some example types which can and can't be embedded (in struct types):
+Following lists some example types which can and can't be embedded:
 <pre class="line-numbers"><code class="language-go">type Encoder interface {Encode([]byte) []byte}
 type Person struct {name string; age int}
 type Alias = struct {name string; age int}
@@ -261,9 +260,9 @@ var _ Person = gaga
 
 <div>
 Let's list all the fields and methods of type <code>Singer</code>
-and the methods of  type <code>*Singer</code>
-used in the last example by using reflection
-functionalities provided in the <code>reflect</code> standard package:
+and the methods of type <code>*Singer</code>
+used in the last example by using <a href="reflection.html">the reflection
+functionalities</a> provided in the <code>reflect</code> standard package.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -332,10 +331,10 @@ where <code>z</code> can also be either a field name or a method name.
 </p>
 
 <p>
-There is a syntactic sugar in Go, (without considering selector colliding and
+In Go, (without considering selector colliding and
 shadowing explained in a later section), <b><i>if a middle name in a seletor
 corresponds to an embedded field, then that name can be omitted from the selector</i></b>.
-This is why embedded types are also called anonymous fields.
+This is why embedded fields are also called anonymous fields.
 </p>
 
 <div>
@@ -379,10 +378,10 @@ For it is just the shorthand of <code>gaga.Person.Name</code>.
 </p>
 
 As any embedding type must be a struct type,
-the article <a href="struct.html">structs in Go</a>
+and the article <a href="struct.html#use-pointer-as-struct">structs in Go</a>
 has mentioned that the field of an addressable struct value
-can be accessed through the pointers of the struct value.
-So the following code is also legal in Go.
+can be accessed through the pointers of the struct value,
+so the following code is also legal in Go.
 <pre class="line-numbers"><code class="language-go">func main() {
 	var c C
 	pc = &c
@@ -446,12 +445,11 @@ in an above example is <i>2</i>, for the full form of the selector is
 <div>
 For a value <code>x</code>, it is possible that many of its full-form
 selectors have the same last item <code>y</code>
-(which is either a explicitly declared field or method)
 and every middle names of these selectors represents an embedded field.
 For such cases,
 <ul>
 <li>
-	only the full-form selector with the shallowest depth can be shortened as <code>x.y</code>.
+	only the full-form selector with the shallowest depth (assume it is the only one) can be shortened as <code>x.y</code>.
 	In other words, <code>x.y</code> denotes the full-form selector with the shallowest depth.
 	Other full-form selectors are <b>shadowed</b> by the one with the shallowest depth.
 </li>
@@ -491,7 +489,7 @@ type C struct {
 The following code doesn't compile.
 The reasons is selector <code>v1.A.x</code> collides with <code>v1.B.x</code> are collided with each other,
 so both of them can't be shortened to <code>v1.x</code>.
-The same sotuation is for selector <code>v1.A.y</code> and <code>v1.B.y</code>.
+The same situation is for selector <code>v1.A.y</code> and <code>v1.B.y</code>.
 
 <pre class="line-numbers"><code class="language-go">var v1 struct {
 	A
@@ -503,6 +501,9 @@ func f1() {
 	_ = v1.y
 }
 </code></pre>
+
+<p>
+</p>
 
 The following code compiles okay.
 The selector <code>v2.C.B.x</code> is shadowed by <code>v2.A.x</code>, so the
@@ -532,8 +533,8 @@ func f2() {
 
 <p>
 As above has mentioned, both of type <code>Singer</code> and
-type <code>*Singer</code> have a <code>PrintName</code> method each.
-And the type <code>*Singer</code> also has a <code>SetAge</code> method.
+type <code>*Singer</code> have a <code>PrintName</code> method each,
+and the type <code>*Singer</code> also has a <code>SetAge</code> method.
 However, we never explicitly declare these methods
 for the two types. Where do these methods come from?
 </p>
@@ -544,7 +545,7 @@ In fact,
 	for each method of an embedded type,
 	if the selectors to that method neither collide with nor are shadowed
 	by other selectors, then compilers will implicitly declare
-	a correspoding method for the embedding struct type.
+	a correspoding method with the same proptype for the embedding struct type.
 	And consequently, compiler will also
 	<a href="method.html#implicit-pointer-methods">implicitly declare
 	a correspoding method</a> for the unnamed pointer type
@@ -555,11 +556,11 @@ In fact,
 	for each method of type <code>*T</code>,
 	if the selectors to that method neither collide with nor are shadowed
 	by other selectors, then compilers will implicitly declare
-	a correspoding method for type <code>*S</code>.
+	a correspoding method with the same prototype for type <code>*S</code>.
 </li>
 </ul>
 
-Simply speaking,
+Simply speaking, if no selector shadowing and collisions happen,
 <ul>
 <li>
 	type <code>struct{T}</code> obtains (inherit) all the methods of type <code>T</code>.
@@ -678,10 +679,11 @@ If a struct type embeds a type which implements an interface type
 then generally the struct type also implements the interface type,
 exception there is a method specified by the interface type
 shadowed by or colliding other methods or fields.
+For example, in the above example program, both the embedding struct type and
+the pointer type whose base type is the embedding struct type implement the interface type <code>I</code>.
 </p>
 
-Please note, a type will only obtain the methods of the types its contains
-(embeds directly or indirectly).
+Please note, a type will only obtain the methods of the types it embeds directly or indirectly.
 For example, in the following code,
 <ul>
 <li>
@@ -695,10 +697,10 @@ For example, in the following code,
 	type <code>Y</code> has no methods, for its embedded type <code>Age</code> has not methods.
 </li>
 <li>
-	type <code>Z</code> has only one method, <code>IsOdd</code>.
-	for it contains type <code>MyInt</code>.
+	type <code>Z</code> has only one method, <code>IsOdd</code>,
+	which is obtained through embedding type <code>MyInt</code>.
 	It doesn't obtain the method <code>Double</code> from type <code>X</code>,
-	for it doesn't contain type <code>X</code>.
+	for it doesn't embed type <code>X</code>.
 </li>
 </ul>
 
