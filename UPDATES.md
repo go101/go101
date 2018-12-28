@@ -1,5 +1,13 @@
 
 
+
+### 1.11.g (2018/Dec/27)
+
+* a serious mistake was just fixed in this book.
+  Before, the book said the starting index in a subslice syntax
+  can't be larger than the length of the base slice. This is wrong.
+  Please read <a href="container.html#subslice">the corrected section</a> again for details.
+
 ### 1.11.f (2018/Nov/09)
 
 * rearrange [Go Details 101](https://go101.org/article/details.html), more details are added.

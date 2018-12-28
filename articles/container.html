@@ -603,9 +603,9 @@ And
 	and the map <code>v</code> doesn't contain an entry with
 	key <code>k</code>, <code>v[k]</code> results a zero value of
 	the element type of the corresponding map type of <code>v</code>.
-	Generally, <code>v[k]</code> is viewed as a single-valued
+	Generally, <code>v[k]</code> is viewed as a single-value
 	expression. However, when <code>v[k]</code> is used as the only source
-	value expression in an assignment, it can be viewed as a multi-valued
+	value expression in an assignment, it can be viewed as a multi-value
 	expression and result a second optional untype boolean value,
 	which indicates whether or not the map <code>v</code> contains an entry
 	with key <code>k</code>.
@@ -1287,7 +1287,7 @@ baseContainer[low : high : max] // three-index form
 </code></pre>
 
 The two-index form is equivalent to
-<pre class="line-numbers"><code class="language-go">baseContainer[low : high : cap(baseContainer)]
+<pre><code class="language-go">baseContainer[low : high : cap(baseContainer)]
 </code></pre>
 
 <p>
@@ -1301,29 +1301,23 @@ Note, the three-index form is only supported for Go 1.2+.
 <p>
 
 In a subslice expression, the <code>low</code>, <code>high</code> and
-<code>max</code> indexes must satisfy the following requirements:
-<ul>
-<li>
-	<code>0 &lt;= low &lt;= high &lt;= max &lt;= cap(baseContainer)</code>.
-</li>
-<li>
-	<code>low &lt;= len(baseContainer)</code>.
-</li>
-</ul>
+<code>max</code> indexes must satisfy the following relation requirements.
+
+<pre><code class="language-go">0 <= low <= high <= max <= cap(baseContainer)</code>
+</code></pre>
 
 <p>
 Indexes not satisfying these requirements may make the subslice expression
 fail to compile at compile time or panic at run time,
-depending on the base container type kind
-and whether or not the indexes are constants.
+depending on the base container type kind and whether or not the indexes are constants.
 </p>
 
 Note,
 <ul>
 <li>
-	the <code>high</code> index can be larger than
-	<code>len(baseContainer)</code>, but must be not larger than
-	<code>cap(baseContainer)</code>.
+	the <code>low</code> and <code>high</code> indexes can be both larger than
+	<code>len(baseContainer)</code>, as long as the above relations are all satisfied.
+	But the two indexes must not be larger than <code>cap(baseContainer)</code>.
 </li>
 <li>
 	a subslice expression will not cause a panic if <code>baseContainer</code>
@@ -1407,17 +1401,20 @@ hosting the array <code>a</code>.
 </p>
 
 Please note that, subslice operations may cause kind-of memory leaking.
-For example, the memroy occupied by the first 50 elements of the return
-slice of a call to the following function will be wasted unless the returned
-slice becomes unreachable (if no other slices share the underlying element memory segment with the returned slice).
+For example, half of the memroy allocated for the return slice of a call
+to the following function will be wasted unless the returned slice becomes
+unreachable (if no other slices share the underlying element memory segment with the returned slice).
 
 <pre class="line-numbers"><code class="language-go">func f() []int {
-	s := make([]int, 100)
-	return s[50:]
+	s := make([]int, 10, 100)
+	return s[50:60]
 }
 </code></pre>
 
 <p>
+Please note that, in the above function,
+the lower index (<code>50</code>) is larger than the length (<code>10</code>) of <code>s</code>,
+which is allowed.
 </p>
 
 </div>
