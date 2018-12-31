@@ -17,7 +17,7 @@ before reading the remaining of the current article.
 
 <p>
 From <a href="generic.html">the last article</a>,
-we know that Go 1 lacks of generic support for custom types and functions.
+we know that currently Go lacks of generic support for custom types and functions.
 Go reflection brings many dynamic functionalities to Go programming,
 which makes up for the lacking of custom generic problem to some extent
 (though the reflection way is less efficient than real generic from the CPU consuming view).
@@ -49,19 +49,13 @@ will be mentioned in the following sections.
 <p>
 In Go, we can create a <code>reflect.Type</code> value from an arbitrary
 non-interface value by calling the <code>reflect.TypeOf</code> function.
-A <code>reflect.TypeOf</code> function call will convert its only argument
-passed to it to an <code>interface{}</code> value, then retrieve the information
-of the dynamic type from the <code>interface{}</code> value and store
-the type information in a <code>reflect.Type</code> return result.
-We can think the <code>reflect.Type</code> return result represents
-the type of the dynamic value of the <code>interface{}</code> value.
-</p>
-
-<p>
-It is impossible to let a <code>reflect.TypeOf</code> function call return
-a <code>reflect.Type</code> value which represents an interface type.
-We have to use some indirect ways to get such a <code>reflect.Type</code> value.
-One of these indirect ways is shown in the second example below.
+The resultant <code>reflect.Type</code> value represents the type of the non-interface value.
+Surely, we can also pass an interface value to a <code>reflect.TypeOf</code> function call,
+but the call will return a <code>reflect.Type</code> value which represents the dynamic type of the interface value.
+In fact, the <code>reflect.TypeOf</code> function has only one parameter of type <code>interface{}</code>
+and always return a <code>reflect.Type</code> value which represents the dynamic type of the only interface parameter.
+Then how to get a <code>reflect.Type</code> value which represents an interface type?
+We must use an indirect way which will be introduced below to achieve this goal.
 </p>
 
 <p>
@@ -71,9 +65,9 @@ We can call these methods to inspect the information of the type represented
 by a <code>reflect.Type</code> receiver value.
 Some of these methods apply for all
 <a href="https://golang.org/pkg/reflect/#Kind">kinds of types</a>,
-some of them are kind-specific.
-Calling one kind-specific method for a type with wrong kind will panic.
-Please read the <code>reflect</code> standard package documentation for details.
+some of them are one kind or several kinds specific.
+Please read the documentation of each method for details.
+Calling one of the methods through an improper<code>reflect.Type</code> receiver value will produce a panic.
 </p>
 
 An example:
@@ -129,11 +123,11 @@ func main() {
 	tp := reflect.TypeOf(new(interface{}))
 	tt := reflect.TypeOf(T{})
 	fmt.Println(tp.Kind(), tt.Kind()) // ptr slice
-	
+
 	// Get two interface Types indirectly.
 	ti, tim := tp.Elem(), tt.Elem()
 	fmt.Println(ti.Kind(), tim.Kind()) // interface interface
-	
+
 	fmt.Println(tt.Implements(tim))  // true
 	fmt.Println(tp.Implements(tim))  // false
 	fmt.Println(tim.Implements(tim)) // true
@@ -184,10 +178,10 @@ func main() {
 <p>
 </p>
 
-Beside the <code>TypeOf</code> function,
+Beside the <code>reflect.TypeOf</code> function,
 we can also use some other functions in the <code>reflect</code>
 standard package to create <code>reflect.Type</code> values
-which represent some composite types.
+which represent some unnamed composite types.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -251,19 +245,13 @@ The third limitation is we can't declare new types through reflection.
 <p>
 Similarly, we can create a <code>reflect.Value</code> value from an arbitrary
 non-interface value by calling the <code>reflect.ValueOf</code> function.
-A <code>reflect.ValueOf</code> function call will convert its only argument
-passed to it to an <code>interface{}</code> value, then retrieve the information
-of the dynamic value (and the dynamic type) from the <code>interface{}</code>
-value and store the information in a <code>reflect.Value</code> return result.
-We can think the <code>reflect.Value</code> return result represents
-the type of the dynamic value of the <code>interface{}</code> value.
-</p>
-
-<p>
-It is impossible to let a <code>reflect.ValueOf</code> function call return
-a <code>reflect.Value</code> value which represents an interface value.
-We have to call some methods of other <code>reflect.Value</code> values
-to get <code>reflect.Value</code> values representing interface values.
+The resultant <code>reflect.Value</code> value represents the non-interface value.
+Same as the <code>reflect.TypeOf</code> function, the <code>reflect.ValueOf</code> function
+also has only one parameter of type <code>interface{}</code>.
+When an interface argument is passed to a <code>reflect.ValueOf</code> function call,
+the call will return a <code>reflect.Value</code> value which represents the dynamic value of the interface argument.
+To get a <code>reflect.Value</code> value which represents an interface value,
+we must use an indirect way which will be introduced below to achieve this goal.
 </p>
 
 <p>
@@ -271,17 +259,17 @@ There are <a href="https://golang.org/pkg/reflect/">plenty of methods</a>
 declared for the <code>reflect.Value</code> type.
 We can call these methods to inspect the information of (and manipulate)
 the Go value represented by a <code>reflect.Value</code> receiver value.
-Some of these methods apply for all kinds of values, some of them are kind-specific.
-Calling one kind-specific method for a Go value with wrong kind will panic.
+Some of these methods apply for all kinds of values, some of them are one kind or several kinds specific.
 Please read the <code>reflect</code> standard package documentation for details.
+Calling a kind-specific method with an improper <code>reflect.Value</code> receiver value will produce a panic.
 </p>
 
 <p>
-Each <code>reflect.Value</code> value has a <code>CanSet</code> method,
-which returns whether or not the Go value represented by that
+The <code>CanSet</code> method of a <code>reflect.Value</code> value
+returns whether or not the Go value represented by the
 <code>reflect.Value</code> value is modifiable (assignable).
 If the Go value is modifiable, we can call the <code>Set</code> method
-of that <code>reflect.Value</code> value to modify the Go value.
+of the corresponding <code>reflect.Value</code> value to modify the Go value.
 Note, the <code>reflect.Value</code> values returned directly by
 <code>reflect.ValueOf</code> function calls are always read-only.
 </p>
@@ -301,7 +289,7 @@ func main() {
 	vn := vp.Elem() // get the value referenced by vp
 	fmt.Println(vn.CanSet(), vn.CanAddr()) // true true
 	vn.Set(reflect.ValueOf(789)) // <=> vn.SetInt(789)
-	fmt.Println(n) // 789
+	fmt.Println(n)               // 789
 }
 </code></pre>
 
@@ -340,9 +328,48 @@ func main() {
 <p>
 </p>
 
+From the above two examples, we can learn that there are two ways to get a <code>reflect.Value</code> value
+which represents the value referenced by a pointer value.
+<ol>
+<li>
+	One way is by calling the <code>Elem</code> method of a <code>reflect.Value</code> value
+	which represents the pointer value.
+</li>
+<li>
+	The other way is to pass a <code>reflect.Value</code> value which represents the pointer value
+	to a <code>reflect.Indirect</code> function call.
+	(If the argument passed to a <code>reflect.Indirect</code> function call doesn't
+	represent a pointer value, then the call returns a copy of the argument.)
+</li>
+</ol>
+
+Note, the <code>reflect.Value.Elem</code> method can be also used to get a <code>reflect.Value</code> value
+which represents the dynamic value of an interface value. For example,
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "reflect"
+
+func main() {
+	var z = 123
+	var y = &z
+	var x interface{} = y
+	v := reflect.ValueOf(&x)
+	vx := v.Elem()
+	vy := vx.Elem()
+	vz := vy.Elem()
+	vz.Set(reflect.ValueOf(789))
+	fmt.Println(z) // 789
+}
+</code></pre>
+
+<p>
+</p>
+
 There are also some <code>reflect.Value</code> related functions
 declared in the <code>reflect</code> standard package.
-Each of these functions corresponds a built-in function
+Each of these functions corresponds to a built-in function
 or a non-reflection functionality,
 The following example demonstrates how to bind a custom generic function
 to different function values.
@@ -363,7 +390,7 @@ func InvertSlice(args []reflect.Value) (result []reflect.Value) {
 }
 
 func Bind(p interface{}, f func ([]reflect.Value) []reflect.Value) {
-	// Get dynamic Values of interface Values by using the Elem method.
+	// invert represents a function value.
 	invert := reflect.ValueOf(p).Elem()
 	invert.Set(reflect.MakeFunc(invert.Type(), f))
 }
@@ -380,15 +407,11 @@ func main() {
 </code></pre>
 
 <p>
-Note, from the above several examples, we should learn that
-the <code>Elem</code> method of the <code>reflect.Value</code> type
-can not only be used to get the value referenced by a pointer value,
-it can also be used to get the dynamic value of an interface value.
 </p>
 
-If a <code>reflect.Value</code> represents a function (or method) value,
+If a <code>reflect.Value</code> represents a function value,
 then we can call the <code>Call</code> method of the <code>reflect.Value</code>
-to call the represented function (or method).
+to call the represented function.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -422,8 +445,7 @@ func main() {
 </code></pre>
 
 <p>
-Please note that, <code>reflect.Value</code> values representing non-exported
-fields shouldn't be used as arguments of calls to reflection functions.
+Please note that, non-exported fields shouldn't be used as arguments of reflection calls.
 If the line <code>vt.FieldByName("A")</code> in the above example is replaced
 with <code>vt.FieldByName("b")</code>, a panic will occur.
 </p>
@@ -454,7 +476,7 @@ func main() {
 </code></pre>
 
 <p>
-The <code>TrySend</code> and <code>TryRecv</code> methods correspond
+The <code>TrySend</code> and <code>TryRecv</code> methods correspond to
 one-case-one-default <a href="channel.html#select"><code>select</code>
 control flow code blocks</a>.
 </p>
@@ -534,12 +556,6 @@ whereas <code>x == y</code> will panic if the two operands are both
 interface values and their dynamic types are identical and uncomprable.
 </p>
 
-<p>
-Note, a <code>DeepEqual</code> call with
-two function argument values returns <code>true</code> only if
-the two functions are both <code>nil</code> and their types are identical.
-</p>
-
 An example showing these differences:
 
 <pre class="line-numbers"><code class="language-go">package main
@@ -563,7 +579,7 @@ func main() {
 	t.p.p = t // form a cyclic reference chain.
 	fmt.Println(reflect.DeepEqual(t, t.p)) // true
 	fmt.Println(t == t.p)                  // false
-	
+
 	var f1, f2 func() = nil, func(){}
 	fmt.Println(reflect.DeepEqual(f1, f1)) // true
 	fmt.Println(reflect.DeepEqual(f2, f2)) // false
@@ -575,11 +591,13 @@ func main() {
 </code></pre>
 
 <p>
+Note, if the two arguments of a <code>DeepEqual</code> call are both function values,
+then the call returns <code>true</code> only if the two function arguments are both nil and their types are identical.
 </p>
 
 <p>
 So, to compare values of a type by using <code>reflect.DeepEqual</code>,
-a programmer needs to understand the internal implementation of the type well.
+a programmer needs to understand the structure definition of the type well.
 </p>
 </div>
 
@@ -621,7 +639,7 @@ func main() {
 </code></pre>
 
 <p>
-I think the voilation is not harmful.
+But it loos the voilation is not harmful.
 On the contrary, it makes some benefits.
 For example, with this voilation, we can use the functions in the
 <code>bytes</code> standard package for the <code>[]MyByte</code> values.
@@ -630,6 +648,12 @@ For example, with this voilation, we can use the functions in the
 </div>
 
 <!--
+
+Go 1.12
+A new MapIter type is an iterator for ranging over a map. 
+This type is exposed through the Value type's new MapRange method. 
+This follows the same iteration semantics as a range statment, 
+with Next to advance the iterator, and Key/Value to access each entry. 
 
 bug setcion in reflect docs
 
@@ -679,6 +703,8 @@ https://github.com/golang/go/issues/25403
 
 https://github.com/golang/go/issues/28761
 https://github.com/golang/go/issues/28748
+
+https://github.com/golang/go/issues/29381
 
 ============================================
 

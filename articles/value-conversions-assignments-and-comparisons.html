@@ -1,23 +1,24 @@
 ﻿<h1>Value Conversion, Assignment And Comparison Rules In Go</h1>
 
 <p>
-This article will list all the value assignment,
+This article will list all the value comparison,
 conversion and comparison rules in Go.
-</p>
-
-<p>
-Note, the definition of conversion in Go 101 is not exactly the same as Go spec.
-The conversion in Go spec means explicit conversion.
-The conversions in Go 101 include both explicit and implicit conversions.
 </p>
 
 <p class="anchor" id="conversion"></p>
 <h3>Value Conversion Rules</h3>
 
 <p>
+Note, the definition of conversion in Go 101 is not exactly the same as Go specification.
+The conversion in Go spec means explicit conversion.
+The conversions in Go 101 include both explicit and implicit conversions.
+</p>
+
+<p>
 In Go, if a value <code>v</code> can be explicitly converted to type <code>T</code>,
-the conversion can be achieveed with the form <code>(T)(v)</code>.
-Sometimes, in particular <code>T</code> is a named type (a defined type or a type alias),
+the conversion can be represented as the form <code>(T)(v)</code>.
+For most cases, in particular <code>T</code> is a <a href="type-system-overview.html#named-type">named type</a>
+(a defined type or a type alias),
 the form can be simplified to <code>T(v)</code>.
 </p>
 
@@ -31,7 +32,7 @@ then it means <code>x</code> can also be explicitly converted to type <code>T</c
 
 <div class="well">
 If two types <code>T1</code> and <code>T2</code> denote the identical type,
-then their values can be <b>implicitly</b> converted each other.
+then their values can be <b>implicitly</b> converted to either type of the two.
 </div>
 
 <div>
@@ -60,16 +61,17 @@ Nothing more to explain about this rule, whether you think this case involves co
 Given a non-interface value <code>x</code> and a non-interface type <code>T</code>, assume the type of <code>x</code> is <code>Tx</code>,
 <ul>
 <li>
-	if <code>Tx</code> and <code>T</code> share the same underlying type (ignoring struct tags),
-	then <code>x</code> can be explicitly converted to <code>T</code>,
-	in particular if either <code>Tx</code> or <code>T</code> is not a defined type
+	if <code>Tx</code> and <code>T</code> share the same <a href="type-system-overview.html#underlying-type">underlying type</a> (ignoring struct tags),
+	then <code>x</code> can be explicitly converted to <code>T</code>.
+</li>
+<li>
+	if either <code>Tx</code> or <code>T</code> is a <a href="type-system-overview.html#non-defined-type">non-defined type</a>
 	and their underlying types are identical (considering struct tags),
 	then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
 </li>
 <li>
 	if <code>Tx</code> and <code>T</code> have different underlying types,
-	but both <code>Tx</code> and <code>T</code> are
-	<a href="type-system-overview.html#non-defined-type">non-defined</a> pointer types
+	but both <code>Tx</code> and <code>T</code> are non-defined pointer types
 	and their base types share the same underlying type (ignoring struct tags),
 	then <code>x</code> can (and must) be explicitly converted to <code>T</code>.
 </li>
@@ -81,7 +83,7 @@ Given a non-interface value <code>x</code> and a non-interface type <code>T</cod
 </i></p>
 
 <div>
-General example:
+An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
@@ -96,7 +98,7 @@ func main() {
 	var x struct{n int `foo`}
 	var y struct{n int `bar`}
 
-	// The two lines both fail to compile.
+	// The two implicit conversions both fail to compile.
 	/*
 	is = ms
 	ms = is
@@ -115,10 +117,11 @@ func main() {
 	ms = s
 }
 </code></pre>
-</div>
 
-<div>
-Pointer example:
+<p>
+</p>
+
+Pointer related conversion example:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
@@ -126,8 +129,9 @@ func main() {
 	type IntPtr *int
 	type MyIntPtr *MyInt
 
-	var pi = new(int) // the type of pi is *int
+	var pi = new(int)  // the type of pi is *int
 	var ip IntPtr = pi // ok, same underlying type
+	                   // and the type of pi is non-defined.
 
 	// var _ *MyInt = pi // can't convert implicitly
 	var _ = (*MyInt)(pi) // ok, must explicitly
@@ -156,11 +160,15 @@ func main() {
 <h4>2. Channel Specific Conversion Rule</h4>
 
 <div class="well">
-If <code>Tx</code> is a bidirectional channel type, <code>T</code> is a channel type,
-	<code>Tx</code> and <code>T</code> have the identical element type,
-	and either <code>Tx</code> or <code>T</code> is not an defined type,
+	Assume <code>Tx</code> is a bidirectional channel type, <code>T</code> is also a channel type (bidirectional or not),
+	if <code>Tx</code> and <code>T</code> have the identical element type,
+	and either <code>Tx</code> or <code>T</code> is a non-defined type,
 	then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
 </div>
+
+<!--
+a potentail bug: https://github.com/golang/go/issues/29469
+-->
 
 <div>
 Example:
@@ -177,7 +185,7 @@ func main() {
 	cb = ca // ok, same underlying type
 	ca = cb // ok, same underlying type
 
-	// The 4 lines compile okay for the 2nd rule.
+	// The 4 lines compile okay for this 2nd rule.
 	var _, _ chan<- string = ca, cb // ok
 	var _, _ <-chan string = ca, cb // ok
 	var _ C1 = cb                   // ok
@@ -199,12 +207,12 @@ func main() {
 </div>
 
 <p class="anchor" id="conversion-rule-implementation"></p>
-<h4>3. Implementation Related Conversion Rules</h4>
+<h4>3. Interface Implementation Related Conversion Rules</h4>
 
 <div class="well">
 Given a value <code>x</code> and an interface type <code>I</code>, assume the type (or the defaut type) of <code>x</code> is <code>Tx</code>,
 if <code>Tx</code> implements <code>I</code>, then <code>x</code> can be <b>implicitly</b> converted to type <code>I</code>.
-The conversion result is an interface value (of type <code>I</code>), which stores
+The conversion result is an interface value (of type <code>I</code>), which boxes
 <ul>
 <li>a copy of <code>x</code>, if <code>Tx</code> is a non-interface type;</li>
 <li>a copy of the dynamic value of <code>x</code>, if <code>Tx</code> is an interface type.</li>
@@ -230,10 +238,10 @@ func (mf MultipleFilter) Filte(n int) bool {
 func main() {
 	var mf = MultipleFilter{11}
 	// mf's type MultipleFilter implements Filter,
-	// so here implicit conversion is okay.
+	// so here the implicit conversion is okay.
 	var filter = mf
 
-	// all types implement interface{} type, so any
+	// All types implement interface{} type, so any
 	// value can be converted to interface{} implicitly.
 
 	var n int = 123
@@ -250,33 +258,26 @@ func main() {
 }
 </code></pre>
 <p>
-Many parameters of the functions in standard packages are
-of type <code>interface{}</code>.
-As all types implement <code>interface{}</code>, so any value
-can be passed for such parameters without explict conversion.
 </p>
 </div>
 
 <p class="anchor" id="conversion-rule-type-assertion"></p>
 <h4>4. Type Assertion Conversion Rules</h4>
 
-<p>
-(Type switch can be viewed as a special form of type assertion.)
-</p>
-
 <div class="well">
 Given an interface value <code>x</code> and a non-interface type <code>T</code>,
-assume the interface type of <code>x</code> is <code>Ix</code>,
-if <code>T</code> implements <code>Ix</code>, then <code>x</code>
-can be converted to <code>T</code> with type assertion syntax:
+assume the interface type of <code>x</code> is <code>Ix</code> and
+<code>T</code> implements <code>Ix</code>, we know that <code>x</code>
+can be converted to type <code>T</code> through the type assertion syntax.
 <ul>
-<li>if the dynamic type of <code>x</code> and <code>T</code> are exactly the same type,
-	then the conversion result is the dynamic value of <code>x</code>.
-	If the ok result value is present, its value is <code>true</code>.
+<li>
+	If the dynamic type of <code>x</code> and <code>T</code> are exactly the same type,
+	then the assertion succeeds and the conversion evaluation result is the dynamic value of <code>x</code>.
+	The optional second evaluation result (if it is present) is <code>true</code>.
 </li>
-<li>otherwise, the conversion result is the zero value of <code>T</code>
-	if the ok result value is present (the returned ok value is <code>false</code>).
-	The conversion will panic if the ok result value is not present.
+<li>
+	Otherwise, the assertion fails and the conversion result is the zero value of <code>T</code>.
+	The optional second evaluation result (if it is present) is <code>false</code>.
 </li>
 </ul>
 </div>
@@ -284,22 +285,28 @@ can be converted to <code>T</code> with type assertion syntax:
 <div class="well">
 Given an interface value <code>x</code> and an interface type <code>I</code>,
 assume the interface type of <code>x</code> is <code>Ix</code>,
-then <code>x</code> can be converted to <code>I</code> with type assertion syntax,
+we know that <code>x</code> can be converted to <code>I</code> through the type assertion syntax,
 whether <code>I</code> implements <code>Ix</code> or not:
 <ul>
-<li>if <code>x</code> is not a nil interface and
-	the dynamic type of <code>x</code> implements <code>I</code>,
-	then the conversion result (a value of <code>I</code>)
-	stores (a copy of) the dynamic value of <code>x</code>.
-	If the ok result value is present, its value is <code>true</code>.
+<li>
+	If <code>x</code> is not a nil interface and its dynamic type implements <code>I</code>,
+	then the assertion succeeds and the conversion result (a value of type <code>I</code>)
+	boxes (a copy of) the dynamic value of <code>x</code>.
+	The optional second evaluation result (if it is present) is <code>true</code>.
 </li>
-<li>otherwise, the conversion result is the nil interface
-	if the ok result value is present (the returned ok value is <code>false</code>).
-	The conversion will panic if the ok result value is not present.
+<li>
+	Otherwise, the assertion fails and the conversion result is a nil interface value of type <code>I</code>.
+	The optional second evaluation result (if it is present) is <code>false</code>.
 </li>
 </ul>
+
+<p>
+Please note, when a type assertion fails and the optional second evaluation result is absent, a panic will be produced.
+</p>
 </div>
 
+<div>
+An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 type I interface {
@@ -313,22 +320,23 @@ func main() {
 	var it interface{} = T("abc")
 	var is interface{} = "abc"
 
-	// the two are both okay, for T
-	// implements both I and interface{}
+	// The two are both okay, for T
+	// implements both I and interface{}.
 	var _ T = it.(T)
 	var _ I = it.(I)
 
-	// this one is also okay, for
-	// string implements interface{}
+	// This one is also okay, for built-in
+	// type string implements interface{}.
 	var _ string = is.(string)
 
-	// following 3 compile okay but will
-	// all panic at run time.
+	// The following 3 lines all compile okay
+	// but all will panic at run time.
 	// _ = is.(I)
 	// _ = is.(T)
 	// _ = it.(string)
 }
 </code></pre>
+</div>
 
 <h4>5. Untyped Value Conversion Rule</h4>
 
@@ -357,27 +365,31 @@ func main() {
 </code></pre>
 </div>
 
-<h4>6. Constant Number Conversion Rule</h4>
+<h4>6. Constants Conversion Rule</h4>
 
 <p><i>
 (This rule is some overlapped with the last one.)
 </i></p>
 
 <p>
-Converting a constant yields a typed constant as result.
+Generally, converting a constant still yields a constant as result.
+(Except converting a constant string to byte slice or rune slice
+described in the below 8th rules.)
 </p>
 
 <div class="well">
-Given a constant value <code>x</code> and a type <code>T</code>, if <code>x</code> is representable by a value of type <code>T</code>,
-then <code>x</code> can be explicitly converted to <code>T</code>, in particular if <code>x</code> is an untyped
-or its type is also <code>T</code>, then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
+Given a constant value <code>x</code> and a type <code>T</code>, if <code>x</code> is representable as a value of type <code>T</code>,
+then <code>x</code> can be explicitly converted to <code>T</code>. In particular if <code>x</code> is an untyped value,
+then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
 </div>
 
+<!--
 <p>
 Note, in case of <code>x</code> is a floating-point constant and <code>T</code> is a floating-point type,
 the conversion result <code>T(x)</code> is the rounded value of <code>x</code> by using IEEE 754 round-to-even rules,
 but with an IEEE <code>-0.0</code> further rounded to an unsigned <code>0.0</code>.
 </p>
+-->
 
 <div>
 Example:
@@ -392,10 +404,10 @@ func main() {
 	const F32 float32 = F
 	const F32b float32 = I
 	const F64 float64 = F
-	const F64b = float64(I3)
+	const F64b = float64(I3) // must be explicit
 
 	const C1, C2 complex64 = F, I
-	const I5 = int(C2)
+	const I5 = int(C2) // must be explicit
 }
 </code></pre>
 </div>
@@ -420,8 +432,8 @@ Note,
 	When converting a floating-point non-constant number to an integer, the fraction is discarded (truncation towards zero).
 </li>
 </ul>
-</div>
 
+An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -437,6 +449,7 @@ func main() {
 	var _ = complex128(c1)
 }
 </code></pre>
+</div>
 
 <h4>8. String Related Conversion Rules</h4>
 
@@ -472,7 +485,7 @@ A pointer value of any type can be converted to a type whose underlying type is 
 </div>
 
 <div class="well">
-An <code>uintptr</code> value can be converted to a type whose underlying type is <code>unsafe.Pointer</code>, and vice versa.
+An uintptr value can be converted to a type whose underlying type is <code>unsafe.Pointer</code>, and vice versa.
 </div>
 
 <p>

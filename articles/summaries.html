@@ -11,22 +11,22 @@ Index
 <li><a href="#type-sizes">Value sizes of all kinds of types</a>.</li>
 <li><a href="#nil-zero-value-types">Types which zero values can be represented with <code>nil</code></a>.</li>
 <li><a href="#types-can-have-methods">Types we can implement methods for</a>.</li>
-<li><a href="#types-can-be-embedded">Types which can be anonymously embedded in other types</a>.</li>
+<li><a href="#types-can-be-embedded">Types which can be embedded in struct types</a>.</li>
 <li><a href="#compile-time-evaluation">Functions whose calls will/may be evaluated at compile time</a>.</li>
 <li><a href="#not-addressable">Values that can't be taken addresses</a>.</li>
 <li><a href="#not-comparable">Types which don't support comparisons</a>.</li>
 <li><a href="#declared-but-unused">Which code elements are allowed to be declared but not used</a>.</li>
 <li><a href="#groupable-elements">Named source code elements which declarations can be grouped with <code>()</code></a>.</li>
 <li><a href="#declaration-places">Named source code elements which can be declared both inside functions and outside any functions</a>.</li>
-<li><a href="#additional-return">Expressions which may return an optional additional return value</a>.</li>
-<li><a href="#block-forever">Ways to block current goroutine ‎forever by using the channel mechanism</a>.</li>
+<li><a href="#additional-return">Expressions which evaluation results may contain optional additional values</a>.</li>
+<li><a href="#block-forever">Ways to block the current goroutine ‎forever by using the channel mechanism</a>.</li>
 <li><a href="#concatenate-strings">Ways to concatenate strings</a>.</li>
 </ul>
 
 <p>
 </p>
 
-Besides the current article, there also some other summary articles
+Besides the current article, there are also some other summary articles
 for some special topics, including
 <ul>
 <li>
@@ -57,9 +57,12 @@ Types whose values may have indirect underlying parts:
 <li>channel types</li>
 <li>interface types</li>
 </ul>
+
 <p>
-<a href="value-part.html">This article</a> lists the
-internal definitions of above types by the standard Go compiler/runtime.
+The answer is based on the implementations of the standard Go compiler/runtime.
+In fact, whether or not function values may have indirect underlying parts is hardly to prove,
+and string values and interface values should be viewed as values without indirect underlying parts in logic.
+Please read <a href="value-part.html">value parts</a> for details.
 </p>
 </div>
 
@@ -130,7 +133,7 @@ Values of above types can also be ranged over in for-range loops.
 
 <p>
 Types which values can be used as arguments of built-in function <code>len</code>
-can be called container types.
+can be called container types in broad sense.
 </p>
 
 <p class="anchor" id="container-types"></p>
@@ -194,15 +197,17 @@ can be called container types.
 </table>
 
 <p>
-<sup>(1)</sup> for the standard Go compiler/runtime.
+<sup>(1)</sup> For the standard Go compiler/runtime.
 <br/>
-<sup>(2)</sup> for addressable array values only.
+<sup>(2)</sup> For addressable array values only.
 <br/>
-<sup>(3)</sup> slice lengths can be modified by using <code>reflect.SetLen</code> function.
+<sup>(3)</sup> Generally, a slice value are modified by assigned another slice value to it by overwritting it.
+Here, such cases are not viewed as "add new elements".
+In fact, slice lengths can also be modified separately by calling the <code>reflect.SetLen</code> function.
 Increase the length of a slice by this way is kind of adding new elements into the slice.
-The length of a slice value can also be modified by assigning another slice value to it.
+But the <code>reflect.SetLen</code> function is slow, so it is rarely used.
 <br/>
-<sup>(4)</sup> for buffered channels which are still not full.
+<sup>(4)</sup> For buffered channels which are still not full.
 </p>
 
 <p class="anchor" id="composite-literals-types"></p>
@@ -211,7 +216,7 @@ The length of a slice value can also be modified by assigning another slice valu
 </h3>
 
 <p>
-Values of following types can be represented with composite literals:
+Values of the following four kinds of types can be represented with composite literals:
 </p>
 
 <table class="table table-bordered text-center" style="width: auto !important;">
@@ -294,11 +299,12 @@ The zero values of the following types can be represented with <code>nil</code>.
 </tbody>
 </table>
 
-<p><i>
-(One word means 4 bytes on 32bits OSes and 8 bytes on 64bits OSes.
+<p>
+The above listed sizes are for the standard Go compiler.
+One word means 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
 and <a href="value-part.html">the indirect underlying parts</a>
-of a value don't contribute to the size of the value.)
-</i></p>
+of a value don't contribute to the size of the value.
+</p>
 
 <p>
 The size of a zero value of a type is the same as any other values of the same type.
@@ -310,13 +316,12 @@ The size of a zero value of a type is the same as any other values of the same t
 </h3>
 
 <p>
-Please read <a href="unofficial-faq.html#types-can-have-methods">this
-question</a> for details.
+Please read <a href="method.html">methods in Go</a> for details.
 </p>
 
 <p class="anchor" id="types-can-be-embedded"></p>
 <h3>
-	Types which can be anonymously embedded in other types
+	Types which can be embedded in struct types
 </h3>
 
 <p>
@@ -361,7 +366,7 @@ its return results must be constants.
 		Not always.
 		<br/><br/>
 		<div class="text-left">
-		From <a href="https://golang.org/ref/spec#Length_and_capacity">Go spec</a>:
+		From <a href="https://golang.org/ref/spec#Length_and_capacity">Go specification</a>:
 		<ul>
 		<li>
 		the expression <code>len(s)</code> is constant if <code>s</code> is a string constant.
@@ -425,37 +430,10 @@ to get which values are addressable or unaddressable.
 	Types which don't support comparisons
 </h3>
 
-<div>
-Following types don't support comparisons:
-<ul>
-<li>map</li>
-<li>slice</li>
-<li>function</li>
-<li>
-struct types containing uncomparable fields
-</li>
-<li>
-array types with uncomparable elements
-</li>
-</ul>
 <p>
-Types which don't support comparisons can't be used as the key types of map types.
+Please read <a href="unofficial-faq.html#uncomparable-types">this FAQ item</a>
+to get which values are addressable or unaddressable.
 </p>
-</div>
-
-<div>
-Please note,
-<ul>
-<li>
-although map, slice and function types don't support comparisons,
-their values can be compared to the bare <code>nil</code> identifier.
-</li>
-<li>
-comparing two interface values with the same uncomparable dynamic types will panic at run time.
-</li>
-</ul>
-
-</div>
 
 <p class="anchor" id="declared-but-unused"></p>
 <h3>
@@ -466,7 +444,7 @@ comparing two interface values with the same uncomparable dynamic types will pan
 <thead>
 	<tr>
 	<th class="text-center"></th>
-	<th class="text-center">Allowed To Be Declared But Not Used</th>
+	<th class="text-center">Allowed To Be Declared But Not Used?</th>
 	</tr>
 </thead>
 <tbody>
@@ -516,7 +494,7 @@ Following named source code element declarations can be grouped with <code>()</c
 </ul>
 </div>
 <p>
-Functions and labels can't be grouped with <code>()</code>.
+Functions and labels can't be grouped.
 </p>
 
 <p class="anchor" id="declaration-places"></p>
@@ -538,19 +516,19 @@ Imports must be declared before declarations of other elements (and after the pa
 <p>
 Functions can only be declared outside any functions.
 Anonymous functions can be defined inside other function bodies,
-but they are not declared.
+but such definitions are not function declarations.
 </p>
 <p>
-Labels must declared inside functions.
+Labels must be declared inside functions.
 </p>
 
 <p class="anchor" id="additional-return"></p>
 <h3>
-	Expressions which can return an optional additional bool return value
+	Expressions which evaluation results may contain optional additional values
 </h3>
 
 <p>
-Following expressions can return an optional additional bool return value:
+The evaluation results of the following expressions may contain optional additional values:
 </p>
 
 <table class="table table-bordered text-center" style="width: auto !important;">
@@ -558,7 +536,7 @@ Following expressions can return an optional additional bool return value:
 	<tr>
 	<th class="text-center"></th>
 	<th class="text-center">Syntax</th>
-	<th class="text-center">Meaning Of The Optional Return</th>
+	<th class="text-center">Meaning Of The Optional Value (<code>ok</code> in the syntax examples)</th>
 	<th class="text-center">Will Omitting The Optional Return Affect Program Behavior?</th>
 	</tr>
 </thead>
@@ -566,7 +544,7 @@ Following expressions can return an optional additional bool return value:
 	<tr class="active">
 	<th scope="row" class="text-center" style="vertical-align: middle">map element access</th>
 	<td style="vertical-align: middle; white-space: nowrap;" class="text-center">
-		e, ok = aMap[key]
+		<code>e, ok = aMap[key]</code>
 	</td>
 	<td>whether or not the accessed key is present in the map</td>
 	<td>No</td>
@@ -574,7 +552,7 @@ Following expressions can return an optional additional bool return value:
 	<tr>
 	<th scope="row" class="text-center" style="vertical-align: middle">channel value receive</th>
 	<td style="vertical-align: middle; white-space: nowrap;" class="text-center">
-		e, ok = &lt;- aChannel
+		<code>e, ok = &lt;- aChannel</code>
 	</td>
 	<td>whether or not the received value was sent before the channel was closed</td>
 	<td>No</td>
@@ -582,53 +560,56 @@ Following expressions can return an optional additional bool return value:
 	<tr class="active">
 	<th scope="row" class="text-center" style="vertical-align: middle">type assertion</th>
 	<td style="vertical-align: middle; white-space: nowrap;" class="text-center">
-		v, ok = anInterface.(T)
+		<code>v, ok = anInterface.(T)</code>
 	</td>
 	<td>whether or not the dynamic type of the interface value matches the asserted type</td>
 	<td>Yes<br/>(when the optional bool return is omitted,
-		a panic is created if the asserted type is not an ok type)</td>
+		a panic is created if the asserted type is not an ok type.)</td>
 	</tr>
 </tbody>
 </table>
 
 <p class="anchor" id="block-forever"></p>
 <h3>
-	Ways to block current goroutine ‎forever by using the channel mechanism
+	Ways to block the current goroutine ‎forever by using the channel mechanism
 </h3>
 
 <div>
-Following ways can be used to block current goroutine ‎forever:
+Without importing any package, we can use the following ways to make the current goroutine ‎enter (and stay in) blocking state forever:
 <ol>
-<li>receive from a channel which no values will be sent to
-<div>
-<pre><code class="language-go"><-make(chan struct{})
-// or
-<-make(<-chan struct{})
-</code></pre></div>
-</li>
-<li>send value to a channel which no ones will receive values from
-<div>
+<li>send a value to a channel which no ones will receive values from
+	<div>
 <pre><code class="language-go">make(chan struct{}) <- struct{}{}
 // or
 make(chan<- struct{}) <- struct{}{}
-</code></pre></div>
+</code></pre>
+	</div>
 </li>
-<li>receive value from a nil channel
-<div>
-<pre><code class="language-go"><-chan struct{}(nil)
+<li>receive a value from a never-closed channel which no values have been and will be sent to
+	<div>
+<pre><code class="language-go"><-make(chan struct{})
+// or
+<-make(<-chan struct{})
+// or
+for range make(<-chan struct{}) {}
+</code></pre>
+	</div>
+</li>
+<li>receive a value from (or send a value to) a nil channel
+	<div>
+<pre><code class="language-go">chan struct{}(nil) <- struct{}{}
+// or
+<-chan struct{}(nil)
 // or
 for range chan struct{}(nil) {}
-</code></pre></div>
-</li>
-<li>send value to a nil channel
-<div>
-<pre><code class="language-go">chan struct{}(nil) <- struct{}{}
-</code></pre></div>
+</code></pre>
+	</div>
 </li>
 <li>use a bare select block
-<div>
+	<div>
 <pre><code class="language-go">select{}
-</code></pre></div>
+</code></pre>
+	</div>
 </li>
 </ol>
 </div>

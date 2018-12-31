@@ -1,7 +1,7 @@
 ﻿<h1><code>nil</code>s In Go</h1>
 
 <p>
-<code>nil</code> is a familiar and important predeclared identifier in Go.
+<code>nil</code> is a frequently used and important predeclared identifier in Go.
 It is the literal representation of zero values of many kinds of types.
 Many new Go programmers with experiences of some other popular languages
 may view <code>nil</code> as the counterpart of
@@ -17,7 +17,7 @@ The remaining of this article will list all kinds of facts and details related t
 <h3><code>nil</code> Is A Predeclared Identifier In Go</h3>
 
 <p>
-You can use <code>nil</code> without declaring it.
+We can use <code>nil</code> without declaring it.
 </p>
 
 <h3><code>nil</code> Can Represent Zero Values Of Many Types</h3>
@@ -33,14 +33,12 @@ In Go, <code>nil</code> can represent zero values of the following kinds of type
 <li>interface types.</li>
 </ul>
 
-<p>
-In other words, in Go, <code>nil</code> may be many values, of different types.
-</p>
 </div>
 
-<h3><code>nil</code> Has Not A Default Type</h3>
+<h3>Predeclared <code>nil</code> Has Not A Default Type</h3>
 
 <div>
+
 Each of other predeclared identifiers in Go has a default type.
 For example,
 <ul>
@@ -54,20 +52,15 @@ For example,
 </ul>
 
 <p>
-But <code>nil</code> has not a default type, though it has many possible types.
-There must be sufficient information for compiler to deduce the type of a
-<code>nil</code> value from context.
+But the predeclared <code>nil</code> has not a default type, though it has many possible types.
+In fact, the predeclared <code>nil</code> is the only untyped value who has not a default type in Go.
+There must be sufficient information for compiler to deduce the type of a <code>nil</code> from context.
 </p>
 
 Example:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	// This following line doesn't compile.
-	/*
-	v := nil
-	*/
-
 	// There must be sufficient information for compiler
 	// to deduce the type of a nil value.
 	_ = (*struct{})(nil)
@@ -84,11 +77,14 @@ func main() {
 	var _ chan string = nil
 	var _ func() = nil
 	var _ interface{} = nil
+
+	// This following line doesn't compile.
+	var _ = nil
 }
 </code></pre>
 </div>
 
-<h3><code>nil</code> Is Not A Keyword In Go</h3>
+<h3>Predeclared <code>nil</code> Is Not A Keyword In Go</h3>
 
 <div>
 <p>
@@ -106,9 +102,7 @@ func main() {
 	
 	// The following line will compile error, for
 	// nil represents an int value now in this scope.
-	/*
 	var _ map[string]int = nil
-	*/
 }
 </code></pre>
 
@@ -119,16 +113,16 @@ are also not keywords.)
 </div>
 
 <p class="anchor" id="sizes"></p>
-<h3>The Sizes Of <code>nil</code> Values With Types Of Different Kinds May Be Different</h3>
+<h3>The Sizes Of Nil Values With Types Of Different Kinds May Be Different</h3>
 
 <div>
 <p>
-The memory layouts of all value of a type are always the same.
-<code>nil</code> values of the type are not exceptions.
-The size of a <code>nil</code> value is always the same as
-the sizes of non-nil values whose types are the same as the <code>nil</code> value.
-So <code>nil</code> identifiers representing different zero values
-of different types may have different sizes.
+The memory layouts of all values of a type are always the same.
+nil values of the type are not exceptions
+(assume the zero values of the type can be represented as <code>nil</code>).
+The size of a nil value is always the same as
+the sizes of non-nil values whose types are the same as the nil value.
+But nil values of different kinds of types may have different sizes.
 </p>
 
 Example:
@@ -161,24 +155,26 @@ func main() {
 </code></pre>
 
 <p>
+</p>
+
+<p>
 The sizes are compiler and architecture dependent.
 The above printed results are for 64-bit architectures and the standard Go compiler.
 For 32--bit architectures, the printed sizes will be half.
 </p>
 
 <p>
-For the standard Go compiler, the sizes of two <code>nil</code> values of different types
-of the same kind are always the same. For example, two <code>nil</code> values of two
-different slice types, <code>[]int</code> and <code>[]string</code>, are the same.
+For the standard Go compiler, the sizes of two values of different types
+of the same kind whose zero values can be represented as the predeclared <code>nil</code>
+are always the same. For example, the sizes of all values of all different slice types are the same.
 </p>
 </div>
 
-<h3>Two <code>nil</code> Values Of Two Different Types May Be Not Comparable</h3>
+<h3>Two Nil Values Of Two Different Types May Be Not Comparable</h3>
 
 <div>
-For example:
-<pre class="line-numbers"><code class="language-go">// Following lines don't compile.
-var _ = (*int)(nil) == (*bool)(nil)         // error: mismatched types.
+For example, the two comparisons in the following example both fail to compile.
+<pre class="line-numbers"><code class="language-go">var _ = (*int)(nil) == (*bool)(nil)         // error: mismatched types.
 var _ = (chan int)(nil) == (chan bool)(nil) // error: mismatched types.
 </code></pre>
 
@@ -186,9 +182,9 @@ var _ = (chan int)(nil) == (chan bool)(nil) // error: mismatched types.
 </p>
 
 <p>
-Please read <a href="value-conversions-assignments-and-comparisons.html#comparison-rules">comparation rules in Go</a>
-to get which values can be compared with each other.
-Typed <code>nil</code> values are not exceptions of the comparation rules.
+Please read <a href="value-conversions-assignments-and-comparisons.html#comparison-rules">comparison rules in Go</a>
+to get which two values can be compared with each other.
+Typed <code>nil</code> values are not exceptions of the comparison rules.
 </p>
 
 The code lines in the following example all compile okay.
@@ -206,20 +202,19 @@ var _ = (chan int)(nil) == (<-chan int)(nil)
 </code></pre>
 </div>
 
-<h3>Two <code>nil</code> Values Of The Same Type May Be Not Comparable</h3>
+<h3>Two Nil Values Of The Same Type May Be Not Comparable</h3>
 
 <div>
-In Go, map. slice and function types don't support comparison.
-So comparing two <code>nil</code> identifiers specified with any type of
-the uncomparable types is illegal.
-<pre class="line-numbers"><code class="language-go">// The following lines fail to compile.
-var _ = ([]int)(nil) == ([]int)(nil)
+In Go, map, slice and function types don't support comparison.
+Comparing two values, including nil values, of an uncomparable types is illegal.
+The following comparisons fail to compile.
+<pre class="line-numbers"><code class="language-go">var _ = ([]int)(nil) == ([]int)(nil)
 var _ = (map[string]int)(nil) == (map[string]int)(nil)
 var _ = (func())(nil) == (func())(nil)
 </code></pre>
 
 But any values of the above mentioned uncomparable types can
-be compared with a bare <code>nil</code> identifier.
+be compared with the bare <code>nil</code> identifier.
 <pre class="line-numbers"><code class="language-go">// The following lines compile okay.
 var _ = ([]int)(nil) == nil
 var _ = (map[string]int)(nil) == nil
@@ -227,18 +222,19 @@ var _ = (func())(nil) == nil
 </code></pre>
 </div>
 
-<h3>Two <code>nil</code> Values May Be Not Equal</h3>
+<h3>Two Nil Values May Be Not Equal</h3>
 
 <div>
 <p>
-If one of the two compared <code>nil</code> values is an interface value
+If one of the two compared nil values is an interface value
 and the other is not, assume they are comparable,
-then the comparison result is always false.
-The reason is the non-interface value will be converted to the type of the interface value
+then the comparison result is always <code>false</code>.
+The reason is the non-interface value will be
+<a href="interface.html#boxing">converted to the type of the interface value</a>
 before making the comparison.
 The converted interface value has a concrete dynamic type
 but the other interface value has not.
-That is why the comparison result is always false.
+That is why the comparison result is always <code>false</code>.
 </p>
 
 Example:
@@ -265,11 +261,11 @@ fmt.Println( (map[int]*int64)(nil)[123] )   // &lt;nil&gt;
 
 <div>
 <p>
-The number of loops steps by iterate nil maps and slices is zero.
+The number of loop steps by iterate nil maps and slices is zero.
 </p>
 
 <p>
-The number of loops steps by iterate a <code>nil</code> array pointer
+The number of loop steps by iterate a nil array pointer
 is the length of its corresponding array type.
 (However, if the length of the corresponding array type is not zero,
 and the second iteration is neither ignored nor omitted,
@@ -277,7 +273,7 @@ the iteration will panic at run time.)
 </p>
 
 <p>
-Ranging over a nil channel will block for ever.
+Ranging over a nil channel will block the current goroutine for ever.
 </p>
 
 For example, the following code will print <code>0</code>, <code>1</code>,
@@ -301,7 +297,7 @@ for range chan bool(nil) { // block here
 </code></pre>
 </div>
 
-<h3>Invoking Methods Through Non-Interface <code>nil</code> Arguments Will Not Panic</h3>
+<h3>Invoking Methods Through Non-Interface nil Reveiver Arguments Will Not Panic</h3>
 
 <div>
 Example:
@@ -346,7 +342,7 @@ func main() {
 </code></pre>
 </div>
 
-<h3><code>*new(T)</code> Is Equal To <code>nil</code> If The Zero Value Of Type <code>T</code> Is Represented With <code>nil</code></h3>
+<h3><code>*new(T)</code> Results A Nil <code>T</code> Value If The Zero Value Of Type <code>T</code> Is Represented With The Predeclared <code>nil</code> Indentifier</h3>
 
 <div>
 Example:
@@ -367,5 +363,7 @@ func main() {
 
 <h3>Summary</h3>
 
+<p>
 In Go, <code>nil</code> is just an identifier which can be used to represent the zero values of some kinds of types.
-It is not a single value. On the contrary, it can represent many values with different memory layouts.
+It is not a single value. It can represent many values with different memory layouts.
+</p>
