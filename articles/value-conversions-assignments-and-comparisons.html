@@ -476,16 +476,12 @@ Please read <a href="string.html#conversions">strings in Go</a> for details and 
 
 <h4>9. Unsafe Pointers Related Conversion Rules</h4>
 
-<p>
-Above conversion rules can be broken by unsafe pointers related conversion rules.
-</p>
-
 <div class="well">
-A pointer value of any type can be converted to a type whose underlying type is <code>unsafe.Pointer</code>, and vice versa.
+A pointer value of any type can be explicitly converted to a type whose underlying type is <code>unsafe.Pointer</code>, and vice versa.
 </div>
 
 <div class="well">
-An uintptr value can be converted to a type whose underlying type is <code>unsafe.Pointer</code>, and vice versa.
+An uintptr value can be explicitly converted to a type whose underlying type is <code>unsafe.Pointer</code>, and vice versa.
 </div>
 
 <p>
@@ -496,8 +492,15 @@ Please read <a href="unsafe.html">type-unsafe pointers in Go</a> for details and
 
 <p>
 Assignments can be viewed as implicit conversions.
+Implicit conversion rules are listed among all conversion rules in the last section.
 </p>
 
+<p>
+Besides these rules, the destination values in assignments must be
+addressable values, map index expressions, or the blank identifier.
+</p>
+
+<!--
 <div class="well">
 In an assignment, if the target value is a new declared variable without given a
 type in code, then the type of the new variable is
@@ -508,18 +511,20 @@ type in code, then the type of the new variable is
 </div>
 
 <p>
-Implicit conversion rules are listed among the conversion rules in the last section.
+</p>
+-->
+
+<p>
+In an assignment, the source value is copied to the destination value.
+Precisely speaking, the <a href="value-part.html">direct part</a>
+of the source value is copied to the destination value.
 </p>
 
 <p>
-In addition, any value can be assigned to the blank identifier <code>_</code>.
+Note, parameter passing and result returning are both value assignments acctually.
 </p>
 
-<p>
-Note, parameter passing, channel value send and receive operations
-are all value assignment involved.
-</p>
-
+<!--
 <p>
 For most value assignments, the <a href="value-part.html">direct part</a>
 of each source value is copied to the direct part of the corresponding
@@ -548,6 +553,7 @@ the destination interface value as dynamic value.
 The standard compiler makes some optimizations here so that
 a pointer is always copied in the process.
 </p>
+-->
 
 <p class="anchor" id="comparison-rules"></p>
 <h3>Value Comparison Rules</h3>
@@ -565,8 +571,7 @@ In any comparison, the first operand must be assignable to the type of the secon
 
 <p>
 So, the comparison rule is much like the assignment rule.
-In other words, two values are comparable
-if one can be implicitly converted to the type of the other.
+In other words, two values are comparable if one of them can be implicitly converted to the type of the other.
 Right? Almost, for there is an exception for the above basic comparison rule.
 </p>
 
@@ -583,11 +588,11 @@ can be implicitly converted to the interface type.
 </div>
 
 <p>
-Note, although generally, values of slice/map/function types don't support comparisons,
+Note, although values of slice/map/function types don't support comparisons,
 they can be compared with untyped nil values (a.k.a., bare <code>nil</code> identifiers).
 </p>
 
-The above described basic rule doesn't cover all circumstances.
+The above described basic rules don't cover all cases.
 What about if both of the two operands in a comparison are untyped (constant) values?
 The additional rules are simple:
 <ul>
@@ -603,7 +608,7 @@ The additional rules are simple:
 </ul>
 
 <p>
-The results of comparing two untyped values obey intuition.
+The results of comparing two untyped numeric values obey intuition.
 </p>
 
 <p>
@@ -614,7 +619,7 @@ Note, an untyped nil value can't be compared with another untyped nil value.
 Any comparison results an untyped boolean value.
 </p>
 
-Examples:
+The following example shows some uncomparable types related comparisons.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -655,11 +660,12 @@ func main() {
 </div>
 
 <p class="anchor" id="comparison-implementation"></p>
-<h4>How Are Two Values Compared</h4>
+<h4>How Are Two Values Compared?</h4>
 
 <div>
-Assume two values are comparable, and they have the same type <code>T</code>
-(if they have different types, one of them must be implicitly convertible to the type of the other).
+Assume two values are comparable, and they have the same type <code>T</code>.
+(If they have different types, one of them must be implicitly convertible to the type of the other.
+Here we don't consider the cases in which both the two values are untyped.)
 <ol>
 <li>
 	If <code>T</code> is a boolean type,
@@ -667,7 +673,7 @@ Assume two values are comparable, and they have the same type <code>T</code>
 </li>
 <li>
 	If <code>T</code> is an integer type,
-	then the two values are equal only if they have the same bytes representations in memory.
+	then the two values are equal only if they have the same representation in memory.
 </li>
 <li>
 	If <code>T</code> is a floating-point type,
@@ -680,7 +686,7 @@ Assume two values are comparable, and they have the same type <code>T</code>
 		they are both <code>-Inf</code>.
 	</li>
 	<li>
-		they each is either <code>-0.0</code> or <code>+0.0</code>.
+		each of them is either <code>-0.0</code> or <code>+0.0</code>.
 	</li>
 	<li>
 		they are both not <code>NaN</code> and they have the same bytes representations in memory.
@@ -694,12 +700,11 @@ Assume two values are comparable, and they have the same type <code>T</code>
 </li>
 <li>
 	If <code>T</code> is a pointer type (either safe or unsafe),
-	then the two values are equal only if they both reference the same value
-	or they are both nil pointers.
+	then the two values are equal only if the memory addresses stored in them are equal.
 </li>
 <li>
 	If <code>T</code> is a channel type, the two channel values are equal
-	if they both reference the same underlying channel structure
+	if they both reference the same underlying internal channel structure value
 	or they are both nil channels.
 </li>
 <li>
@@ -722,15 +727,9 @@ Assume two values are comparable, and they have the same type <code>T</code>
 </li>
 </ol>
 
-<p>
 Please note, comparing two interfaces with the same uncomparable dynamic type
 produces a panic.
-A sub-comparison of the first three cases mentioned above may also be
-an interface value comparison.
-So comparisons of the first three cases may be also possible to produce panics.
-<p>
-
-Here is an example in which some panics will occur in comparisons.
+The following is an example in which some panics will occur in comparisons.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -754,7 +753,7 @@ func main() {
 Please note, the two code lines involved <code>z</code> compile okay for
 the <code>go build</code> and <code>go install</code> commands in any version of Go SDK,
 but fail to compile for the <code>go run</code> command in Go SDK 1.9 and 1.10.
-This is a known bug of the standard Go compiler 1.9 and 1.10.
+This is <a href="https://github.com/golang/go/issues/24747">a known bug</a> in the standard Go compiler 1.9 and 1.10.
 </p>
 </div>
 
