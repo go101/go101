@@ -9,7 +9,7 @@ We know that a <code>recover</code> call can only take effect
 if it is invoked in a deferred function call.
 However, not all <code>recover</code> calls in deferred function calls
 can catch alive panics.
-Below of this atticle will show some useless <code>recover</code> function calls
+The remaining of this atticle will show some useless <code>recover</code> function calls
 and explain what are the right places to call the <code>recover</code> function.
 </p>
 
@@ -22,12 +22,12 @@ import "fmt"
 func main() {
 	defer func() {
 		defer func() {
-			fmt.Println("6:", recover())
+			fmt.Println("7:", recover())
 		}()
 	}()
 	defer func() {
 		func() {
-			fmt.Println("5:", recover())
+			fmt.Println("6:", recover())
 		}()
 	}()
 	func() {
@@ -42,15 +42,16 @@ func main() {
 		fmt.Println("3:", recover())
 	}()
 	fmt.Println("4:", recover())
-	panic(1)
+	defer fmt.Println("5:", recover())
+	panic(789)
 	defer func() {
-		fmt.Println("0:", recover()) // never go here
+		fmt.Println("0:", recover())
 	}()
 }
 </code></pre>
 
 Run it, we will find that
-none of the 7 <code>recover</code> calls in above program recover the program.
+none of the 8 <code>recover</code> calls in above program recover the program.
 The program crashes with printing out the following panic stack traces.
 <pre class="output"><code>1: &lt;nil&gt;
 2: &lt;nil&gt;
@@ -58,7 +59,8 @@ The program crashes with printing out the following panic stack traces.
 4: &lt;nil&gt;
 5: &lt;nil&gt;
 6: &lt;nil&gt;
-panic: 1
+7: &lt;nil&gt;
+panic: 789
 
 goroutine 1 [running]:
 ...
@@ -69,19 +71,19 @@ For others, let's check the rules specified
 in <a href="https://golang.org/ref/spec#Handling_panics">Go specification</a> firstly.
 
 <div class="alert alert-success">
-The return value of recover is <code>nil</code> if any of the following conditions holds:
+The return value of <code>recover</code> is <code>nil</code> if any of the following conditions holds:
 <ul>
-<li> panic's argument was nil;</li>
-<li> the goroutine is not panicking;</li>
-<li> recover was not called directly by a deferred function.</li>
+<li>panic's argument was nil;</li>
+<li>the goroutine is not panicking;</li>
+<li>recover was not called directly by a deferred function.</li>
 </ul>
 </div>
 
 <p>
 Let's ignore the first condition.
 The second condition covers the 1st/2nd/3rd and 4th recover calls.
-The third one covers the 5th recover call.
-However, none of the three conditions cover the 6th recover call.
+The third one covers the 5th and 6th recover calls.
+However, none of the three conditions cover the 7th recover call.
 </p>
 
 We know the following <code>recover</code> call will catch the panic.
@@ -103,7 +105,7 @@ func main() {
 
 <p>
 But, what is differences between it and the above <code>recover</code> calls?
-What is the principal rule to make a <code>recover</code> call take effect?
+What is the principle rule to make a <code>recover</code> call take effect?
 </p>
 
 <p>
@@ -115,15 +117,15 @@ Firstly, let's learn some concepts and facts.
 
 <div>
 <p>
-Each function call corresponds to a call depth, which is related
-the entry function of a goroutine.
+Each function call associated to a call depth, which is related
+the entry function call of the current goroutine.
 For the main gorotuine, the call depth of a function call
-is related to the program <b><i>main</i></b> entry function.
+is related to the program <b><i>main</i></b> entry function call.
 For a goroutine other than the main goroutine, the call depth of
 a function call is related to the starting function call of the goroutine.
 </p>
 
-For example example:
+For example:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() { // depth 0
@@ -160,7 +162,7 @@ The depth of a panic is the functon call depth the panic has propagated to.
 Please read the next section for a better understanding.
 </p>
 
-<h3>Fact: Panics Can Only Propagate To The function Calls With Shadow Depths</h3>
+<h3>Fact: Panics Can Only Propagate To The function Calls With Shallower Depths</h3>
 
 <div>
 Yes, panics can only propagate to its callers.
@@ -206,7 +208,7 @@ And, the depth of an alive panic will never
 be larger than the execution depth of the goroutine.
 </p>
 
-<h3>Fact: Panics Will Suppress Old Panics At The Same Depth</h3>
+<h3>Fact: New Created Panics Will Suppress Old Panics At The Same Depth</h3>
 
 <div>
 Example:
@@ -238,15 +240,15 @@ program will not crash
 </div>
 
 <p>
-In this exanple, panic 1 is suppressed by panic 2,
+In this example, panic 1 is suppressed by panic 2,
 and then panic 2 is suppressed by panic 3.
 So, in the end, there is only one active panic, which is panic 3.
 Panic 3 is recovered, hence the program will not crash.
 </p>
 
 <p>
-In one goroutine, there will be at most one active panic at the same call depth at any time,
-especially when the execution point runs at the call depth 0 of a goroutine,
+In one goroutine, there will be at most one active panic at the same time at the same call depth.
+In particular, when the execution point runs at the call depth 0 of a goroutine,
 there will be at most one active panic in the goroutine.
 </p>
 
@@ -284,7 +286,8 @@ func main() { // call depth 0
 </code></pre>
 
 <p>
-In this exanple, panic 6, one of the two active panics, is recovered.
+
+In this example, panic 6, one of the two active panics, is recovered.
 But the other active panic, panic 3, is still active at the end of main call,
 so the program will crash.
 </p>
@@ -303,7 +306,7 @@ goroutine 1 [running]
 </code></pre>
 </div>
 
-<h3>Fact: Highest Depth Panics May Be Recovered At First Or Not</h3>
+<h3>Fact: Deeper Panics May Be Recovered At First Or Not</h3>
 
 <div>
 Example:
@@ -350,14 +353,14 @@ panic 1 is recovered
 </code></pre>
 </div>
 
-<h3>Then, What Is The Principal Rule To Make A <code>recover</code> Call Take Effect?</h3>
+<h3>Then, What Is The Principle Rule To Make A <code>recover</code> Call Take Effect?</h3>
 
 <div>
 The rule is simple.
 
 <div class="alert alert-info">
 In a goroutine,
-if the caller function of a <code>recover</code> call is <code>f</code>
+assume the caller function of a <code>recover</code> call is <code>f</code>
 and the depth of the <code>f</code> call is <code>d</code>,
 then, to make the <code>recover</code> call take effect,
 the <code>f</code> call must be a deferred call and
@@ -367,7 +370,7 @@ Whether or not the <code>recover</code> call itself is deferred is not important
 
 <p>
 That is it. I think It is better described than Go specification.
-Now you can page up to check why the 6th recover call in the first example
+Now you can page up to check why the 7th <code>recover</code> call in the first example
 doesn't take effect, and some others do in some other examples.
 </p>
 </div>

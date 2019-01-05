@@ -3,7 +3,7 @@
 <p>
 Deferred function calls have been
 <a href="control-flows-more.html#defer">introduced before</a>.
-Due to the limited knowledge at that time,
+Due to the limited Go knowledge at that time,
 some more details and use cases of deferred functions calls
 are not touched in that article.
 These details and use cases will be touched in the remaining of this article.
@@ -15,17 +15,16 @@ These details and use cases will be touched in the remaining of this article.
 <p>
 In Go, the result values of a call to custom functions can be all absent (discarded).
 However, for built-in functions with non-blank return result lists,
-the result values of their calls mustn't be absent (up to Go 1.11), except
-the calls to the built-in <code>copy</code> and <code>recover</code> functions.
-We have learned that <a href="control-flows-more.html#defer">the result values
-of a deferred function call must be discarded</a>,
+the result values of their calls <a href="exceptions.html#discard-return-results">mustn't be absent</a> (up to Go 1.11),
+except the calls to the built-in <code>copy</code> and <code>recover</code> functions.
+On the other hand, we have learned that the result values of a deferred function call must be discarded,
 so the calls to many built-in functions can't be deferred.
 </p>
 
 Fortunately, the needs to defer built-in function calls
-(with non-blank return result lists) are rare.
+(with non-blank return result lists) are rare in practice.
 As far as I know, only the calls to the built-in <code>append</code> function
-may be needed to defer sometimes.
+may needed to be deferred sometimes.
 For this case, we can defer a call to an anonymous function
 which wraps the <code>append</code> call.
 <pre class="line-numbers"><code class="language-go">package main
@@ -47,8 +46,8 @@ func main() {
 
 <div>
 The called function in a deferred function call may be a nil function value.
-For such a case, the panic will occur before the deferred call is
-pushed into the deferred call stack of the current goroutine. An example:
+For such a case, the panic will occur before the deferred call is prepared to
+be pushed into the deferred call stack of the current goroutine. An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -68,7 +67,7 @@ func main() {
 
 <p>
 The arguments of a deferred function call are
-<a href="#argument-evaluation-moment">also evaluated before</a>
+<a href="control-flows-more.html#argument-evaluation-moment">also evaluated before</a>
 the deferred call is pushed into the deferred call stack
 of the currrent goroutine.
 </p>
@@ -141,9 +140,9 @@ https://joeshaw.org/dont-defer-close-on-writable-files/
 -->
 
 <p>
-Which one looks cleaner? apparently, the one with the deferred calls,
-though a little. And it is less bug prone,
-what about if any of <code>f.Close()</code> calls in the other one is missed? ;)
+Which one looks cleaner? Apparently, the one with the deferred calls, though a little.
+And it is less bug prone, for there are so many <code>f.Close()</code> calls in the
+function without deferred calls that it has a higher possibility to miss one of them.
 </p>
 
 The following is another example to show deferred calls can make code less bug prone.
@@ -174,8 +173,7 @@ func f2() {
 <p>
 It is not always good to use deferred function calls.
 Up to now (Go 1.11), for the official Go compiler,
-deferred function calls will cause some performance losses at run time,
-in particular for deferred function calls within loop code blocks.
+deferred function calls will cause a few performance losses at run time.
 </p>
 
 For example, in the following example, the methods <code>CounterB</code>
@@ -218,9 +216,6 @@ func (t *T) IncreaseB() {
 <p>
 In the B-version functions, we should guarantee that the code between the
 <code>Lock</code> and <code>Unlock</code> calls will never panic.
-</p>
-
-<p>
 Generally, the A-version functions are recommended to be used in practice.
 We should only adopt the B versions when we really care about
 the performance of the involved functions.
@@ -233,10 +228,10 @@ the performance of the involved functions.
 
 <div>
 
-A very large deferred call stack may also consume much memory.
-The unexecuted deferred calls may prevent some resources from being released.
+A very large deferred call stack may also consume much memory,
+and the unexecuted deferred calls may prevent some resources from being released in time.
 For example, if there are many files needed to be handled in a call to the following function,
-then a large number of file handlers will be not get released in time.
+then a large number of file handlers will be not get released before the function exits.
 
 <pre class="line-numbers"><code class="language-go">func writeManyFiles(files []File) error {
 	for _, file := range files {
@@ -261,10 +256,9 @@ then a large number of file handlers will be not get released in time.
 }
 </code></pre>
 
-
 For such cases, we can use an anonymous function to enclose the deferred calls
 so that the deferred function calls will get executed earlier. For example,
-the above function can be rewritten and optimized as
+the above function can be rewritten and improved as
 
 <pre class="line-numbers"><code class="language-go">func writeManyFiles(files []File) error {
 	for _, file := range files {

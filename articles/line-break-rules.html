@@ -4,7 +4,7 @@
 If you have written go code much, you should have known that
 we can't use arbitrary code styles in Go programming.
 Specifically speaking,
-we can't break a code line at an arbitrary character position.
+we can't break a code line at an arbitrary space character position.
 The remaining of this article will list the detailed line break rules in Go.
 </p>
 
@@ -12,12 +12,8 @@ The remaining of this article will list the detailed line break rules in Go.
 
 <div>
 
-<p>
 One rule we often obey in practice is, we should not put
-the a starting curly brace (<code>{</code>) of the explicit code block of
-a <a href="control-flows.html">control flow block</a> on a new line.
-</p>
-
+the a starting curly brace (<code>{</code>) of any explicit code block on a new line.
 For example, the following <code>for</code> loop code block fails to compile.
 
 <pre class="line-numbers"><code class="language-go">	for i := 5; i > 0; i--
@@ -49,9 +45,9 @@ For example, the following bare <code>for</code> loop block compiles okay.
 
 <p>
 Then, what are the fundamental rules to do line breaks in Go programming?
-Before answering this question, we should know that the formal Go grammar
-uses semicolons <code>;</code> as terminators for statements.
-However, we seldom use semicolons in our Go code.
+Before answering this question, we should know a fact that the formal Go grammar
+uses semicolons <code>;</code> as terminators of code lines.
+However, we seldom use semicolons in our Go code. Why?
 The reason is most semicolons are optional and can be omitted.
 Go compilers will insert the omitted semicolons
 for us automatically in compiling.
@@ -86,7 +82,7 @@ in compiling the source code.
 
 <p>
 What are the semicolons insertion rules in Go?
-Let's read the semicolon rules listed in Go specification.
+Let's read <a href="https://golang.org/ref/spec#Semicolons">the semicolon rules listed in Go specification</a>.
 <p>
 
 <div class="alert alert-success">
@@ -102,10 +98,10 @@ Go programs may omit most of these semicolons using the following two rules:
 	if that token is
 	<ul>
 	<li>
-		an identifier
+		an <a href="keywords-and-identifiers.html#identifier">identifier</a>
 	</li>
 	<li>
-		an integer, floating-point, imaginary, rune, or string literal
+		an integer, floating-point, imaginary, rune, or string <a href="basic-types-and-value-literals.html#basic-value-literals">literal</a>
 	</li>
 	<li>
 		one of the keywords <code>break</code>, <code>continue</code>,
@@ -120,7 +116,7 @@ Go programs may omit most of these semicolons using the following two rules:
 </li>
 <li>
 	To allow complex statements to occupy a single line,
-	a semicolon may be omitted before a closing ")" or "}".
+	a semicolon may be omitted before a closing <code>)</code> or <code>}</code>.
 </li>
 </ol>
 </div>
@@ -128,7 +124,7 @@ Go programs may omit most of these semicolons using the following two rules:
 <p>
 For the scenarios listed in the first rule, surely, we can also insert
 the semicolons manually, just like the semicolons in the last code example.
-In other words, these semocolons are optional.
+In other words, these semocolons are optional in programming.
 </p>
 
 <p>
@@ -206,9 +202,9 @@ The reason why the above code is invalid is compilers will view it as
 <p>
 </p>
 
-Another consequence of the simicolon insertion rules is we must put the
-dot <code>.</code> signs at the end of code line if we wantto break
-a method call chain into miltiple lines.
+Another consequence of the simicolon insertion rules is
+we can't break a line before the dot <code>.</code> in a selector.
+We can only break a line after the dot, as the following code shows
 
 <pre class="line-numbers"><code class="language-go">	anObject.
 		MethodA().
@@ -216,7 +212,7 @@ a method call chain into miltiple lines.
 		MethodC()
 </code></pre>
 
-We can't write the above method call chain as
+whereas the followng code fail to compile.
 
 <pre class="line-numbers"><code class="language-go">	anObject
 		.MethodA()
@@ -237,6 +233,7 @@ the following code which is obviously invalid.
 <p>
 </p>
 
+<!--
 <p>
 There are many other inappropriate line break cases.
 If you think the above line break rules
@@ -249,9 +246,9 @@ Generally, we should only break a code line just after a binary operator,
 an assignment sign, a single dot (<code>.</code>), a comma, a simicolon,
 or an opening brace (<code>{</code>, <code>[</code>, <code>(</code>).
 </div>
-
 <p>
 </p>
+-->
 
 The semicolon insertion rules make us write cleaner code.
 They also make it is possible to write some valid but a little weird code.
@@ -300,7 +297,7 @@ It is different from
 	}
 </code></pre>
 
-If you use the <code>go fmt</code> commend to format the former one,
+If we use the <code>go fmt</code> commend to format the former one,
 a semocolon will be appended automatically after the
 <code>alwaysFalse()</code> call, so it will become to
 
@@ -354,54 +351,37 @@ The compilation error message indicates that there must be
 a statement following a label declaration.
 But it looks none label in the above two examples is followed by a statement.
 Why is only the <code>B:</code> label declaration invalid?
-The reason is, by the simicolon insertion rules mentioned above,
+The reason is, by the second simicolon insertion rule mentioned above,
 compilers will insert a simicolon before each of the <code>}</code> characters
 following the <code>A:</code> and <code>C:</code> label declarations.
 As the following code shows.
-
-
 
 <pre class="line-numbers"><code class="language-go">func f(x int) {
 	switch x {
 	case 1:
 	{
 		goto A
-		A: // compiles okay
-	;}
+		A:
+	;} // a simicolon is inserted here
 	case 2:
 		goto B
 		B: // syntax error: missing statement after label
 	case 0:
 		goto C
-		C: // compiles okay
-	;}
+		C:
+	;} // a simicolon is inserted here
 }
 </code></pre>
 
-Each simicolon inserted can be viewed as a blank statement,
-which is why the <code>A:</code> and <code>C:</code> label declarations
-are both valid but the <code>B:</code> label declaration is not
-(<code>case 0:</code> is not a statement).
+A solo simicolon represents a <a href="expressions-and-statements.html#simple-statement">blank statement</a> accutally,
+which is why the <code>A:</code> and <code>C:</code> label declarations are both valid.
+On the other hand, the <code>B:</code> label declaration is followed by <code>case 0:</code>,
+which is not a statement, so the <code>B:</code> label declaration is invalid.
 </p>
 
 <p>
 We can manually insert a simicolon (a blank statement) at the end of
 each of the <code>B:</code> label declaration to make it compile okay.
-</p>
-
-As label declarations are also statements, the following code is valid,
-though the label declaration form is totally useless in practice.
-
-<pre class="line-numbers"><code class="language-go">func f() {
-	A:B: // has not any usefulness
-	for {
-		break B
-		goto A
-	}
-}
-</code></pre>
-
-<p>
 </p>
 
 </div>
@@ -414,11 +394,11 @@ though the label declaration form is totally useless in practice.
 In some syntax forms containing multiple alike items,
 commas are used as seperators,
 such as composite literals, function argument lists,
-and parameter lists and result lists in function prototypes.
-In such a syntax form, the last comma following the last item is optional
-if the comma is not the last effective character in its respective code line,
-otherwise, the comma is required to be present.
-Compilers will not insert commas automatically for any case.
+function parameter lists and function result lists.
+In such a syntax form, the last item can always be followed by a comma.
+If the following comma is the last effective character in its respective code line,
+then the comma is required, otherwise, it is optional.
+Compilers will not insert commas automatically for any cases.
 </p>
 
 For example, the following code snippet is valid.
@@ -462,7 +442,7 @@ var _, _ = f1(123, "Go" // error: unexpected newline
 <h3>Final Words</h3>
 
 <p>
-Like some other features in Go,
+Like some other design details in Go,
 there are both praises and criticisms for the semicolon insertion rules.
 Some programmers don't like the rules,
 for they think the rules limit the freedom of code styles.

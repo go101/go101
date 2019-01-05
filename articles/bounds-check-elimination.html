@@ -1,11 +1,22 @@
 ﻿<h1>Bounds Check Elimination</h1>
 
 <p>
+Go is a memory safe language.
+In array/slice element indexing and subslice operations,
+Go runtime will check whether or not the involved indexes are out of range.
+If an index is out of range, a panic will be produced to prevent the invalid index from doing harm.
+This is called bounds check.
+Bounds checks make our code run safely, on the other hand, they also make our code run slower.
+</p>
+
+<p>
 Since <a href="https://blog.golang.org/go1.7">Go 1.7</a>, the standard Go compiler
 has used a new compiler back end, which based on static single-assignment form (SSA).
 SSA makes go compiler generate more efficient code with optimizations like
 <a href="https://en.wikipedia.org/wiki/Bounds-checking_elimination">bounds check elimination (BCE)</a>
 and <a href="https://en.wikipedia.org/wiki/Common_subexpression_elimination">common subexpression elimination (CSE)</a>.
+The BCE feature will eleminate some unnecessary bounds checks detected at compile time,
+so that our code will run faster. Sometimes the improvements may be obvious.
 </p>
 
 <p>
@@ -14,7 +25,7 @@ This article will show some examples how BCE works in the standard Go compiler 1
 
 <p>
 In Go 1.7+, one can run <b>go build <i>-gcflags="-d=ssa/check_bce/debug=1"</i></b> to
-show which code lines still need bounds checking.
+show which code lines still need bounds checks.
 </p>
 
 <h3>Example 1</h3>
@@ -57,7 +68,7 @@ $ go build -gcflags="-d=ssa/check_bce/debug=1" example1.go
 </pre>
 
 <p>
-We can see that there are no needs to do bounds checking for line <i>12</i>
+We can see that there are no needs to do bounds checks for line <i>12</i>
 and line <i>13</i> in function <code>f2</code>,
 for the bounds check at line <i>11</i> ensures that the indexes in
 line <i>12</i> and line <i>13</i> will not be out of range.
@@ -132,7 +143,7 @@ $ go build -gcflags="-d=ssa/check_bce/debug=1" example2.go
 </pre>
 
 <p>
-Cool! The standard compiler removes all bound checking in this program.
+Cool! The standard compiler removes all bound checks in this program.
 </p>
 
 <p>
@@ -211,8 +222,8 @@ func main() {
 	// So, this line is no problem.
 	_ = s0[:index]
 	// But, the above line is safe can't ensure the following
-	// line is also safe. In fact, the following line will panic.
-	// The reason is "index > len(s0)".
+	// line is also safe. In fact, the following line will panic,
+	// for the starting index is larger than the end idnex.
 	_ = s0[index:] // panic
 }
 </code></pre>
@@ -221,7 +232,7 @@ func main() {
 So the statement <b>if <code>s[:index]</code> is safe then <code>s[index:]</code>
 is also safe</b> is only true when <code>len(s)</code> is equal to <code>cap(s)</code>.
 This is why the code lines in function <code>fb</code> and <code>fc</code>
-of example 3 still need to do bounds checking.
+of example 3 still need to do bounds checks.
 </p>
 <p>
 Go standard compiler 1.7+ successfully detects <code>len(s)</code> is equal to
@@ -273,7 +284,7 @@ In this example, The standard Go compiler successfully concludes
 
 <p><i>
 (Before Go SDK 1.9, the standard Go compiler failed to
-detect line <code>16</code> doesn't need bounds checking.)
+detect line <code>16</code> doesn't need bounds check.)
 </i></p>
 
 </div>
@@ -282,8 +293,8 @@ detect line <code>16</code> doesn't need bounds checking.)
 
 <div>
 Although the current version of the standard Go compiler is still not smart
-enough to eliminate some unneccessary bounds checkings,
-but we can make some hints to help the compiler eliminate these unneccessary bounds checkings.
+enough to eliminate some unneccessary bounds checks,
+but we can make some hints to help the compiler eliminate these unneccessary bounds checks.
 
 <pre class="line-numbers"><code class="language-go">// example5.go
 package main
@@ -391,9 +402,9 @@ The following is a custom slice comparison function.
 }
 </code></pre>
 
-Bounds checking is still needed for the <code>b[i]</code> in the
+Bounds check is still needed for the <code>b[i]</code> in the
 <code>for-range</code> loop block to avoid index <code>i</code> out of range.
-We can modify the function a bit to remove the bounds checking.
+We can modify the function a bit to remove the bounds check.
 
 <pre class="line-numbers"><code class="language-go">func CompareSlices_BCE(a, b []int) bool {
 	if len(a) != len(b) {
@@ -416,7 +427,7 @@ We can modify the function a bit to remove the bounds checking.
 </code></pre>
 
 Let's <a href="https://github.com/go101/go-benchmarks/blob/master/bce/bce_test.go">benchmark the two functions</a>.
-The result:
+The result (update: no differences for the standard compiler 1.11+):
 
 <pre class="output"><code>Benchmark_SliceComparison/General-4         	 5000000	       287 ns/op
 Benchmark_SliceComparison/BCE-4             	 5000000	       251 ns/op
@@ -448,7 +459,7 @@ Thank Go team for adding this wonderful feature!
 <h3>References:</h3>
 <p>
 <ol>
-<li><a href="https://docs.google.com/document/d/1vdAEAjYdzjnPA9WDOQ1e4e05cYVMpqSxJYZT33Cqw2g">gBounds Checking Elimination</a></li>
+<li><a href="https://docs.google.com/document/d/1vdAEAjYdzjnPA9WDOQ1e4e05cYVMpqSxJYZT33Cqw2g">Bounds Check Elimination</a></li>
 <li><a href="https://klauspost-talks.appspot.com/2016/go17-compiler.slide">Utilizing the Go 1.7 SSA Compiler</a></li>
 </ol>
 </p>

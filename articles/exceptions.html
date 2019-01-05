@@ -1,15 +1,10 @@
 ﻿<h1>Syntax/Semantics Exceptions In Go</h1>
 
-<!--
-possible titles:
-* Go doesn't support exception, in syntax. Go has many exceptions, in syntax.
-* Rules and Sugars in Go
-* Go: rule or sugar?
--->
-
 <p>
-This article will list the syntax/semantics sugars and exceptions in Go.
-Sugars are special syntax/semantics exceptions to make programming convenient.
+This article will list all kinds of syntax/semantics exceptions in Go.
+Some of these exceptions are syntactic sugars to make programming convenient,
+some are caused built-in generic privileges,
+some exists for history reasons, and some exists for other reasons in logic.
 </p>
 
 <p class="anchor" id="nest-function-calls"></p>
@@ -18,49 +13,39 @@ Sugars are special syntax/semantics exceptions to make programming convenient.
 <div>
 The basic rule:
 <div class="alert alert-info">
-If the return results of a function call exactly match the input parameters
-of another function call and the number of the return results is not zero,
-then the first call can be nested in the second one.
-When nested in the second call, the first call can't mix up with
-other parameters of the second call.
+If the number of the return results of a function call is not zero,
+and the return results can be used as the whole arguments of another function call,
+then the former function call can be nested in the latter function call,
+the former nested call can't mix up with other arguments of the latter nesting call.
 </div>
 
 Sugar:
 <div class="alert alert-success">
-If the number of the return results of a function call is exactly one,
-then the function call can be nested in another function call,
-as long as the other function call need at least one argument,
-and the single-return function call can mix up with other arguments of the other function call.
+If a function call returns exactly one result,
+then the function call can be always be used as a single-value argument in other function calls,
+the single-result function call can mix up with other arguments of the nesting function calls.
 </div>
 
 Exception:
 <div class="alert alert-success">
-The basic rule doesn't apply to calls of some built-in functions with multiple input parameters,
+The basic rule doesn't apply to nesting calls of some built-in functions with multiple input parameters,
 including <code>copy</code>, <code>delete</code>, <code>print</code> and <code>println</code> functions.
-A calls to any of these functions can't take a solo multi-return function call as the only argument.
+Calls to these functions can't nest multi-result function calls as arguments.
 </div>
-<!--
-https://github.com/golang/go/issues/15992
-https://github.com/golang/go/issues/20656
--->
 
 <p><i>
 (The basic rule may <a href="https://github.com/golang/go/issues/15992">apply to</a>
-<code>copy</code> functions later,
+<code>copy</code> function later,
 but will <a href="https://github.com/golang/go/issues/20656">never apply to</a>
 <code>print</code> and <code>println</code> functions.)
 </i></p>
 
-The basic rule applies to the calls of built-in <code>append</code> and <code>complex</code> functions,
-with one exception scenario (for the standard Go compiler):
-<div class="alert alert-success">
-Calls to the <code>complex</code> function can't take a solo method call
-on an interface value receiver as the only argument.
-</div>
-
 <p><i>
-(This exception scenario may be a bug of the standard Go compiler.
-At present, Go 1.11, the bug still exists.)
+(For the standard Go compiler,
+the basic rule applies to the nesting calls of <code>complex</code> function,
+but with <a href="https://github.com/golang/go/issues/15992#issuecomment-337673303">one exception case</a>
+when a method call with an interface receiver argument as the only argument of the nesting calls.
+This exception case may be a bug of the standard Go compiler. At present, Go SDK 1.11, the bug still exists.)
 </i></p>
 
 Example:
@@ -103,6 +88,7 @@ func main() {
 </code></pre>
 </div>
 
+<!--
 <h3>Unused Variables</h3>
 
 <div>
@@ -112,15 +98,16 @@ Local variables can't be declared but not used.
 </div>
 
 <div>
-Exception 1:
+Exception:
 <div class="alert alert-success">
 Function parameter and result variables,
 which can also be viewed as local variables,
 are allowed to be not used.
 </div>
 </div>
+-->
 
-<h3>Access Struct Fields</h3>
+<h3>访问结构体字段值</h3>
 
 <div>
 The basic rule:
@@ -130,7 +117,7 @@ Pointer values have no fields.
 
 Sugar:
 <div class="alert alert-success">
-Pointers of a struct value can access the fields of the struct value.
+We can access the fields of a struct value through pointers of the struct value.
 </div>
 
 Example:
@@ -145,24 +132,24 @@ func main() {
 	var p = &t
 	
 	p.x *= 2
-	// above line is a sugar for
+	// The above line is a sugar of the following line.
 	(*p).x *= 2
 }
 </code></pre>
 </div>
 
-<h3>Method Receivers</h3>
+<h3>Receiver Arguments Of Method Calls</h3>
 
 <div>
 The basic rule:
 <div class="alert alert-info">
-The methods explicitly defined on type <code>*T</code> are not methods of type <code>T</code>.
+The methods explicitly declared for type <code>*T</code> are not methods of type <code>T</code> for sure.
 </div>
 
 Sugar:
 <div class="alert alert-success">
 Although the methods explicitly defined on type <code>*T</code> are not methods of type <code>T</code>,
-addressable values of type <code>T</code> can call these methods.
+addressable values of type <code>T</code> can be used as the receiver arguments of calls to these methods.
 </div>
 
 Example:
@@ -177,11 +164,13 @@ func (pt *T) Double() {
 }
 
 func main() {
+	// T{3}.Double() // This line fails to compile.
+	
 	var t = T{3}
 	
 	t.Double() // t.x == 6 now
-	// above line is a sugar for
-	(&t).Double()
+	// The above line is a sugar of the following line.
+	(&t).Double() // t.x == 12 now
 }
 </code></pre>
 </div>
@@ -191,7 +180,7 @@ func main() {
 <div>
 The basic rule:
 <div class="alert alert-info">
-Literal values are not addressable and can't be taken addresses.
+Literal values are unaddressable and unaddressable values can't be taken addresses.
 </div>
 
 Sugar:
@@ -199,26 +188,10 @@ Sugar:
 Although composite literal values are not addressable, they can be taken addresses explicitly.
 </div>
 
-Example:
-<pre class="line-numbers"><code class="language-go">package main
-
-type T struct {
-	x int
-}
-
-func (pt *T) Double() {
-	pt.x *= 2
-}
-
-func main() {
-	// T{3}.Double() // error: T{3} is not addressable
-	                 // The last sugar doesn't work here.
-	
-	var pt = &T{3} // sugar: explicitly take address of
-	               // unaddressable composite literal.
-	pt.Double()
-}
-</code></pre>
+<p>
+Please read <a href="struct.html#take-composite-literal-address">structs</a>
+and <a href="container.html#take-composite-literal-address">containers</a> for details.
+</p>
 </div>
 
 <h3>Selectors On Defined One-Level Pointers</h3>
@@ -226,15 +199,15 @@ func main() {
 <div>
 The basic rule:
 <div class="alert alert-info">
-Generally, selectors can be used on values of <b>defined</b> pointer types.
+Generally, selectors can't be used on values of <a href="type-system-overview.html#underlying-type">defined</a> pointer types.
 </div>
 
 <div>
 Sugar:
 <div class="alert alert-info">
-If <code>x</code> is a value of a defined <b>one-level</b> pointer type,
-and selector <code>(*x).f</code> is a valid selector,
-the <code>x.f</code> is a legal shorthand (sugar) for <code>(*x).f</code>.
+If <code>x</code> is a value of a defined one-level pointer type,
+and selector <code>(*x).f</code> is a legal selector,
+then the <code>x.f</code> is also a legal selector, it can be viewed as a shorthand of <code>(*x).f</code>.
 </div>
 
 <p>
@@ -269,10 +242,10 @@ func main() {
 	var pp PP = ppt
 	_ = pp
 	
-	_ = (*p).x // valid
-	_ = p.x    // legal
+	_ = (*p).x // legal
+	_ = p.x    // also legal
 	
-	_ = (*p).y // valid
+	_ = (*p).y // legal
 	// _ = p.y // illegal
 	
 	// Following ones are all illegal.
@@ -343,17 +316,17 @@ func main() {
 </div>
 -->
 
-<h3>The Addressability Of Container Elements</h3>
+<h3>The Addressability Of A Container And Its Elements</h3>
 
 <div>
 The basic rule:
 <div class="alert alert-info">
-Container elements are addressable if their values can be overwritten.
+If a container is addressable, then its elements are also addressable.
 </div>
 
 Exception:
 <div class="alert alert-success">
-Map elements are always not addressable, even if they can be overwritten.
+Elements of a map are always unaddressable, even if the map itself is addressable.
 </div>
 
 Sugar:
@@ -365,12 +338,8 @@ Example:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	var s = []int{123, 789}
-	var p = &s[0] // ok
-	_ = p
-	
 	var m = map[string]int{"abc": 123}
-	_ = m
+	_ = &m // okay
 	
 	// The exception:
 	// p = &m["abc"] // error: cannot take addresses of map elements
@@ -379,7 +348,8 @@ func main() {
 	f := func() []int { // return results are not addressable
 		return []int{0, 1, 2}
 	}
-	_ = &f()[2] // ok
+	// _ = &f() // error: f() is unaddressable
+	_ = &f()[2] // okay
 }
 </code></pre>
 </div>
@@ -390,8 +360,7 @@ func main() {
 The basic rule:
 <div class="alert alert-info">
 Unaddressable values can't be modified.
-In other words, unaddressable values should appear in assignments
-as destination values.
+In other words, unaddressable values shouldn't appear in assignments as destination values.
 </div>
 
 Exception:
@@ -402,7 +371,6 @@ and appear in assignments as destination values.
 they can only be overwritten wholly, a.k.a., replaced.)
 </div>
 
-
 Example:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -412,11 +380,9 @@ func main() {
 	}
 	
 	var mt = map[string]T{"abc": {123}}
-	mt["abc"] = T{x: 789} // replacement is ok.
-	// Partial modification is not allowed.
-	/*
-	mt["abc"].x = 456
-	*/
+	// _ = &mt["abc"]     // error
+	// mt["abc"].x = 456  // Partial modification is not allowed.
+	mt["abc"] = T{x: 789} // It is ok to be replaced as a whole.
 }
 </code></pre>
 </div>
@@ -457,12 +423,12 @@ There can be multiple functions declared with names as <code>init</code>
 <div>
 The basic rule:
 <div class="alert alert-info">
-Functions can be called by user code.
+Functions whose names are not the blank identifier can be called in user code.
 </div>
 
 Exception:
 <div class="alert alert-success">
-<code>init</code> functions can't be called by user code.
+<code>init</code> functions can't be called in user code.
 </div>
 
 <h3>Functions Being Used As Values</h3>
@@ -470,14 +436,13 @@ Exception:
 <div>
 The basic rule:
 <div class="alert alert-info">
-Declard functions can be used as function values.
+Declared functions can be used as function values.
 </div>
 
 Exception 1:
 <div class="alert alert-success">
 None of the built-in functions, which declared in the <code>builtin</code> and <code>unsafe</code>
-standard packages, can be used as function values,
-including the non-generic <code>panic</code> and <code>recover</code> functions.
+standard packages, can be used as function values.
 </div>
 
 Exception 2:
@@ -491,6 +456,8 @@ Example:
 import "fmt"
 import "unsafe"
 
+func init() {}
+
 func main() {
 	// These ones are okay.
 	var _ = main
@@ -499,31 +466,34 @@ func main() {
 	// These ones fail to compile.
 	var _ = panic
 	var _ = unsafe.Sizeof
+	var _ = init
 }
 </code></pre>
 </div>
 
-<h3>Absence Of Return Values Of Function Calls</h3>
+
+<p class="anchor" id="discard-return-results"></p>
+<h3>Discard Return Values Of Function Calls</h3>
 
 <div>
 
 The basic rule:
 <div class="alert alert-info">
-The return values of a function call can be absent all together.
+The return values of a function call can be discarded all together.
 </div>
 
 Exception:
 <div class="alert alert-success">
-The return values of a call to the built-in functions
-which declared in the <code>builtin</code> and <code>unsafe</code>
-standard packages, can't be absent, if the calld function has return results.
+The return values of calls to the built-in functions
+which are declared in the <code>builtin</code> and <code>unsafe</code>
+standard packages, can't be discarded, if the calld function has return results.
 </div>
 
 Exception in exception:
 <div class="alert alert-success">
 The return values of a call to the built-in
 <code>copy</code> and <code>recover</code> functions
-can be all absent, even if the two functions have return results.
+can be all discarded, even if the two functions have return results.
 </div>
 
 </div>
@@ -544,21 +514,21 @@ The <a href="https://golang.org/pkg/builtin/#pkg-variables">predeclared <code>ni
 So, <code>nil</code> is an immutable varialbe.
 </div>
 
-<h3>Argument Consistency Of The Built-in <code>copy</code> and <code>append</code> Functions</h3>
+<h3>Argument Passing</h3>
 
 <div>
 The basic rule:
 <div class="alert alert-info">
-The type of the second slice argument of a <code>copy</code> or <code>append</code> function call
-must be consistent with the first slice argument.
-(For <code>append</code> call, assume the second argument is passed with the form <code>aSlice...</code>.)
+An argument can be passed to the corresponding function parameter
+only if the argument is assignable to the corresponding function parameter type.
 </div>
 
 Sugar:
 <div class="alert alert-success">
-If the type of the first slice argument of a <code>copy</code> and <code>append</code> function call
-is <code>[]byte</code>, then the second argument type can be <code>string</code>.
-(For <code>append</code> call, assume the second argument is passed with the form <code>aSlice...</code>.)
+If the first slice argument of a <code>copy</code> and <code>append</code> function call
+is a byte slice, then the second argument can be a string,
+whereas a string value is not assignable to the second parameter type (also a byte slice).
+(For an <code>append</code> call, assume the second argument is passed with the form <code>arg...</code>.)
 </div>
 
 Example:
@@ -569,11 +539,13 @@ func main() {
 	var s = "xyz"
 	
 	copy(bs, s)
-	// above line is a sugar (and an optimization) for
+	// The above line is a sugar (and an optimization)
+	// for the following line.
 	copy(bs, []byte(s))
 	
 	bs = append(bs, s...)
-	// above line is a sugar (and an optimization) for
+	// The above line is a sugar (and an optimization)
+	// for the following line.
 	bs = append(bs, []byte(s)...)
 }
 </code></pre>
@@ -584,18 +556,13 @@ func main() {
 <div>
 The basic rule:
 <div class="alert alert-info">
-Most types in Go support comparison.
+Map, slice and function types don't support comparison.
 </div>
 
 <div>
 Exception:
 <div class="alert alert-success">
-Map, slice and function types don't support comparison.
-</div>
-
-Exception in exception:
-<div class="alert alert-success">
-Map, slice and function values can be compared to the bare <code>nil</code> identifier.
+Map, slice and function values can be compared to the predecalred untyped <code>nil</code> identifier.
 </div>
 
 Example:
@@ -628,21 +595,18 @@ func main() {
 <div>
 The basic rule:
 <div class="alert alert-info">
-In any comparison, if one operand can be assignable to the type of the other, then the comparison is valid.
+If a value is assignable to the type of another value, then the two value can be compared.
 </div>
 
 <div>
 Exception:
 <div class="alert alert-success">
-If one of the two operands in a comparison is an interface value,
-and the other operand is a non-interface value of an
-<a href="type-system-overview.html#types-not-support-comparison">uncomparable type</a>
-(which should implement the former operand interface type),
-then the comparison is invalid, even if the non-interface value
-can be implicitly converted to the interface type.
+The values of a non-interface uncomparable type can't be compared to values of an interface type,
+even if the non-interface uncomparable type implements the interface type
+(so values of the non-interface uncomparable type are assignable to the interface type).
 </div>
 
-Please read <a href="value-conversions-assignments-and-comparisons.html#comparison-rules"></a> for examples.
+Please read <a href="value-conversions-assignments-and-comparisons.html#comparison-rules">comparison rules</a> for examples.
 </div>
 
 <!--
@@ -685,7 +649,7 @@ func main() {
 <div>
 The basic rule:
 <div class="alert alert-info">
-If a type <code>T</code> support composite literal values, then <code>T{}</code> is its zero value.
+If the values of a type <code>T</code> can be represented with composite literals, then <code>T{}</code> is its zero value.
 </div>
 
 Exception:
@@ -700,7 +664,7 @@ Example:
 import "fmt"
 
 func main() {
-	// new(T) will return the address of a zero value of type T
+	// new(T) returns the address of a zero value of type T.
 	
 	type T0 struct {
 		x int
@@ -741,12 +705,9 @@ Sugar:
 Array pointers can also be ranged to iterate array elements, though pointers are not containers.
 </div>
 
-BTW, accessing array elements on array pointers (<code>pArray[index]</code>)
-and deriving slices from array pointers (<code>pArray[start : end]</code>)
-are also legal.
 </div>
 
-<h3>Built-in Types</h3>
+<h3>Methods Of Built-in Types</h3>
 
 <div>
 The basic rule:
@@ -760,7 +721,8 @@ The built-in <code>error</code> type has a <code>Error() string</code> method.
 </div>
 </div>
 
-<h3>Exported Identifiers</h3>
+<!--
+<h3>Identifier Visibility</h3>
 
 <div>
 The basic rule:
@@ -774,13 +736,14 @@ Identifiers starting with Unicode lower case letter in the <code>builtin</code> 
 can be exported.
 </div>
 </div>
+-->
 
 <h3>Types Of Values</h3>
 
 <div>
 The basic rule:
 <div class="alert alert-info">
-Values should have either a type or a default type.
+Each value has either a type or a default type.
 </div>
 
 Exception:
@@ -788,32 +751,6 @@ Exception:
 Untyped <code>nil</code> has neither a type nor a default type.
 </div>
 
-For the reason of this exception, untyped <code>nil</code> can't be
-assigned to a new declared variable which type is not specified.
-And although untyped <code>nil</code> can be used as dynamic values
-of interface values, it doesn't implement any interface type.
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	const x = 123 // for untyped constant x, its default type is int.
-	
-	fmt.Printf("type of %v is %T \n", x, x) // type of 123 is int
-	
-	var y = x // compile okay, the type of y is int
-	_ = y
-	var _ float64 = x    // compile okay
-	var _ int32 = x      // compile okay
-	var _ complex128 = x // compile okay
-	
-	// var _ = nil // compile error: use of untyped nil
-	
-	var v interface{}
-	fmt.Printf("type of %v is %T \n", v, v) // type of &lt;nil&gt; is &lt;nil&gt;
-	var _ interface{} = v.(interface{}) // will panic
-}
-</code></pre>
 </div>
 
 <h3>Constant Values</h3>
@@ -827,34 +764,32 @@ Constant can be assigned to variables.
 
 Exception:
 <div class="alert alert-success">
-<code>iota</code> is a built-in constant predeclared as <code>0</code>,
+Predeclared <code>iota</code> is a built-in constant which is bound with <code>0</code>,
 but its value is not constant. Its value will start from <code>0</code>
-and increase one line by line in a constant declaration group,
+and increase one constant specification by constant specification in a constant declaration group,
 though the increasements happen at compile time.
-And <code>iota</code> can only be used in constant declarations.
-It can't be used in variable declarations and many other places where
-general constants can show up.
 </div>
 
 Exception 2:
 <div class="alert alert-success">
-<code>iota</code> can only be used within constant decclartions.
+<code>iota</code> can only be used within constant declartions.
+It can't be assigned to variables in variable declarations.
 </div>
 
 </div>
 
 <p class="anchor" id="behaviors-on-missing-optional-result"></p>
-<h3>Behaviors Of Missing The OK Optional Return Values</h3>
+<h3>Behavior Change Caused By Discarding The Optional Evaluation Results Of Expressions</h3>
 
 <div>
 The basic rule:
 <div class="alert alert-info">
-Whether or not the ok return value is present will not affect program behavior.
+Whether or not the optional evaluation result of an expression is present will not affect program behavior.
 </div>
 
 Exception:
 <div class="alert alert-success">
-Missing the ok optional return value will make current goroutine panic if a type assertion fails.
+Missing the optional result value in a type assertion will make current goroutine panic if the type assertion fails.
 </div>
 
 Example:

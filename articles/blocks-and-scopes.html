@@ -1,12 +1,12 @@
 ﻿<h1>Code Blocks And Identifier Scopes</h1>
 
 <p>
-This article will explain the code blocks and declaration scopes in Go.
+This article will explain the code blocks and identifier scopes in Go.
 </p>
 
 <p><i>
-(Please note, the definitions of code blocks and declaration scopes in this article
-are a little different from the ones in <a href="https://golang.org/ref/spec">Go specification</a>.)
+(Please note, the definitions of code block hierarchies in this article
+are a little different from Go specification.)
 </i></p>
 
 <!--
@@ -312,7 +312,7 @@ func main() {
 		*T // invalid recursive type alias T
 	}
 	*/
-	
+
 	// Following type definitions are all valid.
 	type T struct {
 		*T
@@ -324,16 +324,16 @@ func main() {
 	type F func(F) F
 	type Ch chan Ch
 	type P *P
-	
+
 	// ...
 	var s = make(S, 3)
 	s[0] = s
 	s = s[0][0][0][0][0][0][0][0]
-	
+
 	var m = M{}
 	m[1] = m
 	m = m[1][1][1][1][1][1][1][1]
-	
+
 	var p P
 	p = &p
 	p = ***********************p
@@ -359,7 +359,7 @@ func main() {
 	const iota = iota // ok
 	var true = true   // ok
 	_ = true
-	
+
 	// The following lines fail to compile.
 	/*
 	var c = d // can't reference variables declared later
@@ -376,8 +376,8 @@ func main() {
 <div>
 <p>
 Except labels, an identifier declared in an outer code blocks can be
-shadowed by the same identifier declared
-in code blocks nested in the outer code block.
+shadowed by the same identifier declared in code blocks
+nested (directly or indirectly) in the outer code block.
 </p>
 
 <p>
@@ -413,7 +413,7 @@ func main() {
 			p5 = &x
 		}
 	}
-	
+
 	fmt.Println(*p0, *p1, *p2, *p3, *p4, *p5) // 9999 888 77 6 3 -3
 }
 </code></pre>
@@ -462,10 +462,14 @@ func main() {
 <p>
 </p>
 
+<!--
 <p>
 We can use the <code>go vet -shadow</code> command to list
 possible mis-shadowing uses.
 </p>
+
+https://github.com/golang/go/issues/29260#issuecomment-447694762
+-->
 
 <p class="anchor" id="weird-shadowing"></p>
 
@@ -492,7 +496,7 @@ func int(){}       // shadows the built-in type identifier "int"
 func main() {
 	fmt.Println("a weird program")
 	var print = fmt.Println
-	
+
 	var fmt = [len]nil{{}, {}, {}} // shadows the package import "fmt".
 	// var n = len(fmt) // sorry, "len" is a constant.
 	var n = cap(fmt)    // use built-in cap function instead, :(

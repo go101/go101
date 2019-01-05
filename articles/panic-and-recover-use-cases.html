@@ -11,9 +11,8 @@ panic/recover use cases.
 
 <div>
 <p>
-This may be the mose popular use case of panic/recover.
-The use case is used commonly in concurrent programs,
-especially client-server programs.
+This should be the most popular use case of panic/recover.
+The use case is used commonly in concurrent programs, especially client-server programs.
 <p>
 
 An example:
@@ -41,7 +40,8 @@ func main() {
 func ClientHandler(c net.Conn) {
 	defer func() {
 		if v := recover(); v != nil {
-			log.Println("client handler panic:", v)
+			log.Println("capture a panic:", v)
+			log.Println("avoid crashing the program")
 		}
 		c.Close()
 	}()
@@ -50,14 +50,14 @@ func ClientHandler(c net.Conn) {
 </code></pre>
 
 <p>
-If we don't recover the potential panic in each client handler goroutine,
-the potential panic will crash the program.
-</p>
-
-<p>
 Start the server and run <code>telnet localhost 12345</code> in another terminal,
 we can observe that the server will not crash down
 for the panics created in each client handler goroutine.
+</p>
+
+<p>
+If we don't recover the potential panic in each client handler goroutine,
+the potential panic will crash the program.
 </p>
 
 </div>
@@ -102,7 +102,7 @@ func main() {
 </code></pre>
 </div>
 
-<h3>Use Case 3: Use Panic/Recover To Simulate Long Jump Statements</h3>
+<h3>Use Case 3: Use <code>panic</code>/<code>recover</code> Calls To Simulate Long Jump Statements</h3>
 
 <div>
 <p>
@@ -115,7 +115,7 @@ The only benefit is sometimes it can make code look less verbose.
 </p>
 
 In the following example, once a panic is created in an inner function,
-the exection will jump to the defer <code>recover</code> call.
+the exection will jump to the deferred call.
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -147,7 +147,7 @@ func main() {
 </code></pre>
 </div>
 
-<h3>Use Case 4: Use Panic/Recover To Reduce Error Checkings</h3>
+<h3>Use Case 4: Use <code>panic</code>/<code>recover</code> Calls To Reduce Error Checkings</h3>
 
 <div>
 
@@ -219,16 +219,6 @@ func doSomething() (err error) {
 <p>
 However, usually, this panic/recover use pattern is not recommended to use.
 It is less readable and less efficient.
-</p>
-
-<p>
-Generally, panics are for logic errors, such as human careless errors.
-Logic errors are the errors which should never happen at run time.
-If they are happen, there must be bugs in the code.
-On the other hand, non-logic errors are the errors
-which are hard to absolutely avoid at run time.
-In other words, they are errors happening in reality.
-Such errors should be explicitly returned and handled properly.
 </p>
 </div>
 

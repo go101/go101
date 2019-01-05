@@ -1,6 +1,10 @@
 
 
 
+### 1.11.f (2019/Jan/02)
+
+* remove "Unused Variables" from [Syntax/Semantics Exceptions In Go](https://go101.org/article/exceptions.html).
+
 ### 1.11.g (2018/Dec/27)
 
 * a serious mistake was just fixed in this book.
