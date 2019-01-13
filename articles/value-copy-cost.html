@@ -2,9 +2,9 @@
 
 <p>
 Value copying happens frequently in Go programming.
-Values assignments, argument passing, channel value send and receive operations
+Values assignments, argument passing and channel value send operations
 are all value copying involved.
-This article will talk about value copy costs in Go.
+This article will talk about the copy costs of all kinds of Go values.
 </p>
 
 <p class="anchor" id="value-sizes"></p>
@@ -31,8 +31,8 @@ The same relation is for the sizes of two interface values.
 </p>
 
 <p>
-For the standard Go compiler/runtime,
-values of the same type always have the same value size.
+Up to present (Go 1.11),
+values of a specified type always have the same value size.
 So, often, we call the size of a value as the size of the type of the value.
 </p>
 
@@ -43,25 +43,25 @@ the array element type and the array length.
 <p>
 
 <p>
-The size of a struct type depends on all of its fields.
-For there may be some <a href="memory-layout.html#size-and-padding">padding bytes</a>
-between two adjacent fields, the struct type size is not smaller than
-(and often larger than) the sum of the respective type sizes of the struct fields.
+The size of a struct type depends on all of the sizes and the order of its fields.
+For there may be some <a href="memory-layout.html#size-and-padding">padding bytes</a> being inserted
+between two adjacent struct fields to guarantee certain memory address alignment requirements of these fields,
+so the size of a struct type must be not smaller than (and often larger than) the sum of the respective type sizes of its fields.
 </p>
 
 <p>
-The following table lists the value sizes of all kinds of types.
+The following table lists the value sizes of all kinds of types (for the standard Go compiler version 1.11).
 In the table, one word means one native word,
-which is 4 bytes on 32bits OSes and 8 bytes on 64bits OSes.
+which is 4 bytes on 32bits architectures and 8 bytes on 64bits architectures.
 </p>
 
 <table class="table table-bordered text-center" style="width: auto !important;">
 <thead>
 	<tr>
-	<th class="text-center">Type</th>
-	<th class="text-center">Value Size For The Standard Go Compiler (version 1.11)</th>
+	<th class="text-center">Kind Of Types</th>
+	<th class="text-center">Value Size</th>
 	<th class="text-center">
-		<a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">Requirement</a>
+		<a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">Required</a>
 		By <a href="https://golang.org/ref/spec#Numeric_types">Go Specification</a>
 	</th>
 	</tr>
@@ -100,7 +100,7 @@ which is 4 bytes on 32bits OSes and 8 bytes on 64bits OSes.
 	<tr class="active">
 	<th scope="row" class="text-center">int, uint</th>
 	<td>1 word</td>
-	<td>architecture dependent, either 4 or 8 bytes</td>
+	<td>architecture dependent, 4 bytes on 32bits architectures and 8 bytes on 64bits architectures</td>
 	</tr>
 	<tr class="active">
 	<th scope="row" class="text-center">uintptr</th>
@@ -165,8 +165,11 @@ which is 4 bytes on 32bits OSes and 8 bytes on 64bits OSes.
 <div>
 <p>
 Generally speaking, the cost to copy a value is proportional to the size of the value.
-However, value sizes are not the only factor to calculate value copying.
+However, value sizes are not the only factor determining value copy costs.
 Different CPU architectures may specially optimize value copying for values with specific sizes.
+</p>
+
+<p>
 In practice, we can view values with sizes smaller not larger than four native words
 as small-size values. The costs of copying small-size values are small.
 </p>
@@ -174,31 +177,28 @@ as small-size values. The costs of copying small-size values are small.
 <p>
 For the standard Go compiler,
 except values of large-size struct and array types,
-most values in Go are small-size values.
+most types in Go are small-size types.
 </p>
 
 <p>
 To avoid large value copy costs in argument passing and channel value send
 and receive operations, we should try to avoid using large-size
 struct and array types as function and method parameter types
-(including method receiver types)
-and avoid using large-size struct and array types as channel element types.
-We can use pointer types whose base types are large-size struct and array types
-instead for such scenarios.
+(including method receiver types) and channel element types.
+We can use pointer types whose base types are large-size types instead for such scenarios.
 </p>
 
 <p>
-One the other hand, we should also consider the negative effect for
-garbage collections caused by too many pointers are used at run time.
+One the other hand, we should also consider the fact that too many pointers
+will increase the pressure of garbage collectors at run time.
 So whether large-size struct and array types or their corresponding pointer
-types should be used relies on specific scenarios.
+types should be used relies on specific cirumstances.
 </p>
 
 <p>
-Generally, we shouldn't use pointer types whose base types are
-slice types, map types, channel maps, function types, string types
-and interface types.
-The costs of copying values of these assumed base types are small.
+Generally, in practice, we seldom use pointer types whose base types are
+slice types, map types, channel maps, function types, string types and interface types.
+The costs of copying values of these assumed base types are very small.
 </p>
 
 <p>

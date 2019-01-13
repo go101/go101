@@ -18,59 +18,62 @@ https://github.com/golang/go/issues/7429#issuecomment-282480782
 
 <div>
 
-In a Go project, there are four kinds of code blocks:
+In a Go project, there are four kinds of code blocks (also called blocks later):
 <ul>
 <li>the <b>universe block</b> contains all project source code.</li>
 <li>each package has a <b>package block</b> containing all source code,
 	excluding the package import declarations in that package.</li>
 <li>each file has a <b>file block</b> containing all the source code,
 	including the package import declarations, in that file.</li>
-<li>generally, a pair of braces <code>{}</code> opens and encloses a <b>local block</b>.
+<li>generally, a pair of braces <code>{}</code> encloses a <b>local block</b>.
+	However, some local blocks don't enclosed with <code>{}</code>, such blocks are called implicit local blocks.
 	The local blocks enclosed in <code>{}</code> are called explicit local blocks.
 	The <code>{}</code> in composite literals and type definitions don't form
 	local blocks.
 </li>
 </ul>
 
-Some keywords will open some implicit code blocks.
+Some keywords in all kinds of control flows are followed by some implicit code blocks.
 <ul>
 <li>
-	the input parameters and output results of a function are viewed as being
-	declared in the local block enclosed by the pair of braces
-	<code>{}</code> of the function definition, even if they stay out of
-	the pair of braces.
-</li>
-<li>
-	an <code>if</code>, <code>switch</code> or <code>for</code> keyword
-	will open two nested local blocks. One is implicit, the other is explicit.
+	An <code>if</code>, <code>switch</code> or <code>for</code> keyword
+	is followed by two nested local blocks. One is implicit, the other is explicit.
 	The explicit one is nested in the implicit one.
-	The variables declared with short declaration forms in the simple statements closely
-	following the <code>if</code>, <code>switch</code> or <code>for</code> keyword
-	is declared in the implicit block.
+	If such a keyword is followed by a short variable declaration,
+	then the variables are declared in the implicit block.
 </li>
 <li>
-	an <code>else</code> keyword will open one explicit or implicit block,
-	which is nested in the implicit block opened by its <code>if</code> counterpart keyword.
+	An <code>else</code> keyword is followed by one explicit or implicit block,
+	which is nested in the implicit block following its <code>if</code> counterpart keyword.
 	If the <code>else</code> keyword is followed by another <code>if</code> keyword,
-	then the code block opened by the <code>else</code> keyword is implicit.
+	then the code block following the <code>else</code> keyword can be implicit,
+	otherwise, the code block must be explicit.
 </li>
 <li>
-	each <code>case</code> and <code>default</code> keyword opens one implicit block,
-	which is nested in the explicit block opened by its corresponding
+	An <code>select</code> keyword is followed by one explicit block.
+</li>
+<li>
+	Each <code>case</code> and <code>default</code> keyword is followed by one implicit block,
+	which is nested in the explicit block following its corresponding
 	<code>switch</code> or <code>select</code> keyword.
 </li>
 </ul>
 
 <p>
 The local blocks which aren't nested in any other local blocks are called top-level
-(or package-level) local blocks.
-Top-level local blocks are all function bodies.
+(or package-level) local blocks. Top-level local blocks are all function bodies.
+</p>
+
+<p>
+Note, the input parameters and output results of a function are viewed as being
+declared in explicit body code block of the function, even if their declarations
+stay out of the pair of braces enclosing the function body block.
 </p>
 </div>
 
 
 <div>
-Block hierarchies:
+Code block hierarchies:
 <ul>
 <li>package blocks are nested in the universe block.</li>
 <li>file blocks are also directly nested in the universe block, instead of package blocks.
@@ -83,8 +86,7 @@ Block hierarchies:
 </ul>
 
 <p><i>
-(The differences to Go specification are to make the explanation of identifier shadowing
-simpler below.)
+(The differences to Go specification are to make the explanation of identifier shadowing simpler below.)
 </i></p>
 
 Here is a picture shows the block hierarchies in a program:
@@ -97,7 +99,7 @@ Here is a picture shows the block hierarchies in a program:
 </div>
 
 <p>
-Code blocks are mainly used to explain scopes of declared source code element identifiers.
+Code blocks are mainly used to explain allowed declaration positions and scopes of source code element identifiers.
 </p>
 
 <p class="anchor" id="declaration"></p>
@@ -107,8 +109,8 @@ Code blocks are mainly used to explain scopes of declared source code element id
 There are six kinds of source code elements which can be declared:
 <ul>
 <li>package imports.</li>
-<li>types.</li>
-<li>constants.</li>
+<li>named types.</li>
+<li>named constants.</li>
 <li>variables.</li>
 <li>functions.</li>
 <li>labels.</li>
@@ -118,8 +120,16 @@ Labels are used in the <code>break</code>, <code>continue</code>, and <code>goto
 </p>
 </div>
 
+<p>
+A declaration binds a non-blank identifier to a source code element (constant, type, variable, function, label, or package).
+In other words, in the declaration, the declared source code element is named as the non-blank identifier.
+After the declaration, we can use the non-blank identifier to represent the declared source code element.
+</p>
+
+
+
 <div>
-The following table shows which code blocks all sorts of source code elements can be directly declared in:
+The following table shows which code blocks all kinds of source code elements can be directly declared in:
 <table class="table table-bordered text-center" style="width: auto !important;">
 <thead>
 	<tr>
@@ -146,14 +156,14 @@ The following table shows which code blocks all sorts of source code elements ca
 	<td></td>
 	</tr>
 	<tr class="active">
-	<th scope="row" class="text-center">types (non-builtin)</th>
+	<th scope="row" class="text-center">named types (non-builtin)</th>
 	<td></td>
 	<td>Yes</td>
 	<td>Yes</td>
 	<td>Yes</td>
 	</tr>
 	<tr>
-	<th scope="row" class="text-center">constants (non-builtin)</th>
+	<th scope="row" class="text-center">named constants (non-builtin)</th>
 	<td></td>
 	<td>Yes</td>
 	<td>Yes</td>
@@ -167,7 +177,7 @@ The following table shows which code blocks all sorts of source code elements ca
 	<td>Yes</td>
 	</tr>
 	<tr>
-	<th scope="row" class="text-center">functions (non-builtin) <sup>(3)</sup></th>
+	<th scope="row" class="text-center">functions (non-builtin)</sup></th>
 	<td></td>
 	<td>Yes</td>
 	<td>Yes</td>
@@ -182,134 +192,136 @@ The following table shows which code blocks all sorts of source code elements ca
 	</tr>
 </tbody>
 </table>
-</div>
 
 <p>
-<sup>(1)</sup> predeclared elements are documented in <code>builtin</code> package.
+<sup>(1)</sup> predeclared elements are documented in <a href="https://golang.org/pkg/builtin/"><code>builtin</code> standard package</a>.
 <br/>
 <sup>(2)</sup> excluding struct field variables.
-<br/>
-<sup>(3)</sup> excluding type methods.
 </p>
 
-<div>
-Please note,
+So,
 <ul>
 <li>
-package imports will never be declared in package and local blocks.
+package imports can never be declared in package blocks and local blocks.
 </li>
 <li>
-functions can't be declared in local blocks
-(anonymous functions can be enclosed in local blocks but there is no way to declare them).
+functions can never be declared in local blocks.
+(Anonymous functions can be enclosed in local blocks but they are not declarations.)
 </li>
 <li>
 labels can only be declared in local blocks.
-And the intermost function block containing a label declaration
-and the references of the label must be the same.
+</li>
+</ul>
+
+Please note,
+<ul>
+<li>
+ignore labels, two code elements can be declared with the same identifier as long as
+the respective innermost containing code blocks of the two declarations are different.
 </li>
 <li>
-some special protions in all kinds of implicit local blocks have special requirements:
+if the innermost containing function body blocks of the two label declarations are the same one,
+then the names (identifiers) of two labels can't be identical.
+</li>
+<li>
+the references of a label must be within the intermost function body block containing the declaration of the label.
+</li>
+<li>
+some special portions in the implicit local blocks in all kinds of control flows have special requirements.
+Generally, no code elements are allowed to be directly declared in such implicit local blocks, except some short variable declarations.
 	<ul>
 	<li>
-	if the statement following a <code>if</code>, <code>switch</code> or <code>for</code> keyword
-	is a declaration, it must be the short form of a variable declaration.
-	No declarations can be contained directly in other protions of	the implicit blocks opened by these keywords.
+	Each <code>if</code>, <code>switch</code> or <code>for</code> keyword can be closely followed by a short variable declaration.
 	</li>
 	<li>
-	if the statement following a <code>case</code> keyword in a <code>select</code> block
-	is a declaration, it must be the short form of a variable declaration.
+	Each <code>case</code> keyword in a <code>select</code> control flow can be closely followed by a short variable declaration.
 	</li>
 	</ul>
 </li>
-<li>
-if the innermost containing function blocks of the two label declarations are the same one,
-then the names of two labels can't be duplicated.
-</li>
-<li>
-except labels, if the innermost containing blocks of two declared identifiers are the same one,
-then the two identifiers can't be identical.
-</li>
 </ul>
+
 <p><i>
 (BTW, the <code>go/*</code> standard packages think file code blocks can only contain package import declarations.)
 </i></p>
 </div>
 
 <p>
-The source code elements declared in package blocks but outside any local blocks are called package-level source code elements.
-Package-level source code elements can be constants, types, variables, or functions, but not labels and package imports.
-</p>
-
-<p>
-Each package-level source code element identifier is directly contained
-both in a package block and a file block.
+The source code elements declared in package blocks but outside of any local blocks are called package-level source code elements.
+Package-level source code elements can be named constants, named types, variables, or functions.
 </p>
 
 <p class="anchor" id="scope"></p>
 <h3>Scopes Of Declared Source Code Elements</h3>
 
 <div>
-The scope of an declared identifier is the identifiable range of the identifier.
-Here are <a href="https://golang.org/ref/spec#Declarations_and_scope">the scope definitions</a>
-for all kinds of source code element identifiers:
+<p>
+The scope of a declared identifier means the identifiable range of the identifier (or visible range).
+<p/>
+
+Without considering identifer shadowing which will be explained in the last section of the current article,
+<a href="https://golang.org/ref/spec#Declarations_and_scope">the scope definitions</a> for the identifiers
+of all kinds of source code elements are listed below.
 <ul>
 <li>
-	the scope of a predeclared/built-in identifier is the universe block.
+	The scope of a predeclared/built-in identifier is the universe block.
 </li>
 <li>
-	the scope of a package import identifier is the file block containing the identifier.
+	The scope of the identifier of a package import is the file block containing the package import declaration.
 </li>
 <li>
-	the scope of an identifier denoting a constant, type, variable, or function
+	The scope of an identifier denoting a constant, type, variable, or function
 	(but not method) declared at package level is the package block.
-	In particular, if the identifier denotes a constant or a variable,
-	its scope doesn't include the line the identifier is declared at.
 </li>
 <li>
-	the scope of an identifier denoting a method receiver, function parameter,
+	The scope of an identifier denoting a method receiver, function parameter,
 	or result variable is the corresponding function body (a local block).
 </li>
 <li>
-	the scope of a constant or variable identifier declared inside a local block
-	begins at the end of its declaration statement and ends at the end of the innermost containing block.
+	The scope of the identifier of a constant or variable declared inside a function
+	begins at the end of the specification of the constant or variable
+	(or the end of the declaration for a short declared variable)
+	and ends at the end of the innermost containing block.
 </li>
 <li>
-	the scope of a type identifier defined inside a local block begins at the start
-	of its definition and ends at the end of the innermost containing block.
+	The scope of the identifier of a <a href="type-system-overview.html#type-definition">defined type</a>
+	declared inside a function begins at the identifier in the
+	specification of the type ends at the end of the innermost containing block.
 </li>
 <li>
-	the scope of a type alias identifier declared inside a local block begins at the end
-	of its declaraion and ends at the end of the innermost containing block.
+	The scope of the identifier of a <a href="type-system-overview.html#type-alias">type alias</a>
+	declared inside a local block begins at the end
+	of the declaraion of the type and ends at the end of the innermost containing block.
 </li>
 <li>
-	the scope of a label is the body of the innermost function local block containing the label declaration
+	The scope of a label is the body of the innermost function body block containing the label declaration
 	but excludes all the bodies of anonymous functions nested in the containing function.
-	In other words, labels can't be referenced crossing function bodies.
 </li>
 </ul>
 </div>
 
 <p>
-The elements declared with the blank identifier are not really declared and have no scopes.
+Blank identifiers have no scopes.
 </p>
 
 <p><i>
-(The predeclared <code>iota</code> is only visible in constant declarations.)
+(Note, the predeclared <code>iota</code> is only visible in constant declarations.)
 </i></p>
 
 <p class="anchor" id="scope-difference-detail"></p>
 <div>
-Yoy may have noticed the minor difference of declared identifiers between local type definitions
-and local variable/constant/alias declarations. The difference means a defined type may be able to
-reference itself in its definition body. Here is an example to show it more clearly:
+Yoy may have noticed the minor difference of identifier scope definitions
+between local type definitions and local variables, local constants and local type aliases.
+The difference means a defined type may be able to
+reference itself in its declaration.
+Here is an example to show the difference.
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	// var v int = v   // error: undefined: v
-	// const C int = C // error: undefined: C
+	// var v int = v   // error: v is undefined
+	// const C int = C // error: C is undefined
 	/*
 	type T = struct {
-		*T // invalid recursive type alias T
+		*T // error: invalid recursive type alias T
 	}
 	*/
 
@@ -340,17 +352,20 @@ func main() {
 }
 </code></pre>
 
+<p>
+</p>
+
 And the scope difference between package-level and local declarations:
 <pre class="line-numbers"><code class="language-go">package main
 
 // Here the two identifiers at each line are the same one.
-// They are all not the predeclcared identifiers.
+// The right ones are all not the predeclcared identifiers.
 /*
 const iota = iota // error: constant definition loop
 var true = true   // error: typechecking loop
 */
 
-var a = b   // can reference variables declared later
+var a = b // can reference variables declared later
 var b = 123
 
 func main() {
@@ -375,7 +390,7 @@ func main() {
 
 <div>
 <p>
-Except labels, an identifier declared in an outer code blocks can be
+Ignoring labels, an identifier declared in an outer code blocks can be
 shadowed by the same identifier declared in code blocks
 nested (directly or indirectly) in the outer code block.
 </p>
@@ -389,8 +404,8 @@ If an identifier is shadowed, its scope will exclude the scopes of its shadowing
 </p>
 
 Below is an interesting example.
-The code contains 4 declared variables named <code>x</code>.
-A <code>x</code> declared in a deeper block will shadow
+The code contains 6 declared variables named <code>x</code>.
+A <code>x</code> declared in a deeper block shadows
 the <code>x</code>s declared in shallower blocks.
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -421,7 +436,8 @@ func main() {
 <p>
 </p>
 
-For some circumstances, when identifier shadowings meet short variable declarations,
+For some circumstances, when identifiers are shadowed by variables
+declared with short variable declarations,
 some new gophers may get confused on whether or not a variable
 in a short variable declaration is new declared.
 The following example (which has bugs) shows the famous trap in Go.
@@ -437,15 +453,17 @@ func parseInt(s string) (int, error) {
 	if err != nil {
 		// Some new gophers may think err is an already declared
 		// variabled in the following short variable declaration.
-		// However, both b and err are new declared here in fact.
+		// However, both b and err are new declareds here in fact.
+		// The new declared err shadows the err declared above.
 		b, err := strconv.ParseBool(s)
 		if err != nil {
 			return 0, err
 		}
-		// If exection goes here, a nil error is expected to be
-		// returned. But in fact, the outer non-nil error will be
-		// returned. The scope of the inner "err" ends at the end
-		// of the if clause.
+
+		// If execution goes here, some new gophers might expected
+		// a nil error will be returned. But in fact, the outer
+		// non-nil error will be returned instead, for the scope of
+		// the inner "err" ends at the end of the first if clause.
 		if b {
 			n = 1
 		}
@@ -501,24 +519,24 @@ func main() {
 	// var n = len(fmt) // sorry, "len" is a constant.
 	var n = cap(fmt)    // use built-in cap function instead, :(
 
-	// the "for" keyword will open one implicit local code block and
-	// one explicit local code block.
+	// The "for" keyword is followed by one implicit local code block
+	// and one explicit local code block. The iteration variable
+	// "true" shadows the package-level variable "true".
 	for true := 0; true < n; true++ {
-		var false = fmt[true] // shadows the built-in const
-		                      // the built-in identifier "false".
+		var false = fmt[true] // shadows the built-in const "false"
 		var true = true+1 // the new declared "true" variable
 		                  // shadows the iteration variable "true".
 		// fmt.Println(true, false) // sorry, "fmt" is an array.
 		print(true, false)
 	}
 }
+</code></pre>
 
-/* output:
-a weird program
+The output:
+<pre class="output"><code>a weird program
 1 {}
 2 {}
 3 {}
-*/
 </code></pre>
 
 <p>

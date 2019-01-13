@@ -50,7 +50,7 @@ There are also many differences between the three kinds of container types.
 Most of the differences originate from the differences between
 the value memory layouts of the three kinds of types.
 From the last article, <a href="value-part.html">value parts</a>,
-we learned that an array value is composed of only one direct part,
+we learned that an array value consists of only one direct part,
 however a slice or map value may have an underlying part,
 which is referenced by the direct part of the slice or map value.
 </p>
@@ -584,13 +584,12 @@ then <code>k</code> must be assignable to values of
 the element type of the map type, and
 <ul>
 <li>
-	if the <a href="type-system-overview.html#concrete-type">concrete type</a> of <code>k</code>
-	is an uncomparable type, a run-time panic will occur.
+	if <code>k</code> is an interface value whose dynamic type is uncomparable,
+	a panic will occur at run time.
 </li>
 <li>
-	if the concrete type of <code>k</code> is not an uncomparable value, <code>v[k]</code> will
-	cause a panic only if <code>v</code> is a nil map
-	and <code>v[k]</code> is used as the destination value in an assignment.
+	if <code>v[k]</code> is used as a destination value in an assignment and <code>v</code> is a nil map,
+	a panic will occur at run time.
 </li>
 <li>
 	if <code>v[k]</code> is used to retrieve the element value corresponding key <code>k</code> in map <code>v</code>,
@@ -1139,7 +1138,7 @@ Following are some facts about the addressabilities of container elements.
 <li>
 	Elements of addressable array values are also addressable.
 	Elements of unaddressable array values are also unaddressable.
-	The reason is each array value is only composed of one direct part.
+	The reason is each array value only consists of one direct part.
 </li>
 <li>
 	Elements of any slice value are always addressable,
@@ -1193,7 +1192,7 @@ things become some counter-intuitive.
 </p>
 
 From the last article, <a href="value-part.html">value parts</a>, we learned
-that each of struct and array values is composed of only one direct part.
+that each of struct and array values only consists of one direct part.
 So
 <ul>
 <li>
@@ -1521,13 +1520,16 @@ the following syntax:
 
 <p>
 where <code>key</code> and <code>element</code> are called iteration variables.
+If <code>aContainer</code> is a slice or an array (or an array pointer, see below),
+then the type of <code>key</code> must be built-in type <code>int</code>.
 </p>
 
 <p>
 The assignment sign <code>=</code> can be a short variable declaration sign
-<code>:=</code>, in which case the two iteration variables are both two new
-declared variables which are only visible within the <code>for-range</code>
-code block body.
+<code>:=</code>, in which case the two iteration variables are both two new declared
+variables which are only visible within the <code>for-range</code> code block body,
+if <code>aContainer</code> is a slice or an array (or an array pointer),
+then the type of <code>key</code> is deduced as <code>int</code>.
 </p>
 
 <p>
@@ -1566,9 +1568,6 @@ func main() {
 </code></pre>
 
 <p>
-If the iteration variable <code>i</code> in the above example is declared
-outside of the <code>for-range</code> code block,
-its type must be the built-in type <code>int</code>.
 </p>
 
 The form <code>for-range</code> code block syntax has several variants:

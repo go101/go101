@@ -450,7 +450,7 @@ to get which values are addressable or unaddressable.
 <tbody>
 	<tr class="active">
 	<th scope="row" class="text-center">import</th>
-	<td>No (for the standard compiler)</td>
+	<td>No</td>
 	</tr>
 	<tr>
 	<th scope="row" class="text-center">type</th>
@@ -474,7 +474,7 @@ to get which values are addressable or unaddressable.
 	</tr>
 	<tr>
 	<th scope="row" class="text-center">label</th>
-	<td>No (for the standard compiler)</td>
+	<td>No</td>
 	</tr>
 </tbody>
 </table>
@@ -627,10 +627,34 @@ Please read <a href="string.html#string-concatenation">strings in Go</a> for det
 <!--
 
 Fatal errors which can be recovered:
-* https://play.golang.org/p/bYrfLTzXpc_o bad Mutex.Unlock call
+* https://play.golang.org/p/bYrfLTzXpc_o bad Mutex.Unlock call. unlock of unlocked lock
 * create goroutine with nil function
-* memory allcaotion fails
+* memory allcaotion fails, out of memory, alloc too large
+* stack overflow
 * map data race operation
+  * concurrent map iteration and map write
+  * concurrent map read and map write
+  * concurrent map writes
+* cgo callback before cgo call
+* thread exhaustion
+	package main
+	import "runtime/debug"
+	import "runtime"
+	func main() {
+		debug.SetMaxThreads(10)
+		c := make(chan int)
+		for i := 0; i < 100; i++ {
+			go func() {
+				runtime.LockOSThread()
+				c <- 0
+				select {}
+			}()
+			<-c
+		}
+	}
+* load bad Go plugins
+* all goroutines are blocked.
+* string concatenation too long
 
 The optimizations made by gc
 * len([]rune(str)) // since Go 1.11
