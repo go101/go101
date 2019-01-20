@@ -1,16 +1,13 @@
 ﻿<h1>How To Gracefully Close Channels</h1>
 
-<!--
-https://groups.google.com/forum/#!msg/golang-nuts/pZwdYRGxCIk/qpbHxRRPJdUJ
--->
-
 <div>
 <p>
 Several days ago, I wrote an article which explains
 <a href="channel.html">the channel rules in Go</a>.
 That article got many votes
 on <a href="https://www.reddit.com/r/golang/comments/5k489v/the_full_list_of_channel_rules_in_golang/">reddit</a>
-and <a href="https://news.ycombinator.com/item?id=13252416">HN</a>.
+and <a href="https://news.ycombinator.com/item?id=13252416">HN</a>,
+but there are also some criticisms on Go channel design details.
 </p>
 
 I collected some criticisms on the following designs and rules of Go channels:
@@ -67,13 +64,13 @@ As above mentioned, this is not a universal way to check whether a channel is cl
 </div>
 
 <p>
-However, even if there is a simple <code>closed(chan T) bool</code> function
+In fact, even if there is a simple <code>closed(chan T) bool</code> function
 to check whether or not a channel has been closed,
 its usefulness would be very limited, just like the built-in <code>len</code>
 function for checking the current number of values stored in the value buffer of a channel.
 The reason is the status of the checked channel may have changed
 just after a call to such functions returns,
-so that the returned value has already not be able to
+so that the returned value has already not been able to
 reflect the latest status of the just checked channel.
 Although it is okay to stop sending values to a channel <code>ch</code> if the
 call <code>closed(ch)</code> returns <code>true</code>,
@@ -85,9 +82,9 @@ call <code>closed(ch)</code> returns <code>false</code>.
 
 <p>
 One general principle of using Go channels is
-<b><i>don't close a channel from the receiver side
-and don't close a channel if the channel has multiple concurrent senders</i></b>.
-In other words, you should only close a channel in a sender goroutine
+<b>don't close a channel from the receiver side
+and don't close a channel if the channel has multiple concurrent senders</b>.
+In other words, we should only close a channel in a sender goroutine
 if the sender is the only sender of the channel.
 </p>
 
@@ -97,10 +94,10 @@ if the sender is the only sender of the channel.
 
 <p>
 Surely, this is not a universal principle to close channels.
-The universal principle is <i>don't send values to (or close) closed channels</i>.
-If an arbitrary goroutine can guarantee that no goroutines will send to
-(or close) a non-closed non-nil channel any more,
-then that goroutine can close the channel safely.
+The universal principle is <b>don't close (or send values to) closed channels</b>.
+If we can guarantee that no goroutines will close
+(or send values to) a non-closed non-nil channel any more,
+then a goroutine can close the channel safely.
 However, making such guarantees by a receiver or by one of many senders of a channel
 usually needs much effort, and often makes code complicated.
 On the contrary, it is much easy to hold the <b>channel closing principle</b> mentioned above.
@@ -110,8 +107,8 @@ On the contrary, it is much easy to hold the <b>channel closing principle</b> me
 
 <div>
 If you would close a channel from the receiver side or in one of the multiple senders
-of the channel anyway, then you can use the recover mechanism to prevent
-the possible panic from crashing your program.
+of the channel anyway, then you can use <a href="control-flows-more.html#panic-recover">the recover mechanism</a>
+to prevent the possible panic from crashing your program.
 Here is an example (assume the channel element type is <code>T</code>).
 <pre class="line-numbers"><code class="language-go">func SafeClose(ch chan T) (justClosed bool) {
 	defer func() {
@@ -134,7 +131,7 @@ This solution obviously breaks the <b>channel closing principle</b>.
 </div>
 
 <div>
-The same idea can be used for sending values to a potential closed channel:
+The same idea can be used for sending values to a potential closed channel.
 <pre class="line-numbers"><code class="language-go">func SafeSend(ch chan T, value T) (closed bool) {
 	defer func() {
 		if recover() != nil {
@@ -202,8 +199,8 @@ func (mc *MyChannel) IsClosed() bool {
 </div>
 
 <p>
-We should comprehend that the reason of why Go doesn't support built-in <code>SafeSend</code> and <code>SafeClose</code> functions
-is that it is not recommended to close a channel from the receiver side or from multiple concurrent senders.
+We should comprehend that the reason of why Go doesn't support a built-in <code>SafeClose</code> function
+is that it is viewed as a bad design practice in Go to close a channel from the receiver side or from multiple concurrent senders.
 Go even forbids closing receive-only channels.
 </p>
 
@@ -211,7 +208,7 @@ Go even forbids closing receive-only channels.
 
 <p>
 One drawback of the above <code>SafeSend</code> function is that its calls can't be used as
-send operations which follow the <code>case</code> keyword in select blocks.
+send operations which follow the <code>case</code> keyword in <code>select</code> blocks.
 The other drawback of the above <code>SafeSend</code> and  <code>SafeClose</code> functions
 is that many people, including me, would think the above solutions
 by using <code>panic</code>/<code>recover</code> and <code>sync</code> package are not graceful.
@@ -228,7 +225,7 @@ It may be not always essential to use it in real practice.)
 
 <div>
 This is the simplest situation, just let the sender close the data channel
-when it doesn't want to send more:
+when it doesn't want to send more.
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -288,10 +285,10 @@ func main() {
 
 <div>
 This is a situation a little more complicated than the above one.
-We can't let the receiver close the data channel,
+We can't let the receiver close the data channel to stop data transferring,
 for doing this will break the <b>channel closing principle</b>.
 But we can let the receiver close an additional signal channel to
-notify senders to stop sending values:
+notify senders to stop sending values.
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -323,9 +320,9 @@ func main() {
 	for i := 0; i < NumSenders; i++ {
 		go func() {
 			for {
-				// The first select is to try to exit the goroutine
-				// as early as possible. In fact, it is not essential
-				// for this specified example, so it can be omitted.
+				// The try-receive operation is to try to exit
+				// the goroutine as early as possible. For this
+				// specified example, it is not essential.
 				select {
 				case <- stopCh:
 					return
@@ -383,7 +380,7 @@ So the gracefulness of closing a channel here is not to close the channel.
 </p>
 </div>
 
-<h4>3. M receivers, N senders, random one of them says "let's end the game" by notifying a moderator to close an additional signal channel</h4>
+<h4>3. M receivers, N senders, any one of them says "let's end the game" by notifying a moderator to close an additional signal channel</h4>
 
 <div>
 This is a the most complicated situation.
@@ -392,7 +389,9 @@ And we can't let any of the receivers close an additional signal channel to
 notify all senders and receivers to exit the game.
 Doing either will break the <b>channel closing principle</b>.
 However, we can introduce a moderator role to close the additional signal channel.
-One trick in this example is how to notify the moderator to close the additional signal channel:
+One trick in the following example is how to use a try-send operation to
+notify the moderator to close the additional signal channel.
+
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -426,6 +425,7 @@ func main() {
 		// to close the additional signal channel (stopCh).
 		// Its senders are any senders and receivers of dataCh.
 		// Its reveiver is the moderator goroutine shown below.
+		// It must be a buffered channel.
 	
 	var stoppedBy string
 	
@@ -441,8 +441,8 @@ func main() {
 			for {
 				value := rand.Intn(MaxRandomNumber)
 				if value == 0 {
-					// Here, a trick is used to notify the moderator
-					// to close the additional signal channel.
+					// Here, the try-send operation is to notify the
+					// moderator to close the additional signal channel.
 					select {
 					case toStop <- "sender#" + id:
 					default:
@@ -450,22 +450,21 @@ func main() {
 					return
 				}
 				
-				// The first select here is to try to exit the goroutine
-				// as early as possible. This select blocks with one
-				// receive operation case and one default branches will
-				// be specially optimized as a try-receive operation by
-				// the standard Go compiler.
+				// The try-receive operation here is to try to exit the
+				// sender goroutine as early as possible. Try-receive
+				// try-send select blocks are specially optimized by the
+				// standard Go compiler, so they are very efficient.
 				select {
 				case <- stopCh:
 					return
 				default:
 				}
 				
-				// Even if stopCh is closed, the first branch in the
-				// second select may be still not selected for some
-				// loops (and for ever in theory) if the send to
-				// dataCh is also non-blocking.
-				// This is why the first select block above is needed.
+				// Even if stopCh is closed, the first branch in this
+				// select block may be still not selected for some
+				// loops (and for ever in theory) if the send to dataCh
+				// is also non-blocking. If this is not acceptable,
+				// then the above try-receive operation is essential.
 				select {
 				case <- stopCh:
 					return
@@ -481,22 +480,20 @@ func main() {
 			defer wgReceivers.Done()
 			
 			for {
-				// Same as the sender goroutine, the first select here
-				// is to try to exit the goroutine as early as possible.
-				// This select blocks with one send operation case and
-				// one default branches will be specially optimized as
-				// a try-send operation by the standard Go compiler.
+				// Same as the sender goroutine, the try-receive
+				// operation here is to try to exit the receiver
+				// goroutine as early as possible.
 				select {
 				case <- stopCh:
 					return
 				default:
 				}
 				
-				// Even if stopCh is closed, the first branch in the
-				// second select may be still not selected for some
+				// Even if stopCh is closed, the first branch in this
+				// select block may be still not selected for some
 				// loops (and for ever in theory) if the receive from
-				// dataCh is also non-blocking.
-				// This is why the first select block is needed.
+				// dataCh is also non-blocking. If this is not acceptable,
+				// then the above try-receive operation is essential.
 				select {
 				case <- stopCh:
 					return
