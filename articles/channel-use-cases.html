@@ -42,8 +42,6 @@ for more concurrency synchronization techniques in Go.
 <p>
 Futures and promises are used in many other popular languages.
 They are often associated with requests and responses.
-From the request side, a channel can be viewed as a future,
-and from the response side, a channel can be viewed as a promise.
 </p>
 
 <h4>Return Receive-Only Channels As Results</h4>
@@ -1269,7 +1267,10 @@ The following shows such an example borrowed from
 <a href="https://github.com/golang/go/wiki/RateLimiting">the official Go wiki</a>.
 In this example, the number of handled requests in any one-minute duration will not exceed 200.
 
-<pre class="line-numbers"><code class="language-go">import "time"
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "time"
 
 type Request interface{}
 func handle(r Request) {fmt.Println(r.(int))}
@@ -1297,6 +1298,13 @@ func handleRequests(requests <-chan Request) {
 		go handle(r)
 	}
 }
+
+func main() {
+	requests := make(chan Request)
+	go handleRequests(requests)
+	// time.Sleep(time.Minute)
+	for i := 0; ; i++ {requests <- i}
+}
 </code></pre>
 
 <p>
@@ -1310,11 +1318,11 @@ In practice, we often use rate-limit and peak/burst-limit together.
 <div>
 <p>
 From the article <a href="channel.html">channels in Go</a>,
-we have learned that a goroutine will block for ever if it tries to
-send a value to or receive from a nil channel.
-By making use of this fact, we can change the involved channels in a
-<code>select</code> code block to affect the branch selection
-in the <code>select</code> code block.
+we have learned that sending a value to or receiving a value
+from a nil channel are both blocking operations.
+By making use of this fact, we can change the involved channels in
+the <code>case</code> operations of a <code>select</code> code block
+to affect the branch selection in the <code>select</code> code block.
 </p>
 
 The following is another ping-pong example which is implemented
@@ -1374,7 +1382,7 @@ func main() {
 <div>
 <p>
 We can duplicate a <code>case</code> branch in a <code>select</code> code block
-to increase the exection possibility weigh of the corresponding code snippet.
+to increase the exection possibility weigh of the corresponding code.
 </p>
 
 Example:
@@ -1408,7 +1416,8 @@ is about the double of the <code>g</code> function being called.
 <h4>Select From Dynamic Number Of Cases</h4>
 
 <p>
-We can use the functionalities provided in the <code>reflect</code>
+Although the number of branches in a <code>select</code> block is fixed,
+we can use the functionalities provided in the <code>reflect</code>
 standard package to construct a select block at run time.
 The dynamically created select block can have arbitrary number of case branches.
 But please note, the reflection way is less efficient than the fixed way.
@@ -1416,7 +1425,7 @@ But please note, the reflection way is less efficient than the fixed way.
 
 <p>
 The <code>reflect</code> standard package also provides
-<code>TrySend</code> and <code>TryRecv</codE> functions to
+<code>TrySend</code> and <code>TryRecv</code> functions to
 implement one-case-plus-default select blocks.
 </p>
 
@@ -1424,16 +1433,12 @@ implement one-case-plus-default select blocks.
 
 <div>
 <p>
-This section will introduce some use cases in which long life channels
-are used for data flow manipulations.
-There are many data flow related application scenarios in practice,
-such as message queue (pub/sub), big data processing (map/reduce),
-load balancer, and division of labour, etc.
+This section will introduce some data flow manipulation use cases by using channels.
 </p>
 
 Generally, a data flow application consists of many modules.
 Different modules do different jobs.
-Each module may own one or a group of workers (goroutines),
+Each module may own one or several workers (goroutines),
 which concurrently do the same job specified for that module.
 Here is a list of some module job examples in practice:
 <ul>
@@ -1466,22 +1471,23 @@ Here is a list of some module job examples in practice:
 </ul>
 
 <p>
-A worker in a module group may receive data from several other modules
+A worker in a module may receive data from several other modules
 as inputs and send data to serve other modules as outputs.
 In other words, a module can be both a data consumer and a data producer.
 A module which only sends data to some other modules but never
 receives data from other modules is called a producer-only module.
 A module which only receives data from some other modules but never
-sends data to other modules is called a consumer-only module.</p>
-
-<p>
-Many modules together compose a data flow system.
+sends data to other modules is called a consumer-only module.
 </p>
 
 <p>
-Following will show some data flow module worker implementations.
-These implementations are for education purpose,
-so they may be neither efficient nor flexible.
+Many modules together form a data flow system.
+</p>
+
+<p>
+The following will show some data flow module worker implementations.
+These implementations are for explanation purpose,
+so they are very simple and they may be not efficient.
 </p>
 
 </div>
@@ -1496,7 +1502,7 @@ A producer-only moudle worker may produce data stream
 	by loading a file, reading a database, or crawling the web.
 </li>
 <li>
-	by collecting all kinds of metrics from all kinds of hardwards.
+	by collecting all kinds of metrics from a software system or all kinds of hardwards.
 </li>
 <li>
 	by generating random numbers.
@@ -1531,8 +1537,7 @@ func RandomGenerator() <-chan uint64 {
 </code></pre>
 
 <p>
-In fact, the random number generator is a multi-return future
-which has been introudced at the starting of the current article.
+In fact, the random number generator is a multi-return future/promise.
 </p>
 
 <p>
@@ -1555,7 +1560,7 @@ number of data streams into one.
 <pre class="line-numbers"><code class="language-go">func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
 	output := make(chan uint64)
 	for _, in := range inputs {
-		in := in // this line is important
+		in := in // this line is essential
 		go func() {
 			for {
 				output <- <-in // <=> output <- (<-in)
@@ -1573,19 +1578,29 @@ A better implementation should consider whether or not
 an input stream has been closed.
 (Also valid for the following other module worker implementations.)
 
-<pre class="line-numbers"><code class="language-go">...
-		in := in // this line is important
+<pre class="line-numbers"><code class="language-go">func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
+	output := make(chan uint64)
+	var wg sync.WaitGroup
+	for _, in := range inputs {
+		wg.Add(1)
+		in := in // this line is essential
 		go func() {
 			for {
 				x, ok := <-in
 				if ok {
 					output <- x
 				} else {
-					close(output)
+					wg.Done()
 				}
 			}
 		}()
-...
+	}
+	go func() {
+		wg.Wait()
+		close(output)
+	}()
+	return output
+}
 </code></pre>
 
 <p>
@@ -1625,7 +1640,7 @@ but in practice, division workers are not very useful and seldom used.
 
 <pre class="line-numbers"><code class="language-go">func Divisor(input <-chan uint64, outputs ...chan<- uint64) {
 	for _, out := range outputs {
-		out := out // this line is important
+		out := out // this line is essential
 		go func() {
 			for {
 				out <- <-input // <=> out <- (<-input)
@@ -1644,18 +1659,13 @@ but in practice, division workers are not very useful and seldom used.
 
 <div>
 <p>
-Data composition is like data aggregation, but a data composition worker
-merges data streams of different data types.
-For data aggregation, two pieces of data are still two pieces of data.
-But for data composition, several pieces of data compose one piece of new data.
+A data composition worker merges several pieces of data from different input data streams into one piece of data.
 </p>
 
 The following is a composition worker example, in which two <code>uint64</code>
 values from one stream and one <code>uint64</code> value from another stream
 compose one new <code>uint64</code> value.
-Generally these stream channel element types are different in parctice.
-Here they are the same in the following example is to
-make the data flow system assembling explanations below simpler.
+Surely, these stream channel element types are different generally in parctice.
 
 <pre class="line-numbers"><code class="language-go">func Composor(inA <-chan uint64, inB <-chan uint64) <-chan uint64 {
 	output := make(chan uint64)
@@ -1681,6 +1691,7 @@ make the data flow system assembling explanations below simpler.
 Data decomposition is the inverse process of data composition.
 A decomposition worker function implementation takes one
 input data stream parameter and returns several data stream results.
+No examples will be shown for data decomposition here.
 
 </div>
 
@@ -1717,7 +1728,7 @@ An example:
 
 <div>
 <p>
-The functionalities of data calculation and analuzation modules vary much
+The functionalities of data calculation and analyzation modules vary much
 and are very specfic each.
 Generally, a worker function of such modules transforms each piece of input data
 into another piece of output data.
@@ -1726,8 +1737,10 @@ into another piece of output data.
 For simple demo purpose, here shows a worker example
 which inverts every bit of each transferred <code>uint64</code> value.
 
-<pre class="line-numbers"><code class="language-go">func Calculator(input <-chan uint64) (<-chan uint64) {
-	output := make(chan uint64)
+<pre class="line-numbers"><code class="language-go">func Calculator(input <-chan uint64, output chan uint64) (<-chan uint64) {
+	if output == nil {
+		output = make(chan uint64)
+	}
 	go func() {
 		for {
 			x := <-input
@@ -1753,8 +1766,10 @@ For example, the following worker function discards all non-prime numbers.
 
 <pre class="line-numbers"><code class="language-go">import "math/big"
 
-func Filter(input <-chan uint64) (<-chan uint64) {
-	output := make(chan uint64)
+func Filter(input <-chan uint64, output chan uint64) <-chan uint64 {
+	if output == nil {
+		output = make(chan uint64)
+	}
 	go func() {
 		bigInt := big.NewInt(0)
 		for {
@@ -1877,12 +1892,38 @@ and intuitive to build data flow systems with channels.
 </p>
 
 <p>
-From the last example, we can find that, in a data system, if we aggregate
-the respective output streams of all the workers in a module,
-then we can use the aggregated result stream as the respective input streams
-of the all the workers in the next module.
-By using this way, it is easy to do fan-in and fan-out the number of
-workers for a specified module.
+From the last example, we can find that, with the help of aggregators,
+it is easy to implement fan-in and fan-out for the number of workers for a specified module.
+</p>
+
+In fact, we can use a simple channel to replace the role of an aggregator.
+For example, the following example replaces the two aggregators with two channels.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+... // the worker functions declared above.
+
+func main() {
+	c1 := make(chan uint64, 100)
+	Filter(RandomGenerator(), c1) // filterA
+	Filter(RandomGenerator(), c1) // filterB
+	Filter(RandomGenerator(), c1) // filterC
+	c2 := make(chan uint64, 100)
+	Calculator(c1, c2) // calculatorA
+	Calculator(c1, c2) // calculatorB
+	Printer(c2)
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+The modified data flow system is depicted in the following diagram.
+
+<br/>
+<img src="res/data-flow-dag-2.png">
+<br/>
 </p>
 
 <p>
