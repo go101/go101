@@ -42,6 +42,7 @@ the program is expanded from an example in
 <a href="https://golang.org/ref/mem">Go 1 memory model</a>.
 <pre class="line-numbers"><code class="language-go">package main
 
+import "log"
 import "runtime"
 
 var a string
@@ -50,6 +51,9 @@ var done bool
 func setup() {
 	a = "hello, world"
 	done = true
+	if done {
+		log.Println(len(a)) // always 12 once printed.
+	}
 }
 
 func main() {
@@ -58,7 +62,7 @@ func main() {
 	for !done {
 		runtime.Gosched()
 	}
-	println(a) // expect to print: hello, world
+	log.Println(a) // expected to print: hello, world
 }
 </code></pre>
 
@@ -66,21 +70,28 @@ The behavior of this program is very possible as we expect,
 a <code>hello, world</code> text will be printed.
 However, the behavior of this program is compiler and CPU dependent.
 If the program is compiled with a different compiler,
-or it runs on a different architecture,
-it may print nothing, or a text different from <code>hello, world</code>.
-The reason is compilers and CPUs may exchange the execution orders of the two lines
-in the <code>setup</code> function,
+or with a later compiler version, or it runs on a different architecture,
+the <code>hello, world</code> text might not be printed,
+or a text different from <code>hello, world</code> might be printed.
+The reason is compilers and CPUs may exchange the execution orders of
+the first two lines in the <code>setup</code> function, 
 so the final effect of the <code>setup</code> function may become to
 <pre class="line-numbers"><code class="language-go">func setup() {
 	done = true
 	a = "hello, world"
+	if done {
+		log.Println(len(a))
+	}
 }
 </code></pre>
 </div>
 
 <p>
-The <code>setup</code> goroutine in the above program will not observe the reordering,
-however, the main goroutine will.
+The <code>setup</code> goroutine in the above program is unable to observe the reordering,
+so the <code>log.Println(len(a))</code> line will always print <code>12</code>
+(if this line gets executed before the program exits).
+However, the main goroutine may observe the reordering,
+which is why the printed text might be not <code>hello, world</code>.
 </p>
 
 <p>
@@ -621,13 +632,13 @@ of <code>a</code> happens before the modification of <code>b</code>.
 
 <p>
 However, the guarantees made by atomic operations are not
-written down in the Go specification and other offcial Go documentations.
-If you want to write cross-compiler and cross-compile-version compatible Go code,
+written down in the Go specification and any other offcial Go documentations.
+If you want to write cross-compiler and cross-compiler-version compatible Go code,
 the safe advice is,
 <b>don't rely on atomic to guarantee memory orderings in general Go programming</b>.
 There is <a href="https://github.com/golang/go/issues/5045">an issue</a>
 on how these guarantees should be written down.
-But, up to now (Go 1.11), the decision has not been made.
+But, up to now (Go 1.11), the decision has not been made yet.
 </p>
 
 <p>

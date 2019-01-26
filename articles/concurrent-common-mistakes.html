@@ -22,7 +22,7 @@ in Go concurrent programming, to help Go programmers avoid making such mistakes.
 
 <div>
 <p>
-Code lines may be <a href="memory-model.html">not executed by the appearance orders</a>.
+Code lines may be <a href="memory-model.html">not executed by their appearance order</a>.
 </p>
 
 There are two mistakes in the following program.
@@ -69,8 +69,8 @@ func main() {
 </code></pre>
 
 <p>
-The above program may run well on one computer, but may panic on another one.
-Or it may run well for <i>N</i> times, but may panic at the <i>(N+1)</i>th time.
+The above program may run well on one computer, but may panic on another one,
+or it runs well when it is compiled by one compiler, but panics when another compiler is used.
 </p>
 
 We should use channels or the synchronization techniques provided in
@@ -83,14 +83,13 @@ func main() {
 	var a []int = nil
 	c := make(chan struct{})
 
-	// a new goroutine
 	go func () {
 		a = make([]int, 3)
 		c <- struct{}{}
 	}()
 
 	<-c
-	a[0], a[1], a[2] = 0, 1, 2
+	a[0], a[1], a[2] = 0, 1, 2 // will not panic for sure
 }
 </code></pre>
 
@@ -124,14 +123,15 @@ func main() {
 </code></pre>
 
 <p>
-We expect the program to print <code>789</code>.
-If we run it, it really prints <code>789</code>, almost always.
+We expect this program to print <code>789</code>.
+In fact, if the program is compiled with the standard Go compiler,
+it really prints <code>789</code>, almost always, in running.
 But is it a program with good syncrhonization?
 No! The reason is Go runtime doesn't guarantee the write of <code>x</code>
 happens before the read of <code>x</code> for sure.
 Under certain conditions, such as most CPU resources are cunsumed by
-other programs running on same OS, the write of <code>x</code>
-might happen after the read of <code>x</code>.
+some other computaion-intension programs running on the same OS,
+the write of <code>x</code> might happen after the read of <code>x</code>.
 This is why we should never use <code>time.Sleep</code> calls to do
 synchronizations in formal projects.
 </p>
@@ -149,8 +149,6 @@ import (
 	"time"
 )
 
-var x = 0
-
 func main() {
 	var num = 123
 	var p = &num
@@ -158,7 +156,7 @@ func main() {
 	c := make(chan int)
 
 	go func() {
-		c <- *p + x
+		c <- *p + 0
 	}()
 
 	time.Sleep(time.Second)
@@ -176,8 +174,8 @@ But in theory, it might output <code>789</code>, or another unexpected number.
 </p>
 
 <p>
-Now, let's change <code>c &lt;- *p + x</code> to <code>c &lt;- *p</code>
-and run the program again. You will find the output becomes to <code>789</code>
+Now, let's change <code>c &lt;- *p + 0</code> to <code>c &lt;- *p</code>
+and run the program again, you will find the output becomes to <code>789</code>
 (for the standard Go compiler 1.11).
 Again, the output is compiler dependent.
 </p>
@@ -196,7 +194,7 @@ before creating the new goroutine and send the temporary value instead
 in the new goroutine to remove the data races.
 
 <pre class="line-numbers"><code class="language-go">...
-	tmp := *p + x
+	tmp := *p
 	go func() {
 		c <- tmp
 	}()
@@ -215,8 +213,7 @@ Hanging goroutines are the goroutines staying in blocking state for ever.
 There are many reasons leading goroutines into hanging. For example,
 <ul>
 <li>
-	a goroutine tries to receive a value from a nil channel or
-	from a channel which no more other goroutines will send values to.
+	a goroutine tries to receive a value from a channel which no more other goroutines will send values to.
 </li>
 <li>
 	a goroutine tries to send a value to nil channel or
@@ -240,8 +237,8 @@ There are many reasons leading goroutines into hanging. For example,
 Except sometimes we deliberately let the main goroutine in a program hanging
 to avoid the program exiting, most other hanging goroutine cases are unexpected.
 It is hard for Go runtime to judge whether or not a goroutine
-in blocking state is hanging or stays in blocking state temporarily.
-So Go runtime will never release the resources consumed by a hanging goroutine.
+in blocking state is hanging or stays in blocking state temporarily,
+so Go runtime will never release the resources consumed by a hanging goroutine.
 </p>
 
 In the <a href="channel-use-cases.html#first-response-wins">first-response-wins</a>
@@ -270,13 +267,9 @@ must be at least <code>4</code>.
 
 In <a href="channel-use-cases.html#first-response-wins-2">the second way
 to implement the first-response-wins</a> channel use case,
-if the channel which is used as a future is an unbuffered channel,
-it is possible that the channel receiver will never get a response and hang.
-For example, if the following function is called in a goroutine,
-the goroutine might hang. The reason is, if the five try-send operations
-all happen before the receive operation <code>&lt;-c</code> is ready,
-then all the five try-send operations will fail to send values
-so that the caller goroutine will never receive a value.
+if the channel which is used as a future/promise is an unbuffered channel,
+like the following code shows,
+it is possible that the channel receiver will miss all responses and hang.
 
 <pre class="line-numbers"><code class="language-go">func request() int {
 	c := make(chan int)
@@ -289,9 +282,16 @@ so that the caller goroutine will never receive a value.
 			}
 		}()
 	}
-	return <-c
+	return <-c // might hang here.
 }
 </code></pre>
+
+<p>
+The reason why the receiver goroutine might hang is that if the five try-send operations
+all happen before the receive operation <code>&lt;-c</code> is ready,
+then all the five try-send operations will fail to send values
+so that the caller goroutine will never receive a value.
+</p>
 
 <p>
 Changing the channel <code>c</code> as a buffered channel will guarantee
@@ -306,7 +306,7 @@ goroutine will never hang in the above function.
 <div>
 <p>
 In practice, values of the types (except the <code>Locker</code> interface values)
-in the <code>sync</code> standard package shouldn't be copied.
+in the <code>sync</code> standard package should never be copied.
 We should only copy pointers of such values.
 </p>
 
@@ -317,7 +317,7 @@ As a field of the receiver value, the respective <code>Mutex</code> field
 of the <code>Counter</code> receiver value will also be copied.
 The copy is not synchronized, so the copied  <code>Mutex</code> value might be corrupt.
 Even if it is not corrupt, what it protects is the accessment of
-the copied <code>Counter</code> receiver value, which is meaningless generally.
+the copied field <code>n</code>, which is meaningless generally.
 
 <pre class="line-numbers"><code class="language-go">import "sync"
 
@@ -335,8 +335,8 @@ func (c *Counter) Increase(d int64) (r int64) {
 	return
 }
 
-// The method is bad. When it is called, a Counter
-// receiver value will be copied.
+// The method is bad. When it is called,
+// the Counter receiver value will be copied.
 func (c Counter) Value() (r int64) {
 	c.Lock()
 	r = c.n
@@ -347,7 +347,7 @@ func (c Counter) Value() (r int64) {
 
 <p>
 We should change the receiver type of the <code>Value</code> method to
-the poiner type <code>*Counter</code> to avoid copying <code>Mutex</code> values.
+the poiner type <code>*Counter</code> to avoid copying <code>sync.Mutex</code> values.
 </p>
 
 <p>
@@ -357,7 +357,7 @@ potential bad value copies.
 
 </div>
 
-<h3>Call Methods Of <code>sync.WaitGroup</code> At Wrong Places</h3>
+<h3>Call The <code>sync.WaitGroup.Add</code> Method At Wrong Places</h3>
 
 <div>
 
@@ -372,8 +372,8 @@ will not block, otherwise, the call blocks until the counter value becomes zero.
 <p>
 To make the uses of <code>WaitGroup</code> value meaningful,
 when the counter of a <code>WaitGroup</code> value is zero,
-a call to the <code>Add</code> method of the <code>WaitGroup</code> value
-must happen before the corresponding call to the <code>Wait</code> method of
+the next call to the <code>Add</code> method of the <code>WaitGroup</code> value
+must happen before the next call to the <code>Wait</code> method of
 the <code>WaitGroup</code> value.
 </p>
 
@@ -382,6 +382,8 @@ is called at an improper place, which makes that the final printed number
 is not always <code>100</code>. In fact, the final printed number of
 the program may be an arbitrary number in the range <code>[0, 100)</code>.
 The reason is none of the <code>Add</code> method calls are guaranteed to
+happen before the <code>Wait</code> method call, which causes none of
+the <code>Done</code> method calls are guaranteed to
 happen before the <code>Wait</code> method call.
 
 <pre class="line-numbers"><code class="language-go">package main
@@ -403,7 +405,7 @@ func main() {
 		}()
 	}
 
-	fmt.Println("To wait ...")
+	fmt.Println("Wait ...")
 	wg.Wait()
 	fmt.Println(atomic.LoadInt32(&x))
 }
@@ -432,10 +434,9 @@ as the following code shown.
 
 </div>
 
-<h3>Use Channels As Futures Improperly</h3>
+<h3>Use Channels As Futures/Promises Improperly</h3>
 
 <div>
-
 
 From the article <a href="channel-use-cases.html">channel use cases</a>,
 we know that some functions will return
@@ -447,10 +448,10 @@ then the following call uses future arguments improperly.
 </code></pre>
 
 <p>
-</p>
-
 In the above code line, the two channel receive operations are processed
 sequentially, instead of concurrently.
+</p>
+
 We should modify it as the following to process them concurrently.
 
 <pre class="line-numbers"><code class="language-go">ca, cb := fa(), fb()
@@ -470,7 +471,7 @@ doSomethingWithFutureArguments(<-ca, <-cb)
 A common mistake made by Go programmers is closing a channel when there are
 still some other goroutines will potentially send values to the channel later.
 When such a potential send (to the closed channel) really happens,
-a panic will occur.
+a panic might occur.
 </p>
 
 <p>
@@ -489,16 +490,17 @@ on how to safely and gracefully close channels.
 </div>
 
 
-<h3>Do 64-bit Atomic Operations On Values Which Are Not Guaranteed To Be 64-bit Aligned</h3>
+<h3>Do 64-bit Atomic Operations On Values Which Are Not Guaranteed To Be 8-byte Aligned</h3>
 
 <div>
 <p>
-Up to now (Go 1.11), for the standard Go compiler, the address of the value
-involved in a 64-bit atomic operation is required to be 64-bit aligned.
+Up to now (Go 1.11), the address of the value
+involved in a 64-bit atomic operation is required to be 8-byte aligned.
 Failure to do so may make the current goroutine panic.
-For the standard Go compiler, such failure can only happen on 32-bit architectures.
+For the standard Go compiler, such failure can only
+<a href="https://golang.org/pkg/sync/atomic/#pkg-note-BUG">happen on 32-bit architectures</a>.
 Please read <a href="memory-layout.html">memory layouts</a> to get how to
-guarantee the addresses of 64-bit word 64-bit aligned on 32-bit OSes.
+guarantee the addresses of 64-bit word 8-byte aligned on 32-bit OSes.
 </p>
 
 </div>
@@ -513,14 +515,14 @@ The function is convenient, however each of its calls will
 create a new value of the <code>time.Timer</code> type.
 The new created <code>Timer</code> value will keep alive in the duration
 specified by the passed argument to the <code>After</code> function.
-If the function is called many times in the duration,
-there will be many <code>Timer</code> values alive
-and consuming much memory and computation.
+If the function is called many times in a certain period,
+there will be many alive <code>Timer</code> values accumulated
+so that much memory and computation is consumed.
 </p>
 
 For example, if the following <code>longRunning</code> function is called
 and there are millions of messages coming in one minute, then there will
-be millions of <code>Timer</code> values alive in a certain period,
+be millions of <code>Timer</code> values alive in a certain small period (several seconds),
 even if most of these <code>Timer</code> values have already become useless.
 
 <pre class="line-numbers"><code class="language-go">import (
@@ -546,7 +548,7 @@ func longRunning(messages <-chan string) {
 </p>
 
 To avoid too many <code>Timer</code> values being created in the above code,
-we should use a single <code>Timer</code> value to do the same job.
+we should use (and resue) a single <code>Timer</code> value to do the same job.
 
 <pre class="line-numbers"><code class="language-go">func longRunning(messages <-chan string) {
 	timer := time.NewTimer(time.Minute)
@@ -554,23 +556,26 @@ we should use a single <code>Timer</code> value to do the same job.
 
 	for {
 		select {
-		case <-timer.C:
+		case <-timer.C: // expires (timeout)
 			return
 		case msg := <-messages:
 			fmt.Println(msg)
+			
+			// This "if" block is important.
 			if !timer.Stop() {
 				<-timer.C
 			}
 		}
 
-		// The above "if" block can also be put here.
-
+		// Reset to reuse.
 		timer.Reset(time.Minute)
 	}
 }
 </code></pre>
 
 <p>
+Note, the <code>if</code> code block is used to discard/drain a possible timer notification
+which is sent in the small period when executing the second branch code block.
 </p>
 
 </div>
@@ -578,28 +583,44 @@ we should use a single <code>Timer</code> value to do the same job.
 <h3>Use <code>time.Timer</code> Values Incorrectly</h3>
 
 <div>
+
+An idiomatic use example of <code>time.Timer</code> values has been shown in the last section.
+Some explainations:
+<ul>
+<li>
+	the <code>Stop</code> method of a <code>Timer</code> returns <code>false</code>
+	if the <code>Timer</code> value has already expired or been stopped.
+</li>
+<li>
+	after a <code>Timer</code> value is stopped, its <code>C</code> channel field
+	can only contain most one timeout notification.
+</li>
+<li>
+	we should take out the timeout notification, if it hasn't been taken out,
+	from a timeout <code>Timer</code> value after the <code>Timer</code> value is stopped
+	and before resetting and reusing the <code>Timer</code> value.
+	This is the meaningfulness of the <code>if</code> code block in the example in the last section.
+</li>
+</ul>
+
 <p>
-An idiomatic use example of a <code>time.Timer</code> value has been shown
-in the last section.
-One detail which should be noted is that the <code>Reset</code> method
-should always be invoked on stopped or expired <code>time.Timer</code> values.
+The <code>Reset</code> method of a <code>Timer</code> value must be called
+when the <code>Timer</code> value has already expired or been stopped, otherwise,
+a data race may occur between the <code>Reset</code> call and
+a possible notificaiton send to the <code>C</code> channel field of the <code>Timer</code> value.
 </p>
 
 <p>
-At the end of the first <code>case</code> branch of the <code>select</code> block,
-the <code>time.Timer</code> value has expired, so we don't need to stop it.
-But we must stop the timer in the second branch.
-If the <code>if</code> code block in the second branch is missing,
-it is possible that a send (by the Go runtime) to the channel
-<code>timer.C</code> races with the <codE>Reset</code> method call,
-and it is possible that the <code>longRunning</code> function returns earlier
-than expected, for the <code>Reset</code> method will only reset
-the internal timer to zero, it will not clear (drain) the value
-which has been sent to the <code>timer.C</code> channel.
+If the first <code>case</code> branch of the <code>select</code> block is selected,
+it means the <code>Timer</code> value has already expired, so we don't need to stop it,
+for the sent notification has already been taken out.
+However, we must stop the timer in the second branch to check whether or not a timeout notification exists.
+If it does exist, we should drain it before reusing the timer,
+otherwise, the notification will be fired immediately in the next loop step.
 </p>
 
 For example, the following program is very possible to exit in about one second,
-instead of ten seconds. and more importantly, the program is not data race free.
+instead of ten seconds. And more importantly, the program is not data race free.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -614,11 +635,11 @@ func main() {
 	select {
 	case <-timer.C:
 	default:
-		time.Sleep(time.Second) // go here
+		time.Sleep(time.Second) // most likely go here
 	}
 	timer.Reset(time.Second * 10)
 	<-timer.C
-	fmt.Println(time.Since(start)) // 1.000188181s
+	fmt.Println(time.Since(start)) // 1.000188181s (about)
 }
 </code></pre>
 
