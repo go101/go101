@@ -284,7 +284,7 @@ func goGet(pkgPath string) {
 }
 
 func (go101 *Go101) Update() {
-	<-time.After(time.Minute * 5)
+	<-time.After(time.Minute / 2)
 
 	output, err := runShellCommand(time.Minute/2, "git", "remote")
 	if err != nil {
