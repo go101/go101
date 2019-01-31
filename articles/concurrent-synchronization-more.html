@@ -2,10 +2,10 @@
 
 <p>
 The <a href="channel-use-cases.html">channel use cases</a> article introduces
-many use cases where channels are used to do data synchronizations among goroutines.
+many use cases in which channels are used to do data synchronizations among goroutines.
 In fact, channels are not the only synchronization techniques provided in Go.
 There are some other synchronization techniques supported by Go.
-For some specific circumstances, using the synchronization techniques
+For some specified circumstances, using the synchronization techniques
 other than channel are more efficient and readable than using channels.
 Below will introduce the synchronization techniques provided
 in the <code>sync</code> standard package.
@@ -13,7 +13,7 @@ in the <code>sync</code> standard package.
 
 <p>
 The <code>sync</code> standard package provides several types
-which can be used to do synchronizations for some specialized circumstances.
+which can be used to do synchronizations for some specialized circumstances
 and guarantee some specialized memory orders.
 For the specialized circumstances, these techniques are more efficient,
 and look cleaner, than the channel ways.
@@ -30,20 +30,20 @@ the values of the types in the <code>sync</code> standard package.)
 <div>
 <p>
 Each <code>sync.WaitGroup</code> value maintains a counter internally.
-The default value of the counter is zero.
+The initial value of the counter is zero.
 </p>
 
 <p>
-The <code>*sync.WaitGroup</code> type has
+The <code>*WaitGroup</code> type has
 <a href="https://golang.org/pkg/sync/#WaitGroup">three methods</a>:
 <code>Add(delta int)</code>, <code>Done()</code> and <code>Wait()</code>.
 </p>
 
-For an addressable <code>sync.WaitGroup</code> value <code>wg</code>,
+For an addressable <code>WaitGroup</code> value <code>wg</code>,
 <ul>
 <li>
 	we can call the <code>wg.Add(delta)</code> method to
-	change the respective counter value of <code>wg</code>.
+	change the counter value maintained by <code>wg</code>.
 </li>
 <li>
 	the method call <code>wg.Done()</code> is totally equivalent to
@@ -76,14 +76,14 @@ are shorthands of <code>(&amp;wg).Add(delta)</code>, <code>(&amp;wg).Done()</cod
 and <code>(&amp;wg).Wait()</code>, respectively.
 </p>
 
-Generally, a <code>sync.WaitGroup</code> value is used for the scenario that
+Generally, a <code>WaitGroup</code> value is used for the scenario that
 one goroutine waits until all of several other goroutines finish their respective jobs.
 An example:
 
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
-	"fmt"
+	"log"
 	"math/rand"
 	"sync"
 	"time"
@@ -101,14 +101,14 @@ func main() {
 		i := i
 		go func() {
 			values[i] = 50 + rand.Int31n(50)
-			fmt.Println("Done:", i)
+			log.Println("Done:", i)
 			wg.Done() // <=> wg.Add(-1)
 		}()
 	}
 	
 	wg.Wait()
 	// All elements are guaranteed to be initialized now.
-	fmt.Println("values:", values)
+	log.Println("values:", values)
 }
 </code></pre>
 
@@ -137,18 +137,28 @@ We can split the only <code>Add</code> method call in the above example into mul
 ...
 </code></pre>
 
+<p>
+</p>
+
 The <code>Wait</code> method can be called in multiple goroutines.
 When the counter becomes zero, all of them will be notified, in a broadcast way.
 
-<pre class="line-numbers"><code class="language-go">func() {
-	var wg sync.WaitGroup
-	wg.Add(1)
+<pre class="line-numbers"><code class="language-go">func main() {
+	rand.Seed(time.Now().UnixNano())
+
+	const N = 5
+	var values [N]int32
+	
+	var wgA, wgB sync.WaitGroup
+	wgA.Add(N)
+	wgB.Add(1)
 
 	for i := 0; i < N; i++ {
 		i := i
 		go func() {
-			wg.Wait()
-			fmt.Printf("values[%v]=%v \n", i, values[i])
+			wgB.Wait() // wait a notification
+			log.Printf("values[%v]=%v \n", i, values[i])
+			wgA.Done()
 		}()
 	}
 
@@ -157,7 +167,8 @@ When the counter becomes zero, all of them will be notified, in a broadcast way.
 	for i := 0; i < N; i++ {
 		values[i] = 50 + rand.Int31n(50)
 	}
-	wg.Done() // will make a broadcast
+	wgB.Done() // will make a broadcast notification
+	wgA.Wait()
 }
 </code></pre>
 
@@ -173,24 +184,24 @@ which takes a solo parameter with type <code>func()</code>.
 </p>
 
 <p>
-For an addressable <code>sync.Once</code> value <code>o</code>,
+For an addressable <code>Once</code> value <code>o</code>,
 the method <code>o.Do</code>, which is a shorthand of <code>(&amp;o).Do</code>,
 can be called multiple times, in multiple goroutines.
 The arguments of these <code>o.Do</code> calls should
-(but not are required to) be the same function value.
+(but are not required to) be the same function value.
 </p>
 
 <p>
-Among these <code>o.Do</code> calls, only exact one argument function will be invoked.
-The invoked argument function is guaranteed to return before
+Among these <code>o.Do</code> method calls, only exact one argument function will be invoked.
+The invoked argument function is guaranteed to exit before
 any <code>o.Do</code> method call returns.
 In other words, the code in the invoked argument function
 is guaranteed to be executed before any <code>o.Do</code> method call returns.
 </p>
 
 <p>
-Generally, a <code>sync.Once</code> value is used to ensure that
-something has been done and only done once in concurrent programming.
+Generally, a <code>Once</code> value is used to ensure that
+a piee of code will be executed exactly once in concurrent programming.
 </p>
 
 An example:
@@ -238,96 +249,66 @@ And <code>Hello</code> is guaranteed to be printed before all five <code>world!<
 <h3>The <code>sync.Mutex</code> And <code>sync.RWMutex</code> Types</h3>
 
 <div>
-
+<p>
 Both of the <code>*sync.Mutex</code> and <code>*sync.RWMutex</code> types implement
 <a href="https://golang.org/pkg/sync/#Locker">the <code>sync.Locker</code> interface</a>.
-<ul>
-<li>
-	So they both have two methods, <code>Lock()</code> and <code>Unlock()</code>,
-	for general data accessors to do locks and unlocks.
-</li>
-<li>
-	Besides the <code>Lock()</code> and <code>Unlock()</code> methods
-	for general data accessors to do locks and unlocks,
-	the <code>*sync.RWMutex</code> type has two other methods,
-	<code>RLock()</code> and <code>RUnlock()</code>,
-	for data readers <sup>(1)</sup> to do locks and unlocks.
-</li>
-</ul>
-
-<p>
-<sup>(1)</sup> Here the <b><i>data reader</i></b> should not be interpreted from literal.
-Some data readers may modify some data,
-but the modifications made by the data readers don't interference with each other.
+So they both have two methods, <code>Lock</code> and <code>Unlock</code>,
+to prevent multiple data accessors from accessing a piece of data concurrrently.
 </p>
 
 <p>
-A <code>sync.Mutex</code> value is a general mutual exclusion lock.
-A zero <code>sync.Mutex</code> value is an unlocked mutex.
-A <code>sync.Mutex</code> value can only be locked when it is in unblocked status.
-In other words, a data accessor using a <code>sync.Mutex</code> value
-excludes any other data accessors using the <code>sync.Mutex</code> value.
+Besides the <code>Lock</code> and <code>Unlock</code> methods,
+the <code>*RWMutex</code> type has two other methods,
+<code>RLock</code> and <code>RUnlock</code>,
+to avoid some data accessors (either writers or readers) and one data writer accessing a piece of data at the same time
+but allow some data readers to access the piece of data at the same time.
 </p>
 
-A <code>sync.RWMutex</code> value is a reader/writer mutual exclusion lock.
-A zero <code>sync.RWMutex</code> value is an unlocked mutex.
-At the same time, a <code>sync.RWMutex</code> value
-can be locked by arbitrary number of data readers,
-but can only be locked by at most one general data accessor.
-In other words,
-<ul>
-<li>
-	a data reader using a <code>sync.RWMutex</code> value doesn't
-	exclude other readers using the <code>sync.RWMutex</code> value.
-</li>
-<li>
-	but a data reader using a <code>sync.RWMutex</code> value
-	exclude general data accessors using the <code>sync.RWMutex</code> value.
-</li>
-<li>
-	a general data accessor using a <code>sync.RWMutex</code> value
-	excludes any other general data accessors,
-	including data readers, using the <code>sync.RWMutex</code> value.
-</li>
-</ul>
+<p><i>
+(Note, here the terminologies <b><i>data reader</i></b> and <b><i>data writer</i></b>
+should not be interpreted from literal. They are just used for explanation purpose.
+A data reader might modify data and a data writer might only read data.)
+</i></p>
 
-Generally,
-<ul>
-<li>
-	a <code>sync.Mutex</code> value is used to prevent
-	some data from being accessed parallelly.
-</li>
-<li>
-	a <code>sync.RWMutex</code> value is used to prevent
-	some data from being accessed parallelly when the data
-	is being modified by a data writer.
-</li>
-</ul>
+<p>
+A <code>Mutex</code> value is often called a mutual exclusion lock.
+A zero <code>Mutex</code> value is an unlocked mutex.
+A <code>Mutex</code> value can only be locked when it is in unlocked status.
+In other words, once an addressable <code>Mutex</code> value <code>m</code> is locked successfully
+(a.k.a., a <code>m.Lock()</code> method call returns),
+a new attempt by a goroutine to lock the <code>Mutex</code> value will make the goroutine enter blocking state,
+until the <code>Mutex</code> value is unlocked (through a <code>m.Unlock()</code> call).
+</p>
+
+<p>
+Please note that <code>m.Lock()</code> and <code>m.Unlock()</code>
+are shorthands of <code>(&amp;m).Lock()</code> and <code>(&amp;m).Unlock()</code>, respectively.
+</p>
 
 An example of using <code>sync.Mutex</code>:
 <pre class="line-numbers"><code class="language-go">package main
 
-import "fmt"
-import "sync"
+import (
+	"fmt"
+	"runtime"
+	"sync"
+)
 
 type Counter struct {
-	m sync.RWMutex
+	m sync.Mutex
 	n uint64
+}
+
+func (c *Counter) Value() uint64 {
+	c.m.Lock()
+	defer c.m.Unlock()
+	return c.n
 }
 
 func (c *Counter) Increase(delta uint64) {
 	c.m.Lock()
 	c.n += delta
 	c.m.Unlock()
-}
-
-// The first two lines in this method can be replaced with:
-//    c.m.RLock()
-//    defer c.m.RUnlock()
-func (c *Counter) Value() uint64 {
-	c.m.Lock()
-	defer c.m.Unlock()
-	return c.n
 }
 
 func main() {
@@ -339,70 +320,152 @@ func main() {
 			}
 		}()
 	}
-	
-	for c.Value() < 10000 {}
+
+	// The loop is just for demo purpose.	
+	for c.Value() < 10000 {
+		runtime.Gosched()
+	}
 	fmt.Println(c.Value()) // 10000
 }
 </code></pre>
 
 <p>
-In the above example, the <code>Mutex</code> field of any <code>Counter</code> value
-will guarantee that the <code>n</code> field of the <code>Counter</code> value
-will be never accessed by multiple goroutines parallelly.
+In the above example, a <code>Counter</code> value uses a <code>Mutex</code> field
+to guarantee that the <code>n</code> field of the <code>Counter</code> value
+will be never accessed by multiple goroutines at the same time.
 </p>
 
-An example of using <code>sync.RWMutex</code>:
-<pre class="line-numbers"><code class="language-go">package main
-
-import (
-	"fmt"
-	"sync"
-)
-
-func main() {
-	const N = 10
-	var values [N]string
-
-	var m sync.RWMutex
-	for i := 0; i < N; i++ {
-		i := i
-		go func() {
-			m.RLock()
-			values[i] = string('a' + i)
-			m.RUnlock()
-		}()
-	}
-
-	done := func() bool {
-		m.Lock()
-		defer m.Unlock()
-		for i := 0; i < N; i++ {
-			if values[i] == "" {
-				return false
-			}
-		}
-		fmt.Println(values) // [a b c d e f g h i j]
-		return true
-	}
-	for !done() {}
-}
-</code></pre>
-
 <p>
-In the above example, there are ten "reader" goroutines created,
-each of them modifies one element of <code>values</code>.
-The ten "reader" goroutines don't interference with each other,
-The <code>done</code> goroutine should be viewed as a general accessor.
+A <code>RWMutex</code> value is often called a reader+writer mutual exclusion lock.
+For an addressable <code>RWMutex</code> value <code>m</code>,
+data writers can acquire the write lock of <code>m</code> through <code>m.Lock()</code> method calls,
+and data readers can acquire the read lock of <code>m</code> through <code>m.RLock()</code> method calls.
+Method calls <code>m.Unlock()</code> and <code>m.RUnlock()</code>
+are used to release the write and read locks of <code>m</code>.
 </p>
 
 <p>
 Please note that <code>m.Lock()</code>, <code>m.Unlock()</code>,
-<code>m.RLock()</code> and <code>m.RUnlock()</code> in the above two examples
+<code>m.RLock()</code> and <code>m.RUnlock()</code>
 are shorthands of <code>(&amp;m).Lock()</code>, <code>(&amp;m).Unlock()</code>,
 <code>(&amp;m).RLock()</code> and <code>(&amp;m).RUnlock()</code>, respectively.
 </p>
 
-<code>sync.Mutex</code> values can also be used to make notifications,
+For an addressable <code>RWMutex</code> value <code>m</code>, the following rules exist.
+<ul>
+<li>
+	A data writer will acquire the write lock of <code>m</code>
+	only if neither of the read lock and write lock of <code>m</code> is not held by others.
+	In other words, the write lock of <code>m</code> can only be held by most one writer at any given time,
+	and the read lock and write lock of <code>m</code> can't be held at the same time.
+</li>
+<li>
+	When the write lock of <code>m</code> is held by a data writer,
+	any newer attempts to acquire the write lock or the read lock will be blocked
+	until the initial write lock is released.
+</li>
+<li>
+	When the read lock of <code>m</code> is held by a data reader,
+	any newer attempts to acquire the write lock will be blocked.
+	However, newer attempts to acquire the read lock will succeed
+	unless the attempts are performed after a blocked attempt to acquire the write lock
+	(see the next rule for details).
+	In other words, the read lock can be held by multiple readers at the same time.
+</li>
+<li>
+	Assume the read lock of the value <code>m</code> is held by some data readers now,
+	to avoid recursive read locking, any newer attempts to acquire the read lock after
+	the a being blocked attempt to acquire the write lock will be blocked.
+</li>
+<li>
+	Assume the write lock of the value <code>m</code> is held by a data writer now,
+	for the official standard Go compiler, to avoid recursive write locking,
+	the attempts to acquire the read lock before releasing the write lock will succeed for sure
+	once the write lock is released, even if some of the attempts are made
+	after some still being blocked another attempt to acquire the write lock.
+</li>
+</ul>
+
+<p>
+The last two rules are to ensure both readers and writers have chances to acquire locks.
+</p>
+
+<!--
+https://github.com/golang/go/issues/17973
+-->
+
+The type of the <code>m</code> field of the <code>Counter</code> type in the last example
+can be changed to <code>sync.RWMutex</code>, as the following code shows, to a better performance.
+
+<pre class="line-numbers"><code class="language-go">...
+type Counter struct {
+	//m sync.Mutex
+	m sync.RWMutex
+	n uint64
+}
+
+func (c *Counter) Value() uint64 {
+	//c.m.Lock()
+	//defer c.m.Unlock()
+	c.m.RLock()
+	defer c.m.RUnlock()
+	return c.n
+}
+...
+</code></pre>
+
+<p>
+</p>
+
+By the last two rules mentioned above, the following program is very possible to output <code>abdc</code>.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"time"
+	"sync"
+)
+
+func main() {
+	var m sync.RWMutex
+	go func() {
+		m.RLock()
+		fmt.Print("a")
+		time.Sleep(time.Second)
+		m.RUnlock()
+	}()
+	go func() {
+		time.Sleep(time.Second * 1 / 4)
+		m.Lock()
+		fmt.Print("b")
+		time.Sleep(time.Second)
+		m.Unlock()
+	}()
+	go func() {
+		time.Sleep(time.Second * 2 / 4)
+		m.Lock()
+		fmt.Print("c")
+		m.Unlock()
+	}()
+	go func () {
+		time.Sleep(time.Second * 3 / 4)
+		m.RLock()
+		fmt.Print("d")
+		m.RUnlock()
+	}()
+	time.Sleep(time.Second * 3)
+	fmt.Println()
+}
+</code></pre>
+
+<p>
+Please note, the above example is only for explanation purpose.
+It uses <code>time.Sleep</code> calls to do concurrency synchronizations,
+which is <a href="concurrent-common-mistakes.html#sleep">a bad practice for production code</a>.
+</p>
+
+<code>sync.Mutex</code> and <code>sync.RWMutex</code> values can also be used to make notifications,
 though there are many other better ways to do the same job.
 Here is an example which makes a notification by using a <code>sync.Mutex</code> value.
 <pre class="line-numbers"><code class="language-go">package main
@@ -418,17 +481,17 @@ func main() {
 	m.Lock()
 	go func() {
 		time.Sleep(time.Second)
-		fmt.Println("Hi.")
+		fmt.Println("Hi")
 		m.Unlock() // make a notification
 	}()
 	m.Lock() // wait to be notified
-	fmt.Println("Bye.")
+	fmt.Println("Bye")
 }
 </code></pre>
 
 <p>
-In the above example, the text <code>Hi.</code> is guaranteed to
-be printed before the text <code>Bye.</code>.
+In the above example, the text <code>Hi</code> is guaranteed to
+be printed before the text <code>Bye</code>.
 About the memory order guarantees made by
 <code>sync.Mutex</code> and <code>sync.RWMutex</code> values,
 please read <a href="memory-model.html#mutex">memory order guarantees in Go</a>.
@@ -446,21 +509,21 @@ to do notifications among goroutines.
 </p>
 
 <p>
-Each <code>sync.Cond</code> value holds <code>sync.Locker</code> field with name <code>L</code>.
-The field value is often a value of <code>*sync.Mutex</code> or <code>*sync.RWMutex</code>.
-Each <code>sync.Cond</code> value also meantains a waiting goroutine queue.
+Each <code>sync.Cond</code> value holds a <code>sync.Locker</code> field with name <code>L</code>.
+The field value is often a value of type <code>*sync.Mutex</code> or <code>*sync.RWMutex</code>.
 </p>
 
 <p>
 The <code>*sync.Cond</code> type has <a href="https://golang.org/pkg/sync/#Cond">three methods</a>,
-<code>Wait</code>, <code>Signal</code> and <code>Broadcast</code>.
+<code>Wait()</code>, <code>Signal()</code> and <code>Broadcast()</code>.
 </p>
 
+Each <code>sync.Cond</code> value also maintains a FIFO (first in first out) waiting goroutine queue.
 For an addressable <code>sync.Cond</code> value <code>c</code>,
 <ul>
 <li>
-	<code>c.Wait()</code> must be called when <code>c.L</code> is locked.
-	Otherwise, a <code>c.Wait()</code> will cause panic.
+	<code>c.Wait()</code> must be called when <code>c.L</code> is locked,
+	otherwise, a <code>c.Wait()</code> will cause panic.
 	A <code>c.Wait()</code> call will
 	<ol>
 	<li>
@@ -468,35 +531,56 @@ For an addressable <code>sync.Cond</code> value <code>c</code>,
 		the waiting goroutine queue maintained by <code>c</code>,
 	</li>
 	<li>
-		then call <code>c.L.Unlock()</code> to unhold/release the locker <code>c.L</code>.
+		then call <code>c.L.Unlock()</code> to unhold/release the lock <code>c.L</code>.
 	</li>
 	<li>
-		then make the current caller goroutine enter blocking state <sup>(1)</sup>.
-		The caller goroutine will be unblocked by another goroutine
-		through calling <code>c.Signal()</code> or <code>c.Broadcast()</code> later.
-		Once the caller goroutine is unblocked (a.k.a, enter running state again),
+		<p>
+		then make the current caller goroutine enter blocking state. <!--sup>(1)</sup-->
+		</p>
+		
+		<p><i>
+		(The caller goroutine will be unblocked by another goroutine
+		through calling <code>c.Signal()</code> or <code>c.Broadcast()</code> later.)
+		</i></p>
+		
+		<p>
+		</p>
+		Once the caller goroutine is unblocked and enters running state again,
 		<code>c.L.Lock()</code> will be called (in the resumed <code>c.Wait()</code> call)
-		to try to hold/acquire the locker <code>c.L</code> again,
-		The <code>c.Wait()</code> call will exits after
+		to try to acquire and hold the lock <code>c.L</code> again,
+		The <code>c.Wait()</code> call will exit after
 		the <code>c.L.Lock()</code> call returns.
 	</li>
 	</ol>
 </li>
 <li>
-	a <code>c.Signal()</code> call will try to unblock the first goroutine in and
-	remove the goroutine from the waiting goroutine queue maintained by <code>c</code>,
+	a <code>c.Signal()</code> call will unblock the first goroutine in (and
+	remove it from) the waiting goroutine queue maintained by <code>c</code>,
 	if the queue is not empty.
 </li>
 <li>
-	a <code>c.Broadcast()</code> call will try to unblock all the goroutines in and
-	remove the goroutines from the waiting goroutine queue maintained by <code>c</code>,
+	a <code>c.Broadcast()</code> call will unblock all the goroutines in (and
+	remove them from) the waiting goroutine queue maintained by <code>c</code>,
 	if the queue is not empty.
 </li>
 </ul>
 
+<p>
+Please note that <code>c.Wait()</code>, <code>c.Signal()</code> and <code>c.Broadcast()</code>
+are shorthands of <code>(&amp;c).Wait()</code>, <code>(&amp;c).Signal()</code>
+and <code>(&amp;c).Broadcast()</code>, respectively.
+</p>
+
+<p>
+<code>c.Signal()</code> and <code>c.Broadcast()</code> are often used to notify the status of a condition is changed,
+Generally, <code>c.Wait()</code> should be called in a loop of checking whether or not a condition has got satisfied.
+</p>
+
+<!--
 <sup>(1)</sup> This is for the most common case,
 by assuming that <code>c.Signal()</code> and <code>c.Broadcast()</code> are not called
 in the short period between the step 2 and step 3.
+
 <ul>
 <li>
 If <code>c.Signal()</code> is called in the short period between the step 2 and step 3,
@@ -507,104 +591,122 @@ If <code>c.Broadcast()</code> is called in the short period between the step 2 a
 then the caller goroutine of <code>c.Wait()</code> will not enter blocking state for sure.
 </li>
 </ul>
-
-<p>
-Please note that <code>c.Wait()</code>, <code>c.Signal()</code> and <code>c.Broadcast()</code>
-are shorthands of <code>(&amp;c).Wait()</code>, <code>(&amp;c).Signal()</code>
-and <code>(&amp;c).Broadcast()</code>, respectively.
-</p>
+-->
 
 In an idiomatic <code>sync.Cond</code> use case, generally,
 one goroutine waits for changes of a certain condition,
-and some other goroutines make condition change notifications.
+and some other goroutines change the condition and send notifications.
 Here is an example:
+
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 )
 
-var (
-	fooIsDone = false // Here, the user defined condition
-	barIsDone = false // is composed of two parts.
-	cond      = sync.NewCond(&sync.Mutex{})
-)
-
-func doFoo() {
-	time.Sleep(time.Second) // simulate a workload
-	cond.L.Lock()
-	fooIsDone = true
-	cond.Signal() // called when cond.L locker is acquired
-	cond.L.Unlock()
-}
-
-func doBar() {
-	time.Sleep(time.Second * 2) // simulate a workload
-	cond.L.Lock()
-	barIsDone = true
-	cond.L.Unlock()
-	cond.Signal() // called when cond.L locker is released
-}
-
 func main() {
+	rand.Seed(time.Now().UnixNano())
+	
+	const N = 10
+	var values [N]string
+	
+	cond := sync.NewCond(&sync.Mutex{})
 	cond.L.Lock()
 	
-	go doFoo()
-	go doBar()
+	for i := 0; i < N; i++ {
+		d := time.Second * time.Duration(rand.Intn(10)) / 10
+		go func(i int) {
+			time.Sleep(d) // simulate a worload
+			cond.L.Lock() // changes must be made when cond.L is locked
+			values[i] = string('a' + i)
+			cond.Signal() // called when cond.L lock is acquired
+			cond.L.Unlock()
+			// The above "cond.Signal()" line can also be put here.
+			//cond.Signal() // called when cond.L lock is released.
+		}(i)
+	}
 
+	// This function must be called when cond.L is locked.
 	checkConditon := func() bool {
-		fmt.Println(fooIsDone, barIsDone)
-		return fooIsDone && barIsDone
+		fmt.Println(values)
+		for i := 0; i < N; i++ {
+			if values[i] == "" {
+				return false
+			}
+		}
+		return true
 	}
 	for !checkConditon() {
-		cond.Wait()
+		cond.Wait() // must be called when cond.L is locked
 	}
-
 	cond.L.Unlock()
 }
 </code></pre>
 
-The output:
-<pre class="output"><code>false false
-true false
-true true
+One possible output:
+<pre class="output"><code>[         ]
+[     f    ]
+[  c   f    ]
+[  c   f  h  ]
+[ b c   f  h  ]
+[a b c   f  h  j]
+[a b c   f g h i j]
+[a b c  e f g h i j]
+[a b c d e f g h i j]
 </code></pre>
 
 <p>
-For there is only one goroutine (the main goroutine) waiting to be unblocked,
-the two <code>cond.Signal()</code> calls can be replaced with <code>cond.Broadcast()</code>.
+For there is only one goroutine (the main goroutine) waiting to be unblocked in this example,
+the <code>cond.Signal()</code> call can be replaced with <code>cond.Broadcast()</code>.
+As the comments suggest,
+<code>cond.Signal()</code> and <code>cond.Broadcast()</code> are not required to be called
+when <code>cond.L</code> is locked.
 </p>
 
-Some details in the above example:
-<ul>
-<li>
-	To avoid data races,
-	each part of the user defined condition should only be modified
-	by a goroutine when the goroutine has acquired the locker.
-</li>
-<li>
-	To guarantee that the <code>cond.Signal()</code> (or <code>cond.Broadcast()</code>) calls
-	happen before the <code>cond.Wait()</code> in the main goroutine returns,
-	<ol>
-	<li>
-		the <code>doFoo</code> and <code>doBar</code> goroutines
-		should be started when the main goroutine has acquired the locker.
-	</li>
-	<li>
-		<code>cond.Signal()</code> (or <code>cond.Broadcast()</code>)
-		should be called by a goroutine when the goroutine has ever acquired the locker.
-		It is okay to call the two methods either before or after
-		the goroutine released the locker.
-	</li>
-	</ol>
-</li>
-</ul>
+<p>
+To avoid data races,
+each of the ten parts of the user defined condition should only be modified
+when <code>cond.L</code> is locked.
+The <code>checkConditon</code> function and the <code>cond.Wait</code> method should be also called
+when <code>cond.L</code> is locked.
+</p>
 
-The user defined condition monitored by a <code>sync.Cond</code> value can be a void.
-For such cases, the <code>sync.Cond</code> value is used for notifications purely.
+<p>
+In fact, for the above specified example, the <code>cond.L</code> field can also be a <code>*sync.RWMutex</code> value,
+and each of the ten parts of the user defined condition can be modified when the read lock of <code>cond.L</code> is held,
+just as the following code shows:
+</p>
+
+<pre class="line-numbers"><code class="language-go">...
+	cond := sync.NewCond(&sync.RWMutex{})
+	cond.L.Lock()
+	
+	for i := 0; i < N; i++ {
+		d := time.Second * time.Duration(rand.Intn(10)) / 10
+		go func(i int) {
+			time.Sleep(d)
+			cond.L.(*sync.RWMutex).Lock()
+			values[i] = string('a' + i)
+			cond.L.(*sync.RWMutex).Unlock()
+			cond.Signal()
+		}(i)
+	}
+...
+</code></pre>
+
+<p>
+In the above example, the <code>sync.RWMutex</code> value is used unusually.
+Its read lock is held by some goroutines which modify array elements,
+and its write lock is used by the main goroutine to read array elements.
+</p>
+
+The user defined condition monitored by a <code>Cond</code> value can be a void.
+For such cases, the <code>Cond</code> value is used for notifications purely.
 For example, the following program will print <code>abc</code> or <code>bac</code>.
+
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -636,6 +738,9 @@ func main() {
 	fmt.Println("c")
 }
 </code></pre>
+
+<p>
+</p>
 
 <p>
 If it needs, multiple <code>sync.Cond</code> values can share the same <code>sync.Locker</code>.

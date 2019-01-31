@@ -1028,11 +1028,11 @@ The following sub-sections will show more try-send and try-receive use cases.
 </p>
 </div>
 
-<h4>Check If An Unbuffered Channel Is Closed Without Blocking The Current Goroutine</h4>
+<h4>Check If A Channel Is Closed Without Blocking The Current Goroutine</h4>
 
 <div>
-Assume it is guaranteed that no values were ever sent to an unbuffered channel,
-we can use the following code to check whether or not the unbuffered channel
+Assume it is guaranteed that no values were ever (and will be) sent to a channel,
+we can use the following code to check whether or not the channel
 is already closed without blocking the current goroutine,
 where <code>T</code> the element type of the corresponding channel type.
 
@@ -1047,7 +1047,7 @@ where <code>T</code> the element type of the corresponding channel type.
 </code></pre>
 
 <p>
-The way to check if an unbuffered channel is closed is used popularly
+The way to check if a channel is closed is used popularly
 in Go concurrent programming to check whether or not a notification has arrived.
 The notification will be sent by closing the channel in another goroutine.
 </p>
@@ -1059,7 +1059,7 @@ The notification will be sent by closing the channel in another goroutine.
 <div>
 
 <p>
-We can implement peak limiting by combining <a href="#semaphore">use channels as counting semaphores</a> and try-send/receive.
+We can implement peak limiting by combining <a href="#semaphore">use channels as counting semaphores</a> and try-send/try-receive.
 Peak-limit (or burst-limit) is often used to limit the number of concurrent requests without blocking any requests.
 </p>
 
@@ -1858,12 +1858,12 @@ Data flow system example 2 (a directed acyclic graph pipeline):
 ... // the worker functions declared above.
 
 func main() {
-	filterA := Filter(RandomGenerator())
-	filterB := Filter(RandomGenerator())
-	filterC := Filter(RandomGenerator())
+	filterA := Filter(RandomGenerator(), nil)
+	filterB := Filter(RandomGenerator(), nil)
+	filterC := Filter(RandomGenerator(), nil)
 	filter := Aggregator(filterA, filterB, filterC)
-	calculatorA := Calculator(filter)
-	calculatorB := Calculator(filter)
+	calculatorA := Calculator(filter, nil)
+	calculatorB := Calculator(filter, nil)
 	calculator := Aggregator(calculatorA, calculatorB)
 	Printer(calculator)
 }
