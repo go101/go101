@@ -2,13 +2,13 @@
 
 <p>
 Atomic operations are more primitive than other synchronization techniques.
-They are lockless and generally implemented at hardware level.
+They are lockless and generally implemented directly at hardware level.
 In fact, they are often used in implementing other synchronization techniques.
 </p>
 
 <p>
-Please note, many examples below are not concurrent programs,
-they are just for demonstration and education purpose, to show how to use the
+Please note, many examples below are not concurrent programs.
+They are just for demonstration and education purpose, to show how to use the
 atomic functions provided in the <code>sync/atomic</code> standard package.
 </p>
 
@@ -35,6 +35,9 @@ func StoreInt32(addr *int32, val int32)
 func SwapInt32(addr *int32, new int32) (old int32)
 func CompareAndSwapInt32(addr *int32, old, new int32) (swapped bool)
 </code></pre>
+
+<p>
+</p>
 
 The following four atomic functions are provided for (safe) pointer types.
 As Go 1 doesn't support custom generic now, these functions are implemented
@@ -121,8 +124,8 @@ func (page *Page) Views() uint32 {
 <p>
 </p>
 
-For signed types <code>int32</code> and <code>int64</code>,
-the second argument for an <code>AddT</code> function call can be a negative value,
+For a signed integer type <code>T</code> (<code>int32</code> or <code>int64</code>),
+the second argument for a call to the <code>AddT</code> function can be a negative value,
 to do an atomic decrease operation.
 But how to do atomic decrease operations for values of an unsigned type <code>T</code>,
 such as <code>uint32</code>, <code>uint64</code> and <code>uintptr</code>?
@@ -135,7 +138,7 @@ There are two circumstances for the second unsigned arguments.
 </li>
 <li>
 	For a positive constant integer <code>c</code>,
-	<code>-v</code> is illegal to be used as the second argument of an <code>AddT</code> call
+	<code>-c</code> is illegal to be used as the second argument of an <code>AddT</code> call
 	(where <code>T</code> denotes an unsigned integer type).
 	We can used <code>^T(c-1)</code> as the second argument instead.
 </li>
@@ -145,14 +148,13 @@ There are two circumstances for the second unsigned arguments.
 </p>
 
 <p>
-This <code>^T(c-1)</code> trick also works for an unsigned variable <code>v</code>,
+This <code>^T(v-1)</code> trick also works for an unsigned variable <code>v</code>,
 but <code>^T(v-1)</code> is less efficient than <code>T(-v)</code>.
 </p>
 
 <p>
 In the trick <code>^T(c-1)</code>, if <code>c</code> is a typed value
-and its type matches the second perameter type of function <code>AddT</code>,
-then the form can shortened as <code>^(c-1)</code>.
+and its type is exactly <code>T</code>, then the form can shortened as <code>^(c-1)</code>.
 </p>
 
 Example:
@@ -188,6 +190,9 @@ func main() {
 	atomic.AddUint64(&n, ^uint64(k - 1)); fmt.Println(n) // 69 (71 - 2)
 }
 </code></pre>
+
+<p>
+</p>
 
 <p>
 A <code>SwapT</code> function call is like a <code>StoreT</code> function call,
@@ -239,17 +244,18 @@ Please read <a href="memory-layout.html">memory layout</a> for details.
 <p>
 Above has mentioned that there are four functions provided in the
 <code>sync/atomic</code> standard package to do atomic pointer operations,
-with the help of the <code>unsafe.Pointer</code> type.
+with the help of unsafe pointers.
 </p>
 
 <p>
-In Go, values of any pointer type can be explicitly converted to <code>unsafe.Pointer</code>, and vice versa.
+From the article <a href="unsafe.html">type-unsafe pointers</a>, we learn that,
+in Go, values of any pointer type can be explicitly converted to <code>unsafe.Pointer</code>, and vice versa.
 So values of <code>*unsafe.Pointer</code> type can also be explicitly converted to <code>unsafe.Pointer</code>, and vice versa.
 </p>
 
 The following example is not a concurrent program.
 It just shows how to do atomic pointer operations.
-In this example, <code>T</code> can be any type.
+In this example, <code>T</code> can be an arbitrary type.
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -308,11 +314,12 @@ efficient than the ones introduced in the current section.
 
 <div>
 <p>
-The <code>Value</code> type can be used to atomically load and store values of any type.
-Type <code>*Value</code> has two methods, <code>Load</code> and <code>Store</code>.
+The <code>Value</code> type provided in the <code>sync/atomic</code> standard package
+can be used to atomically load and store values of any type.
 </p>
 
 <p>
+Type <code>*Value</code> has two methods, <code>Load</code> and <code>Store</code>.
 <code>Add</code> and <code>Swap</code> methods are not available for type <code>*Value</code>.
 </p>
 
@@ -324,10 +331,9 @@ But for an addressable <code>Value</code> value <code>v</code>,
 once <code>v.Store</code> (a shorthand of <code>(&amp;v).Store</code>)
 has ever been called,
 then the subsequent <code>v.Store</code> calls must also take argument values
-of the same type as the argument type of the first <code>v.Store</code> call,
+of the same concrete type as the argument of the first <code>v.Store</code> call,
 otherwise, panic will occur.
-A <code>nil</code> <code>interface{}</code> argument will also
-make a <code>v.Store</code> call panic.
+A <code>nil</code> interface argument will also make a <code>v.Store</code> call panic.
 </p>
 
 Example:
@@ -352,7 +358,7 @@ func main() {
 </code></pre>
 
 <p>
-We can also use the atomic pointer functions explained in the last section
+In fact, we can also use the atomic pointer functions explained in the last section
 to do atomic operations for values of any type, with one more level indirection.
 Both ways have their respective advantages and disadvantages.
 Which way should be used depends on the requirements in practice.
