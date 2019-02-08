@@ -1,9 +1,11 @@
 <h1>Memory Blocks</h1>
 
 <p>
-Go is a language which supports automatic memory management, such as memory allocation and garbage collection.
-So Go programmers can do programming without handling the underlying memory management.
-This saves Go programmers lots of time.
+Go is a language which supports automatic memory management,
+such as automatic memory allocation and automatic garbage collection.
+So Go programmers can do programming without handling the underlying verbose memory management.
+This ont only brings much convenience and saves Go programmers lots of time,
+but also helps Go programmers avoid many careless bugs.
 </p>
 
 <p>
@@ -14,8 +16,8 @@ helpful for Go programmers to write high quality Go code.
 </p>
 
 <p>
-This article will explain some concepts and facts of memory block allocation
-and garbage collection by the standard Go compiler and runtime.
+This article will explain some concepts and list some facts of the implementation of
+memory block allocation and garbage collection by the standard Go compiler and runtime.
 Other aspects, such as memory apply and memory release in memory management,
 will not be touched in this article.
 </p>
@@ -37,12 +39,12 @@ In other words, for any value part, it never crosses memory blocks.
 There are many reasons when one memory block may host multiple value parts. Some of them:
 <ul>
 <li>
-	struct values often have several fields, so when a memory block is allocated for
-	a struct value, the memory block will also host these field values.
+	a struct value often have several fields. So when a memory block is allocated for
+	a struct value, the memory block will also host (the direct parts of) these field values.
 </li>
 <li>
-	array values often have many elements, so when a memory block is allocated for
-	a array value, the memory block will also host the array element values.
+	an array values often have many elements. So when a memory block is allocated for
+	a array value, the memory block will also host (the direct parts of) the array element values.
 </li>
 <li>
 	the underlying element sequences of two slices may be hosted on the same memory block,
@@ -51,11 +53,11 @@ There are many reasons when one memory block may host multiple value parts. Some
 </ul>
 </div>
 
-<h3>A Value References The Memory Block It Is Hosted On</h3>
+<h3>A Value References The Memory Blocks Which Host Its Value Parts</h3>
 
 <p>
-I have known that a value part can reference another value part.
-Here, we extend the definition by saying
+We have known that a value part can reference another value part.
+Here, we extend the reference definition by saying
 a memory block is referenced by all the value parts it hosts.
 So if a value part <code>v</code> is referenced by another value part,
 then the other value will also reference the memory block hosting <code>v</code>, indirectly.
@@ -69,47 +71,50 @@ In Go, memory blocks may be allocated but not limited at following situations:
 <ul>
 <li>
 	explicitly call the <code>new</code> and <code>make</code> built-in functions.
+	A <code>new</code> call will always allocate exact one memory block.
 	A <code>make</code> call will allocate more than one memory blocks to host
-	the direct part and underlying part(s) of the created map, slice or channel value.
+	the direct part and underlying part(s) of the created map or channel value.
 </li>
 <li>
-	create maps, slices and anonymous functions with corresponding composite literals.
+	create maps, slices and anonymous functions with corresponding literals.
 	More than one memory blocks may be allocated in each of the processes.
 </li>
 <li>
 	declare variables.
-	Depends on variable value types, one or more memory blocks may be allocated in each declaration.
 </li>
 <li>
 	assign non-interface values to interface values
 	(when the non-interface value is not a pointer value).
 </li>
 <li>
-	concatenate strings.
+	concatenate non-constant strings.
 </li>
 <li>
 	convert strings to byte or rune slices, and vice versa
 	(except <a href="string.html#conversion-optimizations">some special compiler optimization cases</a>).
 </li>
 <li>
-	convert integers to <code>string</code>.
+	convert integers to strings.
 </li>
 <li>
-	call <code>append</code> function (when the capacity of the base slice is not large enough).
+	call the built-in <code>append</code> function (when the capacity of the base slice is not large enough).
 </li>
 <li>
-	add new key-element pairs into maps (when the underlying hash table needs to be resized).
+	add a new key-element entry pair into a map (when the underlying hash table needs to be resized).
 </li>
 </ul>
+
 </div>
 
-<h3>Where Will Memory Blocks Be Allocated?</h3>
+<p class="anchor" id="where-to-allocate"></p>
+<h3>Where Will Memory Blocks Be Allocated On?</h3>
 
 <p>
-For the standard Go compiler and runtime, in every Go program,
-each goroutine will maintain a stack, a memory region, at run time.
-The initial stack size of each goroutine is small.
-The stack size will grow and shrink as needed.
+For every Go program compiled by the official standard Go compiler, at run time,
+each goroutine will maintain a stack, which is a memory segment.
+It acts as a memory pool for some memory blocks to be allocated from/on.
+The initial stack size of each goroutine is small (about 2k bytes on 64-bit systems).
+The stack size will grow and shrink as needed in goroutine running.
 </p>
 
 <p><i>
@@ -117,10 +122,11 @@ The stack size will grow and shrink as needed.
 each goroutine can have. Ar present, Go 1.11, the default maximum stack size
 is 1 GB on 64-bit systems, and 250 MB on 32-bit systems.
 We can call the <code>SetMaxStack</code> function in the
-<code>runtime/debug</code> standard package to change the size.)
+<code>runtime/debug</code> standard package to change the max size.)
 </i></p>
 
 <p>
+Memory blocks can be allocated on stacks.
 Memory blocks allocated on the stack of a goroutine can only be used (referenced)
 in the goroutine internally.
 They are goroutine localized resources.
@@ -130,16 +136,18 @@ without using any data synchronization techniques.
 </p>
 
 <p>
-Heap is a singleton in each program.
+Heap is a singleton in each program. It is a virtual concept.
+If a memory block is not allocated on any goroutine stack,
+then we say the memory block is alocated on heap.
 Memory blocks allocated on heap can be accessed by multiple goroutines.
 In other words, they can be accessed concurrently.
 Their accessments should be synchronized when needed.
 </p>
 
 <p>
-Heap is a conservative place to register memory blocks.
+Heap is a conservative place to allocate memory blocks on.
 If compilers detect a memory block will be referenced crossing goroutines
-or can't easily confirm whether or not the memory block is safe to be put on stacks,
+or can't easily confirm whether or not the memory block is safe to be put on the stack of a goroutine,
 then the memory block will be allocated on heap at run time.
 This means some values can be safely allocated on stacks may be also allocated on heap.
 </p>
@@ -177,8 +185,8 @@ on the memory block are allocated on the same place.
 </p>
 
 <p>
-If a value part used in a function is allocated on heap,
-we can say the value part escapes to heap.
+If some value parts of a local variable declared in a function is allocated on heap,
+we can say the value parts (and the variable) escape to heap.
 By using the official Go SDK, we can run <code>go build -gcflags -m</code> to check
 which local values (value parts) will escape to heap at run time.
 As above has mentioned, the current escape analyzer in the standard Go compiler
@@ -187,23 +195,29 @@ will still escape to heap.
 </p>
 
 <p>
-When a local variable value of type <code>T</code> escapes to heap,
-what that really means is that Go runtime also creates
+An active value part allocated on heap still in use must be referenced by at least one value part allocated on a stack.
+If a value escaping to heap is a declared local variable, and assume its type is <code>T</code>,
+Go runtime will create (a memroy block for)
 an implicit pointer of type <code>*T</code> on the stack of the current goroutine.
-The value of the pointer stores the address of the memory block allocated on heap
+The value of the pointer stores the address of the memory block allocated for the variable on heap
 (a.k.a., the address of the local variable of type <code>T</code>).
-Go compiler has already replaced all references to the variable to
-the deferences of the pointer value at compile time.
+Go compiler will also replace all uses of the variable with
+the dereferences of the pointer value at compile time.
+The <code>*T</code> pointer value on stack may be marked as dead since a later time,
+so the reference relation from it to the <code>T</code> value on heap will disappear.
+The reference relation from the <code>*T</code> value on stack to the <code>T</code> value on heap
+plays an important role in the garbage collection process which will be described below.
 </p>
 
 <p>
-Direct parts of global variables (package-level variables) will never be allocated on stacks.
-Whether or not they will be allocated in heap is compiler dependent.
-A value part referenced by the direct part of any global variable and any value part allocated
-on heap will be allocated on heap if the value part is not the direct part of a global variable.
-Direct parts of global variables and value parts allocated on heap will never
-reference value parts allocated on stacks.
-Value parts allocated on a stack can only be referenced by value parts allocated on the same stack.
+Similarly, we can view each package-level variable is allocated on heap,
+and the variable is referenced by an implicit pointer which is allocated on a global stack.
+In fact, the implicit pointer references the direct part of the package-level variable,
+and the direct part of the variable references some other value parts.
+</p>
+
+<p>
+A memory block allocated on heap may be referenced by multiple value parts allocated on different stacks at the same time.
 </p>
 
 <div>
@@ -222,8 +236,8 @@ Some facts:
 	then all the elements of the slice will also escape to heap.
 </li>
 <li>
-	if a non-nil slice value escapes to heap,
-	then its elements will also escape to heap.
+	if a value (part) <code>v</code> is referenced by a value (part) which escapes to heap,
+	then the value (part) <code>v</code> will also escape to heap.
 </li>
 </ul>
 </div>
@@ -233,26 +247,30 @@ A memory block created by calling <code>new</code> function may be allocated on 
 This is different to C++.
 </p>
 
+<!--p>
+Another important fact we should know is,
+to make 64-bit word atomic operations possible on 32-bit architectures,
+the address of any memory block allocated on heap is guaranteed to be 8-byte aligned.
+</p-->
+
 <p class="anchor" id="when-can-collect"></p>
 <h3>When Can A Memory Block Be Collected?</h3>
 
 <p>
-Memory blocks allocated for direct parts of global variables will never be collected.
+Memory blocks allocated for direct parts of package-level variables will never be collected.
 </p>
 
 <p>
-Each stack will be collected as a whole when the corresponding goroutine exits.
+The stack of a goroutine will be collected as a whole when the goroutine exits.
 So there is no need to collect the memory blocks allocated on stacks, individually, one by one.
 Stacks are not collected by the garbage collector.
 </p>
 
 <p>
-For a memory block allocated on heap, it can be safely collected only when
+For a memory block allocated on heap, it can be safely collected only if
 it is no longer referenced (either directly or indirectly)
-by any direct part of global values and any value part allocated on goroutine stacks.
+by all the value parts allocated on goroutine stacks and the global stack.
 We call such memory blocks as unused memory blocks.
-Here the global values include not only explicit package-level variables,
-but also some runtime internal global values.
 Unused memory blocks on heap will be collected by the garbage collector.
 </p>
 
@@ -264,16 +282,19 @@ var p *int
 
 func main() {
 	done := make(chan bool)
-	// done will be used on the main and the following
+	// "done" will be used on the main and the following
 	// new goroutine, so it will be allocated on heap.
 
 	go func() {
 		x, y, z := 123, 456, 789
 		_ = z  // z can be allocated on stack safely.
-		p = &x // For x and y are referenced by global p,
-		p = &y // so they will be both allocated on heap.
+		p = &x // For x and y are both ever referenced
+		p = &y // by the global p, so they will be both
+		       // allocated on heap.
+		
 		// Now, x is not referenced by anyone, so
 		// its memory block can be collected now.
+		
 		p = nil
 		// Now, y is als not referenced by anyone,
 		// so its memory block can be collected now.
@@ -281,7 +302,7 @@ func main() {
 		done <- true
 	}()
 
-	<- done
+	<-done
 	// Now the above goroutine exits, the done channel
 	// is not used any more, a smart compiler will
 	// think it can be collected now.
@@ -319,9 +340,10 @@ internal structures of slice values.
 
 <p>
 By the way, sometimes, we may hope the slice <code>bs</code> is guaranteed
-to not being garbage collected after the <code>fmt.Println</code> call,
+to not being garbage collected until <code>fmt.Println</code> is called,
 then we can use a <code>runtime.KeepAlive</code> function call to tell
-garbage collectors that the slice <code>bs</code> is still used.
+garbage collectors that the slice <code>bs</code> and
+the value parts referenced by it are still in use.
 </p>
 
 For example,
@@ -347,20 +369,68 @@ if <a href="unsafe.html">unsafe pointers</a> are involved.
 
 </div>
 
-<p class="anchor" id="when-to-collect"></p>
-<h3>When Will A Memory Block Be Collected?</h3>
-
-<p>
-Go runtime will collect unused heap memory blocks (garbage) to reuse or release memory.
-The current standard Go compiler (up to version 1.11) uses
-<a href="https://blog.golang.org/go15gc">a concurrent, tri-color, mark-sweep garbage collector</a>.
-Here this article will not explain the detailed implementation. Just some facts are listed below.
-</p>
+<p class="anchor" id="how-to-detect"></p>
+<h3>How Are Unsed Memroy Blocks Detected?</h3>
 
 <div>
-The collector is not always running. It will start when a threshold is satisfied.
-So an unused memory block may be not collected immediately after it becomes unused,
-it will be collected eventually.
+<p>
+The current standard Go compiler (up to version 1.11) uses
+a concurrent, tri-color, mark-sweep garbage collector.
+Here this article will only make a simple explanation for the algorithm.
+</p>
+
+<p>
+A garbage collection (GC) process is divided into two phases, the mark phase and the sweep phase.
+In the mark phase, the collector (a group of goroutines accutally) uses the tri-color algorithm to analyze
+which memory blocks are unused. 
+</p>
+
+The following quote is token from <a href="https://blog.golang.org/go15gc">a Go blog article</a>,
+in which an <b><i>objects</i></b> is either value parts or memory blocks.
+
+<blockquote style="margin-top:0px;margin-bottom:0px;">
+<small>
+	At the start of a GC cycle all objects are white.
+	The GC visits all roots, which are objects directly accessible by the application
+	such as globals and things on the stack, and colors these grey.
+	The GC then chooses a grey object, blackens it, and then scans it for pointers to other objects.
+	When this scan finds a pointer to a white object, it turns that object grey.
+	This process repeats until there are no more grey objects.
+	At this point, white objects are known to be unreachable and can be reused.
+</small>
+</blockquote>
+
+<!--
+<p>
+There is a stop-the-world phase in garbage collecting. All goroutines must be paused in this phase.
+After many improvements from version to version,
+since v1.8, the collector makes typical worst-case stop-the-world duration less than 100μs (0.1 millisecond).
+This generally removes noticeable lags at run time.
+</p>
+-->
+
+<p>
+</p>
+
+<p>
+In the sweep phase, the marked unused memory blocks will be collected.
+</p>
+
+<p>
+The GC algorithm is a non-compacting one, so it will not move memory blocks to rearrange them.
+In other words, the address of a value will not change in its lifetime.
+</p>
+</div>
+
+<p class="anchor" id="when-to-collect"></p>
+<h3>When Will An Unused Memory Block Be Collected?</h3>
+
+<div>
+<p>
+Unused heap memory blocks are viewed as garbage by Go runtime and will be collected to reuse or release memory.
+The garbage collector is not always running. It will start when a threshold is satisfied.
+So an unused memory block may be not collected immediately when it becomes unused.
+Instead, it will be collected eventually.
 Currently, the threshold is controlled by
 <a href="https://golang.org/pkg/runtime/#hdr-Environment_Variables">GOGC environment variable</a>:
 <blockquote style="margin-top:0px;margin-bottom:0px;">
@@ -375,51 +445,16 @@ Currently, the threshold is controlled by
 The value of this environment variable determines the frequency of garbage collecting,
 and it can <a href="https://golang.org/pkg/runtime/debug/#SetGCPercent">be modified at run time</a>.
 Smaller values lead to more frequent garbage collections.
-Go programs can also run the collector explicitly by calling the
+</p>
+
+<p>
+A garbage collection process can also be started manually by calling the
 <a href="https://golang.org/pkg/runtime/#GC">runtime.GC</a> function.
 </p>
-</div>
-
-<div>
-In the mark phase, the collector uses the tri-color algorithm mentioned above to analyze
-which memory blocks are unused:
-<blockquote style="margin-top:0px;margin-bottom:0px;">
-<small>
-	At the start of a GC cycle all objects are white.
-	The GC visits all roots, which are objects directly accessible by the application
-	such as globals and things on the stack, and colors these grey.
-	The GC then chooses a grey object, blackens it, and then scans it for pointers to other objects.
-	When this scan finds a pointer to a white object, it turns that object grey.
-	This process repeats until there are no more grey objects.
-	At this point, white objects are known to be unreachable and can be reused.
-</small>
-</blockquote>
-<p>
-Here, <b><i>objects</i></b> are either value parts or memory blocks.
-</p>
 
 <p>
-The unused memory blocks will be swept at the sweep phase.
-</p>
-</div>
-
-<!--
-<p>
-There is a stop-the-world phase in garbage collecting. All goroutines must be paused in this phase.
-After many improvements from version to version,
-since v1.8, the collector makes typical worst-case stop-the-world duration less than 100μs (0.1 millisecond).
-This generally removes noticeable lags at run time.
-</p>
--->
-
-<p>
-The collector is a non-compacting one, so it will not move memory blocks to rearrange them.
-</p>
-
-<!--
-<p>
-A memory block may not be released to OS immediately after it is collected,
-so that it can be reused in another memory block allocation shortly after.
+An unsed memory block may not be released to OS immediately after it is collected,
+so that it can be reused for new some value parts.
 Don't worry, the offical Go runtime is much less memory greedy than most Java runtimes.
 </p>
--->
+</div>

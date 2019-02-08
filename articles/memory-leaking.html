@@ -1,9 +1,9 @@
 ﻿<h1>Memory Leaking Scenarios</h1>
 
 <p>
-When programming in a langauge supporting garbage collecting,
-generally we don't need care about memory leaking problem,
-for the language runtime will collect unused memory regularly.
+When programming in a langauge supporting auto garbage collection,
+generally we don't need care about memory leaking problems,
+for the runtime will collect unused memory regularly.
 However, we do need to be aware of some special scenarios
 which may cause kind-of or real memory leaking.
 The remaining of the current article will list several such scenarios.
@@ -23,20 +23,25 @@ This is a good design, which is both memory and CPU consuming wise.
 But it may cause kind-of memory leaking sometimes.
 </p>
 
-For example, after the following function <code>f</code> is called,
-there will be 1M bytes memory leaking (kind of),
+For example, after the <code>demo</code> function in the following example is called,
+there will be about 1M bytes memory leaking (kind of),
 until the package-level variable <code>s0</code> is modified again elsewhere.
 
 <pre class="line-numbers"><code class="language-go">var s0 string // a package-level variable
 
-func f(s1 string) {
-	// Assume s1 is a string much longer than 50.
+// A demo purpose function.
+func f(s string) {
 	s0 = s1[:50]
-	// Now, s0 shares the same underlying memory block of s1.
-	// s1 is not alive now, but s0 is still alive.
-	// Although there are only 50 bytes used in the block,
-	// the fact that s0 is still alive prevent the 1M bytes
-	// memory block from being collected.
+	// Now, s0 shares the same underlying memory block with s.
+	// Although s is not alive now, but s0 is still alive, so
+	// the memory block they share couldn't be collected,
+	// though there are only 50 bytes used in the block and
+	// all other bytes in the block become unavailable.
+}
+
+func demo() {
+	s := createStringWithLengthOnHeap(1 << 20) // 1M bytes
+	f(s)
 }
 </code></pre>
 
@@ -47,19 +52,19 @@ To avoid this kind-of memory leaking, we can convert the substring to a
 <code>[]byte</code> value then convert the <code>[]byte</code> value back
 to <code>string</code>.
 
-<pre class="line-numbers"><code class="language-go">func f(s1 string) {
-	s0 = string([]byte(s1[:50]))
+<pre class="line-numbers"><code class="language-go">func f(s string) {
+	s0 = string([]byte(s[:50]))
 }
 </code></pre>
 
 <p>
 The disadvantage of the above way to avoid the kind-of memory leaking
-is there are two 50-byte duplications happen in the conversion process,
+is there are two 50-byte duplicates happen in the conversion process,
 one of them is unecessary.
 </p>
 
-We can make using of one of <a href="string.html#conversion-optimizations">the
-optimizations</a> made by the standard Go compiler to avoid one duplication,
+We can make use of one of <a href="string.html#conversion-optimizations">the
+optimizations</a> made by the standard Go compiler to avoid the unecessary duplicate,
 with a small extra cost of one byte memory wasting.
 
 <pre class="line-numbers"><code class="language-go">func f(s1 string) {
@@ -69,7 +74,7 @@ with a small extra cost of one byte memory wasting.
 
 <p>
 The disadvantage of the above way is the compiler optimization may become
-invalid later, and the optimization may be not available for other compilers.
+invalid later, and the optimization may be not available from other compilers.
 </p>
 
 The third way to avoid the kind-of memory leaking is to untilize
@@ -82,18 +87,16 @@ func f(s1 string) {
 	b.Grow(50)
 	b.WriteString(s1[:50])
 	s0 = b.String()
-	// b.Reset() // if b is used elsewhere,
-	             // it must be reset here.
 }
 </code></pre>
 
 <p>
-The disadvantage of the third way is a little verbose
-(by comparing to the first two ways).
-A good news is, since Go 1.12 (the next main version to be released at Feb. 2019),
+The disadvantage of the third way is it is a little verbose (by comparing to the first two ways).
+A good news is, since Go 1.12 (to be released at Feb. 2019),
 we can call the <code>Repeat</code> function with the <code>count</code> argument as <code>1</code>
 in the <code>strings</code> standard package to clone a string.
-Since Go 1.12, the underlying implementation of <code>strings.Repeat</code> will make use of <code>strings.Builder</code>.
+Since Go 1.12, the underlying implementation of <code>strings.Repeat</code> will make use of <code>strings.Builder</code>,
+to avoid one unecessary duplicate.
 </p>
 
 </div>
@@ -125,13 +128,15 @@ from being collected.
 
 <pre class="line-numbers"><code class="language-go">func g(s1 []int) {
 	s0 = append([]int(nil), s1[len(s1)-30:]...)
+	// Now, the memory block hosting the elements of s1 can be
+	// collected if no other values are referencing the memory block.
 }
 </code></pre>
 
 </div>
 
 <p class="anchor" id="dead-slice-elements"></p>
-<h3>Kind-Of Memory Leaking Caused By Not Resetting Pointers In Dead Slice Elements</h3>
+<h3>Kind-Of Memory Leaking Caused By Not Resetting Pointers In Lost Slice Elements</h3>
 
 <div>
 In the following code, after the <code>h</code> function is called,
@@ -140,28 +145,28 @@ the memory block allocated for the first and the last elements of slice
 
 <pre class="line-numbers"><code class="language-go">func h() []*int {
 	s := []*int{new(int), new(int), new(int), new(int)}
-	// do smething ...
+	// do smething with s ...
+	
 	return s[1:3:3]
 }
 </code></pre>
 
 <p>
-Only if the returned slice is still alive, it will prevent the underlying
-memory block which hosts the elements of <code>s</code> from being collected,
-which in consequence prevents the two memory blocks allocated for the first
-and the last elements of <code>s</code> from being collected,
-though the two elements are dead.
+As long as the returned slice is still alive, it will prevent any elements
+of <code>s</code> from being collected, which in consequence prevents
+the two memory blocks allocated for the two <code>int</code> values
+referenced by the first and the last elements of <code>s</code> from being collected.
 </p>
 
-If we want to avoid such memory leaking,
-we must reset the pointers stored in the dead elements.
+If we want to avoid such kind-of memory leaking,
+we must reset the pointers stored in the lost elements.
 
 <pre class="line-numbers"><code class="language-go">func h() []*int {
 	s := []*int{new(int), new(int), new(int), new(int)}
-	// do smething ...
-	s1 := s[1:3]
-	s[0] = nil; s[len(s)-1] = nil
-	return s1
+	// do smething with s ...
+	
+	s[0], s[len(s)-1] = nil, nil // reset pointer values
+	return s[1:3:3]
 }
 </code></pre>
 
@@ -180,39 +185,21 @@ We often need to reset the pointers for some old slice elements in
 
 <div>
 <p>
-Some times, for some logic mistakes in code design, one or more goroutines
-stay in blocking state for ever (hanging).
+Sometimes, some goroutines in a Go program may stay in blocking state for ever.
 Such goroutines are called hanging goroutines.
-Go runtime thinks hanging goroutines are still alive.
-Once a goroutine becomes hanging, the resources allocated for it and the
-memory blocks referenced by it will never be garbage collected.
-</p>
-
-For example, if the following function is called
-by passing a nil channel argument to it,
-then the current goroutine will become hanging.
-so the memory block allocated for <code>s</code> will never get collected.
-
-<pre class="line-numbers"><code class="language-go">func k(c <-chan bool) {
-	s := make([]int64, 1e6)
-	if <-c { // block here for ever if c is nil
-		_ = s
-		// use s, ...
-	}
-}
-</code></pre>
-
-<p>
-If we pass a non-nil channel to the above function, and there are no other
-goroutines will send values to the channel since the function is called,
-The current goroutine will also become hanging.
+Go runtime will not kill hanging goroutines, so the resources allocated for
+(and the memory blocks referenced by) the hanging goroutines will never get garbage collected.
 </p>
 
 <p>
-Sometimes, we deliberately makes the main goroutine in a program hang to
-prevent the program from exiting.
-Generally, most other hanging goroutine cases are unexpected.
-We should avoid such cases happening.
+There are two reasons why Go runtime will not kill hanging goroutines.
+One is that sometimes it is hard for Go runtime to judge whether or not a blocking goroutine will be blocked for ever.
+The other is sometomes we deliberately make a goroutine hanging.
+For example, sometimes we may let the main goroutine of a Go program hang to avoid the program exiting.
+</p>
+
+<p>
+We should avoid hanging goroutines which are caused by some logic mistakes in code design.
 </p>
 
 </div>
@@ -221,8 +208,8 @@ We should avoid such cases happening.
 
 <p>
 When a <code>time.Timer</code> value is not used any more,
-it will be garbage collected eventaully,
-but this is not true for a <code>time.Ticker</code> value.
+it will be garbage collected after some time.
+But this is not true for a <code>time.Ticker</code> value.
 We should stop a <code>time.Ticker</code> value when it is not used any more.
 </p>
 
@@ -236,7 +223,7 @@ for the cyclic reference group from being collected</a>.
 This is real memory leaking, not kind of.
 </p>
 
-After the following function is called and exits,
+For example, after the following function is called and exits,
 the memory blocks allocated for <code>x</code> and <code>y</code> are not
 guaranteed to be garbage collected in future garbage collecting.
 
@@ -252,11 +239,12 @@ guaranteed to be garbage collected in future garbage collecting.
 
 	var x, y T
 
-	// SetFinalizer will make x escape to heap.
+	// The SetFinalizer call makes x escape to heap.
 	runtime.SetFinalizer(&x, finalizer)
 
-	// Following two lines combined will make
-	// x and y not collectable.
+	// The following line forms a cyclic reference
+	// group with two members, x and y.
+	// This causes x and y are not collectable.
 	x.t, y.t = &y, &x // y also escapes to heap.
 }
 </code></pre>
