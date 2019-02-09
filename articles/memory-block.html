@@ -131,17 +131,19 @@ Memory blocks allocated on the stack of a goroutine can only be used (referenced
 in the goroutine internally.
 They are goroutine localized resources.
 They are not safe to be referenced crossing goroutines.
-A goroutine can access a memory block allocated on the stack of the goroutine
+A goroutine can access or modify the value parts hosted on a memory block
+allocated on the stack of the goroutine
 without using any data synchronization techniques.
 </p>
 
 <p>
 Heap is a singleton in each program. It is a virtual concept.
 If a memory block is not allocated on any goroutine stack,
-then we say the memory block is alocated on heap.
-Memory blocks allocated on heap can be accessed by multiple goroutines.
-In other words, they can be accessed concurrently.
-Their accessments should be synchronized when needed.
+then we say the memory block is allocated on heap.
+Value parts hosted on memory blocks allocated on heap
+can be used by multiple goroutines.
+In other words, they can be used concurrently.
+Their uses should be synchronized when needed.
 </p>
 
 <p>
@@ -197,7 +199,7 @@ will still escape to heap.
 <p>
 An active value part allocated on heap still in use must be referenced by at least one value part allocated on a stack.
 If a value escaping to heap is a declared local variable, and assume its type is <code>T</code>,
-Go runtime will create (a memroy block for)
+Go runtime will create (a memory block for)
 an implicit pointer of type <code>*T</code> on the stack of the current goroutine.
 The value of the pointer stores the address of the memory block allocated for the variable on heap
 (a.k.a., the address of the local variable of type <code>T</code>).
@@ -291,10 +293,10 @@ func main() {
 		p = &x // For x and y are both ever referenced
 		p = &y // by the global p, so they will be both
 		       // allocated on heap.
-		
+
 		// Now, x is not referenced by anyone, so
 		// its memory block can be collected now.
-		
+
 		p = nil
 		// Now, y is als not referenced by anyone,
 		// so its memory block can be collected now.
@@ -370,7 +372,7 @@ if <a href="unsafe.html">unsafe pointers</a> are involved.
 </div>
 
 <p class="anchor" id="how-to-detect"></p>
-<h3>How Are Unsed Memroy Blocks Detected?</h3>
+<h3>How Are Unused memory Blocks Detected?</h3>
 
 <div>
 <p>
@@ -381,8 +383,8 @@ Here this article will only make a simple explanation for the algorithm.
 
 <p>
 A garbage collection (GC) process is divided into two phases, the mark phase and the sweep phase.
-In the mark phase, the collector (a group of goroutines accutally) uses the tri-color algorithm to analyze
-which memory blocks are unused. 
+In the mark phase, the collector (a group of goroutines actually) uses the tri-color algorithm to analyze
+which memory blocks are unused.
 </p>
 
 The following quote is token from <a href="https://blog.golang.org/go15gc">a Go blog article</a>,
@@ -453,8 +455,8 @@ A garbage collection process can also be started manually by calling the
 </p>
 
 <p>
-An unsed memory block may not be released to OS immediately after it is collected,
+An unused memory block may not be released to OS immediately after it is collected,
 so that it can be reused for new some value parts.
-Don't worry, the offical Go runtime is much less memory greedy than most Java runtimes.
+Don't worry, the official Go runtime is much less memory greedy than most Java runtimes.
 </p>
 </div>

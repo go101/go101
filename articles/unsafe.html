@@ -71,8 +71,8 @@ whose underlying types are <code>unsafe.Pointer</code>.
 </p>
 
 <p>
-The zero values of unsafe pointers are also represneted with
-the predelcared identifier <code>nil</code>.
+The zero values of unsafe pointers are also represented with
+the predeclared identifier <code>nil</code>.
 </p>
 
 The <code>unsafe</code> standard package also provides three functions.
@@ -95,7 +95,7 @@ The <code>unsafe</code> standard package also provides three functions.
 <li>
 	<code>func Sizeof(variable ArbitraryType) uintptr</code>,
 	which is used to get the size of a value
-	(a.k.a, the size of the type of the value).
+	(a.k.a., the size of the type of the value).
 	The return results should be always the same
 	for all values of the same type in the same program.
 </li>
@@ -242,7 +242,7 @@ Before introducing the valid unsafe pointer use patterns,
 we need to know some facts in Go.
 </p>
 
-<h4>Fact 1: Unsafe Pointers Are Pointers And Uintptr Values Are Intergers</h4>
+<h4>Fact 1: Unsafe Pointers Are Pointers And Uintptr Values Are integers</h4>
 
 <p>
 Each of non-nil safe and unsafe pointers references another value.
@@ -258,7 +258,7 @@ by any value any more and collect the memory</a> allocated for these unused bloc
 from time to time.
 Pointers play an important role in the check process.
 If a memory block is unreachable from (referenced by) any values still in using,
-then Go runtime thinks it is an unuse value and it can be safely garbage collected.
+then Go runtime thinks it is an unused value and it can be safely garbage collected.
 </p>
 
 <p>
@@ -295,13 +295,13 @@ func foo() {
 	var p2 = uintptr(unsafe.Pointer(z))
 
 	// At the time, even if the address of the int value
-	// referened by z is still stored in p2, the int value
-	// has already become unused, so gargage collector can
+	// referenced by z is still stored in p2, the int value
+	// has already become unused, so garbage collector can
 	// collect the memory allocated for it now.
 	// On the other hand, the int values referenced
 	// by p0 and p1 are still in using,
 
-	// uinptr can participate arithmetic operations.
+	// uintptr can participate arithmetic operations.
 	p2 += 2; p2--; p2--
 
 	*p0 = 1                          // okay
@@ -315,7 +315,7 @@ In the above example, the fact that value <code>p2</code> is still in using can'
 that the memory block ever hosting the <code>int</code> value referenced by <code>z</code> has not been garbage collected yet.
 In other words, when <code>*(*T)(unsafe.Pointer(p2))) = 3</code> is executed, the memory block may be collected, or not.
 It is dangerous to dereference the address stored in value <code>p2</code> to an <code>int</code> value,
-for it is possible that the memroy block has been already reallocated for another value (even for another program).
+for it is possible that the memory block has been already reallocated for another value (even for another program).
 </p>
 
 </div>
@@ -394,7 +394,7 @@ func bar() {
 <p>
 Yes, <code>*unsafe.Pointer</code> is a safe unnamed pointer type.
 Its base type is <code>unsafe.Pointer</code>.
-As it is a safe pointer, accroding the conversion rules listed above,
+As it is a safe pointer, according the conversion rules listed above,
 it can be converted to <code>unsafe.Pointer</code> type, and vice versa.
 </p>
 
@@ -494,7 +494,7 @@ func main() {
 
 <div>
 <p>
-This parttern is not very useful.
+This pattern is not very useful.
 Usually, we print the result uintptr values to check the memory addresses
 stored in them. However, there are other less verbose ways to this job.
 So this pattern is not much useful.
@@ -569,7 +569,7 @@ Please read the comments in the code for the reason.
 </code></pre>
 
 <p>
-Such bugs are so subtle and hard to detect,
+Such bugs are very subtle and hard to detect,
 which is why the uses of unsafe pointers are dangerous.
 </p>
 
@@ -596,7 +596,7 @@ after the split two lines. Like this
 
 <p>
 Another detail needed to note is that,
-it is not recommended to store the end boundry of a memory block
+it is not recommended to store the end boundary of a memory block
 in a pointer (either safe or unsafe one).
 Doing this will prevent another memory block which closely follows
 the former memory block from being garbage collected.
@@ -641,7 +641,7 @@ It is the privilege of calls to <code>syscall.Syscall</code> alike functions.
 </p>
 
 We can think that, compilers will append a <code>runtime.KeepAlive</code> call
-for each of <code>uintptr</code> arguments, like the folowing code shows:
+for each of <code>uintptr</code> arguments, like the following code shows:
 
 <pre class="line-numbers"><code class="language-go">syscall.Syscall(SYS_READ, uintptr(fd), uintptr(unsafe.Pointer(p)), uintptr(n))
 // Compilers will automatically append the following lines for the above line.
@@ -657,7 +657,7 @@ runtime.KeepAlive(unsafe.Pointer(uintptr(n)))
 <p>
 Although the <code>syscall.Syscall</code> function has this privilege,
 there is a requirement to call this function.
-The conversions from unsafe pointers to <code>uinptr</code> must be present
+The conversions from unsafe pointers to <code>uintptr</code> must be present
 within the literal representations of the arguments of the calls to this function.
 </p>
 
@@ -689,7 +689,7 @@ The methods <code>Pointer</code> and <code>UnsafeAddr</code> of the
 both return a result of type <code>uintptr</code> instead of
 <code>unsafe.Pointer</code>.
 This is a deliberate design, which is to avoid converting the results of calls
-(to the two methods) to any safe poiner types
+(to the two methods) to any safe pointer types
 without importing the <code>unsafe</code> standard package.
 </p>
 
@@ -786,13 +786,13 @@ func main() {
 </code></pre>
 
 <p>
-Note, a <code>runtime.KeepAlive</code> call is needed in this exampe,
+Note, a <code>runtime.KeepAlive</code> call is needed in this example,
 otherwise, the slice might reference an invalid underlying byte sequence.
 </p>
 
 In general,
-we should only get a <code>*reflect.StringHeader</code> pointer value from an actual (alreay existed) string,
-or get a <code>*reflect.SliceHeader</code> pointer value from an actual (alreay existed) slice.
+we should only get a <code>*reflect.StringHeader</code> pointer value from an actual (already existed) string,
+or get a <code>*reflect.SliceHeader</code> pointer value from an actual (already existed) slice.
 We shouldn't do the contrary, such as creating a string from a <code>StringHeader</code>,
 or creating a slice from a <code>SliceHeader</code>.
 For example, the following code is dangerous.
@@ -852,8 +852,8 @@ of the <code>SliceHeader</code> and <code>StringHeader</code> types in the
 <code>reflect</code> standard package are similar.
 The docs says the representations of the two struct types may change in a later release.
 So the above example may become invalid even if the unsafe rules keep unchanged.
-Fortunately, the current two avaliable Go compilers (the standard Go compiler and the gccgo compiler)
-both recognise the representations of the two types declared
+Fortunately, the current two available Go compilers (the standard Go compiler and the gccgo compiler)
+both recognize the representations of the two types declared
 in the <code>reflect</code> standard package.
 </p>
 

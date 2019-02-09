@@ -47,7 +47,7 @@ func IsClosed(ch <-chan T) bool {
 		return true
 	default:
 	}
-	
+
 	return false
 }
 
@@ -118,7 +118,7 @@ Here is an example (assume the channel element type is <code>T</code>).
 			justClosed = false
 		}
 	}()
-	
+
 	// assume ch != nil here.
 	close(ch)   // panic if ch is closed
 	return true // <=> justClosed = true; return
@@ -138,7 +138,7 @@ The same idea can be used for sending values to a potential closed channel.
 			closed = true
 		}
 	}()
-	
+
 	ch <- value  // panic if ch is closed
 	return false // <=> closed = false; return
 }
@@ -238,17 +238,17 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	log.SetFlags(0)
-	
+
 	// ...
 	const MaxRandomNumber = 100000
 	const NumReceivers = 100
-	
+
 	wgReceivers := sync.WaitGroup{}
 	wgReceivers.Add(NumReceivers)
-	
+
 	// ...
 	dataCh := make(chan int, 100)
-	
+
 	// the sender
 	go func() {
 		for {
@@ -256,17 +256,17 @@ func main() {
 				// The only sender can close the channel safely.
 				close(dataCh)
 				return
-			} else {			
+			} else {
 				dataCh <- value
 			}
 		}
 	}()
-	
+
 	// receivers
 	for i := 0; i < NumReceivers; i++ {
 		go func() {
 			defer wgReceivers.Done()
-			
+
 			// Receive values until dataCh is closed and
 			// the value buffer queue of dataCh is empty.
 			for value := range dataCh {
@@ -274,7 +274,7 @@ func main() {
 			}
 		}()
 	}
-	
+
 	wgReceivers.Wait()
 }
 </code></pre>
@@ -301,21 +301,21 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	log.SetFlags(0)
-	
+
 	// ...
 	const MaxRandomNumber = 100000
 	const NumSenders = 1000
-	
+
 	wgReceivers := sync.WaitGroup{}
 	wgReceivers.Add(1)
-	
+
 	// ...
 	dataCh := make(chan int, 100)
 	stopCh := make(chan struct{})
 		// stopCh is an additional signal channel.
 		// Its sender is the receiver of channel dataCh.
-		// Its reveivers are the senders of channel dataCh.
-	
+		// Its receivers are the senders of channel dataCh.
+
 	// senders
 	for i := 0; i < NumSenders; i++ {
 		go func() {
@@ -328,7 +328,7 @@ func main() {
 					return
 				default:
 				}
-				
+
 				// Even if stopCh is closed, the first branch in the
 				// second select may be still not selected for some
 				// loops if the send to dataCh is also unblocked.
@@ -342,11 +342,11 @@ func main() {
 			}
 		}()
 	}
-	
+
 	// the receiver
 	go func() {
 		defer wgReceivers.Done()
-		
+
 		for value := range dataCh {
 			if value == MaxRandomNumber-1 {
 				// The receiver of the dataCh channel is
@@ -355,11 +355,11 @@ func main() {
 				close(stopCh)
 				return
 			}
-			
+
 			log.Println(value)
 		}
 	}()
-	
+
 	// ...
 	wgReceivers.Wait()
 }
@@ -405,36 +405,36 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	log.SetFlags(0)
-	
+
 	// ...
 	const MaxRandomNumber = 100000
 	const NumReceivers = 10
 	const NumSenders = 1000
-	
+
 	wgReceivers := sync.WaitGroup{}
 	wgReceivers.Add(NumReceivers)
-	
+
 	// ...
 	dataCh := make(chan int, 100)
 	stopCh := make(chan struct{})
 		// stopCh is an additional signal channel.
 		// Its sender is the moderator goroutine shown below.
-		// Its reveivers are all senders and receivers of dataCh.
+		// Its receivers are all senders and receivers of dataCh.
 	toStop := make(chan string, 1)
 		// The channel toStop is used to notify the moderator
 		// to close the additional signal channel (stopCh).
 		// Its senders are any senders and receivers of dataCh.
-		// Its reveiver is the moderator goroutine shown below.
+		// Its receiver is the moderator goroutine shown below.
 		// It must be a buffered channel.
-	
+
 	var stoppedBy string
-	
+
 	// moderator
 	go func() {
 		stoppedBy = <-toStop
 		close(stopCh)
 	}()
-	
+
 	// senders
 	for i := 0; i < NumSenders; i++ {
 		go func(id string) {
@@ -449,7 +449,7 @@ func main() {
 					}
 					return
 				}
-				
+
 				// The try-receive operation here is to try to exit the
 				// sender goroutine as early as possible. Try-receive
 				// try-send select blocks are specially optimized by the
@@ -459,7 +459,7 @@ func main() {
 					return
 				default:
 				}
-				
+
 				// Even if stopCh is closed, the first branch in this
 				// select block may be still not selected for some
 				// loops (and for ever in theory) if the send to dataCh
@@ -473,12 +473,12 @@ func main() {
 			}
 		}(strconv.Itoa(i))
 	}
-	
+
 	// receivers
 	for i := 0; i < NumReceivers; i++ {
 		go func(id string) {
 			defer wgReceivers.Done()
-			
+
 			for {
 				// Same as the sender goroutine, the try-receive
 				// operation here is to try to exit the receiver
@@ -488,7 +488,7 @@ func main() {
 					return
 				default:
 				}
-				
+
 				// Even if stopCh is closed, the first branch in this
 				// select block may be still not selected for some
 				// loops (and for ever in theory) if the receive from
@@ -508,13 +508,13 @@ func main() {
 						}
 						return
 					}
-					
+
 					log.Println(value)
 				}
 			}
 		}(strconv.Itoa(i))
 	}
-	
+
 	// ...
 	wgReceivers.Wait()
 	log.Println("stopped by", stoppedBy)
@@ -528,7 +528,7 @@ In this example, the <b>channel closing principle</b> is still held.
 <p>
 Please note that the buffer size (capacity) of channel <code>toStop</code> is one.
 This is to avoid the first notification is missed
-when it is sent before the moderator goroutine gets ready to receive nitification
+when it is sent before the moderator goroutine gets ready to receive notification
 from <code>toStop</code>.
 </p>
 

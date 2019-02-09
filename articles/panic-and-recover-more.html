@@ -9,7 +9,7 @@ We know that a <code>recover</code> call can only take effect
 if it is invoked in a deferred function call.
 However, not all <code>recover</code> calls in deferred function calls
 can catch alive panics.
-The remaining of this atticle will show some useless <code>recover</code> function calls
+The remaining of this article will show some useless <code>recover</code> function calls
 and explain what are the right places to call the <code>recover</code> function.
 </p>
 
@@ -119,7 +119,7 @@ Firstly, let's learn some concepts and facts.
 <p>
 Each function call associated to a call depth, which is related
 the entry function call of the current goroutine.
-For the main gorotuine, the call depth of a function call
+For the main goroutine, the call depth of a function call
 is related to the program <b><i>main</i></b> entry function call.
 For a goroutine other than the main goroutine, the call depth of
 a function call is related to the starting function call of the goroutine.
@@ -132,8 +132,8 @@ func main() { // depth 0
 	go func() { // depth 0
 		func() { // depth 1
 		}()
-	
-		defer func() { // depth 1		
+
+		defer func() { // depth 1
 			defer func() { // depth 2
 			}()
 		}()
@@ -144,7 +144,7 @@ func main() { // depth 0
 			go func() { // depth 0
 			}()
 		}()
-	
+
 		go func() { // depth 0
 		}()
 	}()
@@ -158,7 +158,7 @@ of a goroutine is called the execution depth of the goroutine.
 </p>
 
 <p>
-The depth of a panic is the functon call depth the panic has propagated to.
+The depth of a panic is the function call depth the panic has propagated to.
 Please read the next section for a better understanding.
 </p>
 
@@ -261,19 +261,19 @@ Example:
 import "fmt"
 
 func main() { // call depth 0
-	defer fmt.Println("program will crash, for panic 3 is stll active")
+	defer fmt.Println("program will crash, for panic 3 is still active")
 
 	defer func() { // call depth 1
 		defer func() { // call depth 2
 			fmt.Println( recover() ) // 6
 		}()
-	
+
 		// The depth of panic 3 is 0, and the depth of panic 6 is 1.
 		defer fmt.Println("now, there are two active panics: 3 and 6")
 		defer panic(6) // will suppress panic 5
 		defer panic(5) // will suppress panic 4
 		panic(4) // will not suppress panic 3,
-		         // for they have differrent depths.
+		         // for they have different depths.
 		         // The depth of panic 3 is 0.
 		         // The depth of panic 4 is 1.
 	}()
@@ -296,7 +296,7 @@ The output:
 <pre class="output"><code>now, only panic 3 is active
 now, there are two active panics: 3 and 6
 6
-program will crash, for panic 3 is stll active
+program will crash, for panic 3 is still active
 panic: 1
 	panic: 2
 	panic: 3

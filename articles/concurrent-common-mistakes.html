@@ -127,11 +127,11 @@ func main() {
 We expect this program to print <code>789</code>.
 In fact, if the program is compiled with the standard Go compiler,
 it really prints <code>789</code>, almost always, in running.
-But is it a program with good syncrhonization?
+But is it a program with good synchronization?
 No! The reason is Go runtime doesn't guarantee the write of <code>x</code>
 happens before the read of <code>x</code> for sure.
-Under certain conditions, such as most CPU resources are cunsumed by
-some other computaion-intension programs running on the same OS,
+Under certain conditions, such as most CPU resources are consumed by
+some other computation-intensive programs running on the same OS,
 the write of <code>x</code> might happen after the read of <code>x</code>.
 This is why we should never use <code>time.Sleep</code> calls to do
 synchronizations in formal projects.
@@ -150,6 +150,8 @@ import (
 	"time"
 )
 
+var x = 0
+
 func main() {
 	var num = 123
 	var p = &num
@@ -157,7 +159,7 @@ func main() {
 	c := make(chan int)
 
 	go func() {
-		c <- *p + 0
+		c <- *p + x
 	}()
 
 	time.Sleep(time.Second)
@@ -175,7 +177,7 @@ But in theory, it might output <code>789</code>, or another unexpected number.
 </p>
 
 <p>
-Now, let's change <code>c &lt;- *p + 0</code> to <code>c &lt;- *p</code>
+Now, let's change <code>c &lt;- *p + x</code> to <code>c &lt;- *p</code>
 and run the program again, you will find the output becomes to <code>789</code>
 (for the standard Go compiler 1.11).
 Again, the output is compiler dependent.
@@ -316,8 +318,8 @@ In this example, when the <code>Counter.Value</code> method is called,
 a <code>Counter</code> receiver value will be copied.
 As a field of the receiver value, the respective <code>Mutex</code> field
 of the <code>Counter</code> receiver value will also be copied.
-The copy is not synchronized, so the copied  <code>Mutex</code> value might be corrupt.
-Even if it is not corrupt, what it protects is the accessment of
+The copy is not synchronized, so the copied  <code>Mutex</code> value might be corrupted.
+Even if it is not corrupted, what it protects is the use of
 the copied field <code>n</code>, which is meaningless generally.
 
 <pre class="line-numbers"><code class="language-go">import "sync"
@@ -348,7 +350,7 @@ func (c Counter) Value() (r int64) {
 
 <p>
 We should change the receiver type of the <code>Value</code> method to
-the poiner type <code>*Counter</code> to avoid copying <code>sync.Mutex</code> values.
+the pointer type <code>*Counter</code> to avoid copying <code>sync.Mutex</code> values.
 </p>
 
 <p>
@@ -549,7 +551,7 @@ func longRunning(messages <-chan string) {
 </p>
 
 To avoid too many <code>Timer</code> values being created in the above code,
-we should use (and resue) a single <code>Timer</code> value to do the same job.
+we should use (and reuse) a single <code>Timer</code> value to do the same job.
 
 <pre class="line-numbers"><code class="language-go">func longRunning(messages <-chan string) {
 	timer := time.NewTimer(time.Minute)
@@ -561,7 +563,7 @@ we should use (and resue) a single <code>Timer</code> value to do the same job.
 			return
 		case msg := <-messages:
 			fmt.Println(msg)
-			
+
 			// This "if" block is important.
 			if !timer.Stop() {
 				<-timer.C
@@ -586,7 +588,7 @@ which is sent in the small period when executing the second branch code block.
 <div>
 
 An idiomatic use example of <code>time.Timer</code> values has been shown in the last section.
-Some explainations:
+Some explanations:
 <ul>
 <li>
 	the <code>Stop</code> method of a <code>Timer</code> returns <code>false</code>
@@ -608,7 +610,7 @@ Some explainations:
 The <code>Reset</code> method of a <code>Timer</code> value must be called
 when the <code>Timer</code> value has already expired or been stopped, otherwise,
 a data race may occur between the <code>Reset</code> call and
-a possible notificaiton send to the <code>C</code> channel field of the <code>Timer</code> value.
+a possible notification send to the <code>C</code> channel field of the <code>Timer</code> value.
 </p>
 
 <p>
@@ -651,7 +653,7 @@ when it is not used any more, but it is recommended to stop it in the end.
 
 <p>
 It is bug prone and not recommended to use a <code>time.Timer</code> value
-concurrently in multiple goroutines.
+concurrently among multiple goroutines.
 </p>
 
 <p>

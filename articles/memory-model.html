@@ -12,21 +12,21 @@ Instruction ordering is also often called
 </p>
 
 <p>
-Surely, instruction reorderings are not arbitrary.
+Surely, instruction reordering can't be arbitrary.
 The basic requirement for a reordering inside a specified goroutine is
-the reordering must not be detectable by the gorotuine itself
+the reordering must not be detectable by the goroutine itself
 if the goroutine doesn't share data with other goroutines.
 In other words, from the perspective of such a goroutine,
 it can think its instruction execution order is always
 the same as the order specified by code,
-even if there are really some instruction reorderings happening inside it.
+even if instruction reordering really happens inside it.
 </p>
 
 <p>
 However, if some goroutines share some data,
-then instruction reorderings happen inside one of these goroutine
+then instruction reordering happens inside one of these goroutine
 may be observed by the others goroutines,
-and affact the behaviors of all these goroutines.
+and affect the behaviors of all these goroutines.
 Sharing data between goroutines is common in concurrent programming.
 If we ignore the results caused by instruction reordering,
 the behaviors of our concurrent programs might compiler and CPU dependent,
@@ -71,7 +71,7 @@ or with a later compiler version, or it runs on a different architecture,
 the <code>hello, world</code> text might not be printed,
 or a text different from <code>hello, world</code> might be printed.
 The reason is compilers and CPUs may exchange the execution orders of
-the first two lines in the <code>setup</code> function, 
+the first two lines in the <code>setup</code> function,
 so the final effect of the <code>setup</code> function may become to
 <pre class="line-numbers"><code class="language-go">func setup() {
 	done = true
@@ -93,7 +93,7 @@ which is why the printed text might be not <code>hello, world</code>.
 
 <p>
 Besides the problem of ignoring memory reordering, there are data races in the program.
-There are not any synchronizations made in accessing the variable
+There are not any synchronizations made in using the variable
 <code>a</code> and <code>done</code>.
 So, the above program is a showcase full of concurrent programming mistakes.
 A professional Go programmer should not make these mistakes.
@@ -105,13 +105,13 @@ A professional Go programmer should not make these mistakes.
 Sometimes, we need to ensure that the execution of some code lines in a goroutine
 must happen before (or after) the execution of some code lines in another goroutine,
 to keep the correctness of a program.
-Instruction reorderings may cause some troubles for such circumstances.
-How should we do to prevent some certain possible instruction reorderings?
+Instruction reordering may cause some troubles for such circumstances.
+How should we do to prevent certain possible instruction reordering?
 </p>
 
 <p>
 Different CPU architectures provide different fence instructions
-to prevent different kinds of instruction reorderings.
+to prevent different kinds of instruction reordering.
 Some programming languages provide corresponding functions
 to insert these fence instructions in code.
 However, understanding and correctly using the fence instructions
@@ -129,7 +129,7 @@ So, we should use these synchronization techniques to ensure expected code execu
 </p>
 
 <p>
-The remaing of the current article will list some guaranteed (and non-guaranteed) code execution orders in Go,
+The remaining of the current article will list some guaranteed (and non-guaranteed) code execution orders in Go,
 which are mentioned or not mentioned in
 <a href="https://golang.org/ref/mem">Go 1 memory model</a> and other official Go documentations.
 </p>
@@ -148,10 +148,10 @@ the observed orders may be different from the just described.
 <h4><code>init</code> Functions Related Order Guarantees</h4>
 
 <div>
-The exection order of the <code>init</code> functions in a program order guarantees:
+The execution order of the <code>init</code> functions in a program order guarantees:
 
 The article <a href="packages-and-imports.html#initialization-order">code packages and package imports</a>
-has introduced the exection order of the <code>init</code> functions in a program.
+has introduced the execution order of the <code>init</code> functions in a program.
 Here lists the guaranteed orders:
 <ul>
 <li>
@@ -198,7 +198,7 @@ func f1() {
 }
 </code></pre>
 
-However, the executon orders of the three in the following function are not deterministic.
+However, the execution orders of the three in the following function are not deterministic.
 There are data races in this function.
 
 <pre class="line-numbers"><code class="language-go">var x, y int
@@ -432,7 +432,7 @@ but not guaranteed to end before the execution of <code>x = 1</code>,
 The two guarantees may be not true.
 
 There are two other obvious channel related order guarantees.
-But they are not very valuable for Go programming in pratice.
+But they are not very valuable for Go programming in practice.
 <ol>
 <li>
 	The completion of the <b>n</b>th successful send on a channel happens before
@@ -596,7 +596,7 @@ made by <code>sync.Once</code> values and how to use <code>sync.Once</code> valu
 <h4>Order Guarantees Made By <code>sync.Cond</code> Values</h4>
 
 <p>
-It is some hard to make a clear discription for
+It is some hard to make a clear description for
 the order guarantees made by <code>sync.Cond</code> values.
 Please read <a href="concurrent-synchronization-more.html#cond">the explanations
 for the <code>sync.Cond</code> type</a> to get how to use <code>sync.Cond</code> values.
@@ -646,7 +646,7 @@ func main() {
 Here, the main goroutine will always observe that the modification
 of <code>a</code> ends before the modification of <code>b</code>.
 However, the guarantees made by atomic operations are not
-written down in the Go specification and any other offcial Go documentations.
+written down in the Go specification and any other official Go documentations.
 If you want to write cross-compiler and cross-compiler-version compatible Go code,
 the safe advice is,
 <b>don't rely on atomic to guarantee memory orderings in general Go programming</b>.

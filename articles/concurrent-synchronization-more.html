@@ -94,7 +94,7 @@ func main() {
 
 	const N = 5
 	var values [N]int32
-	
+
 	var wg sync.WaitGroup
 	wg.Add(N)
 	for i := 0; i < N; i++ {
@@ -105,7 +105,7 @@ func main() {
 			wg.Done() // <=> wg.Add(-1)
 		}()
 	}
-	
+
 	wg.Wait()
 	// All elements are guaranteed to be initialized now.
 	log.Println("values:", values)
@@ -148,7 +148,7 @@ When the counter becomes zero, all of them will be notified, in a broadcast way.
 
 	const N = 5
 	var values [N]int32
-	
+
 	var wgA, wgB sync.WaitGroup
 	wgA.Add(N)
 	wgB.Add(1)
@@ -201,7 +201,7 @@ is guaranteed to be executed before any <code>o.Do</code> method call returns.
 
 <p>
 Generally, a <code>Once</code> value is used to ensure that
-a piee of code will be executed exactly once in concurrent programming.
+a piece of code will be executed exactly once in concurrent programming.
 </p>
 
 An example:
@@ -214,13 +214,13 @@ import (
 
 func main() {
 	log.SetFlags(0)
-	
+
 	x := 0
 	doSomething := func() {
 		x++
 		log.Println("Hello")
 	}
-	
+
 	var wg sync.WaitGroup
 	var once sync.Once
 	for i := 0; i < 5; i++ {
@@ -231,7 +231,7 @@ func main() {
 			log.Println("world!")
 		}()
 	}
-	
+
 	wg.Wait()
 	log.Println("x =", x) // x = 1
 }
@@ -253,14 +253,14 @@ And <code>Hello</code> is guaranteed to be printed before all five <code>world!<
 Both of the <code>*sync.Mutex</code> and <code>*sync.RWMutex</code> types implement
 <a href="https://golang.org/pkg/sync/#Locker">the <code>sync.Locker</code> interface</a>.
 So they both have two methods, <code>Lock</code> and <code>Unlock</code>,
-to prevent multiple data accessors from accessing a piece of data concurrrently.
+to prevent multiple data users from using a piece of data concurrently.
 </p>
 
 <p>
 Besides the <code>Lock</code> and <code>Unlock</code> methods,
 the <code>*RWMutex</code> type has two other methods,
 <code>RLock</code> and <code>RUnlock</code>,
-to avoid some data accessors (either writers or readers) and one data writer accessing a piece of data at the same time
+to avoid some data users (either writers or readers) and one data writer using a piece of data at the same time
 but allow some data readers to access the piece of data at the same time.
 </p>
 
@@ -321,7 +321,7 @@ func main() {
 		}()
 	}
 
-	// The loop is just for demo purpose.	
+	// The loop is just for demo purpose.
 	for c.Value() < 10000 {
 		runtime.Gosched()
 	}
@@ -332,7 +332,7 @@ func main() {
 <p>
 In the above example, a <code>Counter</code> value uses a <code>Mutex</code> field
 to guarantee that the <code>n</code> field of the <code>Counter</code> value
-will be never accessed by multiple goroutines at the same time.
+will be never used by multiple goroutines at the same time.
 </p>
 
 <p>
@@ -537,12 +537,12 @@ For an addressable <code>sync.Cond</code> value <code>c</code>,
 		<p>
 		then make the current caller goroutine enter blocking state. <!--sup>(1)</sup-->
 		</p>
-		
+
 		<p><i>
 		(The caller goroutine will be unblocked by another goroutine
 		through calling <code>c.Signal()</code> or <code>c.Broadcast()</code> later.)
 		</i></p>
-		
+
 		<p>
 		</p>
 		Once the caller goroutine is unblocked and enters running state again,
@@ -609,17 +609,17 @@ import (
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	
+
 	const N = 10
 	var values [N]string
-	
+
 	cond := sync.NewCond(&sync.Mutex{})
 	cond.L.Lock()
-	
+
 	for i := 0; i < N; i++ {
 		d := time.Second * time.Duration(rand.Intn(10)) / 10
 		go func(i int) {
-			time.Sleep(d) // simulate a worload
+			time.Sleep(d) // simulate a workload
 			cond.L.Lock() // changes must be made when cond.L is locked
 			values[i] = string('a' + i)
 			cond.Signal() // called when cond.L lock is acquired
@@ -630,7 +630,7 @@ func main() {
 	}
 
 	// This function must be called when cond.L is locked.
-	checkConditon := func() bool {
+	checkCondition := func() bool {
 		fmt.Println(values)
 		for i := 0; i < N; i++ {
 			if values[i] == "" {
@@ -639,7 +639,7 @@ func main() {
 		}
 		return true
 	}
-	for !checkConditon() {
+	for !checkCondition() {
 		cond.Wait() // must be called when cond.L is locked
 	}
 	cond.L.Unlock()
@@ -670,7 +670,7 @@ when <code>cond.L</code> is locked.
 To avoid data races,
 each of the ten parts of the user defined condition should only be modified
 when <code>cond.L</code> is locked.
-The <code>checkConditon</code> function and the <code>cond.Wait</code> method should be also called
+The <code>checkCondition</code> function and the <code>cond.Wait</code> method should be also called
 when <code>cond.L</code> is locked.
 </p>
 
@@ -683,7 +683,7 @@ just as the following code shows:
 <pre class="line-numbers"><code class="language-go">...
 	cond := sync.NewCond(&sync.RWMutex{})
 	cond.L.Lock()
-	
+
 	for i := 0; i < N; i++ {
 		d := time.Second * time.Duration(rand.Intn(10)) / 10
 		go func(i int) {

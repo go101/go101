@@ -26,7 +26,7 @@ Index:
 	</ul>
 </li>
 
-<li>standard libs
+<li>standard packages
 	<ul>
 	<li><a href="#pointer-atomic">How to manipulate pointer values atomically?</a></li>
 	<li><a href="#get-days-of-month">How to get the number of days of any month by using as few code lines as possible?</a></li>
@@ -268,7 +268,7 @@ In the current standard Go runtime implementation, if a memory block is referenc
 at least one active pointer, then the memory block will not be viewed as garbage and will not be collected.
 All the fields of an addressable struct value can be taken addresses.
 If the size of the final field in a non-zero-sized struct is zero, then taking the address of
-the final field in the struct value will return an address which beyonds the allocated memory block
+the final field in the struct value will return an address which is beyond the allocated memory block
 for the struct value. The returned address may
 <ul>
 <li>
@@ -284,7 +284,7 @@ for the struct value. The returned address may
 
 <p>
 To avoid the problems, the Go standard compiler will ensure that taking the address of
-the final field in a non-zero-sized struct will never return an address which beyonds
+the final field in a non-zero-sized struct will never return an address which is beyond
 the allocated memory block for the struct.
 The Go standard compiler implements this by padding some bytes before the final zero-sized field
 when needed.
@@ -311,7 +311,7 @@ func main() {
 		x int64
 	}
 	fmt.Println(unsafe.Sizeof(T1{})) // 8
-	
+
 	type T2 struct {
 		x int64
 		a struct{}
@@ -360,12 +360,21 @@ must be 64-bit aligned, otherwise, calls to these functions may panic at run tim
 </p>
 
 <p>
-For Go programs run on 64-bit OSes, 64-bit values are guaranteed to be 64-bit aligned.
-So they can be accessed atomically.
+For the standard Go compiler and gccgo compiler,
+on 64-bit architectures, 64-bit integers are guaranteed to be 64-bit aligned.
+So they can be always accessed atomically without any problems.
 </p>
 
+<p>
+On 32-bit architectures, 64-bit integers are only guaranteed to be 32-bit aligned.
+So accessing many 64-bit integers atomically may cause panics.
+However, there are some ways to guarantee some 64-bit integers to be elied upon to be 64-bit aligned.
+Please read <a href="memory-layout.html">memory layouts in Go</a> for details.
+</p>
+
+<!--
 <div>
-For Go programs run on 32-bit OSes, there is no the universal guarantee.
+
 But following 64-bit words are guaranteed to be able to be accessed atomically:
 <ul>
 <li>allocated 64-bit words.</li>
@@ -419,29 +428,30 @@ func main() {
 	var y2 [3]uint64
 	var z2 = make([]int64, 5)
 	var t2 T
-	
+
 	var v2 = new(V)
-	
+
 	// following lines are guaranteed to be safe on
 	// both 64-bit and 32-bit OS.
 	atomic.LoadInt64(&x)
 	atomic.LoadUint64(&y[1])
 	atomic.LoadInt64(&z[2])
 	atomic.LoadUint64(&t.a)
-	
+
 	atomic.LoadInt64(&x2)
 	atomic.LoadUint64(&y2[1])
 	atomic.LoadInt64(&z2[2])
 	atomic.LoadUint64(&t2.a)
-	
+
 	// the following two lines are safe on 64-bit OS
-	// but may be panic on 32-bit OS	
+	// but may be panic on 32-bit OS
 	atomic.LoadUint64(&v.t.a)
 	atomic.LoadUint64(&v2.t.a)
 }
 </code></pre>
 
 </div>
+-->
 
 <p class="anchor" id="atomical-assignment"></p>
 <h3>
@@ -453,7 +463,7 @@ No for the standard Go compiler, even if the sizes of the assigned values are on
 </p>
 
 <p>
-Pleae view <a href="https://golang.org/doc/faq#What_operations_are_atomic_What_about_mutexes">the official question</a> for more details.
+Please view <a href="https://golang.org/doc/faq#What_operations_are_atomic_What_about_mutexes">the official question</a> for more details.
 </p>
 
 <p class="anchor" id="zero-values-zero-bytes"></p>
@@ -518,8 +528,8 @@ Currently (Go 1.11), for the standard Go compiler,
 	There are two informal ways (both of them would become invalid for future Go standard compiler versions):
 	<ul>
 	<li>you can add a line <code>//go:noinline</code> directive before a function declaration to avoid the function being inlined.</li>
-	<li><stroke>as functions containing loop blocks will not be inlined,
-		you can add a <code>for false {}</code> line in a function to avoid the function being inlined.<stroke>
+	<li><strike>as functions containing loop blocks will not be inlined,
+		you can add a <code>for false {}</code> line in a function to avoid the function being inlined.</strike>
 		(This way may become invalid <a href="https://github.com/golang/go/issues/14768">since Go 1.12</a>.)
 	</li>
 	</ul>
@@ -527,7 +537,7 @@ Currently (Go 1.11), for the standard Go compiler,
 </ul>
 </div>
 
-<!-- standard libs  -->
+<!-- standard packages  -->
 
 <p class="anchor" id="pointer-atomic"></p>
 <h3>
@@ -550,27 +560,27 @@ func demo(newP *T) {
 	var _ = (*T)(atomic.LoadPointer(
 		(*unsafe.Pointer)(unsafe.Pointer(&p)),
 		))
-	
+
 	// store
 	atomic.StorePointer(
 		(*unsafe.Pointer)(unsafe.Pointer(&p)),
 		unsafe.Pointer(newP),
 		)
-	
-	
+
+
 	// swap
 	var oldP = (*T)(atomic.SwapPointer(
 		(*unsafe.Pointer)(unsafe.Pointer(&p)),
 		unsafe.Pointer(newP),
 		))
-	
+
 	// compare and swap
 	var swapped = atomic.CompareAndSwapPointer(
 		(*unsafe.Pointer)(unsafe.Pointer(&p)),
 		unsafe.Pointer(oldP),
 		unsafe.Pointer(newP),
 		)
-	
+
 	_ = swapped
 }
 </code></pre>
@@ -606,16 +616,16 @@ import (
 func main() {
 	// 2017-02-01 00:00:00 +0000 UTC
 	fmt.Println(time.Date(2017, 1, 32, 0, 0, 0, 0, time.UTC))
-	
+
 	// 2017-01-31 23:59:59.999999999 +0000 UTC
 	fmt.Println(time.Date(2017, 1, 32, 0, 0, 0, -1, time.UTC))
-	
+
 	// 2017-01-31 00:00:00 +0000 UTC
 	fmt.Println(time.Date(2017, 2, 0, 0, 0, 0, 0, time.UTC))
-	
+
 	// 2016-12-31 00:00:00 +0000 UTC
 	fmt.Println(time.Date(2016, 13, 0, 0, 0, 0, 0, time.UTC))
-	
+
 	// 2017-02-01 00:00:00 +0000 UTC
 	fmt.Println(time.Date(2016, 13, 32, 0, 0, 0, 0, time.UTC))
 }
@@ -628,7 +638,7 @@ func main() {
 </h3>
 
 <p>
-Thw two will both pause the currrent goroutine execution for a certain duration.
+Thw two will both pause the current goroutine execution for a certain duration.
 The difference is the function call <code>time.Sleep(d)</code>
 will let the current goroutine enter sleeping status (not a goroutine state),
 but still stay in <a href="control-flows-more.html#states-of-goroutine">running state</a>,
@@ -712,7 +722,7 @@ These functions can be categorized into two groups:
 <a href="https://github.com/golang/go/issues/19371">the</a>
 <code>TrimLeft</code> and <code>TrimRight</code> functions
 as <code>TrimPrefix</code> and <code>TrimSuffix</code> functions when they use the trim functions the first time.
-Certainly, the return results are very possible not the expecteds.
+Certainly, the return results are very possible not as expected.
 </p>
 
 Example:
@@ -801,7 +811,7 @@ there are some other differences between the three sets of functions.
 	will write to the standard error by default,
 	whereas which can be configured through the
 	<code>log.SetOutput</code> function.
-	
+
 </li>
 <li>
 	Calls to the built-in <code>print</code>/<code>println</code> functions
@@ -842,7 +852,7 @@ there are some other differences between the three sets of functions.
 
 <p>
 The pseudo random numbers produced by the <code>math/rand</code> standard
-package are determinstic for a given seed.
+package are deterministic for a given seed.
 The produced random numbers are not good for security-sensitive contexts.
 For cryptographical security purpose, we should use the pseudo random numbers
 produced by the <code>crypto/rand</code> standard package.
@@ -1001,7 +1011,7 @@ func main() {
 	var x interface{} = pi
 	var y interface{} = pb
 	var z interface{} = nil
-	
+
 	fmt.Println(x == y)   // false
 	fmt.Println(x == nil) // false
 	fmt.Println(y == nil) // false
@@ -1064,7 +1074,7 @@ import (
 
 func main() {
 	type MyInt int
-	
+
 	var a = []int{7, 8, 9}
 	var b = *(*[]MyInt)(unsafe.Pointer(&a))
 	b[0]= 123
@@ -1300,13 +1310,13 @@ import "fmt"
 
 func main() {
 	var s0 = "Go"
-	
+
 	var bs = []byte(s0)
 	var s1 = string(bs)
-	
+
 	var rs = []rune(s0)
 	var s2 = string(rs)
-	
+
 	fmt.Println(s0 == s1) // true
 	fmt.Println(s0 == s2) // true
 }
@@ -1423,9 +1433,9 @@ but for consistentcy, ...)
 
 why break and fallthrought are not allowed in type switcn and select
 
-* why non-exported fileds can be listed through reflect?
-  * for a non-exported fileds can have exported fileds.
-    Otherwise, there are no ways to listed the exported fileds.
+* why non-exported fields can be listed through reflect?
+  * for a non-exported fields can have exported fields.
+    Otherwise, there are no ways to listed the exported fields.
 
 -->
 

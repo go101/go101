@@ -20,13 +20,13 @@ I hope this article will convince you that
 	and has more variations than the asynchronous programming concepts,
 	such as <a href="https://en.wikipedia.org/wiki/Actor_model">the actor model</a>
 	and the <a href="https://en.wikipedia.org/wiki/Async/await">async/await pattern</a>,
-	used in some other langauges.
+	used in some other languages.
 </li>
 </ul>
 
 <p>
 Please note that, the intention of this article is to show
-as many chanel use cases as possible.
+as many channel use cases as possible.
 We should know that channel is not the only concurrency synchronization technique supported in Go,
 and for some cases, the channel way may be not the best solution.
 Please read <a href="concurrent-atomic-operation.html">atomic operations</a> and
@@ -168,7 +168,7 @@ Sometimes, a piece of data can received from several sources to avoid high laten
 For a lot of factors, the response durations of these sources may vary much.
 Even for a specified source, its response durations are also not constant.
 To make the response duration as short as possible,
-we can send a request to every source in a seperated goroutine.
+we can send a request to every source in a separated goroutine.
 Only the first response will be used, other slower ones will be discarded.
 </p>
 
@@ -207,7 +207,7 @@ func main() {
 </code></pre>
 
 <p>
-There are some other ways to implement the first-reponse-win use case,
+There are some other ways to implement the first-response-win use case,
 by using the select mechanism and a buffered channel
 which capacity is one. The other ways will be introduced below.
 </p>
@@ -223,7 +223,7 @@ to take out the transferred values.
 </p>
 
 <p>
-Sometimes, a request is not guarenteed to be responsed back a valid value.
+Sometimes, a request is not guaranteed to be responded back a valid value.
 For all kinds of reasons, an error may be returned instead.
 For such cases, we can use a struct type like
 <code>struct{v T; err error}</code> or a blank interface type
@@ -232,7 +232,7 @@ as the channel element type.
 
 <p>
 Sometimes, for some reasons, the response may need
-much longer time than the expected to arrive, or will nerver arrive.
+much longer time than the expected to arrive, or will never arrive.
 We can use the timeout mechanism introduced below
 to handle such circumstances.
 </p>
@@ -246,8 +246,8 @@ this is kind of the data flow mechanism mentioned later below.
 <h3>Use Channels For Notifications</h3>
 
 <p>
-Notifications can be viewed as special requests/reponses
-in which the responsed values are not important.
+Notifications can be viewed as special requests/responses
+in which the responded values are not important.
 Generally, we use the blank struct type <code>struct{}</code>
 as the element types of the notification channels,
 for the size of type <code>struct{}</code> is zero,
@@ -383,7 +383,7 @@ func main() {
 	go worker(1, ready, done)
 	go worker(2, ready, done)
 
-	time.Sleep(time.Second * 2) // simulate an initialzation phase
+	time.Sleep(time.Second * 2) // simulate an initialization phase
 	// 1-to-N notifications.
 	ready <- struct{}{}; ready <- struct{}{}; ready <- struct{}{}
 	// Being N-to-1 notified.
@@ -394,7 +394,7 @@ func main() {
 <p>
 In fact, the ways to do 1-to-N and N-to-1 notifications introduced
 in ths sub-section are not used commonly in practice.
-In pratice, we often use <code>sync.WaitGroup</code> to do N-to-1 notifications,
+In practice, we often use <code>sync.WaitGroup</code> to do N-to-1 notifications,
 and we do 1-to-N notifications by close channels.
 Please read the next sub-section for details.
 </p>
@@ -414,7 +414,7 @@ a closed channel, we can close a channel to broadcast notifications.
 By the example in the last sub-section,
 we can replace the three channel send operations
 <code>ready &lt;- struct{}{}</code> in the last example
-with one channel close opeartion <code>close(ready)</code>
+with one channel close operation <code>close(ready)</code>
 to do an 1-to-N notifications.
 
 <pre class="line-numbers"><code class="language-go">...
@@ -442,7 +442,7 @@ will be utilized in many other use cases introduced below.
 It is easy to use channels to implement one-time timers.
 <p>
 
-A custom one-time timer implementaion:
+A custom one-time timer implementation:
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -471,13 +471,13 @@ func main() {
 
 <p>
 In fact, the <code>After</code> function in the <code>time</code> standard
-package provides the same functionality, with a much more efficient implementaion.
+package provides the same functionality, with a much more efficient implementation.
 We should use that function instead to make code look clean.
 </p>
 
 <p>
 Please note, <code>&lt;-time.After(aDuration)</code> will make the current goroutine
-enter blocking state, but a <code>time.Sleep(aDuration)</code> functon call will not.
+enter blocking state, but a <code>time.Sleep(aDuration)</code> function call will not.
 </p>
 
 <p>
@@ -588,7 +588,7 @@ Counting semaphores are often used to enforce a maximum number of concurrent req
 </p>
 
 Like using channels as mutexes,
-there are also two styles to acquire one piece of ownerships
+there are also two styles to acquire one piece of ownership
 of a channel semaphore.
 <ol>
 <li>
@@ -599,7 +599,7 @@ of a channel semaphore.
 </li>
 </ol>
 
-An example of acquiring ownerships through receiving values from a channel.
+An example of acquiring ownership through receiving values from a channel.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -654,7 +654,7 @@ although there will be most ten consumers are drinking at any given time,
 there may be more than ten consumers are served at the bar at the same time.
 Some consumers are waiting for free seats.
 Although each consumer goroutine consumes much less resources than a system thread,
-the total resources consumed by a large quantity of goroutines are not neglectable.
+the total resources consumed by a large quantity of goroutines are not negligible.
 So it is best to create a consumer goroutine until a free seat is available.
 
 <pre class="line-numbers"><code class="language-go">... // same code as the above example
@@ -827,7 +827,7 @@ func main() {
 </code></pre>
 
 <p>
-Although here the encapsulation implementaion may be not
+Although here the encapsulation implementation may be not
 the most efficient way for the above specified example,
 the use case may be useful for some other scenarios.
 </p>
@@ -852,7 +852,7 @@ For example, sometimes, we want to receive all the values buffered in
 a non-closed channel <code>c</code> which no ones will send values to any more,
 then we can use the following code to receive remaining values.
 
-<pre class="line-numbers"><code class="language-go">// Assume the currrent goroutine is the only goroutine
+<pre class="line-numbers"><code class="language-go">// Assume the current goroutine is the only goroutine
 // tries to receive values from the channel c at present.
 for len(c) > 0 {
 	value := <-c
@@ -969,7 +969,7 @@ Try-send and try-receive operations never block.
 </p>
 
 <p>
-The standard Go compiler makes special optimations for try-send
+The standard Go compiler makes special optimizations for try-send
 and try-receive select blocks, their execution efficiencies are
 much higher than multi-case select blocks.
 </p>
@@ -1248,7 +1248,7 @@ func main() {
 
 <p>
 In fact, there is a <code>Tick</code> function in the <code>time</code>
-standard package provides the same functionality, with a much more efficient implementaion.
+standard package provides the same functionality, with a much more efficient implementation.
 We should use that function instead to make code look clean and run efficiently.
 </p>
 </div>
@@ -1330,9 +1330,9 @@ by using the select mechanism.
 In this example, one of the two channel variables involved
 in the select block is <code>nil</code>.
 The <code>case</code> branch corresponding the nil channel will not get selected for sure.
-We can think such <code>case</code> branchs are in off status.
+We can think such <code>case</code> branches are in off status.
 In the end of each loop step,
-the on/off statuses of the two <code>case</code> branchs are switched.
+the on/off statuses of the two <code>case</code> branches are switched.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -1377,12 +1377,12 @@ func main() {
 
 </div>
 
-<h4>Control Code Exection Possibility Weights</h4>
+<h4>Control Code Execution Possibility Weights</h4>
 
 <div>
 <p>
 We can duplicate a <code>case</code> branch in a <code>select</code> code block
-to increase the exection possibility weigh of the corresponding code.
+to increase the execution possibility weigh of the corresponding code.
 </p>
 
 Example:
@@ -1449,7 +1449,7 @@ Here is a list of some module job examples in practice:
 	data serving/saving.
 </li>
 <li>
-	data calculation/analyzation.
+	data calculation/analysis.
 </li>
 <li>
 	data validation/filtering.
@@ -1496,13 +1496,13 @@ so they are very simple and they may be not efficient.
 
 <div>
 There are all kinds of producer-only modules.
-A producer-only moudle worker may produce data stream
+A producer-only module worker may produce data stream
 <ul>
 <li>
 	by loading a file, reading a database, or crawling the web.
 </li>
 <li>
-	by collecting all kinds of metrics from a software system or all kinds of hardwards.
+	by collecting all kinds of metrics from a software system or all kinds of hardware.
 </li>
 <li>
 	by generating random numbers.
@@ -1665,7 +1665,7 @@ A data composition worker merges several pieces of data from different input dat
 The following is a composition worker example, in which two <code>uint64</code>
 values from one stream and one <code>uint64</code> value from another stream
 compose one new <code>uint64</code> value.
-Surely, these stream channel element types are different generally in parctice.
+Surely, these stream channel element types are different generally in practice.
 
 <pre class="line-numbers"><code class="language-go">func Composor(inA <-chan uint64, inB <-chan uint64) <-chan uint64 {
 	output := make(chan uint64)
@@ -1700,7 +1700,7 @@ No examples will be shown for data decomposition here.
 <div>
 
 <p>
-Data duplications (proliferations) can be viewed as special data decompositions.
+Data duplication (proliferation) can be viewed as special data decompositions.
 One piece of data will be duplicated and each of the duplicated data will
 be send to different output data streams.
 </p>
@@ -1724,12 +1724,12 @@ An example:
 
 </div>
 
-<h4>Data Calculation/Analyzation</h4>
+<h4>Data Calculation/Analysis</h4>
 
 <div>
 <p>
-The functionalities of data calculation and analyzation modules vary much
-and are very specfic each.
+The functionalities of data calculation and analysis modules vary much
+and are very specific each.
 Generally, a worker function of such modules transforms each piece of input data
 into another piece of output data.
 </p>
@@ -1793,7 +1793,7 @@ func Filter(input <-chan uint64, output chan uint64) <-chan uint64 {
 
 <p>
 
-Generally, a data serving or saving module is the last or final outout module
+Generally, a data serving or saving module is the last or final output module
 in a data flow system.
 Here just provides a simple worker which prints each piece of data
 received from the input stream.
@@ -1881,9 +1881,9 @@ The above data flow system is depicted in the following diagram.
 </p>
 
 <p>
-More complex data flow topologies may be arbitrary graphs.
+More complex data flow topology may be arbitrary graphs.
 For example, a data flow system may have multiple final outputs.
-But data flow systems with cyclic-graph topologies are seldom used in reality.
+But data flow systems with cyclic-graph topology are seldom used in reality.
 </p>
 
 <p>
