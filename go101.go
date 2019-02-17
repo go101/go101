@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"go/build"
 	"html/template"
 	"io/ioutil"
@@ -51,16 +52,19 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch strings.ToLower(group) {
 	case "static":
-		w.Header().Set("Cache-Control", "max-age=360000") // 100 hours // 31536000
+		w.Header().Set("Cache-Control", "max-age=360000") // 10 hours
 		go101.staticHandler.ServeHTTP(w, r)
 	case "article":
 		item = strings.ToLower(item)
 		if strings.HasPrefix(item, "res/") {
-			w.Header().Set("Cache-Control", "max-age=360000") // 100 hours // 31536000
+			w.Header().Set("Cache-Control", "max-age=360000") // 10 hours
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
 		}
 		go101.RenderArticlePage(w, r, item)
+	case "print":
+		item = strings.ToLower(item)
+		go101.RenderPrintPage(w, r, item)
 	case "":
 		http.Redirect(w, r, "/article/101.html", http.StatusTemporaryRedirect)
 	default:
@@ -120,7 +124,6 @@ var schemes = map[bool]string{false: "http://", true: "https://"}
 func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, file string) {
 	page, isLocal := go101.ArticlePage(file)
 	if page == nil {
-		//log.Println(file, "not cached")
 		article, err := retrieveArticleContent(file)
 		if err == nil {
 			var pageURL string
@@ -138,9 +141,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 			var buf bytes.Buffer
 			if err = t.Execute(&buf, pageParams); err == nil {
 				page = buf.Bytes()
-			}
-
-			if err != nil {
+			} else  {
 				page = []byte(err.Error())
 			}
 		} else if os.IsNotExist(err) {
@@ -154,6 +155,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 
 	// ...
 	if len(page) == 0 { // blank page means page not found.
+		log.Printf("article page %s is not found", file)
 		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
 		return
@@ -207,6 +209,99 @@ func retrieveArticleContent(file string) (Article, error) {
 	return article, nil
 }
 
+const Anchor, _Anchor, IndexContentStart = `<li><a href="`, `">`, `<!-- index (don't remove) -->`
+
+func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, item string) {
+	page, isLocal := go101.ArticlePage(item)
+	if page == nil {
+		var err error
+		var pageParams map[string]interface{}
+		switch item {
+		case "book101":
+			pageParams, err = buildBook101PrintParams()
+		}
+		
+		if err == nil {
+			if pageParams == nil {
+				pageParams = map[string]interface{}{}
+			}
+			pageParams["IsLocalServer"] = isLocal
+			
+			t := retrievePageTemplate(Template_PrintBook, !isLocal)
+			var buf bytes.Buffer
+			if err = t.Execute(&buf, pageParams); err == nil {
+				page = buf.Bytes()
+			}
+		}
+
+		if err != nil {
+				page = []byte(err.Error())
+		}
+
+		if !isLocal {
+			go101.CacheArticlePage(item, page)
+		}
+	}
+
+	// ...
+	if len(page) == 0 { // blank page means page not found.
+		log.Printf("print page %s is not found", item)
+		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
+		return
+	}
+
+	if isLocal {
+		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+	} else {
+		w.Header().Set("Cache-Control", "max-age=5000") // about 1.5 hours
+	}
+	w.Write(page)
+}
+	
+func buildBook101PrintParams() (map[string]interface{}, error) {
+	article, err := retrieveArticleContent("101.html")
+	if err != nil {
+		return nil, err
+	}
+
+	// get all article files by their order in index
+	articles := make([]Article, 0, 100)
+	
+	i := strings.Index(string(article.Content), IndexContentStart)
+	if i < 0 {
+		err = errors.New(IndexContentStart + " not found")
+		return nil, err
+	}
+	i += len(IndexContentStart)
+	article.Content = article.Content[i:]
+	articles = append(articles, article)
+
+	content := string(article.Content)
+	for {
+		i := strings.Index(content, Anchor)
+		if i < 0 {
+			break
+		}
+		content = content[i + len(Anchor):]
+		i = strings.Index(content, _Anchor)
+		if i < 0 {
+			break
+		}
+		
+		article, err := retrieveArticleContent(content[:i])
+		if err != nil {
+			log.Printf("retrieve article %s error:", content[:i], err)
+		} else {
+			articles = append(articles, article)
+		}
+		
+		content = content[i + len(_Anchor):]
+	}
+	
+	return map[string]interface{}{"Articles": articles}, nil
+}
+
 //===================================================
 // tempaltes
 //==================================================
@@ -215,6 +310,7 @@ type PageTemplate uint
 
 const (
 	Template_Article PageTemplate = iota
+	Template_PrintBook
 	NumPageTemplates
 )
 
@@ -240,6 +336,8 @@ func retrievePageTemplate(which PageTemplate, cacheIt bool) *template.Template {
 		switch which {
 		case Template_Article:
 			t = parseTemplate(filepath.Join(rootPath, "templates"), "base", "article")
+		case Template_PrintBook:
+			t = parseTemplate(filepath.Join(rootPath, "templates"), "print")
 		default:
 			t = template.New("blank")
 		}

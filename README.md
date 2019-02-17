@@ -41,7 +41,6 @@ If it is not opened, please visit http://localhost:55555.
 ### Some Notes
 
 * The book is in beta phase now. Many articles still need correcting.
-* Translations are welcome. Please read [LICENSE](LICENSE) and note that
-  [Chinese translation version](https://github.com/Golang101/golang101)
-  (not finished yet) is maintained by myself.
+* Translations are welcome. Please read [LICENSE](LICENSE) and note that the
+  [Chinese translation version](https://github.com/Golang101/golang101) is almost done.
 * Please read [UPDATES.md](UPDATES.md) for update history.
