@@ -82,15 +82,19 @@ Index:
 	What does the compile error message <code>non-name *** on left side of :=</code> mean?
 </h3>
 
-Up to now (Go 1.11), there is <a href="https://golang.org/ref/spec#Short_variable_declarations">a mandatory rule</a>
+Up to now (Go 1.12), there is <a href="https://golang.org/ref/spec#Short_variable_declarations">a mandatory rule</a>
 for short variable declarations:
 <div class="alert alert-success">
 All items at the left side of <code>:=</code> must be pure
 <a href="https://golang.org/ref/spec#Identifiers">identifiers</a> and at least one of them must be a new variable name.
 </div>
+
+<p>
 This means container elements (<code>x[i]</code>),
-struct fields (<code>x.f</code>), pointer dereferences and qualified identifiers
+struct fields (<code>x.f</code>), pointer dereferences and
+qualified identifiers (<code>aPackage.Value</code>)
 can't appear at the left side of <code>:=</code>.
+</p>
 
 <p>
 Currently, there is an <a href="https://github.com/golang/go/issues/377">open issue</a>
@@ -166,7 +170,7 @@ var _ = []int {
 <div>
 <p>
 For the standard Go compiler, each variable declared in local code blocks
-must be used as a RHS value (right-hand side) for at lease once.
+must be used as a r-value (right-hand-side value) for at least once.
 </p>
 
 So the following code fails to compile.
@@ -193,7 +197,7 @@ exception: https://github.com/golang/go/issues/8560
 
 <p>
 No. <a href="https://golang.org/ref/spec#For_range">Go 1 specification</a>
-says the iteration order over maps is not specified and
+says the iteration order over a map is not specified and
 is not guaranteed to be the same from one iteration to the next.
 For the standard Go compiler, the map iteration orders are some randomized.
 If you require a stable iteration order for a map you must maintain the order by yourself.
@@ -207,14 +211,17 @@ Please read <a href="https://blog.golang.org/go-maps-in-action#TOC_7.">Go maps i
 
 <p>
 At least for the standard Go compiler and gccgo, the answer is yes.
-Padding is OS and compiler dependent.
+How many bytes will be padded is OS and compiler dependent.
+Please read <a href="memory-layout.html#size-and-padding">memory layouts</a> for details.
 </p>
 
+<!--
 <div>
-Example:
+For example, the standard Go compiler will pad bytes
+like the following comments describes.
 <pre class="line-numbers"><code class="language-go">type T1 struct {
 	a int8
-	// 7 bytes padded on AMD64 OS and pad 3 bytes padded on i386 OS here
+	// 7 bytes padded on 64bit OS and pad 3 bytes padded on i386 OS here
 	b int64
 	c int16
 	// 6 bytes padded on AMD64 OS and pad 2 bytes padded on i386 OS here
@@ -246,58 +253,57 @@ padded on i386 OS at the end of <code>T1</code> values.
 The orders of the fields in a struct will affect padding, and padding will affect the size of the struct afterwards.
 On AMD64 OS, the size of <code>T1</code> values is 24, but the size of <code>T2</code> values is 16.
 </p>
+</div>
+-->
+
 <p>
 Go Compilers will not rearrange struct fields to minimize struct value sizes.
 Doing this may cause some unexpected results.
 However, programmers can minimize padding by reordering the fields manually.
 </p>
-</div>
 
 <p class="anchor" id="final-zero-size-field"></p>
 <h3>
 	Why does the final field of a zero-sized type in a struct contribute to the size of the struct sometimes?
 </h3>
 
-<p><i>
-(This is not a Go spec rule. It is a compiler specified implementation.
-Here is the compiler is the standard Go compiler.
-Please view <a href="https://github.com/golang/go/issues/9401">issue#9401</a> for details.)
-</i></p>
+<!--
+https://github.com/golang/go/issues/9401
+-->
 
-In the current standard Go runtime implementation, if a memory block is referenced by
-at least one active pointer, then the memory block will not be viewed as garbage and will not be collected.
-All the fields of an addressable struct value can be taken addresses.
-If the size of the final field in a non-zero-sized struct is zero, then taking the address of
-the final field in the struct value will return an address which is beyond the allocated memory block
-for the struct value. The returned address may
-<ul>
-<li>
-	point to another allocated memory block. If an active pointer stores the address,
-	it will prevent the garbage collector from collecting the other allocated memory block,
-	which causes memory leaking.
-</li>
-<li>
-	point to an unallocated memory area. This will cause the garbage collector to
-	re-collect the unallocated memory and may crash programs.
-</li>
-</ul>
+<div>
 
 <p>
-To avoid the problems, the Go standard compiler will ensure that taking the address of
+In the current standard Go runtime implementation,
+if a memory block is referenced by at least one active pointer,
+then the memory block will not be viewed as garbage and will not be collected for sure.
+</p>
+
+<p>
+All the fields of an addressable struct value can be taken addresses.
+If the size of the final field in a non-zero-sized struct value is zero, then taking the address of
+the final field in the struct value will return an address which is beyond the allocated memory block
+for the struct value. The returned address may point to another allocated memory block
+which closely follows the one allocated for the non-zero-sized struct value.
+As long as the returned address is stored in an active pointer value,
+the other allocated memory block will not get garbage collected, which may cause memory leaking.
+</p>
+
+<p>
+To avoid the problems, the standard Go compiler will ensure that taking the address of
 the final field in a non-zero-sized struct will never return an address which is beyond
 the allocated memory block for the struct.
-The Go standard compiler implements this by padding some bytes before the final zero-sized field
+The standard Go compiler implements this by padding some bytes after the final zero-sized field
 when needed.
 </p>
 
 <p>
 If the types of all fields in a struct type are zero-sized
 (so the struct is also a zero-sized type), then there is no need to pad bytes in the struct,
-for the Go standard compiler treats zero-sized types specially.
+for the standard Go compiler treats zero-sized memory blocks specially.
 </p>
 
-<div>
-Example:
+An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -327,9 +333,8 @@ func main() {
 </h3>
 
 <p>
-Generally you can think so.
+Generally we can think so, though there would some subtle differences between the two, depending on compiler implementations.
 The memory block allocated by <code>new</code> may be either on stack or on heap.
-There would some subtle differences between the two, depending on compiler implementations.
 </p>
 
 <p class="anchor" id="fatal-error-deadlock"></p>
@@ -340,6 +345,9 @@ There would some subtle differences between the two, depending on compiler imple
 <p>
 The word <b><i>asleep</i></b> is not accurate here, it means
 <b><i>in blocking state</i></b> in fact.
+</p>
+
+<p>
 As a blocking goroutine can only be unblocked by another goroutine,
 if all goroutines in a program enter blocking state,
 then all of they will stay in blocking state for ever.
@@ -368,8 +376,8 @@ So they can be always accessed atomically without any problems.
 <p>
 On 32-bit architectures, 64-bit integers are only guaranteed to be 32-bit aligned.
 So accessing many 64-bit integers atomically may cause panics.
-However, there are some ways to guarantee some 64-bit integers to be elied upon to be 64-bit aligned.
-Please read <a href="memory-layout.html">memory layouts in Go</a> for details.
+However, there are some ways to guarantee some 64-bit integers to be relied upon to be 64-bit aligned.
+Please read <a href="memory-layout.html#64bit-atomic-operation">memory layouts in Go</a> for details.
 </p>
 
 <!--
@@ -459,11 +467,11 @@ func main() {
 </h3>
 
 <p>
-No for the standard Go compiler, even if the sizes of the assigned values are one word.
+No for the standard Go compiler, even if the sizes of the assigned values are native words.
 </p>
 
 <p>
-Please view <a href="https://golang.org/doc/faq#What_operations_are_atomic_What_about_mutexes">the official question</a> for more details.
+Please read <a href="https://golang.org/doc/faq#What_operations_are_atomic_What_about_mutexes">the official question</a> for more details.
 </p>
 
 <p class="anchor" id="zero-values-zero-bytes"></p>
@@ -475,7 +483,7 @@ Please view <a href="https://golang.org/doc/faq#What_operations_are_atomic_What_
 <p>
 For most types, this is true.
 In fact, this is compiler dependent.
-For example, for the standard Go runtime,
+For example, for the standard Go compiler,
 the statement is wrong for some zero values of string types.
 </p>
 
@@ -500,7 +508,7 @@ func main() {
 </div>
 
 <p>
-Inversely, for all the processors/architectures the standard Go compiler currently supports,
+Inversely, for all the architectures the standard Go compiler currently supports,
 if all bytes in a value are zero, then the value must be a zero value of its type.
 However, Go specification doesn't guarantee this.
 I have heard of that on some very old processors,
@@ -520,19 +528,19 @@ The specific inline rules may change from version to version.
 </p>
 
 <div>
-Currently (Go 1.11), for the standard Go compiler,
+Currently (Go 1.12), for the standard Go compiler,
 <ul>
 <li>there is no explicit ways to specify which functions should be inlined in user programs.</li>
 <li>although <code>-gcflags "-l"</code> build option can prevent any functions being inlined,
 	there is no formal ways to avoid specified functions being inlined in user programs.
-	There are two informal ways (both of them would become invalid for future Go standard compiler versions):
-	<ul>
+	There are two informal ways (both of them might become invalid for future standard Go compiler versions):
+	<ol>
 	<li>you can add a line <code>//go:noinline</code> directive before a function declaration to avoid the function being inlined.</li>
 	<li><strike>as functions containing loop blocks will not be inlined,
 		you can add a <code>for false {}</code> line in a function to avoid the function being inlined.</strike>
 		(This way may become invalid <a href="https://github.com/golang/go/issues/14768">since Go 1.12</a>.)
 	</li>
-	</ul>
+	</ol>
 </li>
 </ul>
 </div>
@@ -596,7 +604,7 @@ Yes, now it is much verbose to use the pointer atomic functions.
 Assume the input year is a nature year and the input month is also a nature month (January is 1).
 <pre class="line-numbers"><code class="language-go">days := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
 </code></pre>
-For Go time APIs, the usual month range is [1, 12] and the start day of each month is 1.
+For Go time APIs, the usual month range is <code>[1, 12]</code> and the start day of each month is <code>1</code>.
 The start time of a month <code>m</code> in year <code>y</code> is
 <code>time.Date(y, m, 1, 0, 0, 0, 0, time.UTC)</code>.
 <p>
@@ -605,7 +613,7 @@ and will be normalized during the conversion.
 For example, January 32 will be converted to February 1.
 </p>
 
-Here are some date usage examples in Go:
+Here are some <code>time.Date</code> use examples in Go:
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -640,7 +648,7 @@ func main() {
 <p>
 The two will both pause the current goroutine execution for a certain duration.
 The difference is the function call <code>time.Sleep(d)</code>
-will let the current goroutine enter sleeping status (not a goroutine state),
+will let the current goroutine enter sleeping sub-state,
 but still stay in <a href="control-flows-more.html#states-of-goroutine">running state</a>,
 whereas, the channel receive operation <code>&lt;-time.After(d)</code>
 will let the current goroutine enter blocking state.
@@ -653,8 +661,8 @@ will let the current goroutine enter blocking state.
 
 <p>
 In Go programs, we can set a finalizer function for an object by using
-the <code>runtime.SetFinalizer</code> function. The finalizer function
-will be called before the object is garbage collected.
+the <code>runtime.SetFinalizer</code> function.
+Generlaly, the finalizer function will be called before the object is garbage collected.
 But finalizers are never intended to be used as destructors of objects.
 The finalizers set by <code>runtime.SetFinalizer</code> are not guaranteed to run.
 So you shouldn't rely on finalizers for your program correctness.
@@ -673,19 +681,13 @@ object. As above mentioned, the finalizers are not guaranteed to be called.
 They are just used to make the extent of resource leak as small as possible.
 </p>
 
-<p>
-Sometimes, to avoid a finalizer of an object being called too early, we can use the
-<a href="https://golang.org/pkg/runtime/#KeepAlive">runtime.KeepAlive</a> function
-to prevent the object from being garbage collected too early.
-</p>
-
 <!-- to add best practices and more cases where finalizer doesn't work. -->
 
 <p>
-Please note, some finalizers will never be called for sure,
-and sometimes setting finalizers improperly will prevent some objects from being
-garbage collected. Please read the <a href="https://golang.org/pkg/runtime/#SetFinalizer">runtime.SetFinalizer</a>
-function documentation to get more details.
+Please note, some finalizers will never get called for sure,
+and sometimes setting finalizers improperly will prevent some objects from being garbage collected.
+Please read the <a href="https://golang.org/pkg/runtime/#SetFinalizer">runtime.SetFinalizer function documentation</a>
+to get more details.
 </p>
 
 <p class="anchor" id="trim"></p>
@@ -718,7 +720,7 @@ These functions can be categorized into two groups:
 <p>
 <a href="https://github.com/golang/go/issues/19172">Some</a>
 <a href="https://github.com/golang/go/issues/18160">programmers</a>
-<a href="https://github.com/golang/go/issues/14657">misuse</a>
+<a href="https://github.com/golang/go/issues/14657">misused</a>
 <a href="https://github.com/golang/go/issues/19371">the</a>
 <code>TrimLeft</code> and <code>TrimRight</code> functions
 as <code>TrimPrefix</code> and <code>TrimSuffix</code> functions when they use the trim functions the first time.
@@ -825,7 +827,7 @@ there are some other differences between the three sets of functions.
 	standard packages try to write the value literal of the argument.
 </li>
 <li>
-	Currently (Go 1.11), for the standard Go compiler,
+	Currently (Go 1.12), for the standard Go compiler,
 	calls to the built-in <code>print</code>/<code>println</code> functions
 	will not make the values referenced by the arguments of the calls
 	escape to heap, whereas the print functions in the <code>fmt</code>
@@ -895,7 +897,7 @@ Following types don't support comparisons:
 struct types containing uncomparable fields
 </li>
 <li>
-array types with uncomparable elements
+array types with uncomparable element types
 </li>
 </ul>
 <p>
@@ -961,14 +963,16 @@ Before answering this question, let's look some facts in Go:
 	type of pointers, slices, maps, channels, functions and interfaces.
 </li>
 <li>
-	when an untyped <code>nil</code> value is stored in an interface value,
-	the interface value has no dynamic type.
+	when an untyped <code>nil</code> value is assigned to an interface value,
+	the old value stored in the interface value will be cleared,
+	so that the interface value will become into a zero interface value.
+	A zero interface value has no dynamic types and dynamic values.
 </li>
 <li>
-	if two non-interface values are comparable (at both compile time and run time), they must be equal.
+	if two non-interface <code>nil</code> values are comparable, they must be equal.
 </li>
 <li>
-	if one interface value and one non-interface value are comparable (at both compile time and run time),
+	if a interface value and a non-interface value are comparable,
 	the non-interface value will be converted to the type of the interface value
 	before the comparing.
 	So comparing one interface value and one non-interface value
@@ -980,20 +984,9 @@ Before answering this question, let's look some facts in Go:
 </li>
 </ul>
 
-From these facts, we can get:
-<ul>
-<li>
-	two interface values, which dynamic values are both <code>nil</code>,
-	are not equal if their the dynamic types are different
-	(or one has dynamic type but the other has not).
-</li>
-<li>
-	an interface value, which dynamic value is <code>nil</code>,
-	and a non-interface <code>nil</code> value are not equal
-	if the dynamic type of the interface value is not the type
-	of the non-interface <code>nil</code> value.
-</li>
-</ul>
+<p>
+From these facts, we can get that, two interface values are not equal if one and only one of them has no dynamic types.
+</p>
 
 <p>
 Please read <a href="interface.html">interfaces in Go</a> and
@@ -1031,12 +1024,13 @@ func main() {
 (It looks the official Go FAQ also added <a href="https://golang.org/doc/faq#convert_slice_with_same_underlying_type">a similar question</a> not long ago.)
 </i></p>
 
+<div>
 <p>
 In Go, values of a slice type can be converted to another slice type
-without using the <code>unsafe</code> mechanisms only if the two slice types
-share the same <a href="type-system-overview.html#underlying-type">underlying type</a>
-(<a href="value-conversions-assignments-and-comparisons.html">this article</a>
-lists the full list of value conversion rules).
+without using <a href="unsafe.html">the <code>unsafe</code> mechanisms</a> only if the two slice types
+share the same <a href="type-system-overview.html#underlying-type">underlying type</a>.
+(<a href="value-conversions-assignments-and-comparisons.html">This article</a>
+lists the full list of value conversion rules.)
 </p>
 
 <p>
@@ -1047,13 +1041,11 @@ so their underlying types are also different, which means values of one of them 
 to the other.
 </p>
 
-<div>
 The reasons for the underlying types of <code>[]T1</code> and <code>[]T2</code> are not same are:
 <ul>
 <li>the request of converting values of <code>[]T1</code> and <code>[]T2</code> to each other is not strong in practice.</li>
 <li>to make <a href="type-system-overview.html#underlying-type">underlying type tracing rule</a> simpler.</li>
 </ul>
-</div>
 
 <p>
 The same reasons are also valid for other composite types.
@@ -1061,7 +1053,6 @@ For example, type <code>map[T]T1</code> and <code>map[T]T2</code> also don't sha
 even if <code>T1</code> and <code>T2</code> share the same underlying type.
 </p>
 
-<div>
 It is possible that values of type <code>[]T1</code> can be converted to
 <code>[]T2</code> by using the <code>unsafe</code> mechanisms,
 but generally this is not recommended:
@@ -1122,7 +1113,7 @@ Following values can't be taken addresses:
 Please note, there is a syntax sugar, <code>&T{}</code>, in Go.
 It is a short form of <code>tmp := T{}; (&tmp)</code>.
 So <code>&T{}</code> is legal doesn't mean
-<code>T{}</code> is addressable.
+the literal <code>T{}</code> is addressable.
 </div>
 <p></p>
 
@@ -1157,24 +1148,25 @@ map elements may be changed at run time.
 <div>
 The internal type for slices is a struct like
 <pre class="line-numbers"><code class="language-go">struct {
-	elements unsafe.Pointer
+	elements unsafe.Pointer // references an element sequence
 	length   int
 	capacity int
 }
 </code></pre>
 <p>
-Each slice indirectly references an element sequence.
-Although a non-nil slice is not addressable, its internal element sequence must be addressable.
-Taking addresses of elements of a slice is taking the addresses of elements of the internal array, in fact.
-This is why elements of unaddressable non-nil slices are addressable.
+Each slice indirectly references an underlying element sequence internally.
+Although a non-nil slice is not addressable,
+its internal element sequence is always allocated somewhere and must be addressable.
+Taking addresses of elements of a slice is taking the addresses of elements of the internal element sequence actually.
+This is why elements of unaddressable non-nil slices are always addressable.
 </p>
 </div>
 
-<p>
+<!--p>
 For the same reason, the substring operations on unaddressable strings also always compile ok
 (by the standard Go compiler).
 However, I can't make sure whether this is guaranteed by Go specification or not.
-</p>
+</p-->
 
 <p class="anchor" id="method-set-relation"></p>
 <h3>
@@ -1187,18 +1179,18 @@ However, I can't make sure whether this is guaranteed by Go specification or not
 In Go, for convenience,
 <ul>
 <li>
-	a value of type <code>T</code>  can call methods defined on type <code>*T</code>,
-	only if the value of <code>T</code> are addressable.
+	a value of type <code>T</code> can call methods defined on type <code>*T</code>,
+	but only if the value of <code>T</code> are addressable.
 	Compilers will take the address of the <code>T</code> value automatically
-	before calling the pointer methods.
+	before calling the pointer receiver methods.
 	For not any values of type <code>T</code> are addressable,
 	not any values of type <code>T</code> are capable of calling methods defined on type <code>*T</code>.
-	<div>This convenience is just a sugar, not an intrinsic rule.</div>
+	This convenience is just a sugar, not an intrinsic rule.
 </li>
 <li>
 	a value of type <code>*T</code>  can always call methods defined on type <code>T</code>.
 	This is because it is always legal to dereference a pointer value.
-	<div>This convenience is not only a sugar, but also an intrinsic rule.</div>
+	This convenience is not only a sugar, but also an intrinsic rule.
 </li>
 </ul>
 <p>
@@ -1208,9 +1200,11 @@ a super set of the method set of <code>T</code>, but not vice versa.
 </div>
 
 <div>
-In fact, you can think for every method defined on type <code>T</code>,
+In fact, you can think that, for every method declared on type <code>T</code>,
 an implicit method with the same name and the same signature is automatically
-defined on type <code>*T</code>:
+declared on type <code>*T</code>.
+Please read <a href="method.html">methods</a> for details.
+
 <pre class="line-numbers"><code class="language-go">func (t T) MethodX(param0 ParamType0, ...) (result0 ResultType0, ...) {
 	...
 }
@@ -1221,17 +1215,17 @@ func (pt *T) MethodX(param0 ParamType0, ...) (result0 ResultType0, ...) {
 }
 </code></pre>
 
-<p>
+<!--p>
 If a method is defined on type <code>*T</code>, no methods with the same method name can
 be defined on <code>T</code> any more.
 This is another explanation why the method set of <code>*T</code> is always
 a super set of the method set of <code>T</code>, but not vice versa.
-</p>
+</p-->
 </div>
 
-<p><i>
-(Please read <a href="https://golang.org/doc/faq#different_method_sets">this answer</a> in the official Go FAQ to get more explanations.)
-</i></p>
+<p>
+Please read <a href="https://golang.org/doc/faq#different_method_sets">this answer</a> in the official Go FAQ to get more explanations.
+</p>
 
 <p class="anchor" id="types-can-have-methods"></p>
 <h3>
@@ -1256,22 +1250,22 @@ There are three <b><i>immutable value</i></b> definitions:
 </ol>
 
 <p>
-In Go, up to now (Go 1.11), there are no values satisfy the third definition.
+In Go, up to now (Go 1.12), there are no values satisfy the third definition.
 In other words, the third definition is not supported.
 </p>
 
 <p>
-Constant values satisfy the first definition.
+Name constant values satisfy the first definition.
 </p>
 
 <p>
 Methods and package-level functions can also viewed as declared immutable values.
 They satisfy the second definition.
-String elements (bytes) and map elements are also satisfy the second definition.
+String elements (bytes) also satisfy the second definition.
 </p>
 
 <p>
-There are no ways to declare other custom immutable named variables in Go.
+There are no ways to declare other custom immutable named values in Go.
 </p>
 </div>
 
@@ -1302,8 +1296,9 @@ A <code>rune</code> often is used to store a Unicode break point.
 </p>
 
 <div>
-<code>[]byte</code> and <code>[]rune</code> values can be converted to <code>string</code>,
-directly but explicitly, and vice versa:
+<code>[]byte</code> and <code>[]rune</code> values can be explicitly and directly converted to strings,
+and vice versa.
+
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -1349,7 +1344,7 @@ in the <b><i>N</i></b>th constant specification in that constant declaration gro
 <p>
 The reason is the usefulness of such function is very limited.
 The return result of a call to such function may be not able to
-reflect the latest status of the input channel.
+reflect the latest status of the input channel argument.
 So it is not a good idea to make decisions relying on the return result.
 </p>
 
@@ -1373,6 +1368,7 @@ Go compilers which support stack will do escape analysis.
 For the standard Go compiler, if the escape analyzer thinks a memory block
 will only be used in current function call for sure, it will allocate the
 memory block on stack, otherwise, then the memory block will be allocated on heap.
+Please read <a href="memory-block.html">memory block</a> for more information.
 </p>
 
 <p class="anchor" id="gopher"></p>

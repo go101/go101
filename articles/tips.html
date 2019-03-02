@@ -49,7 +49,7 @@ Index
 	<a href="#detect-word-size-at-compile-time">How to detect native word size at compile time?</a>
 </li>
 <li>
-	<a href="#64bit-alignment-guarantee">How to guarantee that the first pointer argument of a 64-bit atomic function call is always 64-bit aligned on 32-bit architectures?</a>
+	<a href="#64bit-alignment-guarantee">How to guarantee that the 64-bit value operated by a 64-bit atomic function call is always 64-bit aligned on 32-bit architectures?</a>
 </li>
 <li>
 	<a href="#make-use-of-bce">Make optimizations by using BCE (bounds check elimination).</a>
@@ -68,8 +68,8 @@ Index
 
 <p>
 Package developers can put a non-exported zero-size field in a struct type definition,
-so that compilers will forbid package users using composite literals without field names
-to create values of the struct type.
+so that compilers will forbid package users using composite literals with some
+field items but without field names to create values of the struct type.
 </p>
 
 An example:
@@ -143,10 +143,8 @@ func main() {
 <div>
 
 <p>
-Currently (Go 1.11), there are
-<a href="https://github.com/go101/go101/wiki/Some-evaluation-orders-in-multi-value-assignments-are-unspecified">some evaluation orders in multi-value assignments are unspecified</a>
-and there are <a href="https://github.com/go101/go101/wiki/An-ambiguity-of-%28or-dispute-on%29-the-evaluation-order-of-LHS-%28left-hand-side%29-items-in-a-multi-value-assignment">some disputes and bugs</a>
-in the standard Go compiler and gccgo compiler when there are dependencies existing between the expressions involved in a multi-value assignment.
+Currently (Go 1.12), there are
+<a href="https://github.com/go101/go101/wiki/Some-evaluation-orders-in-multi-value-assignments-are-unspecified">some evaluation orders in a multi-value assignment are unspecified</a> when there are dependencies existing between the expressions involved in the multi-value assignment.
 So try to split a multi-value assignment into multiple single value assignments
 if there are, or you can't make sure whether or not there are, dependencies between the involved expressions.
 </p>
@@ -168,7 +166,7 @@ func f() int {
 }
 
 func main() {
-	// The evaluation order of "a", "i" and "f()" is not specified.
+	// The evaluation order of "a", "i" and "f()" is unspecified.
 	(*a)[i] = f()
 	fmt.Println(*a)
 }
@@ -178,7 +176,7 @@ func main() {
 </p>
 
 <p>
-In other words, a function call in a value assignment shouldn't affect
+In other words, a function call in a value assignment may
 the evaluation results of the non-function-call expressions in the same assignment.
 Please read <a href="evaluation-orders.html">evaluation orders in Go</a> for details.
 </p>
@@ -502,9 +500,12 @@ It can be less verbose but needs a little more (negligible) memory:
 <pre class="line-numbers"><code class="language-go">var _ = map[bool]int{false: 0, N>=M: 1}
 </code></pre>
 
-<p>
+<!--p>
 NOTE: currently, <a href="https://github.com/golang/go/issues/28104">gccgo 8.2.0 has a bug</a> which allows duplicate constant keys in composite literals.
 So this trick doesn't work for gccgo now. This bug will be fixed in a later gccgo version.
+</p-->
+
+<p>
 </p>
 
 Similarly, ways to assert two integer constants are equal to each other:
@@ -526,7 +527,7 @@ var _ [N-M]int = [M-N]int{}
 The last line is also inspired by one of Luke Champine's tweets.
 </p>
 
-How to assert a constant string is not blank.
+Ways of how to assert a constant string is not blank:
 
 <pre class="line-numbers"><code class="language-go">type _ [len(aStringConstant)-1]int
 var _ = map[bool]int{false: 0, aStringConstant != "": 1}
@@ -589,7 +590,7 @@ const WordBits = 32 << (^uint(0) >> 63) // 64 or 32
 
 
 <p class="anchor" id="64bit-alignment-guarantee"></p>
-<h3>How to guarantee that the first pointer argument of a 64-bit atomic function call is always 64-bit aligned on 32-bit architectures?</h3>
+<h3>How to guarantee that the 64-bit value operated by a 64-bit atomic function call is always 64-bit aligned on 32-bit architectures?</h3>
 
 <div>
 Please read <a href="memory-layout.html">Go value memory layouts</a> for details.
@@ -607,7 +608,7 @@ The copy cost depends on the size of the non-interface value. The larger the siz
 So please try to avoid boxing large-size values into interface values.
 </p>
 
-In the following example, the cost of the latter two print calls
+In the following example, the costs of the latter two print calls
 are much lower than the former two.
 
 <pre class="line-numbers"><code class="language-go">package main
@@ -645,8 +646,9 @@ About value sizes of different types, please read <a href="value-copy-cost.html"
 
 <p>
 Please read <a href="bounds-check-elimination.html">this article</a> to get
-what is BCE and how well BCE is supported in Go now.
-That article also shows some examples of how to make use of BCE for code optimization.
+what is BCE and how well BCE is supported by the standard Go compiler now.
+<p>
+
 Here, another example is provided:
 
 <pre class="line-numbers"><code class="language-go">package main

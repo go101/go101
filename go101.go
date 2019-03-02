@@ -60,11 +60,11 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Cache-Control", "max-age=360000") // 10 hours
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
+		} else if strings.HasPrefix(item, "print-") {
+			go101.RenderPrintPage(w, r, item[len("print-"):])
+			return
 		}
 		go101.RenderArticlePage(w, r, item)
-	case "print":
-		item = strings.ToLower(item)
-		go101.RenderPrintPage(w, r, item)
 	case "":
 		http.Redirect(w, r, "/article/101.html", http.StatusTemporaryRedirect)
 	default:

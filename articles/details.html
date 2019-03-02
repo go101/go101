@@ -1,11 +1,7 @@
 <h1>Go Details 101</h1>
 
 <div>
-<p>
-This article will list all kinds of details in Go.
-Some of these details are shown in other Go 101 articles,
-some are shown in the following sections.
-</p>
+Index:
 
 <ul>
 <li>
@@ -125,7 +121,7 @@ some are shown in the following sections.
 		<a href="#array-slice-derivable">It is ok to derive subslices from unaddressable slices, but not ok from unaddressable arrays. It is ok to take addresses for elements of unaddressable slices, but not ok for elements of unaddressable arrays.</a>
 	</li>
 	<li>
-		<a href="#nan-as-map-keys">Putting elements with <code>NaN</code> as keys to a map is like putting the elements in a black hole.</a>
+		<a href="#nan-as-map-keys">Putting entries with <code>NaN</code> as keys to a map is like putting the entries in a black hole.</a>
 	</li>
 	<li>
 		<a href="#capacity-of-slice-from-string">The capacity of the result slice of a conversion from a string to byte/rune slice may be larger than the length of the result slice.</a>
@@ -159,7 +155,7 @@ some are shown in the following sections.
 		<a href="#type-assertion-to-interface-type">Type assertions can be used to convert a value of an interface type to another interface type, even if the former interface type doesn't implement the latter one.</a>
 	</li>
 	<li>
-		<a href="#failed-type-assertion-may-panic">Whether or not the second optional result of a type assertion is present will affect the behavior of the type assertion.</a>
+		<a href="#failed-type-assertion-may-panic">Whether or not the second optional result of a failed type assertion is present will affect the behavior of the type assertion.</a>
 	</li>
 	<!--
 	<li>
@@ -232,7 +228,7 @@ some are shown in the following sections.
 		<a href="#check-file-existent">We should use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists.</a>
 	</li>
 	<li>
-		<a href="#boolean-flag">The <code>flag</code> standard package treats boolean command flags differently than integer and string flags.</a>
+		<a href="#boolean-flag">The <code>flag</code> standard package treats boolean command flags differently than number and string flags.</a>
 	</li>
 	<li>
 		<a href="#printf-positional-arguments"><code>[Sp|Fp|P]rintf</code> functions support positional arguments.</a>
@@ -277,6 +273,7 @@ the import path of the following package must be <code>"x.y.z/mypkg"</code>.
 </code></pre>
 
 <p>
+However, since Go SDK 1.12, the restriction doesn't apply for projects supporting mobules.
 </p>
 </div>
 
@@ -659,7 +656,7 @@ func main() {
 	*p-- // <=> (*p)--
 
 	t.y = p
-	a := *t.y
+	a := *t.y // <=> *(t.y)
 	fmt.Printf("%T\n", a) // int
 }
 </code></pre>
@@ -707,8 +704,8 @@ type Tb    *MyInt
 func main() {
 	var a Ta
 	var b Tb
-	// Direct conversion is impossible.
-	//a = Ta(b) // error: fail to compile
+
+	//a = Ta(b) // error: direct conversion is not allowed
 
 	// But indirect conversion is possible.
 	y := (*MyInt)(b)
@@ -750,7 +747,7 @@ func main() {
 
 	fmt.Println(&x, &y, &o, &p)
 
-	// For the standard Go compiler (1.11),
+	// For the standard Go compiler (1.12),
 	// x, y, o and p escape to heap,
 	// but a, b, m and n are allocated on stack.
 
@@ -765,7 +762,7 @@ func main() {
 </code></pre>
 
 <p>
-The outputs indicated in the above code are for the standard Go compiler 1.11.
+The outputs indicated in the above code are for the standard Go compiler 1.12.
 </p>
 </div>
 
@@ -840,13 +837,13 @@ func main() {
 <div>
 
 <p>
-<p>
 For a pointer value, which type is either defined or not,
 if the base type of its (pointer) type is a struct type,
-then the pointer value can select the <b>fields</b> of
-the struct value it references.
+then we can select the fields of the struct value
+referenced by the pointer value through the pointer value.
 However, if the type of the pointer value is a defined type,
-the value can not select the methods of the value its references.
+then we can't select the methods of the struct value
+referenced by the pointer value through the pointer value.
 </p>
 
 <pre class="line-numbers"><code class="language-go">package main
@@ -868,7 +865,7 @@ func main() {
 	tp.x = 12  // okay
 	p.x = 34   // okay
 	pp.x = 56  // error: type PP has no field or method x
-	tpp.x = 78 // error: type **T has no field or method x)
+	tpp.x = 78 // error: type **T has no field or method x
 
 	tp.m()  // okay. Type *T also has a "m" method.
 	p.m()   // error: type P has no field or method m
@@ -1100,19 +1097,15 @@ An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	// Container composite literals and map elements are all unaddressable.
+	// Container composite literals are unaddressable.
 
 	// Take container element addresses.
 	_ = &[]int{1}[0] // ok
 	_ = &[5]int{}[0] // error: cannot take the address of [5]int literal[0]
-	_ = &(&[5]int{})[0] // ok
-	_ = &(*&[5]int{})[0] // ok
 
 	// Modify container element values.
-	map[int]int{}[1] = 9
-	[]int{1,2,3}[1] = 9
+	[]int{1,2,3}[1] = 9  // ok
 	[3]int{1,2,3}[1] = 9 // error: cannot assign to [3]int literal[1]
-	(&[3]int{1,2,3})[1] = 9
 }
 </code></pre>
 
@@ -1123,7 +1116,6 @@ func main() {
 <p class="anchor" id="array-slice-derivable"></p>
 <h3>
 It is ok to derive subslices from unaddressable slices, but not ok from unaddressable arrays.
-It is ok to take addresses for elements of unaddressable slices, but not ok for elements of unaddressable arrays.
 </h3>
 
 <div>
@@ -1135,23 +1127,19 @@ An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	// Literal values and map elements are unaddressable in Go.
-
-	// The following lines fail to compile.
-	/*
-	_ = [...]int{6, 7, 8, 9}[1:3]  // error: slice of unaddressable value
-	_ = &([...]int{6, 7, 8, 9}[0]) // error: cannot take element address
-	var ma = map[string][4]int{"abc": {0, 1, 2, 3}}
-	_ = ma["abc"][1:3]  // error: slice of unaddressable value
-	_ = &(ma["abc"][0]) // error: cannot take element address
-	*/
+	// Map elements are unaddressable in Go.
 
 	// The following lines compile okay.
 	_ = []int{6, 7, 8, 9}[1:3]
-	_ = &([]int{6, 7, 8, 9}[0])
 	var ms = map[string][]int{"abc": {0, 1, 2, 3}}
 	_ = ms["abc"][1:3]
-	_ = &(ms["abc"][0])
+
+	// The following lines fail to compile.
+	/*
+	_ = [...]int{6, 7, 8, 9}[1:3] // error: slice of unaddressable value
+	var ma = map[string][4]int{"abc": {0, 1, 2, 3}}
+	_ = ma["abc"][1:3]  // error: slice of unaddressable value
+	*/
 }
 </code></pre>
 <p>
@@ -1159,10 +1147,10 @@ func main() {
 </div>
 
 <p class="anchor" id="nan-as-map-keys"></p>
-<h3>Putting elements with <code>NaN</code> as keys to a map is like putting the elements in a black hole.</h3>
+<h3>Putting entries with <code>NaN</code> as keys to a map is like putting the entries in a black hole.</h3>
 
 <div>
-This reason is <code>NaN != NaN</code> (see the above detail).
+This reason is <code>NaN != NaN</code> (see <a href="#nan-inf">below</a>).
 The elements with <code>NaN</code> as key can only be found out in a <code>for-range</code> loop.
 
 <pre class="line-numbers"><code class="language-go">package main
@@ -1172,7 +1160,7 @@ import "math"
 
 func main() {
 	var a = math.NaN()
-	fmt.Println(a)      // NaN
+	fmt.Println(a) // NaN
 
 	var m = map[float64]int{}
 	m[a] = 123
@@ -1183,7 +1171,7 @@ func main() {
 	fmt.Println(v, present) // 0 false
 
 	fmt.Println(m) // map[NaN:&lt;nil&gt; NaN:&lt;nil&gt;]
-	delete(m, a) // no-op
+	delete(m, a)   // no-op
 	fmt.Println(m) // map[NaN:&lt;nil&gt; NaN:&lt;nil&gt;]
 
 	for k, v := range m {
@@ -1209,7 +1197,7 @@ We should not assume the length and the capacity of the result slice are always 
 In the following example, if the last <code>fmt.Println</code> line is removed,
 the outputs of the two lines before it print the same value <code>32</code>,
 otherwise, one print <code>32</code> and one print <code>8</code>.
-(For the standard Go compiler 1.11.)
+(For the standard Go compiler 1.12.)
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -1322,8 +1310,12 @@ func (T) foo() {}
 
 func main() {
 	var x interface{} = T(123)
-	var _ Foo = x   // error: interface {} does not implement Foo
-	var _ = Foo(x)  // error: interface {} does not implement Foo
+	// The following two lines fails to compile.
+	/*
+	var _ Foo = x   // error: interface{} does not implement Foo
+	var _ = Foo(x)  // error: interface{} does not implement Foo
+	*/
+	// But the following line compiles okay.
 	var _ = x.(Foo) // okay
 }
 </code></pre>
@@ -1475,7 +1467,7 @@ func foo(c <-chan int) {
 <h3>Sending a value to a closed channel is viewed as a non-blocking operation, and this operation causes a panic.</h3>
 
 <div>
-For example, in the following program, the second case branch will get selected, it will produce a panic at run time.
+For example, in the following program, when the second <code>case</code> branch gets selected, it will produce a panic at run time.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -1695,6 +1687,9 @@ func f() {
 }
 
 func main() {
+	defer func() {
+		recover() // helpless to avoid program crashing
+	}()
 	f()
 }
 </code></pre>
@@ -1769,8 +1764,8 @@ There are three forms to pass flag options.
 </ol>
 
 <p>
-And please note that, all items following a boolean flag with
-the first form are viewed as arguments.
+And please note that, a boolean flag with the first form
+is viewed as the last flag, all items following it are viewed as arguments.
 </p>
 
 <pre class="line-numbers"><code class="language-go">package main
@@ -1829,11 +1824,7 @@ arguments: [arg0 arg1]
 <h3><code>[Sp|Fp|P]rintf</code> functions support positional arguments.</h3>
 
 <div>
-<p>
 The following program will print <code>3, 2, 1</code>.
-</p>
-
-An example:
 
 <pre class="line-numbers"><code class="language-go">package main
 
