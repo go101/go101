@@ -256,7 +256,7 @@ their syntax and function calls of these operations are listed here.
 <ol>
 <li>
 	Close the channel by using the following function call
-<pre><code class="language-go">close(ch)
+<pre class="no-line-numbers"><code class="language-go">close(ch)
 </code></pre>
 	<p>
 	where <code>close</code> is a built-in function.
@@ -267,7 +267,7 @@ their syntax and function calls of these operations are listed here.
 <li>
 	Send a value, <code>v</code>, to the channel
 	by using the following syntax
-<pre><code class="language-go">ch &lt;- v
+<pre class="no-line-numbers"><code class="language-go">ch &lt;- v
 </code></pre>
 	<p>
 	where <code>v</code> must be a value which is assignable to
@@ -278,7 +278,7 @@ their syntax and function calls of these operations are listed here.
 </li>
 <li>
 	Receive a value from the channel by using the following syntax
-<pre><code class="language-go">&lt;-ch
+<pre class="no-line-numbers"><code class="language-go">&lt;-ch
 </code></pre>
 	A channel receive operation always returns at least one result,
 	which is a value of the element type of the channel,
@@ -302,14 +302,14 @@ their syntax and function calls of these operations are listed here.
 	<p>
 	</p>
 	Two channel receive operations which are used as source values in assignments:
-<pre><code class="language-go">v = &lt;-ch
+<pre class="no-line-numbers"><code class="language-go">v = &lt;-ch
 v, sentBeforeClosed = &lt;-ch
 </code></pre>
 </li>
 <li>
 	Query the value buffer capacity of the channel
 	by using the following function call
-<pre><code class="language-go">cap(ch)
+<pre class="no-line-numbers"><code class="language-go">cap(ch)
 </code></pre>
 	<p>
 	where <code>cap</code> is a built-in function which has ever been
@@ -322,7 +322,7 @@ v, sentBeforeClosed = &lt;-ch
 	Query the current number of values in the value buffer
 	(or the length)
 	of the channel by using the following function call
-<pre><code class="language-go">len(ch)
+<pre class="no-line-numbers"><code class="language-go">len(ch)
 </code></pre>
 	<p>
 	where <code>len</code> is a built-in function
@@ -339,8 +339,19 @@ v, sentBeforeClosed = &lt;-ch
 
 <p>
 All these operations are already synchronized,
-so no further synchronizations are needed to safely perform these operations.
-However, like most other operations in Go,
+so no further synchronizations are needed to safely perform these operations,
+except the case of concurrent send and close operations on the channel.
+The exception case should be avoid in code design for it is a bad design.
+(The reason will be explained below.)
+</p>
+
+<!--
+https://github.com/golang/go/issues/30372
+https://github.com/golang/go/issues/27769
+-->
+
+<p>
+Like most other operations in Go,
 channel value assignments are not synchronized.
 Similarly, assigning the received value to another value is also
 not synchronized, though any channel receive operation is synchronized.

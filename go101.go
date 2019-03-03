@@ -61,8 +61,10 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
 		} else if strings.HasPrefix(item, "print-") {
-			go101.RenderPrintPage(w, r, item[len("print-"):])
-			return
+			if go101.IsLocalServer() {
+				go101.RenderPrintPage(w, r, item[len("print-"):])
+				return
+			}
 		}
 		go101.RenderArticlePage(w, r, item)
 	case "":
@@ -209,7 +211,8 @@ func retrieveArticleContent(file string) (Article, error) {
 	return article, nil
 }
 
-const Anchor, _Anchor, IndexContentStart = `<li><a href="`, `">`, `<!-- index (don't remove) -->`
+const Anchor, _Anchor, LineToRemoveTag, endl = `<li><a href="`, `">`, `(to remove)`, "\n"
+const IndexContentStart, IndexContentEnd = `<!-- index starts (don't remove) -->`, `<!-- index ends (don't remove) -->`
 
 func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, item string) {
 	page, isLocal := go101.ArticlePage(item)
@@ -265,21 +268,50 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	// get all article files by their order in index
-	articles := make([]Article, 0, 100)
+	// get all index article content by removing some lines
+	var builder strings.Builder
 	
-	i := strings.Index(string(article.Content), IndexContentStart)
+	content := string(article.Content)
+	i := strings.Index(content, IndexContentStart)
 	if i < 0 {
 		err = errors.New(IndexContentStart + " not found")
 		return nil, err
 	}
 	i += len(IndexContentStart)
-	article.Content = article.Content[i:]
+	content = content[i:]
+	i = strings.Index(content, IndexContentEnd)
+	if i >= 0 {
+		content = content[:i]
+	}
+	
+	for range [1000]struct{}{} {
+		i = strings.Index(content, LineToRemoveTag)
+		if i < 0 {
+			break
+		}
+		start := strings.LastIndex(content[:i], endl)
+		if start >= 0 {
+			builder.WriteString(content[0:start])
+		}
+		end := strings.Index(content[i:], endl)
+		content = content[i:]
+		if end < 0 {
+			end = len(content)
+		}
+		content = content[end:]
+	}
+	builder.WriteString(content)
+	
+	// the index article
+	articles := make([]Article, 0, 100)
+	article.FilenameWithoutExt = "101"
+	article.Content = template.HTML(builder.String())
 	articles = append(articles, article)
-
-	content := string(article.Content)
-	for {
-		i := strings.Index(content, Anchor)
+	
+	// find all articles from links
+	content = string(article.Content)
+	for range [1000]struct{}{} {
+		i = strings.Index(content, Anchor)
 		if i < 0 {
 			break
 		}
@@ -291,7 +323,7 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 		
 		article, err := retrieveArticleContent(content[:i])
 		if err != nil {
-			log.Printf("retrieve article %s error:", content[:i], err)
+			log.Printf("retrieve article %s error: %s", content[:i], err)
 		} else {
 			articles = append(articles, article)
 		}

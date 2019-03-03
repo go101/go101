@@ -12,42 +12,100 @@
 		<title>Go 101</title>
 
 		<link href="/static/bootstrap/v3.3.7/css/bootstrap.min.css" rel="stylesheet">
-		<link href="/static/go101/css/v8.css" rel="stylesheet">
-		<link href="/static/prism/2017-11-02/prism.css" rel="stylesheet" media="print">
-		<script src="/static/prism/2017-11-02/prism.js"></script>
+		<link href="/static/go101/css/v8.css" rel="stylesheet" media="screen, print">
+		<script src="/static/code-prettify/2019-03-02/prettify.js"></script>
+		<link href="/static/code-prettify/2019-03-02/prettify.css" rel="stylesheet" media="screen, print">
+		<link href="/static/code-prettify/2019-03-02/sons-of-obsidian.css" rel="stylesheet" media="screen, print">
 		<script src="/static/jquery/jquery.min-v1.11.2.js"></script>
-		<!--[if lt IE 9]>
-		<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-		<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-		<![endif]-->
-		
+
 		<style>
-		@page {size: 185mm 260mm;}
 		@media print {
-			html, body {width: 185mm; height: 260mm;}
 			a[href]:after {
 				content: none !important;
 			}
 			
 			h1, h2, h3, h4, h5 {
-				page-break-after: avoid;
+				page-break-after: avoid !important;
 			}
 			
 			pre, table {
-				page-break-inside: auto;
+				page-break-inside: auto !important;
 			}
 			
 			table tr td, table tr th {
-				page-break-inside: avoid;
+				page-break-inside: avoid !important;
 			}
+			
+			a:link {
+				text-decoration: underline !important;
+			}
+			
+			.prettyprinted ol {
+				border-style: solid;
+				border-width: 1px;
+				border-color: #666;
+			}
+			
 		}
 		</style>
+		<script>
+		function process() {
+			var currentArticle = "";
+			$("p.article-anchor, p.anchor").each(function(){
+				if (this.className == "article-anchor") {
+					this.id = "article:" + this.id
+					currentArticle = this.id
+				} else if (currentArticle != "") {
+					this.id = currentArticle + ":" + this.id
+				}
+				//console.log("id: " + this.id)
+			})
+			
+			var printPage = location.pathname.substr(location.pathname.lastIndexOf('/') + 1)
+			
+			currentArticle = ""
+			$("p.article-anchor, a:not([href^='http'])").each(function(){
+				if (this.className == "article-anchor") {
+					currentArticle = this.id;
+					//console.log("================ " + currentArticle + ", " + printPage)
+					return
+				}
+
+				var index = this.href.lastIndexOf('/')
+				var anchor = this.href.substr(index + 1);
+				index = anchor.indexOf('#');
+				
+				if (index == 0) { // impossible?
+					anchor = currentArticle + ":" + anchor.substr(0)
+				} else if (index < 0) {
+					anchor = "article:" + anchor
+				} else {
+					var article = anchor.substr(0, index)
+					anchor = anchor.substr(index+1)
+					if (article == printPage) {
+						article = currentArticle
+					} else {
+						article = "article:" + article
+					}
+					anchor = article + ":" + anchor
+				}
+				//console.log("anchor: " + anchor)
+				this.href = location.protocol+'//'+location.host + location.pathname + "#" + anchor
+			});
+			
+			$("pre.line-numbers").addClass("prettyprint linenums")
+			$("pre.no-line-numbers").addClass("prettyprint")
+			PR.prettyPrint();
+		}
+		</script>
 	</head>
 
-	<body>
+	<body onload="process()">
 		<div class="container">
 		
 {{ range .Articles }}
+
+	<p class="article-anchor" id="{{ .FilenameWithoutExt }}.html"></p>
 
 	{{ .Title }}
 

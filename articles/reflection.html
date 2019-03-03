@@ -367,8 +367,8 @@ func main() {
 <p>
 </p>
 
-There are also some <code>reflect.Value</code> related functions
-declared in the <code>reflect</code> standard package.
+The <code>reflect</code> standard package also declares
+some <code>reflect.Value</code> related functions.
 Each of these functions corresponds to a built-in function
 or a non-reflection functionality,
 The following example demonstrates how to bind a custom generic function
@@ -448,6 +448,29 @@ func main() {
 Please note that, non-exported fields shouldn't be used as arguments of reflection calls.
 If the line <code>vt.FieldByName("A")</code> in the above example is replaced
 with <code>vt.FieldByName("b")</code>, a panic will occur.
+</p>
+
+A reflection example for map values.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "reflect"
+
+func main() {
+	m := map[string]int{"Unix": 1973, "Windows": 1985}
+	v := reflect.ValueOf(m)
+	// A zero second Value argument means to delete an entry.
+	v.SetMapIndex(reflect.ValueOf("Windows"), reflect.Value{})
+	v.SetMapIndex(reflect.ValueOf("Linux"), reflect.ValueOf(1991))
+	for i := v.MapRange(); i.Next(); {
+		fmt.Println(i.Key(), "\t:", i.Value())
+	}
+}
+</code></pre>
+
+<p>
+Please note that, the <code>MapRange</code> method is supported since Go 1.12.
 </p>
 
 A reflection example for channel values.
