@@ -37,7 +37,7 @@ var (
 )
 
 func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	go101.ComfirmLocalServer(isLocalRequest(r))
+	go101.ConfirmLocalServer(isLocalRequest(r))
 
 	group, item := "", ""
 	tokens := strings.SplitN(r.URL.Path, "/", 3)
@@ -76,7 +76,7 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (go101 *Go101) ComfirmLocalServer(isLocal bool) {
+func (go101 *Go101) ConfirmLocalServer(isLocal bool) {
 	go101.serverMutex.Lock()
 	if go101.isLocalServer != isLocal {
 		go101.isLocalServer = isLocal
@@ -335,7 +335,7 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 }
 
 //===================================================
-// tempaltes
+// templates
 //==================================================
 
 type PageTemplate uint
