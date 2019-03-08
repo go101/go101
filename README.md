@@ -39,7 +39,14 @@ The start page should be opened in a browser automatically.
 If it is not opened, please visit http://localhost:55555.
 
 ### Contributing
-Contributions are welcome. Please refer to the [contribution guidelines](CONTRIBUTING.md)
+Welcome to improve Go 101 by:
+* Submitting corrections for all kinds of mistakes, such as typos, grammar errors, wording inaccuracies, description flaws, code bugs and broken links. 
+* Suggesting interesting Go related contents.
+
+Current contributors are listed on [this page](https://go101.org/article/acknowledgements.html).
+
+Translations are also welcome. Here is a list of the ongoing translation projects:
+*  [Chinese translation version](https://github.com/Golang101/golang101) (almost done).
 
 ### License
 Copyright (c) Tapir Liu. All rights reserved. Please read the [LICENSE](LICENSE) for more details.
