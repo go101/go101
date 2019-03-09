@@ -143,7 +143,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 			var buf bytes.Buffer
 			if err = t.Execute(&buf, pageParams); err == nil {
 				page = buf.Bytes()
-			} else  {
+			} else {
 				page = []byte(err.Error())
 			}
 		} else if os.IsNotExist(err) {
@@ -223,13 +223,13 @@ func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, item
 		case "book101":
 			pageParams, err = buildBook101PrintParams()
 		}
-		
+
 		if err == nil {
 			if pageParams == nil {
 				pageParams = map[string]interface{}{}
 			}
 			pageParams["IsLocalServer"] = isLocal
-			
+
 			t := retrievePageTemplate(Template_PrintBook, !isLocal)
 			var buf bytes.Buffer
 			if err = t.Execute(&buf, pageParams); err == nil {
@@ -238,7 +238,7 @@ func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, item
 		}
 
 		if err != nil {
-				page = []byte(err.Error())
+			page = []byte(err.Error())
 		}
 
 		if !isLocal {
@@ -261,7 +261,7 @@ func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, item
 	}
 	w.Write(page)
 }
-	
+
 func buildBook101PrintParams() (map[string]interface{}, error) {
 	article, err := retrieveArticleContent("101.html")
 	if err != nil {
@@ -269,8 +269,8 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 	}
 
 	// get all index article content by removing some lines
-	var builder strings.Builder
-	
+	var builder bytes.Buffer // strings.Builder // GAE go111 has problems
+
 	content := string(article.Content)
 	i := strings.Index(content, IndexContentStart)
 	if i < 0 {
@@ -283,7 +283,7 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 	if i >= 0 {
 		content = content[:i]
 	}
-	
+
 	for range [1000]struct{}{} {
 		i = strings.Index(content, LineToRemoveTag)
 		if i < 0 {
@@ -301,13 +301,13 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 		content = content[end:]
 	}
 	builder.WriteString(content)
-	
+
 	// the index article
 	articles := make([]Article, 0, 100)
 	article.FilenameWithoutExt = "101"
 	article.Content = template.HTML(builder.String())
 	articles = append(articles, article)
-	
+
 	// find all articles from links
 	content = string(article.Content)
 	for range [1000]struct{}{} {
@@ -315,22 +315,22 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 		if i < 0 {
 			break
 		}
-		content = content[i + len(Anchor):]
+		content = content[i+len(Anchor):]
 		i = strings.Index(content, _Anchor)
 		if i < 0 {
 			break
 		}
-		
+
 		article, err := retrieveArticleContent(content[:i])
 		if err != nil {
 			log.Printf("retrieve article %s error: %s", content[:i], err)
 		} else {
 			articles = append(articles, article)
 		}
-		
-		content = content[i + len(_Anchor):]
+
+		content = content[i+len(_Anchor):]
 	}
-	
+
 	return map[string]interface{}{"Articles": articles}, nil
 }
 
