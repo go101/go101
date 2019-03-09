@@ -225,6 +225,9 @@ Index:
 		<a href="#reflect-deep-equal">The results of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</a>
 	</li>
 	<li>
+		<a href="#reflect-value-bytes">The <code>reflect.Value.Bytes()</code> method returns a <code>[]byte</code> value, which element type, <code>byte</code>, might be not the same as the Go slice value represented by the receiver parameter.</a>
+	</li>
+	<li>
 		<a href="#check-file-existent">We should use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists.</a>
 	</li>
 	<li>
@@ -1717,9 +1720,128 @@ Please read <a href="evaluation-orders.html">expression evaluation orders in Go<
 <p class="anchor" id="reflect-deep-equal"></p>
 <h3>The results of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</h3>
 
+<div>
 <p>
-Please read <a href="reflection.html#deep-equal">this</a> for details.
+The function call <code>reflect.DeepEqual(x, y)</code> will always return
+<code>false</code> if the types of its two arguments are different,
+whereas <code>x == y</code> may return <code>true</code> even if
+the types of the two operands are different.
 </p>
+
+<p>
+The second difference is a <code>DeepEqual</code> call with
+two pointer argument values of the same type returns whether or not
+the two respective values referenced by the two pointers are deep equal.
+So the call might return <code>true</code> even if the two pointers are not equal.
+</p>
+
+<p>
+The third difference is the result of a <code>DeepEqual</code> call may be not
+correct if the compared two arguments are in the same cyclic reference chain.
+</p>
+
+<p>
+The fourth difference is, the function call
+<code>reflect.DeepEqual(x, y)</code> is not expected to panic generally,
+whereas <code>x == y</code> will panic if the two operands are both
+interface values and their dynamic types are identical and uncomparable.
+</p>
+
+An example showing these differences:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "reflect"
+
+func main() {
+	type Book struct {page int}
+	x := struct {page int}{123}
+	y := Book{123}
+	fmt.Println(reflect.DeepEqual(x, y)) // false
+	fmt.Println(x == y)                  // true
+
+	z := Book{123}
+	fmt.Println(reflect.DeepEqual(&z, &y)) // true
+	fmt.Println(&z == &y)                  // false
+
+	type T struct{p *T}
+	t := &T{&T{nil}}
+	t.p.p = t // form a cyclic reference chain.
+	fmt.Println(reflect.DeepEqual(t, t.p)) // true
+	fmt.Println(t == t.p)                  // false
+
+	var f1, f2 func() = nil, func(){}
+	fmt.Println(reflect.DeepEqual(f1, f1)) // true
+	fmt.Println(reflect.DeepEqual(f2, f2)) // false
+
+	var a, b interface{} = []int{1, 2}, []int{1, 2}
+	fmt.Println(reflect.DeepEqual(a, b)) // true
+	fmt.Println(a == b)                  // panic
+}
+</code></pre>
+
+<p>
+Note, if the two arguments of a <code>DeepEqual</code> call are both function values,
+then the call returns <code>true</code> only if the two function arguments are both nil and their types are identical.
+</p>
+
+<p>
+So, to compare values of a type by using <code>reflect.DeepEqual</code>,
+a programmer needs to understand the structure definition of the type well.
+</p>
+</div>
+
+<p class="anchor" id="reflect-value-bytes"></p>
+<h3>The <code>reflect.Value.Bytes()</code> method returns a <code>[]byte</code> value, which element type, <code>byte</code>, might be not the same as the Go slice value represented by the receiver parameter.</h3>
+
+<div>
+<p>
+Assume the underlying type of a defined type <code>MyByte</code> is the
+predeclared type <code>byte</code>, we know that Go type system forbids
+the conversions between <code>[]MyByte</code> and <code>[]byte</code> values.
+However, it looks the implementation of the method <code>Bytes</code> of the
+<code>reflect.Value</code> type partially violates this restriction unintentionally,
+by allowing converting a <code>[]MyByte</code> value to <code>[]byte</code>.
+</p>
+
+Example:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "bytes"
+import "fmt"
+import "reflect"
+
+type MyByte byte
+
+func main() {
+	var mybs = []MyByte{'a', 'b', 'c'}
+	var bs []byte
+
+	// bs = []byte(mybs) // this line fails to compile
+
+	v := reflect.ValueOf(mybs)
+	bs = v.Bytes() // okay. Violating Go type system.
+	fmt.Println(bytes.HasPrefix(bs, []byte{'a', 'b'})) // true
+
+	bs[1], bs[2] = 'r', 't'
+	fmt.Printf("%s \n", mybs) // art
+}
+</code></pre>
+
+<p>
+But it looks the violation is not harmful.
+On the contrary, it makes some benefits.
+For example, with this violation, we can use the functions in the
+<code>bytes</code> standard package for the <code>[]MyByte</code> values.
+</p>
+
+<p>
+Note, the <code>reflect.Value.Bytes()</code> method <a href="https://github.com/golang/go/issues/27727">might be removed later</a>. 
+</p>
+
+</div>
 
 <p class="anchor" id="check-file-existent"></p>
 <h3>We should use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists.</h3>
@@ -1977,6 +2099,8 @@ go101 tools
 
 since Go 1.12, map entry print orders are specified,
 though iteration order is sitll unspecified.
+If there are a large quantity of entires in a map,
+then printing might consume much time.
 
 
 -->
