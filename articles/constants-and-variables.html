@@ -1,4 +1,4 @@
-﻿<h1>Constants And Variables</h1>
+﻿<h1>Constants and Variables</h1>
 
 <p>
 This article will introduce constant and variable declarations in Go.
@@ -14,7 +14,7 @@ Custom named constant declarations will be introduced below in this article.
 </p>
 
 <p class="anchor" id="untyped-value"></p>
-<h3>Untyped Values And Typed Values</h3>
+<h3>Untyped Values and Typed Values</h3>
 
 <p>
 In Go, some values are untyped.
@@ -69,7 +69,7 @@ The default type of a literal constant is determined by its literal form.
 
 
 <p class="anchor" id="explicit-conversion"></p>
-<h3>Explicit Conversions Of Untyped Constants</h3>
+<h3>Explicit Conversions of Untyped Constants</h3>
 
 <p>
 Like many other languages, Go also supports value conversions.
@@ -107,7 +107,8 @@ there are two scenarios where <code>T(v)</code> is legal.
 	result a string represented by <code>"\uFFFD"</code>
 	(a.k.a., <code>"\xef\xbf\xbd"</code>).
 	<code>0xFFFD</code> is the code point for the Unicode replacement character.
-	The resultant string of a conversion from an integer always contains one and only one rune.
+	The result string of a conversion from an integer always contains one and only one rune.
+	(Note, such conversions may be disallowed <a href="https://github.com/golang/go/issues/3939">since a future Go version</a>.)
 </li>
 </ol>
 
@@ -120,7 +121,7 @@ otherwise, the result is not a constant.
 </div>
 
 For example, the following conversions are all legal.
-<pre class="no-line-numbers"><code class="language-go">complex128(1 + -1e-1000i)  // 1.0+0.0i of type complex128. Rounding happens here.
+<pre class="disable-line-numbers111"><code class="language-go">complex128(1 + -1e-1000i)  // 1.0+0.0i of type complex128. Rounding happens here.
 float32(0.49999999)        // 0.5 of type float32. Rounding happens here.
 float32(17000000000000000) // rounding happens here.
 float32(123)
@@ -141,7 +142,7 @@ string(0x2FFFFFFFF) // "\uFFFD"
 </p>
 
 And the following conversions are all illegal.
-<pre class="no-line-numbers"><code class="language-go">int(1.23)     // 1.23 is not representable as a value of int.
+<pre class="disable-line-numbers111"><code class="language-go">int(1.23)     // 1.23 is not representable as a value of int.
 uint8(-1)     // -1 is not representable as a value of uint8.
 float64(1+2i) // 1+2i is not representable as a value of float64.
 
@@ -176,7 +177,7 @@ We will learn more explicit conversion rules later in other Go 101 articles.
 </div>
 
 <p class="anchor" id="type-deduce"></p>
-<h3>Introduction Of Type Deductions In Go</h3>
+<h3>Introduction of Type Deductions in Go</h3>
 
 <p>
 Go supports type deduction. In other words, in many circumstances, programmers
@@ -220,13 +221,11 @@ More type deduction rules and cases will be introduced in other articles.
 
 <div>
 
-<p>
 Unnamed constants are all boolean, numeric and string values.
 Like unnamed constants, named constants can also be only
 boolean, numeric and string values.
 The keyword <code>const</code> is used to declare named constants.
 The following program contains some constant declarations.
-</p>
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -248,6 +247,8 @@ func main() {
 	const DoublePi, HalfPi, Unit2 = π * 2, π * 0.5, "degree"
 }
 </code></pre>
+
+<p></p>
 
 <p>
 Go specification calls each of the lines containing a <code>=</code> symbol in
@@ -312,16 +313,14 @@ the same as the literal it denotes.
 
 </div>
 
-<h4>Typed Named Constants</h4>
+<h4>Typed named constants</h4>
 
 <div>
 
-<p>
 We can declare typed constants, typed constants are all named.
 In the following example, all the four declared constants are typed values.
 The types of <code>X</code> and <code>Y</code> are both <code>float32</code>
 and the types of <code>A</code> and <code>B</code> are both <code>int64</code>.
-</p>
 
 <pre class="line-numbers"><code class="language-go">const X float32 = 3.14
 
@@ -331,19 +330,19 @@ const (
 )
 </code></pre>
 
+<p></p>
+
 <p>
 If multiple typed constants are declared in the same constant specification,
 then their types must be the same, just as the constants
 <code>A</code> and <code>B</code> in the above example.
 </p>
 
-<p>
 We can also use explicit conversions to provide enough information
 for Go compilers to deduce the types of typed named constants.
 The above code snippet is equivalent to the following one,
 in which <code>X</code>, <code>Y</code>, <code>A</code> and <code>B</code>
 are all typed constants.
-</p>
 
 <pre class="line-numbers"><code class="language-go">const X = float32(3.14)
 
@@ -366,16 +365,20 @@ const MaxUint_a = uint(^0)      // error: -1 overflows uint
 const MaxUint_b uint = ^0       // error: -1 overflows uint
 </code></pre>
 
-<p>In the above and following examples <code>^</code> is bitwise not operator.</p>
+<p>
+In the above and following examples <code>^</code> is bitwise not operator.
+</p>
 
-<p></p>
 The following typed constant declaration is valid on 64-bit OSes,
 but invalid on 32-bit OSes.
 For each <code>uint</code> value has only 32 bits on 32-bit OSes.
 <code>(1 << 64) - 1</code> is not representable as 32-bit values.
+(Here, <code>&lt;&lt;</code> is bitwise left shift operator.)
 
 <pre class="line-numbers"><code class="language-go">const MaxUint uint = (1 << 64) - 1
 </code></pre>
+
+<p></p>
 
 Then how to declare a typed <code>uint</code> constant and bind
 the largest <code>uint</code> value to it? Use the following way instead.
@@ -383,11 +386,16 @@ the largest <code>uint</code> value to it? Use the following way instead.
 <pre class="line-numbers"><code class="language-go">const MaxUint = ^uint(0)
 </code></pre>
 
+<p></p>
+
 Similarly, we can declare a typed <code>int</code> constant
 and bind the largest <code>int</code> value to it.
+(Here, <code>&gt;&gt;</code> is bitwise right shift operator.)
 
 <pre class="line-numbers"><code class="language-go">const MaxInt = int(^uint(0) >> 1)
 </code></pre>
+
+<p></p>
 
 A similar method can be used to get the number of bits of a native word,
 and check the current OS is 32-bit or 64-bit.
@@ -398,14 +406,14 @@ const Is32bitOS = ^uint(0) >> 32 == 0
 </code></pre>
 
 <p>
+Here, <code>!=</code> and <code>==</code> are not-equal-to and equal-to operators.
 </p>
 </div>
 
-<h4>Autocomplete In Constant Declarations</h4>
+<h4>Autocomplete in constant declarations</h4>
 
 <div>
 
-<p>
 In a group-style constant declaration, except the first constant specification,
 other constant specifications can be incomplete.
 An incomplete constant specification doesn't contain the <code>=</code> symbol.
@@ -413,7 +421,6 @@ Compilers will autocomplete the incomplete lines for us by
 copying the missing part from the first preceding complete constant specification.
 For example, at compile time, compilers will automatically
 complete the following code
-</p>
 
 <pre class="line-numbers"><code class="language-go">const (
 	X float32 = 3.14
@@ -443,21 +450,20 @@ as
 
 </div>
 
-<h4><code>iota</code> In Constant Declarations</h4>
+<h4><code>iota</code> in constant declarations</h4>
 
 <div>
 
-<p>
 The autocomplete feature plus the <code>iota</code> constant generator
 feature brings much convenience to Go programming.
 <code>iota</code> is a predeclared constant
 which can only be used in other constant declarations.
 It is declared as
-</p>
 
 <pre class="line-numbers"><code class="language-go">const iota = 0
 </code></pre>
 
+<p></p>
 
 <p>
 But the value of an <code>iota</code> in code may be not always <code>0</code>.
@@ -471,12 +477,10 @@ of a constant declaration, the value of <code>iota</code> is <b><i>n</i></b> (st
 So <code>iota</code> is only useful in group-style constant declarations.
 </p>
 
-<p>
 Here is an example using both the autocomplete
 and the <code>iota</code> constant generator features.
 Please read the comments to get what will happen at compile time.
 The <code>+</code> symbol in this example is the addition operator.
-</p>
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -509,6 +513,8 @@ func main() {
 }
 </code></pre>
 
+<p></p>
+
 <p>
 The above example is just to demo the rules of
 the <code>iota</code> constant generator feature.
@@ -538,7 +544,7 @@ Both of these operators will be introduced in the next article.
 </div>
 
 <p class="anchor" id="variable"></p>
-<h3>Variables, Variable Declarations And Value Assignments</h3>
+<h3>Variables, Variable Declarations and Value Assignments</h3>
 
 <div>
 <p>
@@ -566,7 +572,7 @@ the standard one and the short one.
 The short form can only be used to declare local variables.
 </p>
 
-<h4>Standard Variable Declaration Forms</h4>
+<h4>Standard variable declaration forms</h4>
 
 <p>
 Each standard declaration starts with the <code>var</code> keyword,
@@ -598,23 +604,23 @@ In the two variants, either the types or the initial values of
 the declared variables are absent.
 </p>
 
-<p>
 The following are some standard variable declarations without specifying variable types.
 Compilers will deduce the types of the declared variables as the types
 (or default types) of their respective initial values.
 The following declarations are equivalent to the above ones in fact.
 Please note, in the following declarations, the types of the multiple variables
-declared in the same declaration line can be different.</p>
-<pre class="line-numbers"><code class="language-go">// The types of the lang and dynamic variables will be
-// deduced as "string" and "bool" by compilers, respectively.
+declared in the same declaration line can be different.
+
+<pre class="line-numbers"><code class="language-go">// The types of the lang and dynamic variables will be deduced as
+// built-in types "string" and "bool" by compilers, respectively.
 var lang, dynamic = "Go", false
 
-// The types of the compiled and announceYear variables will
-// be deduced as "bool" and "int" by compilers, respectively.
+// The types of the compiled and announceYear variables will be
+// deduced as built-in types "bool" and "int", respectively.
 var compiled, announceYear = true, 2009
 
 // The types of the website variable will be deduced
-// as "string" by compilers.
+// as the built-in type "string" by compilers.
 var website = "https://golang.org"
 </code></pre>
 
@@ -622,18 +628,20 @@ var website = "https://golang.org"
 The type deductions in the above example can be viewed as implicit conversions.
 </p>
 
-<p>
 The following are some standard declarations without specifying variable initial values.
 In these declarations, all declared variables are initialized
-as the zero values of their respective types.</p>
+as the zero values of their respective types.
+
 <pre class="line-numbers"><code class="language-go">var lang, website string      // both are initialized as blank strings.
 var interpreted, dynamic bool // both are initialized as false.
 var n int                     // is initialized as 0.
 </code></pre>
 
-<p>
+<p></p>
+
 Multiple variables can be grouped into one standard form declaration
-by using <code>()</code>. For example:</p>
+by using <code>()</code>. For example:
+
 <pre class="line-numbers"><code class="language-go">var (
 	lang, bornYear, compiled     = "Go", 2007, true
 	announceAt, releaseAt    int = 2009, 2012
@@ -656,7 +664,7 @@ make code more readable.
 </div>
 
 <p class="anchor" id="assignment"></p>
-<h4>Pure Value Assignments</h4>
+<h4>Pure value assignments</h4>
 
 <div>
 <p>
@@ -691,20 +699,20 @@ var x int
 var y, z float32
 
 N = 789 // error: constant N is not modifiable
-y = N   // okay: N is implicitly converted to (deduced as a) float32
+y = N   // ok: N is implicitly converted to (deduced as a) float32
 x = y   // error: type mismatch
-x = N   // okay: N is implicitly converted to (deduced as an) int
+x = N   // ok: N is implicitly converted to (deduced as an) int
 y = x   // error: type mismatch
-z = y   // okay
-_ = y   // okay
+z = y   // ok
+_ = y   // ok
 
-z, y = y, z               // okay
-_, y = y, z               // okay
-z, _ = y, z               // okay
-_, _ = y, z               // okay
-x, y = 69, 1.23           // okay
+z, y = y, z               // ok
+_, y = y, z               // ok
+z, _ = y, z               // ok
+_, _ = y, z               // ok
+x, y = 69, 1.23           // ok
 x, y = y, x               // error: type mismatch
-x, y = int(y), float32(x) // okay
+x, y = int(y), float32(x) // ok
 </code></pre>
 
 <p>
@@ -723,12 +731,12 @@ a = b = 123 // syntax error
 </p>
 </div>
 
-<h4>Short Variable Declaration Forms</h4>
+<h4>Short variable declaration forms</h4>
 
 <div>
-<p>We can also use short variable declaration forms to declare variables.
+We can also use short variable declaration forms to declare variables.
 Short variable declarations can only be used to declare local variables.
-Let's view an example which uses some short variable declarations.</p>
+Let's view an example which uses some short variable declarations.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -749,9 +757,9 @@ func main() {
 }
 </code></pre>
 
-<p>
+<p>Each short variable declaration must delcare at least one new variable.</p>
+
 There are several differences between short and standard variable declarations.
-</p>
 <ol>
 <li>
 	In the short declaration form, the <code>var</code> keyword and
@@ -783,7 +791,7 @@ Pure assignments have no such limit.
 
 </div>
 
-<h4>About The Terminology "Assignment"</h4>
+<h4>About the terminology "assignment"</h4>
 
 <p>
 Later, when the word "assignment" is mentioned,
@@ -808,7 +816,7 @@ the type of <code>y</code>.
 Surely, <code>y</code> can also be the blank identifier <code>_</code>.
 </p>
 
-<h4>Each Local Declared Variable Must Be Used At Least Once Effectively</h4>
+<h4>Each local declared variable must be used at least once effectively</h4>
 
 <div>
 <p>
@@ -870,7 +878,7 @@ for unused local variables have negative effects on both code readability and pr
 
 </div>
 
-<h4>Dependency Relations Of Package-Level Variables Affect Their Initialization Order</h4>
+<h4>Dependency relations of package-Level variables affect their initialization order</h4>
 
 <div>
 
@@ -911,7 +919,7 @@ We can learn more about addresses and pointers from the article
 and learn other addressable and unaddressable values from other articles later.
 </p>
 
-<h3>Explicit Conversions On Non-Constant Numeric Values</h3>
+<h3>Explicit Conversions on Non-Constant Numeric Values</h3>
 
 <div>
 
@@ -950,8 +958,9 @@ the fraction part of the floating-point value will be discarded
 (towards zero) when it is converted to the integer type.
 </p>
 
-<p>In the following example, the intended implicit conversions
-at line <i>4</i> and line <i>11</i> both don't work.</p>
+In the following example, the intended implicit conversions
+at line <i>4</i> and line <i>11</i> both don't work.
+The explicit conversions at line <i>3</i> and line <i>10</i> are also not allowed.
 
 <pre class="line-numbers"><code class="language-go">const a = -1.23
 var b = a        // the type of b is deduced as float64.
@@ -978,7 +987,7 @@ More implicit conversion rules will be introduced in other articles later.
 
 </div>
 
-<h3>Scopes Of Variables And Named Constants</h3>
+<h3>Scopes of Variables and Named Constants</h3>
 
 <div>
 
@@ -1035,20 +1044,20 @@ Code blocks and identifier scopes will be explained in detail in
 
 </div>
 
-<h3>More About Constant Declarations</h3>
+<h3>More about Constant Declarations</h3>
 
-<h4>The Value Denoted By An Untyped Constant Can Overflow Its Default Type</h4>
+<h4>The value denoted by an untyped constant can overflow its default type</h4>
 
 <div>
 
-For example, the following code compile okay.
+For example, the following code compiles okay.
 
 <pre class="line-numbers"><code class="language-go">package main
 
-// 3 untyped named constants
-const n = 1 << 64
-const r = 'a' + 0x7FFFFFFF
-const x = 2e+308
+// 3 untyped named constants.
+const n = 1 << 64          // overflows int but okay
+const r = 'a' + 0x7FFFFFFF // overflows rune but okay
+const x = 2e+308           // overflows float64 but okay
 
 func main() {
 	_ = n >> 2
@@ -1077,7 +1086,7 @@ func main() {}
 
 </div>
 
-<h4>Each Named Constant Identifier Will Be Replaced With Its Bound Literal Value At Compile Time</h4>
+<h4>Each named constant identifier will be replaced with its bound literal value at compile time</h4>
 
 <p>
 Constant declarations can be viewed as enhanced <code>#define</code> macros in C.
