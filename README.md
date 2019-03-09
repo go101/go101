@@ -1,4 +1,4 @@
-<b>Go 101</b> is a book focusing on Go syntax/semantics and all kinds of details.
+<b>[Go 101](https://go101.org)</b> is a book focusing on Go syntax/semantics and all kinds of details.
 The book also tries to help gophers gain a deep and thorough understanding of Go.
 The book is expected to be helpful for both beginner and experienced Go programmers.
 
@@ -38,9 +38,15 @@ Server started:
 The start page should be opened in a browser automatically.
 If it is not opened, please visit http://localhost:55555.
 
-### Some Notes
+### Contributing
+Welcome to improve Go 101 by:
+* Submitting corrections for all kinds of mistakes, such as typos, grammar errors, wording inaccuracies, description flaws, code bugs and broken links. 
+* Suggesting interesting Go related contents.
 
-* The book is in beta phase now. Many articles still need correcting.
-* Translations are welcome. Please read [LICENSE](LICENSE) and note that the
-  [Chinese translation version](https://github.com/Golang101/golang101) is almost done.
-* Please read [UPDATES.md](UPDATES.md) for update history.
+Current contributors are listed on [this page](https://go101.org/article/acknowledgements.html).
+
+Translations are also welcome. Here is a list of the ongoing translation projects:
+*  [Chinese translation version](https://github.com/Golang101/golang101) (almost done).
+
+### License
+Copyright (c) Tapir Liu. All rights reserved. Please read the [LICENSE](LICENSE) for more details.
