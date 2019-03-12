@@ -37,7 +37,7 @@ The non-negative integer keys are often called indexes.
 </p>
 
 <p>
-Each container value has a length,
+Each container value has a length property,
 which indicates how many elements are stored in that container.
 The valid range of the integer keys of an array or slice value is
 from zero (inclusive) to the length (exclusive) of the array or slice.
@@ -250,8 +250,8 @@ The keys in a map literal can be absent, they can be non-constants.
 
 <pre class="line-numbers"><code class="language-go">var a uint = 1
 var _ = map[uint]int {a : 123} // okay
-var _ = []int{a: 100}  // error: index must be non-negative integer constant
-var _ = [5]int{a: 100} // error: index must be non-negative integer constant
+var _ = []int{a: 100}          // error: index must be a constant
+var _ = [5]int{a: 100}         // error: index must be a constant
 </code></pre>
 
 <p>
@@ -460,8 +460,7 @@ except the ones whose element types are uncomparable types.
 </p>
 
 <p>
-When comparing two values of the same (comparable) array type,
-each of their elements will be compared.
+When comparing two array values, each pair of the corresponding elements will be compared.
 The two array values are equal only if all of their corresponding elements are equal.
 </p>
 
@@ -578,7 +577,7 @@ For a use of <code>v[k]</code>, assume <code>v</code> is an array or slice,
 <li>
 	if <code>k</code> is a non-constant value, it must be a value of any basic integer type.
 	In addition, it must be larger than or equal to zero and smaller than <code>len(v)</code>,
-	otherwise, a <a href="control-flows-more.html#panic-recover">run-time panic</a> will occur.
+	otherwise, a run-time panic will occur.
 </li>
 <li>
 	if <code>v</code> is a nil slice,
@@ -682,9 +681,10 @@ The <code>len</code> field of the direct part of a slice indicates
 the length of the slice, and the <code>cap</code> field indicates
 the capacity of the slice.
 The following picture depicts one possible memory layout of a slice value.
-<br/>
+
+<div class="text-center">
 <img src="res/slice-internal.png">
-<br/>
+</div>
 </p>
 
 <p>
@@ -728,7 +728,7 @@ When the slice is used as the base slice in an <code>append</code> function call
 </ul>
 
 <p>
-The next section will show a picture which describes both of
+The section after next will show a picture which describes both of
 the two possible cases in appending slice elements.
 </p>
 
@@ -892,15 +892,16 @@ import "fmt"
 
 func main() {
 	s0 := []int{2, 3, 5}
-	s1 := append(s0, 7)      // append one element
-	s2 := append(s1, 11, 13) // append two elements
 	fmt.Println(s0, cap(s0)) // [2 3 5] 3
+	s1 := append(s0, 7)      // append one element
 	fmt.Println(s1, cap(s1)) // [2 3 5 7] 6
+	s2 := append(s1, 11, 13) // append two elements
 	fmt.Println(s2, cap(s2)) // [2 3 5 7 11 13] 6
 	s3 := append(s0)         // <=> s3 := s0
-	s4 := append(s0, s0...)  // base s0 and append all elements of s0
 	fmt.Println(s3, cap(s3)) // [2 3 5] 3
+	s4 := append(s0, s0...)  // append all elements of s0
 	fmt.Println(s4, cap(s4)) // [2 3 5 2 3 5] 6
+
 	s0[0], s1[0] = 99, 789
 	fmt.Println(s2[0], s3[0], s4[0]) // 789 99 2
 }
@@ -919,23 +920,31 @@ It has two parameters, the second one is a
 <p>
 Variadic functions will be explained in the article after next.
 Currently, we only need to know that there are two manners to pass variadic arguments.
-In the above example, line <i>7</i>, line <i>8</i> and line <i>12</i> use
-one manner and line <i>13</i> uses the other manner.
+In the above example, line <i>8</i>, line <i>10</i> and line <i>12</i> use
+one manner and line <i>14</i> uses the other manner.
 For the former manner, we can pass zero or more element values as the variadic arguments.
 For the latter manner, we must pass a slice as the only variadic argument and
 which must be followed by three dots <code>...</code>.
 (We can learn how to call variadic functions from the <a href="function.html#variadic-call">the article after next</a>.)
 </p>
 
-In the above example, line <i>13</i> is equivalent to
+In the above example, line <i>14</i> is equivalent to
 
-<pre class="line-numbers"><code class="language-go">	s4 := append(s0, s0[0], s0[1], s0[2])
+<pre class="disable-line-numbers111"><code class="language-go">	s4 := append(s0, s0[0], s0[1], s0[2])
 </code></pre>
+<p>
+</p>
 
-and line <i>7</i> and line <i>8</i> are equivalent to
+line <i>8</i> is equivalent to
 
-<pre class="line-numbers"><code class="language-go">	s1 := append(s0, []int{7}...)
-	s2 := append(s1, []int{11, 13}...)
+<pre class="disable-line-numbers111"><code class="language-go">	s1 := append(s0, []int{7}...)
+</code></pre>
+<p>
+</p>
+
+and line <i>10</i> is equivalent to
+
+<pre class="disable-line-numbers111"><code class="language-go">	s2 := append(s1, []int{11, 13}...)
 </code></pre>
 
 <p>
@@ -952,14 +961,14 @@ In other words, the two argument slices must share the same
 In the above program,
 <ul>
 <li>
-	the <code>append</code> call at line <i>7</i> will allocate a new
+	the <code>append</code> call at line <i>8</i> will allocate a new
 	underlying memory segment for slice <code>s1</code>,
 	for slice <code>s0</code> doesn't have enough redundant element slots
 	to store the new appended element. The same situation is for the
-	<code>append</code> call at line <i>13</i>.
+	<code>append</code> call at line <i>14</i>.
 </li>
 <li>
-	the <code>append</code> call at line <i>8</i> will not allocate a new
+	the <code>append</code> call at line <i>10</i> will not allocate a new
 	underlying memory segment for slice <code>s2</code>,
 	for slice <code>s1</code> has enough redundant element slots
 	to store the new appended elements.
@@ -970,11 +979,12 @@ In the above program,
 So, <code>s1</code> and <code>s2</code> share some elements,
 <code>s0</code> and <code>s3</code> share all elements,
 and <code>s4</code> doesn't share elements with others.
-The following picture depicted the memory layouts of these slices
+The following picture depicted the statuses of these slices
 at the end of the above program.
-<br/>
+
+<div class="text-center">
 <img src="res/slice-append.png">
-<br/>
+</div>
 </p>
 
 <p>
@@ -996,7 +1006,7 @@ import "fmt"
 
 func main() {
 	var s = append([]string(nil), "array", "slice")
-	fmt.Println(s)      // [array, slice]
+	fmt.Println(s)      // [array]
 	fmt.Println(cap(s)) // 2
 	s = append(s, "map")
 	fmt.Println(s)      // [array slice map]
@@ -1086,8 +1096,6 @@ func main() {
 	// Make new slices.
 	s := make([]int, 3, 5)
 	fmt.Println(s, len(s), cap(s)) // [0 0 0] 3 5
-	s = append(s, 7, 11)
-	fmt.Println(s, len(s), cap(s)) // [0 0 0 7 11] 5 5
 	s = make([]int, 2)
 	fmt.Println(s, len(s), cap(s)) // [0 0] 2 2
 }
@@ -1230,8 +1238,8 @@ func main() {
 	// for map elements can be modified partially.
 	/*
 	ma[1][1] = 123      // error: cannot assign to a[1][1]
-	mt["John"].age = 30 // cannot assign to struct field
-	                    // mt["John"].age in map.
+	mt["John"].age = 30 // error: cannot assign to struct
+	                    // field mt["John"].age in map.
 	*/
 
 	// Accesses are okay.
@@ -1373,12 +1381,12 @@ import "fmt"
 
 func main() {
 	a := [...]int{0, 1, 2, 3, 4, 5, 6}
-	s0 := a[:]
-	s1 := s0[:]   // <=> s1 := s0[0:7] <=> s1 := s0
-	s2 := s1[1:3] // <=> s2 := s1[1:3] <=> s2 := a[1:3]
-	s3 := s2[2:6] // <=> s3 := s2[2:6] <=> s3 := s1[3:7]
-	s4 := s0[3:5] // <=> s4 := s0[3:5:7]
-	s5 := s0[3:5:5]
+	s0 := a[:]     // <=> s0 := a[0:7:7]
+	s1 := s0[:]    // <=> s1 := s0
+	s2 := s1[1:3]  // <=> s2 := a[1:3]
+	s3 := s1[3:]   // <=> s3 := s1[3:7]
+	s4 := s0[3:5]  // <=> s4 := s0[3:5:7]
+	s5 := s4[:2:2] // <=> s5 := s0[3:5:5]
 	s6 := append(s4, 77)
 	s7 := append(s5, 88)
 	s8 := append(s7, 66)
@@ -1396,9 +1404,10 @@ func main() {
 <p>
 The following picture depicts the final memory layouts of the array
 and slice values used in the above example.
-<br/>
+
+<div class="text-center">
 <img src="res/slice-subslice-2.png">
-<br/>
+</div>
 </p>
 
 <p>
@@ -1527,7 +1536,8 @@ the following syntax:
 </code></pre>
 
 <p>
-where <code>key</code> and <code>element</code> are called iteration variables.
+where <code>for</code> and <code>range</code> are two keywords,
+<code>key</code> and <code>element</code> are called iteration variables.
 If <code>aContainer</code> is a slice or an array (or an array pointer, see below),
 then the type of <code>key</code> must be built-in type <code>int</code>.
 </p>
@@ -1664,7 +1674,7 @@ there are three important facts.
 	The ranged container is <b>a copy</b> of <code>aContainer</code>.
 	Please note, <a href="value-part.html#about-value-copy">only
 	the direct part of <code>aContainer</code> is copied</a>.
-	The copied container direct part is anonymous, so there are no ways to modify it.
+	The container copy is anonymous, so there are no ways to modify it.
 	<ul>
 	<li>
 		If the <code>aContainer</code> is an array, then the
@@ -1735,16 +1745,10 @@ If we change the array in the above to a slice, then the modification on the
 slice during the iteration has effects on the iteration, but
 the modification on the iteration variable still has no effects on the slice.
 
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers"><code class="language-go">...
 
-import "fmt"
-
-func main() {
-	type Person struct {
-		name string
-		age  int
-	}
-	persons := []Person {{"Alice", 28}, {"Bob", 25}} // a slice
+	// A slice.
+	persons := []Person {{"Alice", 28}, {"Bob", 25}}
 	for i, p := range persons {
 		fmt.Println(i, p)
 		// Now this modification has effects on the iteration.
@@ -1960,7 +1964,7 @@ We can also pass array pointers as the arguments of the built-in
 <code>len</code> and <code>cap</code> functions.
 Nil array pointer arguments for the two functions will not produce panics.
 
-<pre class="line-numbers"><code class="language-go">var pa *[5]int // nil
+<pre class="line-numbers"><code class="language-go">var pa *[5]int // == nil
 fmt.Println(len(pa), cap(pa)) // 5 5
 </code></pre>
 
@@ -2123,8 +2127,8 @@ copy(sClone, s)
 </code></pre>
 
 <p>
-The second way is not perfect as the first one.
-If <code>s</code> is a nil slice, the second way results a non-nil clone.
+The second way has a drawback that
+if <code>s</code> is a nil slice, the second way results a non-nil clone.
 </p>
 
 </div>
@@ -2212,7 +2216,9 @@ s = s[:len(s)-1]
 If the slice elements contain pointers, then after the deletion action,
 we should reset the last element of the old slice value
 to avoid memory leaking:
-<pre class="line-numbers"><code class="language-go">s[len(s):][0] = t0
+<pre class="line-numbers"><code class="language-go">s[len(s):len(s)+1][0] = t0
+// or
+s[:len(s)+1][len(s)] = t0
 </code></pre>
 
 <p>
