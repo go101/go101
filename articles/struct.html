@@ -11,7 +11,7 @@ This article will introduce the basic knowledge of struct types and values in Go
 <p>
 Each unnamed struct type literal starts with a <code>struct</code> keyword
 which is following by a sequence of field definitions enclosed in a <code>{}</code>.
-Each field definition is composed of a name and a type.
+Generally, each field definition is composed of a name and a type.
 The number of fields of a struct type can be zero.
 <p>
 
@@ -124,9 +124,9 @@ including struct types and the container types introduced later.
 </p>
 
 <div>
-Given a struct type <code>S</code> and assume it has two fields,
-<code>x int</code> and <code>y bool</code> in order,
-then the zero value of <code>S</code> can be represented by the following
+Given a struct type <code>S</code> whose underlying type
+is <code>struct{ x int; y bool}</code>,
+the zero value of <code>S</code> can be represented by the following
 two variants of struct composite literal forms:
 <ol>
 <li>
@@ -180,9 +180,11 @@ func main() {
 	fmt.Println(book) // {Go 101 Tapir 256}
 
 	// Create a book value with another form.
-	book = Book{} // title and author are both "", pages is 0
-	book = Book{author: "Tapir"} // title is "" and pages is 0
 	book = Book{author: "Tapir", pages: 256, title: "Go 101"}
+	// title and author fields are both "", pages field is 0.
+	book = Book{}
+	// The title filed is "" and the pages field is 0.
+	book = Book{author: "Tapir"}
 
 	// Initialize a struct value by using selectors.
 	var book2 Book // <=> book2 := Book{}
@@ -226,7 +228,7 @@ the effect is the same as assigning each field one by one.
 	book2 := Book{"Go 101", "Tapir", 256}
 
 	book2 = book1
-	// The above line is equivalent to the following three lines.
+	// The above line is equivalent to the following lines.
 	book2.title = book1.title
 	book2.author = book1.author
 	book2.pages = book1.pages
@@ -326,7 +328,8 @@ func main() {
 	}
 	book1 := &Book{100} // book1 is a struct pointer
 	book2 := new(Book)  // book2 is another struct pointer
-	book2.pages = book1.pages // use struct pointers as structs
+	// Use struct pointers as structs.
+	book2.pages = book1.pages
 }
 </code></pre>
 
@@ -465,20 +468,21 @@ in composite literals.
 
 An example:
 <pre class="line-numbers"><code class="language-go">var aBook = struct {
-	author struct { // the type of this field is an anonymous struct type
+	// The type of the author field is an anonymous struct type.
+	author struct {
 		firstName, lastName string
 		gender              bool
 	}
 	title string
 	pages int
 }{
-	author: struct {
+	author: struct { // an anonymous struct type
 		firstName, lastName string
 		gender              bool
 	}{
 		firstName: "Mark",
 		lastName: "Twain",
-	}, // the type in the composite literal is an anonymous struct type
+	},
 	title: "The Million Pound Note",
 	pages: 96,
 }

@@ -85,7 +85,7 @@ A type can be embedded if it satisfies any of the following three conditions.
 	A <a href="type-system-overview.html#named-type">named type</a> which is not a pointer type.
 </li>
 <li>
-	An unnamed pointer type which based type is a named type but neither a pointer nor interface type.
+	An unnamed pointer type which based type presents as a named type but neither a pointer nor interface type.
 </li>
 <li>
 	An alias type of a type of the second case.
@@ -109,6 +109,9 @@ the following types can't be embedded.
 </li>
 <li>
 	Pointer types whose base types are either interface or pointer types.
+</li>
+<li>
+	Pointer types whose base types represent as unnamed types.
 </li>
 </ol>
 </div>
@@ -146,6 +149,7 @@ int
 *AliasPtr        // base type is a pointer type
 IntPtr           // defined pointer type
 *IntPtr          // base type is a pointer type
+*chan int        // base type is an unnamed type
 struct {age int} // unnamed non-pointer type
 map[string]int   // unnamed non-pointer type
 []int64          // unnamed non-pointer type
@@ -277,30 +281,30 @@ func main() {
 	t := reflect.TypeOf(Singer{}) // the Singer type
 	fmt.Println(t, "has", t.NumField(), "fields:")
 	for i := 0; i < t.NumField(); i++ {
-		fmt.Print("   field#", i, ": ", t.Field(i).Name, "\n")
+		fmt.Print(" field#", i, ": ", t.Field(i).Name, "\n")
 	}
 	fmt.Println(t, "has", t.NumMethod(), "methods:")
 	for i := 0; i < t.NumMethod(); i++ {
-		fmt.Print("   method#", i, ": ", t.Method(i).Name, "\n")
+		fmt.Print(" method#", i, ": ", t.Method(i).Name, "\n")
 	}
 
 	pt := reflect.TypeOf(&Singer{}) // the *Singer type
 	fmt.Println(pt, "has", pt.NumMethod(), "methods:")
 	for i := 0; i < pt.NumMethod(); i++ {
-		fmt.Print("   method#", i, ": ", pt.Method(i).Name, "\n")
+		fmt.Print(" method#", i, ": ", pt.Method(i).Name, "\n")
 	}
 }
 </code></pre>
 
 The result:
 <pre class="output"><code>main.Singer has 2 fields:
-   field#0: Person
-   field#1: works
+ field#0: Person
+ field#1: works
 main.Singer has 1 methods:
-   method#0: PrintName
+ method#0: PrintName
 *main.Singer has 2 methods:
-   method#0: PrintName
-   method#1: SetAge
+ method#0: PrintName
+ method#1: SetAge
 </code></pre>
 </div>
 
@@ -552,7 +556,7 @@ In fact,
 	whose base type is the embedding struct type.
 </li>
 <li>
-	assume a struct type <code>S</code> embeds a named type <code>T</code>,
+	assume a struct type <code>S</code> embeds a named non-pointer type <code>T</code>,
 	for each method of type <code>*T</code>,
 	if the selectors to that method neither collide with nor are shadowed
 	by other selectors, then compilers will implicitly declare
@@ -633,14 +637,14 @@ type I interface {
 	Save()
 }
 
-func main() {
-	PrintTypeMethods := func(t reflect.Type) {
-		fmt.Println(t, "has", t.NumMethod(), "methods:")
-		for i := 0; i < t.NumMethod(); i++ {
-			fmt.Print("   method#", i, ": ", t.Method(i).Name, "\n")
-		}
+func PrintTypeMethods(t reflect.Type) {
+	fmt.Println(t, "has", t.NumMethod(), "methods:")
+	for i := 0; i < t.NumMethod(); i++ {
+		fmt.Print(" method#", i, ": ", t.Method(i).Name, "\n")
 	}
+}
 
+func main() {
 	var s struct {
 		F
 		*B
@@ -655,19 +659,19 @@ func main() {
 
 The result:
 <pre class="output"><code>struct { main.F; *main.B; main.I } has 5 methods:
-   method#0: Invert
-   method#1: IsTrue
-   method#2: Load
-   method#3: Save
-   method#4: Validate
+ method#0: Invert
+ method#1: IsTrue
+ method#2: Load
+ method#3: Save
+ method#4: Validate
 
 *struct { main.F; *main.B; main.I } has 6 methods:
-   method#0: Invert
-   method#1: IsTrue
-   method#2: Load
-   method#3: Modify
-   method#4: Save
-   method#5: Validate
+ method#0: Invert
+ method#1: IsTrue
+ method#2: Load
+ method#3: Modify
+ method#4: Save
+ method#5: Validate
 </code></pre>
 
 <p>
@@ -761,7 +765,7 @@ For example,
 In the end, let's view an interesting example.
 The example program will dead loop and stack overflow.
 If you have understood the above content and
-<a href="interface.html#polymorphism">polymorphism</a>,
+<a href="interface.html#polymorphism">polymorphism</a> and type embedding,
 it is easy to understand why it will dead loop.
 
 <pre class="line-numbers"><code class="language-go">package main

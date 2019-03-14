@@ -37,9 +37,10 @@ In the picture, A and B represent two separate computations.
 The second case is also called parallel computing,
 which is special concurrent computing.
 In the first case, A and B are only in parallel during a small piece of time.
-<br/>
+
+<div class="text-center">
 <img src="res/concurrent-vs-parallel.png">
-<br/>
+</div>
 </p>
 
 <p>
@@ -135,8 +136,6 @@ When a goroutine sends a value to a channel,
 we can view the goroutine releases the ownership of some values.
 When a goroutine receives a value from a channel,
 we can view the goroutine acquires the ownerships of some values.
-The values (whose ownerships are transferred) are often referenced
-(but are not required to be referenced) by the transferred value.
 </p>
 
 <p>
@@ -145,11 +144,14 @@ along with channel communications.
 </p>
 
 <p>
+The values (whose ownerships are transferred) are often referenced
+(but are not required to be referenced) by the transferred value.
 Please note, here, when we talk about ownership,
 we mean the ownership from the logic view.
-Not like Rust language, Go doesn't ensure value ownership from the syntax level.
+Unlike Rust language, Go doesn't ensure value ownership from the syntax level.
 Go channels can help programmers write data races free code easily,
-but Go channels can't prevent programmers from writing bad concurrent code.
+but Go channels can't prevent programmers from
+writing bad concurrent code from the syntax level.
 </p>
 
 <p>
@@ -229,7 +231,7 @@ The second parameter is optional and its default value is zero.
 </div>
 
 <p class="anchor" id="assign-and-compare"></p>
-<h3>Channel Assignments and Comparisons</h3>
+<h3>Channel Value Comparisons</h3>
 
 <p>
 All channel types are comparable types.
@@ -698,6 +700,14 @@ func main() {
 <p>
 </p>
 
+The output:
+<pre class="output"><code>9
+bye
+</code></pre>
+
+<p>
+</p>
+
 A demo of using a buffered channel.
 This program is not a concurrent one, it just shows how to use buffered channels.
 
@@ -982,11 +992,13 @@ func main() {
 		default: return "-" // go here if c is empty.
 		}
 	}
-	trySend("Hello!")
-	trySend("Hi!")
-	trySend("Bye!") // fail to send, but will not blocked.
+	trySend("Hello!") // succeed to send
+	trySend("Hi!")    // succeed to send
+	trySend("Bye!")   // fail to send, but will not be blocked.
+	// The following two line both succeed to receive.
 	fmt.Println(tryReceive()) // Hello!
 	fmt.Println(tryReceive()) // Hi!
+	// The following line fails to receive.
 	fmt.Println(tryReceive()) // -
 }
 </code></pre>

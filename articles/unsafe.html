@@ -107,9 +107,9 @@ can be converted to unsafe pointers (and vice versa).
 <p>
 
 <p>
-Although the return results of the three functions
+Although the return results of calls of any of the three functions
 are consistent in the same program,
-they may be different crossing operation systems of different architectures,
+they might be different crossing operation systems of different architectures,
 crossing compilers, and crossing compiler versions.
 </p>
 
@@ -144,8 +144,8 @@ func main() {
 </code></pre>
 
 <p>
-Please note, the above print results are for the standard
-Go compiler 1.12 on Linux amd64 OSes.
+Please note, the print results shown in the comments are for the standard
+Go compiler 1.12 on Linux AMD64 architecture.
 </p>
 
 </div>
@@ -358,7 +358,7 @@ call to the example in the last subsection,
 <div>
 <p>
 In the following example, the fact value <code>t</code> is still in using
-can't guarantee that value <code>t.y</code> is still in using.
+can't guarantee that the values referenced by value <code>t.y</code> are still in using.
 
 <pre class="line-numbers"><code class="language-go">type T struct {
 	x int
@@ -404,9 +404,9 @@ For example:
 import "unsafe"
 
 func main() {
-	x := 123 // of type int
-	p := unsafe.Pointer(&x)
-	pp := &p // of type *unsafe.Pointer
+	x := 123                // of type int
+	p := unsafe.Pointer(&x) // of type unsafe.Pointer
+	pp := &p                // of type *unsafe.Pointer
 	p = unsafe.Pointer(pp)
 	pp = (*unsafe.Pointer)(p)
 }
@@ -640,13 +640,14 @@ It is the privilege of calls to <code>syscall.Syscall</code> alike functions.
 </p>
 
 We can think that, compilers will append a <code>runtime.KeepAlive</code> call
-for each of <code>uintptr</code> arguments, like the following code shows:
+for each of the unsafe pointer arguments who are converted to <code>uintptr</code>,
+like the third argument in the following <code>syscall.Syscall</code> call.
 
-<pre class="line-numbers"><code class="language-go">syscall.Syscall(SYS_READ, uintptr(fd), uintptr(unsafe.Pointer(p)), uintptr(n))
-// Compilers will automatically append the following lines for the above line.
-runtime.KeepAlive(unsafe.Pointer(uintptr(fd)))
-runtime.KeepAlive(unsafe.Pointer(uintptr(unsafe.Pointer(p))))
-runtime.KeepAlive(unsafe.Pointer(uintptr(n)))
+<pre class="line-numbers"><code class="language-go">syscall.Syscall(SYS_READ, uintptr(fd),
+				uintptr(unsafe.Pointer(p)), uintptr(n))
+// Compilers will automatically append the following lines
+// for the above line.
+runtime.KeepAlive(unsafe.Pointer(p))
 </code></pre>
 
 <p>
@@ -674,6 +675,19 @@ syscall.Syscall(SYS_READ, uintptr(fd), u, uintptr(n))
 Again, never use this pattern when calling other functions.
 We should append the <code>runtime.KeepAlive</code> calls manually
 when calling other functions with <code>uintptr</code> parameters.
+</p>
+
+If we modify the <code>syscall.Syscall</code> call in the above example
+as the following one, then it becomes invalid and dangerous.
+
+<pre class="line-numbers"><code class="language-go">u := uintptr(unsafe.Pointer(p))
+// At this time, the values referenced by p might
+// have become unused and been collected already.
+syscall.Syscall(SYS_READ, uintptr(fd), u, uintptr(n))
+// Compilers will not append a runtime.KeepAlive call here.
+</code></pre>
+
+<p>
 </p>
 
 </div>
