@@ -46,7 +46,8 @@ through the <a href="unsafe.html">unsafe pointer type</a> <code>unsafe.Pointer</
 <pre class="line-numbers"><code class="language-go">func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
 func StorePointer(addr *unsafe.Pointer, val unsafe.Pointer)
 func SwapPointer(addr *unsafe.Pointer, new T) (old unsafe.Pointer)
-func CompareAndSwapPointer(addr *unsafe.Pointer, old, new unsafe.Pointer) (swapped bool)
+func CompareAndSwapPointer(addr *unsafe.Pointer,
+				old, new unsafe.Pointer) (swapped bool)
 </code></pre>
 
 <p>
@@ -178,16 +179,17 @@ func main() {
 		c uint32 = 5
 		d int    = 6
 	)
-
-	atomic.AddUint64(&n, -m);             fmt.Println(n) // 96 (97 - 1)
-	atomic.AddUint64(&n, -uint64(k));     fmt.Println(n) // 94 (95 - 2)
-	atomic.AddUint64(&n, ^uint64(a - 1)); fmt.Println(n) // 91 (94 - 3)
-	atomic.AddUint64(&n, ^(b - 1));       fmt.Println(n) // 87 (91 - 4)
-	atomic.AddUint64(&n, ^uint64(c - 1)); fmt.Println(n) // 82 (87 - 5)
-	atomic.AddUint64(&n, ^uint64(d - 1)); fmt.Println(n) // 76 (82 - 6)
-	x := b; atomic.AddUint64(&n, -x);     fmt.Println(n) // 72 (76 - 4)
-	atomic.AddUint64(&n, ^(m - 1));       fmt.Println(n) // 71 (72 - 1)
-	atomic.AddUint64(&n, ^uint64(k - 1)); fmt.Println(n) // 69 (71 - 2)
+	
+	show := fmt.Println
+	atomic.AddUint64(&n, -m);             show(n) // 96 (97 - 1)
+	atomic.AddUint64(&n, -uint64(k));     show(n) // 94 (95 - 2)
+	atomic.AddUint64(&n, ^uint64(a - 1)); show(n) // 91 (94 - 3)
+	atomic.AddUint64(&n, ^(b - 1));       show(n) // 87 (91 - 4)
+	atomic.AddUint64(&n, ^uint64(c - 1)); show(n) // 82 (87 - 5)
+	atomic.AddUint64(&n, ^uint64(d - 1)); show(n) // 76 (82 - 6)
+	x := b; atomic.AddUint64(&n, -x);     show(n) // 72 (76 - 4)
+	atomic.AddUint64(&n, ^(m - 1));       show(n) // 71 (72 - 1)
+	atomic.AddUint64(&n, ^uint64(k - 1)); show(n) // 69 (71 - 2)
 }
 </code></pre>
 
@@ -279,9 +281,11 @@ func main() {
 	pa2 := atomic.SwapPointer(unsafePPT, unsafe.Pointer(&tb))
 	fmt.Println((*T)(pa2) == &ta) // true
 	// compare and swap
-	b := atomic.CompareAndSwapPointer(unsafePPT, pa2, unsafe.Pointer(&tb))
+	b := atomic.CompareAndSwapPointer(unsafePPT, pa2,
+					unsafe.Pointer(&tb))
 	fmt.Println(b) // false
-	b = atomic.CompareAndSwapPointer(unsafePPT, unsafe.Pointer(&tb), pa2)
+	b = atomic.CompareAndSwapPointer(unsafePPT,
+					unsafe.Pointer(&tb), pa2)
 	fmt.Println(b) // true
 }
 </code></pre>
@@ -328,12 +332,12 @@ The input parameter type and output result type of the <code>Load</code> and <co
 methods are both <code>interface{}</code>.
 So a call of the <code>Store</code> can take a value of any type.
 But for an addressable <code>Value</code> value <code>v</code>,
-once <code>v.Store</code> (a shorthand of <code>(&amp;v).Store</code>)
-has ever been called,
-then the subsequent <code>v.Store</code> calls must also take argument values
-of the same concrete type as the argument of the first <code>v.Store</code> call,
+once the <code>v.Store()</code> (a shorthand of <code>(&amp;v).Store()</code>)
+call has ever been called,
+then the subsequent <code>v.Store()</code> calls must also take argument values
+of the same concrete type as the argument of the first <code>v.Store()</code> call,
 otherwise, panic will occur.
-A <code>nil</code> interface argument will also make a <code>v.Store</code> call panic.
+A <code>nil</code> interface argument will also make the <code>v.Store()</code> call panic.
 </p>
 
 Example:

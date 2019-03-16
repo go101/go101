@@ -299,16 +299,16 @@ package main
 func fd(is []int, bs []byte) {
 	if len(is) >= 256 {
 		for _, n := range bs {
-			_ = is[n] // line 7: bounds check, not smart enough
+			_ = is[n] // line 7: bounds check
 		}
 	}
 }
 
 func fd2(is []int, bs []byte) {
 	if len(is) >= 256 {
-		is = is[:256] // line 14: to avoid bounds check at line 16
+		is = is[:256] // line 14: a hint
 		for _, n := range bs {
-			_ = is[n] // line 16: bounds check eliminated!
+			_ = is[n] // line 16: BCEed!
 		}
 	}
 }
@@ -316,16 +316,16 @@ func fd2(is []int, bs []byte) {
 func fe(isa []int, isb []int) {
 	if len(isa) > 0xFFF {
 		for _, n := range isb {
-			_ = isa[n & 0xFFF] // line 24: bounds check, not smart enough
+			_ = isa[n & 0xFFF] // line 24: bounds check
 		}
 	}
 }
 
 func fe2(isa []int, isb []int) {
 	if len(isa) > 0xFFF {
-		isa = isa[:0xFFF+1] // line 31: to avoid bounds check at line 33
+		isa = isa[:0xFFF+1] // line 31: a hint
 		for _, n := range isb {
-			_ = isa[n & 0xFFF] // line 33: bounds check eliminated!
+			_ = isa[n & 0xFFF] // line 33: BCEed!
 		}
 	}
 }
@@ -357,8 +357,6 @@ func ff2(s []int) []int {
 <pre class="output"><code>$ go build -gcflags="-d=ssa/check_bce/debug=1" example5.go
 ./example5.go:7: Found IsInBounds
 ./example5.go:24: Found IsInBounds
-./example5.go:41: Found IsInBounds
-./example5.go:48: Found IsSliceInBounds
 </code></pre>
 </div>
 
@@ -453,7 +451,8 @@ So this article will not show them all.
 <p>
 Although the BCE feature in the standard Go compiler is still not perfect,
 it really does well for many common cases.
-It is no doubt that standard Go compiler will do better in later versions.
+It is no doubt that standard Go compiler will do better in later versions
+so that it is possible the hints made in the above 5th example will become unnecessary.
 
 Thank Go team for adding this wonderful feature!
 </p>
@@ -466,6 +465,8 @@ Thank Go team for adding this wonderful feature!
 </ol>
 </p>
 
+<!--
 <p class="well well-sm">
 [edit@2016/09/22] added example 5 and refs.
 </p>
+-->

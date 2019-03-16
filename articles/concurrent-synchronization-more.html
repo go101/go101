@@ -185,9 +185,9 @@ which takes a solo parameter with type <code>func()</code>.
 
 <p>
 For an addressable <code>Once</code> value <code>o</code>,
-the method <code>o.Do</code>, which is a shorthand of <code>(&amp;o).Do</code>,
-can be called multiple times, in multiple goroutines.
-The arguments of these <code>o.Do</code> calls should
+the method call <code>o.Do()</code>, which is a shorthand of <code>(&amp;o).Do()</code>,
+can be concurrently executed multiple times, in multiple goroutines.
+The arguments of these <code>o.Do()</code> calls should
 (but are not required to) be the same function value.
 </p>
 
@@ -277,7 +277,7 @@ A <code>Mutex</code> value can only be locked when it is in unlocked status.
 In other words, once an addressable <code>Mutex</code> value <code>m</code> is locked successfully
 (a.k.a., a <code>m.Lock()</code> method call returns),
 a new attempt by a goroutine to lock the <code>Mutex</code> value will make the goroutine enter blocking state,
-until the <code>Mutex</code> value is unlocked (through a <code>m.Unlock()</code> call).
+until the <code>Mutex</code> value is unlocked (through a later <code>m.Unlock()</code> call).
 </p>
 
 <p>
@@ -354,7 +354,7 @@ are shorthands of <code>(&amp;m).Lock()</code>, <code>(&amp;m).Unlock()</code>,
 For an addressable <code>RWMutex</code> value <code>m</code>, the following rules exist.
 <ul>
 <li>
-	A data writer will acquire the write lock of <code>m</code>
+	A data writer can acquire the write lock of <code>m</code>
 	only if neither of the read lock and write lock of <code>m</code> is not held by others.
 	In other words, the write lock of <code>m</code> can only be held by most one writer at any given time,
 	and the read lock and write lock of <code>m</code> can't be held at the same time.
@@ -388,6 +388,11 @@ For an addressable <code>RWMutex</code> value <code>m</code>, the following rule
 
 <p>
 The last two rules are to ensure both readers and writers have chances to acquire locks.
+</p>
+
+<p>
+Please note, a lock acquirer might not be not the holder of the lock it acquired,
+though this case is rare in practice.
 </p>
 
 <!--
@@ -620,12 +625,15 @@ func main() {
 		d := time.Second * time.Duration(rand.Intn(10)) / 10
 		go func(i int) {
 			time.Sleep(d) // simulate a workload
-			cond.L.Lock() // changes must be made when cond.L is locked
+			// Changes must be made when cond.L is locked.
+			cond.L.Lock()
 			values[i] = string('a' + i)
-			cond.Signal() // called when cond.L lock is acquired
+			// Notify when cond.L lock is acquired.
+			cond.Broadcast()
 			cond.L.Unlock()
-			// The above "cond.Signal()" line can also be put here.
-			//cond.Signal() // called when cond.L lock is released.
+			// "cond.Broadcast()" can also be put here,
+			// when cond.L lock is released.
+			//cond.Broadcast()
 		}(i)
 	}
 
@@ -660,9 +668,9 @@ One possible output:
 
 <p>
 For there is only one goroutine (the main goroutine) waiting to be unblocked in this example,
-the <code>cond.Signal()</code> call can be replaced with <code>cond.Broadcast()</code>.
+the <code>cond.Broadcast()</code> call can be replaced with <code>cond.Signal()</code>.
 As the comments suggest,
-<code>cond.Signal()</code> and <code>cond.Broadcast()</code> are not required to be called
+<code>cond.Broadcast()</code> and <code>cond.Signal()</code> are not required to be called
 when <code>cond.L</code> is locked.
 </p>
 

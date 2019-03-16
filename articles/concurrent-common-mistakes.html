@@ -18,11 +18,11 @@ The remaining of the current article will show some common mistakes
 in Go concurrent programming, to help Go programmers avoid making such mistakes.
 </p>
 
-<h3>No Synchronizations when Synchronizations Are Needed</h3>
+<h3>No Synchronizations When Synchronizations Are Needed</h3>
 
 <div>
 <p>
-Code lines may be <a href="memory-model.html">not executed by their appearance order</a>.
+Code lines might be <a href="memory-model.html">not executed by their appearance order</a>.
 </p>
 
 There are two mistakes in the following program.
@@ -125,8 +125,7 @@ func main() {
 
 <p>
 We expect this program to print <code>789</code>.
-In fact, if the program is compiled with the standard Go compiler,
-it really prints <code>789</code>, almost always, in running.
+In fact, it really prints <code>789</code>, almost always, in running.
 But is it a program with good synchronization?
 No! The reason is Go runtime doesn't guarantee the write of <code>x</code>
 happens before the read of <code>x</code> for sure.
@@ -387,7 +386,7 @@ the program may be an arbitrary number in the range <code>[0, 100)</code>.
 The reason is none of the <code>Add</code> method calls are guaranteed to
 happen before the <code>Wait</code> method call, which causes none of
 the <code>Done</code> method calls are guaranteed to
-happen before the <code>Wait</code> method call.
+happen before the <code>Wait</code> method call returns.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -466,7 +465,7 @@ doSomethingWithFutureArguments(<-ca, <-cb)
 
 </div>
 
-<h3>Close Channels Not from the Last Active Sender Goroutine</h3>
+<h3>Close Channels Not From the Last Active Sender Goroutine</h3>
 
 <div>
 
@@ -591,8 +590,11 @@ An idiomatic use example of <code>time.Timer</code> values has been shown in the
 Some explanations:
 <ul>
 <li>
-	the <code>Stop</code> method of a <code>Timer</code> returns <code>false</code>
-	if the <code>Timer</code> value has already expired or been stopped.
+	the <code>Stop</code> method of a <code>*Timer</code> value returns <code>false</code>
+	if the corresponding <code>Timer</code> value has already expired or been stopped.
+	If the <code>Stop</code> method returns <code>false</code>, and we know
+	the <code>Timer</code> value has not been stopped yet,
+	then the <code>Timer</code> value must have already expired.
 </li>
 <li>
 	after a <code>Timer</code> value is stopped, its <code>C</code> channel field
@@ -607,8 +609,8 @@ Some explanations:
 </ul>
 
 <p>
-The <code>Reset</code> method of a <code>Timer</code> value must be called
-when the <code>Timer</code> value has already expired or been stopped, otherwise,
+The <code>Reset</code> method of a <code>*Timer</code> value must be called
+when the corresponding <code>Timer</code> value has already expired or been stopped, otherwise,
 a data race may occur between the <code>Reset</code> call and
 a possible notification send to the <code>C</code> channel field of the <code>Timer</code> value.
 </p>
@@ -640,7 +642,7 @@ func main() {
 	default:
 		time.Sleep(time.Second) // most likely go here
 	}
-	timer.Reset(time.Second * 10)
+	timer.Reset(time.Second * 10) // potential data race
 	<-timer.C
 	fmt.Println(time.Since(start)) // 1.000188181s (about)
 }

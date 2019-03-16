@@ -17,10 +17,9 @@ I hope this article will convince you that
 </li>
 <li>
 	the channel synchronization technique has a wider range of uses
-	and has more variations than the asynchronous programming concepts,
+	and has more variations than the synchronization solutions used in some other languages,
 	such as <a href="https://en.wikipedia.org/wiki/Actor_model">the actor model</a>
-	and the <a href="https://en.wikipedia.org/wiki/Async/await">async/await pattern</a>,
-	used in some other languages.
+	and the <a href="https://en.wikipedia.org/wiki/Async/await">async/await pattern</a>.
 </li>
 </ul>
 
@@ -112,7 +111,7 @@ import (
 )
 
 func longTimeRequest(r chan<- int32)  {
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 3) // simulate a workload
 	r <- rand.Int31n(100)
 }
 
@@ -188,7 +187,7 @@ import (
 
 func source(c chan<- int32) {
 	ra, rb := rand.Int31(), rand.Intn(3) + 1
-	time.Sleep(time.Duration(rb) * time.Second) // sleep 1s, 2s or 3s
+	time.Sleep(time.Duration(rb) * time.Second) // sleep 1s/2s/3s
 	c <- ra
 }
 
@@ -418,7 +417,6 @@ with one channel close operation <code>close(ready)</code>
 to do an 1-to-N notifications.
 
 <pre class="line-numbers"><code class="language-go">...
-	// ready <- struct{}{}; ready <- struct{}{}; ready <- struct{}{}
 	close(ready) // broadcast notifications
 ...
 </code></pre>
@@ -500,7 +498,7 @@ a.k.a., mutex locks, though such mutex locks are not efficient as
 the mutexes provided in the <code>sync</code> standard package.
 </p>
 
-There are two styles to use one-capacity buffered channels as mutex locks.
+There are two manners to use one-capacity buffered channels as mutex locks.
 <ol>
 <li>
 	Lock through a send, unlock through a receive.
@@ -588,7 +586,7 @@ Counting semaphores are often used to enforce a maximum number of concurrent req
 </p>
 
 Like using channels as mutexes,
-there are also two styles to acquire one piece of ownership
+there are also two manners to acquire one piece of ownership
 of a channel semaphore.
 <ol>
 <li>
@@ -612,12 +610,12 @@ import (
 type Seat int
 type Bar chan Seat
 
-func (bar Bar) ServeConsumer(customerId int) {
-	log.Print("consumer#", customerId, " enters the bar")
+func (bar Bar) ServeCustomer(c int) {
+	log.Print("customer#", c, " enters the bar")
 	seat := <- bar // need a seat to drink
-	log.Print("++ consumer#", customerId, " drinks at seat#", seat)
+	log.Print("++ customer#", c, " drinks at seat#", seat)
 	time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
-	log.Print("-- consumer#", customerId, " frees seat#", seat)
+	log.Print("-- customer#", c, " frees seat#", seat)
 	bar <- seat // free the seat and leave the bar
 }
 
@@ -632,15 +630,15 @@ func main() {
 
 	for customerId := 0; ; customerId++ {
 		time.Sleep(time.Second)
-		go bar24x7.ServeConsumer(customerId)
+		go bar24x7.ServeCustomer(customerId)
 	}
 	for {time.Sleep(time.Second)} // sleeping != blocking
 }
 </code></pre>
 
 <p>
-In the above example, only the consumers each of who get a seat can drink.
-So there will be most ten consumers are drinking at any given time.
+In the above example, only the customers each of who get a seat can drink.
+So there will be most ten customers are drinking at any given time.
 </p>
 
 <p>
@@ -650,19 +648,19 @@ There is a better way, which will be introduced below, to do the job.
 </p>
 
 In the above example,
-although there will be most ten consumers are drinking at any given time,
-there may be more than ten consumers are served at the bar at the same time.
-Some consumers are waiting for free seats.
-Although each consumer goroutine consumes much less resources than a system thread,
+although there will be most ten customers are drinking at any given time,
+there may be more than ten customers are served at the bar at the same time.
+Some customers are waiting for free seats.
+Although each customer goroutine consumes much less resources than a system thread,
 the total resources consumed by a large quantity of goroutines are not negligible.
-So it is best to create a consumer goroutine until a free seat is available.
+So it is best to create a customer goroutine only if there is an available seat.
 
 <pre class="line-numbers"><code class="language-go">... // same code as the above example
 
-func (bar Bar) ServeConsumerAtSeat(customerId int, seat Seat) {
-	log.Print("consumer#", customerId, " drinks at seat#", seat)
+func (bar Bar) ServeCustomerAtSeat(c int, seat Seat) {
+	log.Print("customer#", c, " drinks at seat#", seat)
 	time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
-	log.Print("<- consumer#", customerId, " frees seat#", seat)
+	log.Print("<- customer#", c, " frees seat#", seat)
 	bar <- seat // free the seat and leave the bar
 }
 
@@ -677,19 +675,19 @@ func main() {
 
 	for customerId := 0; ; customerId++ {
 		time.Sleep(time.Second)
-		seat := <- bar24x7 // need a seat to serve next consumer
-		go bar24x7.ServeConsumerAtSeat(customerId, seat)
+		seat := <- bar24x7 // need a seat to serve next customer
+		go bar24x7.ServeCustomerAtSeat(customerId, seat)
 	}
-	for {time.Sleep(time.Second)} // sleeping != blocking
+	for {time.Sleep(time.Second)}
 }
 </code></pre>
 
 <p>
-There will be most about ten live consumer goroutines
+There will be most about ten live customer goroutines
 coexisting in the above optimized version.
 </p>
 
-The style of acquiring ownership through sending is simpler comparatively.
+The manner of acquiring ownership through sending is simpler comparatively.
 There is no the step of placing seats.
 
 <pre class="line-numbers"><code class="language-go">package main
@@ -700,25 +698,25 @@ import (
 	"math/rand"
 )
 
-type Consumer struct{id int}
-type Bar chan Consumer
+type Customer struct{id int}
+type Bar chan Customer
 
-func (bar Bar) ServeConsumer(c Consumer) {
-	log.Print("++ consumer#", c.id, " starts drinking")
-	time.Sleep(time.Second * time.Duration(10 + rand.Intn(10)))
-	log.Print("-- consumer#", c.id, " leaves the bar")
+func (bar Bar) ServeCustomer(c Customer) {
+	log.Print("++ customer#", c.id, " starts drinking")
+	time.Sleep(time.Second * time.Duration(3 + rand.Intn(16)))
+	log.Print("-- customer#", c.id, " leaves the bar")
 	<- bar // leaves the bar and save a space
 }
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	bar24x7 := make(Bar, 10) // can serve most 10 consumers
+	bar24x7 := make(Bar, 10) // can serve most 10 customers
 	for customerId := 0; ; customerId++ {
-		time.Sleep(time.Second)
-		consumer := Consumer{customerId}
-		bar24x7 <- consumer // wait to enter the bar
-		go bar24x7.ServeConsumer(consumer)
+		time.Sleep(time.Second * 2)
+		customer := Customer{customerId}
+		bar24x7 <- customer // wait to enter the bar
+		go bar24x7.ServeCustomer(customer)
 	}
 	for {time.Sleep(time.Second)}
 }
@@ -731,9 +729,9 @@ func main() {
 <p>
 There is a variant of the channel semaphore use case.
 In the above two examples, although the throughput is limited,
-but there may be many requests (consumers) are queuing.
+but there may be many requests (customers) are queuing.
 This is not always a good idea, sometimes it would be better to
-suggest queuing consumers go to other bars,
+suggest queuing customers go to other bars,
 by using the try-receive or try-send mechanisms introduced below.
 </p>
 -->
@@ -1028,12 +1026,13 @@ The following sub-sections will show more try-send and try-receive use cases.
 </p>
 </div>
 
+<p class="anchor" id="check-closed-status"></p>
 <h4>Check if a channel is closed without blocking the current goroutine</h4>
 
 <div>
 Assume it is guaranteed that no values were ever (and will be) sent to a channel,
-we can use the following code to check whether or not the channel
-is already closed without blocking the current goroutine,
+we can use the following code to (concurrently and safely) check whether or not
+the channel is already closed without blocking the current goroutine,
 where <code>T</code> the element type of the corresponding channel type.
 
 <pre class="line-numbers"><code class="language-go">func IsClosed(c chan T) bool {
@@ -1172,7 +1171,7 @@ func main() {
 </code></pre>
 
 <p>
-The two ways introduced in this and the last sub-sections
+The two ways introduced in the current and the last sub-sections
 can also be used to do N-to-1 notifications.
 </p>
 
@@ -1559,16 +1558,16 @@ the following function will aggregate arbitrary
 number of data streams into one.
 
 <pre class="line-numbers"><code class="language-go">func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
-	output := make(chan uint64)
+	out := make(chan uint64)
 	for _, in := range inputs {
 		in := in // this line is essential
 		go func() {
 			for {
-				output <- <-in // <=> output <- (<-in)
+				out <- <-in // <=> out <- (<-in)
 			}
 		}()
 	}
-	return output
+	return out
 }
 </code></pre>
 
@@ -1738,17 +1737,17 @@ into another piece of output data.
 For simple demo purpose, here shows a worker example
 which inverts every bit of each transferred <code>uint64</code> value.
 
-<pre class="line-numbers"><code class="language-go">func Calculator(input <-chan uint64, output chan uint64) (<-chan uint64) {
-	if output == nil {
-		output = make(chan uint64)
+<pre class="line-numbers"><code class="language-go">func Calculator(in <-chan uint64, out chan uint64) (<-chan uint64) {
+	if out == nil {
+		out = make(chan uint64)
 	}
 	go func() {
 		for {
-			x := <-input
-			output <- ^x
+			x := <-in
+			out <- ^x
 		}
 	}()
-	return output
+	return out
 }
 </code></pre>
 
@@ -1848,9 +1847,9 @@ func main() {
 <p>
 The above data flow system is depicted in the following diagram.
 
-<br/>
+<div class="text-center">
 <img src="res/data-flow-linear.png">
-<br/>
+</div>
 </p>
 
 Data flow system example 2 (a directed acyclic graph pipeline):
@@ -1876,9 +1875,9 @@ func main() {
 <p>
 The above data flow system is depicted in the following diagram.
 
-<br/>
+<div class="text-center">
 <img src="res/data-flow-dag.png">
-<br/>
+</div>
 </p>
 
 <p>
@@ -1922,9 +1921,10 @@ func main() {
 <p>
 The modified data flow system is depicted in the following diagram.
 
-<br/>
+
+<div class="text-center">
 <img src="res/data-flow-dag-b.png">
-<br/>
+</div>
 </p>
 
 <p>
