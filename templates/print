@@ -21,30 +21,39 @@
 
 		<style>
 		@media print {
-			a[href]:after {
-				content: none !important;
-			}
-			
-			h1, h2, h3, h4, h5 {
+			h1, h2, h4, h5 {
 				page-break-after: avoid !important;
 			}
 
 			h3 {
+				page-break-after: avoid !important;
 				border-bottom: 1px solid #333;
 			}
-			
+
 			pre, table {
 				page-break-inside: auto !important;
 			}
-			
+
 			table tr td, table tr th {
 				page-break-inside: avoid !important;
 			}
-			
+
 			a:link {
 				text-decoration: underline !important;
 			}
-			
+
+			a[href]:after {
+				content: none !important;
+			}
+
+			/*ul.index a::after {
+				content: leader('.') target-counter(attr(href), page);
+			}
+
+			a.pageref::after { 
+				content: " on page " target-counter(attr(href), page) 
+			}*/
+
 			.prettyprinted ol {
 				border-style: solid;
 				border-width: 1px;
@@ -55,7 +64,6 @@
 				tab-size: 6;
 				-moz-tab-size: 6;
 			}
-			
 		}
 		</style>
 		<script>
@@ -70,9 +78,9 @@
 				}
 				//console.log("id: " + this.id)
 			})
-			
+
 			var printPage = location.pathname.substr(location.pathname.lastIndexOf('/') + 1)
-			
+
 			currentArticle = ""
 			$("p.article-anchor, a:not([href^='http'])").each(function(){
 				if (this.className == "article-anchor") {
@@ -84,7 +92,7 @@
 				var index = this.href.lastIndexOf('/')
 				var anchor = this.href.substr(index + 1);
 				index = anchor.indexOf('#');
-				
+
 				if (index == 0) { // impossible?
 					anchor = currentArticle + ":" + anchor.substr(0)
 				} else if (index < 0) {
@@ -102,7 +110,7 @@
 				//console.log("anchor: " + anchor)
 				this.href = location.protocol+'//'+location.host + location.pathname + "#" + anchor
 			});
-			
+
 			$("pre.line-numbers").addClass("prettyprint linenums")
 			$("pre.disable-line-numbers111").addClass("prettyprint")
 			PR.prettyPrint();
@@ -112,21 +120,43 @@
 
 	<body onload="process()">
 		<div class="container">
-		
-{{ range .Articles }}
+
+{{ if .ShowCovers }}
+	<div style="margin: 16px 0px; text-align: center; page-break-after: always; display: table;">
+		<img style="display: table-cell; vertical-align: middle; width: 100%;" src="res/101-front-cover.jpg" alt="封面"></img>
+	</div>
+	<!--div style="page-break-after: always;">&nbsp;</div-->
+{{ end }}
+
+{{ range $id, $article := .Articles }}
 
 	<p class="article-anchor" id="{{ .FilenameWithoutExt }}.html"></p>
 
+	{{ if and (eq $id 0) ($.IndexTitle) }}
+	<h1>{{ $.IndexTitle }}</h1>
+	{{ else }}
 	{{ .Title }}
+	{{ end }}
 
 	{{ .Content }}
+
+	{{ if ge $id 7 }}
+	<div style="margin: 16px 0px; text-align: center;">
+		
+	</div>
+	{{ end }}
 
 	<p style="page-break-after: always;"></p>
 
 {{ end }}
-		
-		
-		
+
+{{ if .ShowCovers }}
+	<!--div style="page-break-before: always;">&nbsp;</div-->
+	<div style="margin: 16px 0px; text-align: center; page-break-after: always; display: table;">
+		<img style="display: table-cell; vertical-align: middle; width: 100%;" src="res/101-back-cover.jpg" alt="封底"></img>
+	</div>
+{{ end }}
+
 		</div>
 	</body>
 </html>

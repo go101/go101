@@ -48,8 +48,6 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// log.Println("group=", group, ", item=", item)
-
 	switch strings.ToLower(group) {
 	case "static":
 		w.Header().Set("Cache-Control", "max-age=360000") // 10 hours
@@ -70,7 +68,6 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "":
 		http.Redirect(w, r, "/article/101.html", http.StatusTemporaryRedirect)
 	default:
-		// http.NotFound(w, r)
 		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
 	}
 
@@ -228,6 +225,9 @@ func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, item
 			if pageParams == nil {
 				pageParams = map[string]interface{}{}
 			}
+			q := r.URL.Query().Get("showcovers")
+			pageParams["ShowCovers"] = q == "1" || q == "true"
+			pageParams["IndexTitle"] = r.URL.Query().Get("indextitle")
 			pageParams["IsLocalServer"] = isLocal
 
 			t := retrievePageTemplate(Template_PrintBook, !isLocal)
@@ -269,7 +269,7 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 	}
 
 	// get all index article content by removing some lines
-	var builder bytes.Buffer // strings.Builder // GAE go111 has problems
+	var builder strings.Builder
 
 	content := string(article.Content)
 	i := strings.Index(content, IndexContentStart)
@@ -291,7 +291,7 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 		}
 		start := strings.LastIndex(content[:i], endl)
 		if start >= 0 {
-			builder.WriteString(content[0:start])
+			builder.WriteString(content[:start])
 		}
 		end := strings.Index(content[i:], endl)
 		content = content[i:]
