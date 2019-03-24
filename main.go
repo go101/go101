@@ -28,7 +28,7 @@ func main() {
 
 	err = openBrowser(fmt.Sprintf("http://localhost:%v", port))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	go go101.Update()

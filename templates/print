@@ -8,7 +8,7 @@
 		<meta name="author" content="">
 		<link rel="icon" href="/static/go101/images/101-v1.ico">
 		<link rel="apple-touch-icon" sizes="152x152" href="/static/go101/images/iphone-v1.jpeg">
-	
+
 		<title>Go 101</title>
 
 		<link href="/static/bootstrap/v3.3.7/css/bootstrap.min.css" rel="stylesheet">
@@ -18,101 +18,235 @@
 		<link href="/static/code-prettify/2019-03-12/prettify.css" rel="stylesheet" media="screen, print">
 		<link href="/static/code-prettify/2019-03-12/sons-of-obsidian.css" rel="stylesheet" media="screen, print">
 		<script src="/static/jquery/jquery.min-v1.11.2.js"></script>
+		<style media="screen, print">
 
-		<style>
-		@media print {
-			h1, h2, h4, h5 {
-				page-break-after: avoid !important;
-			}
+h1, h2, h4, h5 {
+	page-break-after: avoid !important;
+}
 
-			h3 {
-				page-break-after: avoid !important;
-				border-bottom: 1px solid #333;
-			}
+h3 {
+	page-break-after: avoid !important;
+	padding-bottom: 2px;
+	border-bottom: 1px solid #333;
+}
 
-			pre, table {
-				page-break-inside: auto !important;
-			}
+pre, table {
+	page-break-inside: auto !important;
+}
 
-			table tr td, table tr th {
-				page-break-inside: avoid !important;
-			}
+table tr td, table tr th {
+	page-break-inside: avoid !important;
+}
 
-			a:link {
-				text-decoration: underline !important;
-			}
+.prettyprinted ol {
+	border-style: solid;
+	border-width: 1px;
+	border-color: #666;
+}
 
-			a[href]:after {
-				content: none !important;
-			}
+code {
+	tab-size: 6;
+	-moz-tab-size: 6;
+}
 
-			/*ul.index a::after {
-				content: leader('.') target-counter(attr(href), page);
-			}
+/*ul.index a::after {
+	content: leader('.') target-counter(attr(href), page);
+}
 
-			a.pageref::after { 
-				content: " on page " target-counter(attr(href), page) 
-			}*/
+a.pageref::after { 
+	content: " on page " target-counter(attr(href), page) 
+}*/
 
-			.prettyprinted ol {
-				border-style: solid;
-				border-width: 1px;
-				border-color: #666;
-			}
+{{- if eq .PrintTarget "pdf" -}}
 
-			code {
-				tab-size: 6;
-				-moz-tab-size: 6;
-			}
-		}
+a:link {
+	text-decoration: underline !important;
+}
+
+a[href]:after {
+	content: none !important;
+}
+
+{{- else -}}
+
+a:link {
+	text-decoration: underline !important;
+}
+
+a[href^="http\:\/\/localhost"]:after {
+	content: none !important;
+}
+
+a:not[href^="http\:\/\/localhost"]::after {
+	content: " (" attr(href) ")";
+}
+
+ul.index {
+	list-style: none;
+	list-style-type: none;
+}
+
+{{- end -}}
 		</style>
 		<script>
+		// "flash" or "print". "print" means paper.
+		const printForPaper = "{{ .PrintTarget }}" == "print";
+
+		function parseArticleAndAnchor(url) {
+			var index = url.lastIndexOf('/');
+			var anchor = url.substr(index + 1);
+			index = anchor.indexOf('#');
+			if (index < 0) {
+				return {
+					Article: anchor,
+					Anchor: ""
+				};
+			}
+			return {
+				Article: anchor.substr(0, index),
+				Anchor: anchor.substr(index + 1)
+			};
+		}
+
 		function process() {
-			var currentArticle = "";
-			$("p.article-anchor, p.anchor").each(function(){
-				if (this.className == "article-anchor") {
-					this.id = "article:" + this.id
-					currentArticle = this.id
-				} else if (currentArticle != "") {
-					this.id = currentArticle + ":" + this.id
+			var articleChapterNumber = {"": "<i>(in current chapter)</i>"};
+
+			// modify 101.html
+			/*
+			var part = 1;
+			$("#book-index ul.part > li").each(function() {
+				$(this).html("§" + part + ". " + $(this).html());
+				$(this).children("a").each(function() {
+					var link = parseArticleAndAnchor(this.href);
+					var moment = "§" + part;
+					articleChapterNumber["article:" + link.Article] = {
+						momentFull: " <i>(" + moment + ")</i>",
+						moment    : moment
+					};
+				});
+
+				var chapter = 1;
+				$(this).find("ul.chapters > li").each(function() {
+					$(this).html("§" + part + "." + chapter + " " + $(this).html());
+					$(this).children("a").each(function() {
+						var link = parseArticleAndAnchor(this.href);
+						var moment = "§" + part + "." + chapter;
+						articleChapterNumber["article:" + link.Article] = {
+							momentFull: " <i>(" + moment + ")</i>",
+							moment    : moment
+						};
+					});
+					chapter++;
+				});
+				part++;
+			});
+			*/
+			var chapter = 0;
+			$("#book-index a").each(function() {
+				var moment = "§" + chapter;
+				$(this).before(moment + ". ");
+				var link = parseArticleAndAnchor(this.href);
+				articleChapterNumber["article:" + link.Article] = {
+					momentFull: " <i>(" + moment + ")</i>",
+					moment    : moment
+				};
+				chapter++;
+			});
+			chapter = -1;
+			$("h1").each(function(){
+				if (chapter < 0) {
+					chapter++;
+					return;
 				}
-				//console.log("id: " + this.id)
+				$(this).html("§" + chapter + ". " + $(this).html());
+				chapter++;
+			});
+			
+			// modify some summary articles
+			$(".summaries").each(function() {
+				var summariesArticle = "article:" + this.id;
+				var orderId = 1
+				$(this).find("a").each(function() {
+					var link = parseArticleAndAnchor(this.href);
+					var moment = articleChapterNumber[summariesArticle].moment + "#" + orderId;
+					articleChapterNumber[summariesArticle + ":" + link.Anchor] = {
+						momentFull: " <i>(" + moment + ")</i>",
+						moment    : moment
+					}
+					$(this).before(orderId + ". ");
+					orderId++;
+				});
+			});
+			$("div.summaries-items").each(function() {
+				var orderId = 1
+				$(this).find("h3").each(function() {
+					$(this).html(orderId + ". " + $(this).html())
+					orderId++;
+				})
 			})
 
-			var printPage = location.pathname.substr(location.pathname.lastIndexOf('/') + 1)
+			//console.log(articleChapterNumber)
 
-			currentArticle = ""
-			$("p.article-anchor, a:not([href^='http'])").each(function(){
+			// modify anchor ids
+			var currentArticle = "";
+			$("p.article-anchor, p.anchor").each(function() {
+				if (this.className == "article-anchor") {
+					//console.log($(this).siblings("h1").text());
+
+					this.id = "article:" + this.id;
+					currentArticle = this.id;
+				} else if (currentArticle != "") {
+					this.id = currentArticle + ":" + this.id;
+				}
+				//console.log("id: " + this.id)
+			});
+
+			// modify anchor refs
+			var printPage = location.pathname.substr(location.pathname.lastIndexOf('/') + 1);
+
+			currentArticle = "";
+			$("p.article-anchor, a:not([href^='http'])").each(function() {
 				if (this.className == "article-anchor") {
 					currentArticle = this.id;
 					//console.log("================ " + currentArticle + ", " + printPage)
-					return
+					return;
 				}
 
-				var index = this.href.lastIndexOf('/')
-				var anchor = this.href.substr(index + 1);
-				index = anchor.indexOf('#');
-
-				if (index == 0) { // impossible?
-					anchor = currentArticle + ":" + anchor.substr(0)
-				} else if (index < 0) {
-					anchor = "article:" + anchor
+				var link = parseArticleAndAnchor(this.href);
+				var anchor = link.Article;
+				if (anchor == printPage) {
+					anchor = currentArticle;
 				} else {
-					var article = anchor.substr(0, index)
-					anchor = anchor.substr(index+1)
-					if (article == printPage) {
-						article = currentArticle
-					} else {
-						article = "article:" + article
-					}
-					anchor = article + ":" + anchor
+					anchor = "article:" + anchor;
 				}
+				if (link.Anchor != "") {
+					anchor = anchor + ":" + link.Anchor;
+				}
+
 				//console.log("anchor: " + anchor)
-				this.href = location.protocol+'//'+location.host + location.pathname + "#" + anchor
+				this.href = location.protocol+'//'+location.host + location.pathname + "#" + anchor;
+				if (printForPaper && !$(this).hasClass("index")) {
+					//console.log(anchor + ": " + articleChapterNumber[anchor])
+					if (articleChapterNumber[anchor] != undefined) {
+						$(this).after(articleChapterNumber[anchor].momentFull);
+					} else {
+						var article = link.Article;
+						if (article == printPage) {
+							article = "";
+						} else {
+							article = "article:" + article;
+						}
+						if (articleChapterNumber[article] != undefined) {
+							$(this).after(articleChapterNumber[article].momentFull);
+						} else {
+							console.log("article(" + article + ") has no chapter number!")
+						}
+					}
+				}
 			});
 
-			$("pre.line-numbers").addClass("prettyprint linenums")
-			$("pre.disable-line-numbers111").addClass("prettyprint")
+			$("pre.line-numbers").addClass("prettyprint linenums");
+			$("pre.disable-line-numbers111").addClass("prettyprint");
 			PR.prettyPrint();
 		}
 		</script>
