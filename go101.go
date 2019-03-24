@@ -58,11 +58,10 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Cache-Control", "max-age=360000") // 10 hours
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
-		} else if strings.HasPrefix(item, "print-") {
-			if go101.IsLocalServer() {
-				go101.RenderPrintPage(w, r, item[len("print-"):])
-				return
-			}
+		} else if go101.IsLocalServer() && (strings.HasPrefix(item, "print-") || strings.HasPrefix(item, "pdf-")) {
+			idx := strings.IndexByte(item, '-')
+			go101.RenderPrintPage(w, r, item[:idx], item[idx+1:])
+			return
 		}
 		go101.RenderArticlePage(w, r, item)
 	case "":
@@ -208,10 +207,10 @@ func retrieveArticleContent(file string) (Article, error) {
 	return article, nil
 }
 
-const Anchor, _Anchor, LineToRemoveTag, endl = `<li><a href="`, `">`, `(to remove)`, "\n"
+const Anchor, _Anchor, LineToRemoveTag, endl = `<li><a class="index" href="`, `">`, `(to remove)`, "\n"
 const IndexContentStart, IndexContentEnd = `<!-- index starts (don't remove) -->`, `<!-- index ends (don't remove) -->`
 
-func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, item string) {
+func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, printTarget, item string) {
 	page, isLocal := go101.ArticlePage(item)
 	if page == nil {
 		var err error
@@ -228,6 +227,7 @@ func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, item
 			q := r.URL.Query().Get("showcovers")
 			pageParams["ShowCovers"] = q == "1" || q == "true"
 			pageParams["IndexTitle"] = r.URL.Query().Get("indextitle")
+			pageParams["PrintTarget"] = printTarget
 			pageParams["IsLocalServer"] = isLocal
 
 			t := retrievePageTemplate(Template_PrintBook, !isLocal)
