@@ -174,11 +174,11 @@ var prettyPrint;
   var GO_TYPES = /^(func|interface|chan|struct|map|bool|string|byte|rune|u?int(8|16|32|64)|float(32|64)|complex(64|128)\d*)\b/;
 
 
-                     
-                                
-                           
-                       
-                       
+
+
+
+
+
 
   // token style names.  correspond to css classes
   /**

@@ -37,8 +37,6 @@ var (
 )
 
 func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	go101.ConfirmLocalServer(isLocalRequest(r))
-
 	group, item := "", ""
 	tokens := strings.SplitN(r.URL.Path, "/", 3)
 	if len(tokens) > 1 {
@@ -48,7 +46,7 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	switch strings.ToLower(group) {
+	switch go101.ConfirmLocalServer(isLocalRequest(r)); strings.ToLower(group) {
 	case "static":
 		w.Header().Set("Cache-Control", "max-age=360000") // 10 hours
 		go101.staticHandler.ServeHTTP(w, r)
@@ -59,6 +57,7 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
 		} else if go101.IsLocalServer() && (strings.HasPrefix(item, "print-") || strings.HasPrefix(item, "pdf-")) {
+			w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 			idx := strings.IndexByte(item, '-')
 			go101.RenderPrintPage(w, r, item[:idx], item[idx+1:])
 			return
@@ -224,9 +223,9 @@ func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, prin
 			if pageParams == nil {
 				pageParams = map[string]interface{}{}
 			}
-			q := r.URL.Query().Get("showcovers")
-			pageParams["ShowCovers"] = q == "1" || q == "true"
-			pageParams["IndexTitle"] = r.URL.Query().Get("indextitle")
+			//q := r.URL.Query().Get("showcovers")
+			//pageParams["ShowCovers"] = q == "1" || q == "true"
+			//pageParams["IndexTitle"] = r.URL.Query().Get("indextitle")
 			pageParams["PrintTarget"] = printTarget
 			pageParams["IsLocalServer"] = isLocal
 
@@ -369,7 +368,7 @@ func retrievePageTemplate(which PageTemplate, cacheIt bool) *template.Template {
 		case Template_Article:
 			t = parseTemplate(filepath.Join(rootPath, "templates"), "base", "article")
 		case Template_PrintBook:
-			t = parseTemplate(filepath.Join(rootPath, "templates"), "print")
+			t = parseTemplate(filepath.Join(rootPath, "templates"), "pdf")
 		default:
 			t = template.New("blank")
 		}
@@ -491,6 +490,7 @@ func findGo101ProjectRoot() string {
 			return pkg.Dir
 		}
 	}
+
 	return "."
 }
 
