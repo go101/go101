@@ -1,3 +1,5 @@
+**([update history](UPDATES.md))**
+
 <b>[Go 101](https://go101.org)</b> is a book focusing on Go syntax/semantics and all kinds of details.
 The book also tries to help gophers gain a deep and thorough understanding of Go.
 The book is expected to be helpful for both beginner and experienced Go programmers.

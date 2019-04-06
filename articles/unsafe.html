@@ -293,12 +293,13 @@ func foo() {
 	var p1 = unsafe.Pointer(y)
 	var p2 = uintptr(unsafe.Pointer(z))
 
-	// At the time, even if the address of the int value
-	// referenced by z is still stored in p2, the int value
-	// has already become unused, so garbage collector can
-	// collect the memory allocated for it now.
-	// On the other hand, the int values referenced
-	// by p0 and p1 are still in using,
+	// At the time, even if the address of the int
+	// value referenced by z is still stored in p2,
+	// the int value has already become unused, so
+	// garbage collector can collect the memory
+	// allocated for it now. On the other hand, the
+	// int values referenced by p0 and p1 are still
+	// in using.
 
 	// uintptr can participate arithmetic operations.
 	p2 += 2; p2--; p2--
@@ -376,10 +377,11 @@ func bar() {
 	// t.y will never be used again and think the
 	// memory block hosting t.y can be collected now.
 
-	// Using *(*byte)(unsafe.Pointer(p))) is dangerous here.
+	// Using *(*byte)(unsafe.Pointer(p))) is
+	// dangerous here.
 
-	println(t.x) // Continue using value t,
-	             // but only use its x field.
+	// Continue using value t, but only use its x field.
+	println(t.x)
 }
 </code></pre>
 
@@ -509,9 +511,10 @@ import "unsafe"
 func main() {
 	type T struct{a int}
 	var t T
-	fmt.Println(&t)                                 // &{0}
-	fmt.Printf("%x\n", uintptr(unsafe.Pointer(&t))) // c6233120a8
-	println(&t)                                     // 0xc6233120a8
+	fmt.Println(&t) // &{0}
+	println(&t)     // 0xc6233120a8
+	// The next line print: c6233120a8
+	fmt.Printf("%x\n", uintptr(unsafe.Pointer(&t)))
 }
 </code></pre>
 
@@ -541,8 +544,8 @@ const M = unsafe.Sizeof([3]int16{}[0])
 func main() {
 	t := T{y: [3]int16{123, 456, 789}}
 	p := unsafe.Pointer(&t)
-	// "uintptr(p) + N + M + M" is the address of t.y[2].
-	ty2 := (*int16)(unsafe.Pointer(uintptr(p) + N + M + M))
+	// "uintptr(p)+N+M+M" is the address of t.y[2].
+	ty2 := (*int16)(unsafe.Pointer(uintptr(p)+N+M+M))
 	fmt.Println(*ty2) // 789
 }
 </code></pre>
@@ -558,11 +561,12 @@ Please read the comments in the code for the reason.
 <pre class="line-numbers"><code class="language-go">func main() {
 	t := T{y: [3]int16{123, 456, 789}}
 	p := unsafe.Pointer(&t)
-	// ty2 := (*int16)(unsafe.Pointer(uintptr(p) + N + M + M))
+	// ty2 := (*int16)(unsafe.Pointer(uintptr(p)+N+M+M))
 	addr := uintptr(p) + N + M + M
 	// Now the t value becomes unused, its memory may be
-	// garbage collected at this time. So the following use of
-	// the address of t.y[2] may become invalid and dangerous!
+	// garbage collected at this time. So the following
+	// use of the address of t.y[2] may become invalid
+	// and dangerous!
 	ty2 := (*int16)(unsafe.Pointer(addr))
 	fmt.Println(*ty2)
 }
@@ -576,7 +580,7 @@ which is why the uses of unsafe pointers are dangerous.
 If we do want to split that conversion line into two lines,
 we should call the <code>runtime.KeepAlive</code> function and
 pass the unsafe pointer <code>p</code>
-(or any other value which is also referenciing value <code>t.y[2]</code>) as the argument.
+(or any other value which is also referencing value <code>t.y[2]</code>) as the argument.
 after the split two lines. Like this
 
 <pre class="line-numbers"><code class="language-go">func main() {
@@ -584,8 +588,9 @@ after the split two lines. Like this
 	p := unsafe.Pointer(t)
 	addr := uintptr(p) + N + M + M
 	ty2 := (*int16)(unsafe.Pointer(addr))
-	// This following line essures the memory of the value
-	// t will not get garbage collected currently for sure.
+	// This following line ensures the memory of
+	// the value t will not get garbage collected
+	// currently for sure.
 	runtime.KeepAlive(p)
 	fmt.Println(*ty2)
 }
@@ -645,9 +650,9 @@ for each of the unsafe pointer arguments who are converted to <code>uintptr</cod
 like the third argument in the following <code>syscall.Syscall</code> call.
 
 <pre class="line-numbers"><code class="language-go">syscall.Syscall(SYS_READ, uintptr(fd),
-				uintptr(unsafe.Pointer(p)), uintptr(n))
-// Compilers will automatically append the following lines
-// for the above line.
+			uintptr(unsafe.Pointer(p)), uintptr(n))
+// Compilers will automatically append
+// the following lines for the above line.
 runtime.KeepAlive(unsafe.Pointer(p))
 </code></pre>
 

@@ -1,7 +1,7 @@
 ﻿<h1>Arrays, Slices and Maps in Go</h1>
 
 <p>
-Strictly speaking, there are three kinds of first-level citizen
+Strictly speaking, there are three kinds of first-class citizen
 container types in Go, array, slice and map.
 Sometimes, strings and channels can also be viewed as container types,
 but this article will not touch the two kinds of types.
@@ -134,32 +134,42 @@ where
 </ul>
 
 Here are some container type literal representation examples:
-<pre class="line-numbers"><code class="language-go">const Size = 32
+<pre class="line-numbers must-line-numbers"><code class="language-go">const Size = 32
 
 type Person struct {
 	name string
 	age  int
 }
 
-// Array types.
+/* Array types */
+
 [5]string
 [Size]int
-[16][]byte  // element type is a slice type: []byte
-[100]Person // element type is a struct type: Person
+// Element type is a slice type: []byte
+[16][]byte
+// Element type is a struct type: Person
+[100]Person
 
-// Slice types.
+/* Slice types *
+
 []bool
 []int64
-[]map[int]bool // element type is a map type: map[int]bool
-[]*int         // element type is a pointer type: *int
+// Element type is a map type: map[int]bool
+[]map[int]bool
+// Element type is a pointer type: *int
+[]*int
 
-// Map types.
+/* Map types */
+
 map[string]int
 map[int]bool
-map[int16][6]string     // element type is an array type: [6]string
-map[bool][]string       // element type is a slice type: []string
-map[struct{x int}]*int8 // element type is a pointer type: *int8,
-                        // and key type is a struct type.
+// Element type is an array type: [6]string
+map[int16][6]string
+// Element type is a slice type: []string
+map[bool][]string
+// Element type is a pointer type: *int8,
+// and key type is a struct type.
+map[struct{x int}]*int8
 </code></pre>
 
 <p>
@@ -175,7 +185,7 @@ with a zero-size element type is zero.
 
 </div>
 
-<a class="anchor" id="value-literals">&nbsp;</a>
+<a class="anchor" id="value-literals"></a>
 <h3>Container Value Literals</h3>
 
 <div>
@@ -183,14 +193,14 @@ Like struct values, container values can also be represented
 with composite literals, <code>T{...}</code>, where <code>T</code> denotes container type
 (except the zero values of slice and map types).
 Here are some examples:
-<pre class="line-numbers"><code class="language-go">// An array value which contains four bool values.
+<pre class="line-numbers"><code class="language-go">// An array value containing four bool values.
 [4]bool{false, true, true, false}
 
 // A slice value which contains three words.
 []string{"break", "continue", "fallthrough"}
 
-// A map value which contains some key-value pairs.
-map[string]int{"C": 1972, "Python": 1991, "Java", 1995, "Go": 2009}
+// A map value containing some key-value pairs.
+map[string]int{"C": 1972, "Python": 1991, "Go": 2009}
 </code></pre>
 
 <p>
@@ -198,13 +208,16 @@ Each key-element pair between the braces of a map composite literal is also call
 </p>
 
 There are several variants for array and slice composite literals:
-<pre class="line-numbers"><code class="language-go">// The followings slice composite literals are all equivalent.
+<pre class="line-numbers"><code class="language-go">
+// The followings slice composite literals
+// are equivalent to each other.
 []string{"break", "continue", "fallthrough"}
 []string{0: "break", 1: "continue", 2: "fallthrough"}
 []string{2: "fallthrough", 1: "continue", 0: "break"}
 []string{2: "fallthrough", 0: "break", "continue"}
 
-// The followings array composite literals are all equivalent.
+// The followings array composite literals
+// are equivalent to each other.
 [4]bool{false, true, true, false}
 [4]bool{0: false, 1: true, 2: true, 3: false}
 [4]bool{1: true, true}
@@ -250,8 +263,11 @@ The keys in a map literal can be absent, they can be non-constants.
 
 <pre class="line-numbers"><code class="language-go">var a uint = 1
 var _ = map[uint]int {a : 123} // okay
-var _ = []int{a: 100}          // error: index must be a constant
-var _ = [5]int{a: 100}         // error: index must be a constant
+
+// The following two lines fail to compile,
+// for "a" is not a constant key/index.
+var _ = []int{a: 100}  // error
+var _ = [5]int{a: 100} // error
 </code></pre>
 
 <p>
@@ -296,7 +312,7 @@ of slice type <code>[]T</code>, it is different with <code>[]T(nil)</code>.
 The same situation is for <code>map[K]T{}</code> and <code>map[K]T(nil)</code>.
 </p>
 
-<a class="anchor" id="take-composite-literal-address">&nbsp;</a>
+<a class="anchor" id="take-composite-literal-address"></a>
 <h3>Composite Literals Are Unaddressable but Can Be Taken Addresses</h3>
 
 <div>
@@ -325,7 +341,7 @@ func main() {
 </p>
 </div>
 
-<a class="anchor" id="composite-literal-simplification">&nbsp;</a>
+<a class="anchor" id="composite-literal-simplification"></a>
 <h3>Nested Composite Literals Can Be Simplified</h3>
 
 <div>
@@ -336,9 +352,11 @@ composited literals can simplified to the form <code>{...}</code>.
 
 For example, the slice value literal
 
-<pre class="line-numbers"><code class="language-go">// A slice value of a type whose element type is *[4]byte.
-// The element type is a pointer type whose base type is [4]byte.
-// The pointer base type is an array type whose element type is byte.
+<pre class="line-numbers"><code class="language-go">
+// A slice value of a type whose element type is
+// *[4]byte. The element type is a pointer type
+// whose base type is [4]byte. The base type is
+// an array type whose element type is "byte".
 var heads = []*[4]byte{
 	&[4]byte{'P', 'N', 'G', ' '},
 	&[4]byte{'G', 'I', 'F', ' '},
@@ -389,8 +407,9 @@ And the map value literal in the following example
 	strong  bool
 }
 
-// A value of map type whose key type is a struct type and
-// whose element type is another map type "map[string]int".
+// A value of map type whose key type is
+// a struct type and whose element type
+// is another map type "map[string]int".
 var _ = map[LangCategory]map[string]int{
 	LangCategory{true, true}: map[string]int{
 		"Python": 1991,
@@ -438,7 +457,7 @@ for more information later.
 
 </div>
 
-<a class="anchor" id="comparison">&nbsp;</a>
+<a class="anchor" id="comparison"></a>
 <h3>Compare Container Values</h3>
 
 <p>
@@ -498,7 +517,7 @@ func main() {
 </p>
 </div>
 
-<a class="anchor" id="cap-len">&nbsp;</a>
+<a class="anchor" id="cap-len"></a>
 <h3>Check Lengths and Capacities of Container Values</h3>
 
 <p>
@@ -540,7 +559,8 @@ func main() {
 	var s []int
 	fmt.Println(len(s), cap(s)) // 0 0
 	s, s2 := []int{2, 3, 5}, []bool{}
-	fmt.Println(len(s), cap(s), len(s2), cap(s2)) // 3 3 0 0
+	fmt.Println(len(s), cap(s))   // 3 3
+	fmt.Println(len(s2), cap(s2)) // 0 0
 	var m map[int]bool
 	fmt.Println(len(m)) // 0
 	m, m2 := map[int]bool{1: true, 0: false}, map[int]int{}
@@ -555,7 +575,7 @@ We will use some slices whose respective lengths and capacities are not equal in
 </p>
 </div>
 
-<a class="anchor" id="element-access">&nbsp;</a>
+<a class="anchor" id="element-access"></a>
 <h3>Retrieve and Modify Container Elements</h3>
 
 <div>
@@ -617,7 +637,7 @@ the element type of the map type, and
 </ul>
 
 An example of container element accesses and modifications:
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
 
 import "fmt"
 
@@ -638,14 +658,14 @@ func main() {
 
 	// The two lines fail to compile.
 	/*
-	_ = a[3]  // invalid array index 3 (out of bounds)
-	_ = s[-1] // invalid slice index -1 (index must be non-negative)
+	_ = a[3]  // index 3 out of bounds
+	_ = s[-1] // index must be non-negative
 	*/
 
-	// Each of the following lines causes a panic.
-	_ = a[n]         // panic: runtime error: index out of range
-	_ = s[n]         // panic: runtime error: index out of range
-	m["hello"] = 555 // panic: assignment to entry in nil map
+	// Each of the following lines can cause a panic.
+	_ = a[n]         // panic: index out of range
+	_ = s[n]         // panic: index out of range
+	m["hello"] = 555 // panic: assign to entry in nil map
 }
 </code></pre>
 
@@ -661,7 +681,7 @@ we need to have an impression on the internal structure of slice types.
 From the last article, <a href="value-part.html">value parts</a>,
 we learned that the internal structure of slice types
 defined by the standard Go compiler/runtime is like
-<pre class="line-numbers"><code class="language-go">type _slice struct {
+<pre class="line-numbers must-line-numbers"><code class="language-go">type _slice struct {
 	elements unsafe.Pointer // referencing underlying elements
 	len      int            // length
 	cap      int            // capacity
@@ -750,7 +770,7 @@ Generally, this is achieved by assigning another slice value
 
 </div>
 
-<a class="anchor" id="assignment">&nbsp;</a>
+<a class="anchor" id="assignment"></a>
 <h3>Container Assignments</h3>
 
 <div>
@@ -803,7 +823,7 @@ func main() {
 </p>
 </div>
 
-<a class="anchor" id="element-addition-deletion">&nbsp;</a>
+<a class="anchor" id="element-addition-deletion"></a>
 <h3>Append and Delete Container Elements</h3>
 
 <div>
@@ -886,7 +906,7 @@ Here, the following example only shows how to use the <code>append</code> functi
 
 An example showing how to use the <code>append</code> function:
 
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
 
 import "fmt"
 
@@ -899,7 +919,7 @@ func main() {
 	fmt.Println(s2, cap(s2)) // [2 3 5 7 11 13] 6
 	s3 := append(s0)         // <=> s3 := s0
 	fmt.Println(s3, cap(s3)) // [2 3 5] 3
-	s4 := append(s0, s0...)  // append all elements of s0
+	s4 := append(s0, s0...)  // double s0 as s4
 	fmt.Println(s4, cap(s4)) // [2 3 5 2 3 5] 6
 
 	s0[0], s1[0] = 99, 789
@@ -1027,7 +1047,7 @@ call can't be an untyped <code>nil</code>.
 
 </div>
 
-<a class="anchor" id="make">&nbsp;</a>
+<a class="anchor" id="make"></a>
 <h3>Create Slices and Maps With the Built-in <code>make</code> Function</h3>
 
 <div>
@@ -1106,7 +1126,7 @@ func main() {
 
 </div>
 
-<a class="anchor" id="new">&nbsp;</a>
+<a class="anchor" id="new"></a>
 <h3>Allocate Containers With the Built-in <code>new</code> Function</h3>
 
 <div>
@@ -1132,9 +1152,9 @@ Example:
 import "fmt"
 
 func main() {
-	m := *new(map[string]int)   // <=> var m = map[string]int(nil)
+	m := *new(map[string]int)   // <=> var m map[string]int
 	fmt.Println(m == nil)       // true
-	s := *new([]int)            // <=> var s = []int(nil)
+	s := *new([]int)            // <=> var s []int
 	fmt.Println(s == nil)       // true
 	a := *new([5]bool)          // <=> var a [5]bool
 	fmt.Println(a == [5]bool{}) // true
@@ -1234,12 +1254,11 @@ func main() {
 	ma := map[int][5]int{}
 	ma[1] = [5]int{1: 789} // modify it as a whole
 
-	// The following two modifications fail to compile,
+	// The following two lines fail to compile,
 	// for map elements can be modified partially.
 	/*
-	ma[1][1] = 123      // error: cannot assign to a[1][1]
-	mt["John"].age = 30 // error: cannot assign to struct
-	                    // field mt["John"].age in map.
+	ma[1][1] = 123      // error
+	mt["John"].age = 30 // error
 	*/
 
 	// Accesses are okay.
@@ -1282,7 +1301,7 @@ func main() {
 
 </div>
 
-<a class="anchor" id="subslice">&nbsp;</a>
+<a class="anchor" id="subslice"></a>
 <h3>Derive Slices From Arrays and Slices</h3>
 
 <div>
@@ -1318,8 +1337,11 @@ Note, the three-index form is only supported since Go 1.2.
 In a subslice expression, the <code>low</code>, <code>high</code> and
 <code>max</code> indexes must satisfy the following relation requirements.
 
-<pre class="disable-line-numbers111"><code class="language-go">0 <= low <= high <= cap(baseContainer)        // two-index form
-0 <= low <= high <= max <= cap(baseContainer) // three-index form
+<pre class="disable-line-numbers111"><code class="language-go">// two-index form
+0 <= low <= high <= cap(baseContainer)
+
+// three-index form
+0 <= low <= high <= max <= cap(baseContainer)
 </code></pre>
 
 <p>
@@ -1437,7 +1459,7 @@ which is allowed.
 
 </div>
 
-<a class="anchor" id="copy-slice-elements">&nbsp;</a>
+<a class="anchor" id="copy-slice-elements"></a>
 <h3>Copy Slice Elements With the Built-in <code>copy</code> Function</h3>
 
 <div>
@@ -1524,7 +1546,7 @@ function call can be an untyped <code>nil</code> value.
 
 </div>
 
-<a class="anchor" id="iteration">&nbsp;</a>
+<a class="anchor" id="iteration"></a>
 <h3>Container Element Iterations</h3>
 
 <div>
@@ -1665,7 +1687,7 @@ Surely, array and slice elements can also be iterated by using the traditional <
 
 For a <code>for-range</code> loop block
 
-<pre class="line-numbers"><code class="language-go">for key, element = range aContainer {...}
+<pre class="disable-line-numbers111"><code class="language-go">for key, element = range aContainer {...}
 </code></pre>
 
 there are three important facts.
@@ -1722,11 +1744,15 @@ func main() {
 	persons := [2]Person {{"Alice", 28}, {"Bob", 25}}
 	for i, p := range persons {
 		fmt.Println(i, p)
-		// This modification has no effects on the iteration,
-		// for the ranged array is a copy of the persons array.
+
+		// This modification has no effects on
+		// the iteration, for the ranged array
+		// is a copy of the persons array.
 		persons[1].name = "Jack"
-		// This modification has not effects on the persons array,
-		// for p is just a copy of a copy of one persons element.
+
+		// This modification has not effects on
+		// the persons array, for p is just a
+		// copy of a copy of one persons element.
 		p.age = 31
 	}
 	fmt.Println("persons:", &persons)
@@ -1752,9 +1778,13 @@ the modification on the iteration variable still has no effects on the slice.
 	persons := []Person {{"Alice", 28}, {"Bob", 25}}
 	for i, p := range persons {
 		fmt.Println(i, p)
-		// Now this modification has effects on the iteration.
+
+		// Now this modification has effects
+		// on the iteration.
 		persons[1].name = "Jack"
-		// This modification still has no any real effects.
+
+		// This modification still has not
+		// any real effects.
 		p.age = 31
 	}
 	fmt.Println("persons:", &persons)
@@ -1786,7 +1816,7 @@ func main() {
 	m0 := map[*struct{ dynamic, strong bool }]*map[string]int{}
 	for category, langInfo := range langs {
 		m0[&category] = &langInfo
-		// This following line has no real effects on langs.
+		// This following line has no effects on langs.
 		category.dynamic, category.strong = true, true
 	}
 	for category, langInfo := range langs {
@@ -1799,7 +1829,7 @@ func main() {
 	}
 	// m0 and m1 both contain only one entry.
 	fmt.Println(len(m0), len(m1)) // 1 1
-	fmt.Println(m1)               // map[{true true}:map[C:1972]]
+	fmt.Println(m1) // map[{true true}:map[C:1972]]
 }
 </code></pre>
 
@@ -1861,7 +1891,7 @@ func fb(buffers []Buffer) int {
 
 </div>
 
-<a class="anchor" id="use-pointer-as-array">&nbsp;</a>
+<a class="anchor" id="use-pointer-as-array"></a>
 <h3>Use Array Pointers as Arrays</h3>
 
 <div>
@@ -1881,11 +1911,13 @@ import "fmt"
 func main() {
 	var a [100]int
 
-	for i, n := range &a { // copying a pointer is cheap
+	// Copying a pointer is cheap.
+	for i, n := range &a {
 		fmt.Println(i, n)
 	}
 
-	for i, n := range a[:] { // copying a slice is cheap
+	// Copying a slice is cheap.
+	for i, n := range a[:] {
 		fmt.Println(i, n)
 	}
 }
@@ -1974,7 +2006,7 @@ fmt.Println(len(pa), cap(pa)) // 5 5
 
 </div>
 
-<a class="anchor" id="memclr">&nbsp;</a>
+<a class="anchor" id="memclr"></a>
 <h3>The <code>memclr</code> Optimization</h3>
 
 <div>
@@ -2016,7 +2048,7 @@ of the array (though the standard Go compiler won't in this optimization).
 
 </div>
 
-<a class="anchor" id="compile-time-evaluation">&nbsp;</a>
+<a class="anchor" id="compile-time-evaluation"></a>
 <h3>Calls to the Built-in <code>len</code> and <code>cap</code> Functions May Be Evaluated At Compile Time</h3>
 
 <div>
@@ -2050,7 +2082,7 @@ func main() {
 </p>
 </div>
 
-<a class="anchor" id="modify-slice-length-and-capacity">&nbsp;</a>
+<a class="anchor" id="modify-slice-length-and-capacity"></a>
 <h3>Modify the Length and Capacity Properties of a Slice Individually</h3>
 
 <div>
@@ -2098,7 +2130,7 @@ The reflection way is very inefficient, it is slower than a slice assignment.
 </p>
 </div>
 
-<a class="anchor" id="slice-manipulations">&nbsp;</a>
+<a class="anchor" id="slice-manipulations"></a>
 <h3>More Slice Manipulations</h3>
 
 <p>
@@ -2134,7 +2166,7 @@ if <code>s</code> is a nil slice, the second way results a non-nil clone.
 
 </div>
 
-<a class="anchor" id="delete-slice-elements">&nbsp;</a>
+<a class="anchor" id="delete-slice-elements"></a>
 <h4>Delete a Segment of Slice Elements</h4>
 
 <div>
@@ -2184,7 +2216,7 @@ optimized as a <code>memclr</code> call by the standard Go compiler.
 
 </div>
 
-<a class="anchor" id="delete-one-slice-element">&nbsp;</a>
+<a class="anchor" id="delete-one-slice-element"></a>
 <h4>Delete One Slice Element</h4>
 
 <div>
@@ -2203,8 +2235,8 @@ s = append(s[:i], s[i+1:]...)
 // Way 2 (preserve element orders):
 s = s[:i + copy(s[i:], s[i+1:])]
 
-// There will be len(s)-i-1 elements being copied in
-// in either of the above two ways.
+// There will be len(s)-i-1 elements being
+// copied in either of the above two ways.
 
 // Don't preserve element orders:
 s[i] = s[len(s)-1]
@@ -2232,17 +2264,18 @@ s[:len(s)+1][len(s)] = t0
 Sometimes, we may need to delete slice elements by some conditions.
 
 <pre class="line-numbers"><code class="language-go">// Assume T is a small-size type.
-func DeleteElements(s []T, shouldKeep func(T) bool, clear bool) []T {
+func DeleteElements(s []T, keep func(T) bool, clear bool) []T {
 	result := make([]T, 0, len(s))
 	for _, v := range s {
-		if shouldKeep(v) {
+		if keep(v) {
 			result = append(result, v)
 		}
 	}
 	if clear { // avoid memory leaking
 		temp := s[len(result):]
 		for i := range temp {
-			temp[i] = t0 // t0 is a zero value literal of T.
+			// t0 is a zero value literal of T.
+			temp[i] = t0
 		}
 	}
 	return result

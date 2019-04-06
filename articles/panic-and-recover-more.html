@@ -168,29 +168,31 @@ Please read the next section for a better understanding.
 Yes, panics can only propagate to its callers.
 Panics never propagate downwards into a deeper function call.
 
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
 
 import "fmt"
 
+var o = fmt.Println
+
 func main() { // call depth 0
 	defer func() { // call depth 1
-		fmt.Println("Now, the panic is still in call depth 0")
+		o("Now, the panic is still in call depth 0")
 		func() { // call depth 2
-			fmt.Println("Now, the panic is still in call depth 0")
+			o("Now, the panic is still in call depth 0")
 			func() { // call depth 3
-				fmt.Println("Now, the panic is still in call depth 0")
+				o("Now, the panic is still in call depth 0")
 			}()
 		}()
 	}()
 
-	defer fmt.Println("Now, the panic is in call depth 0")
+	defer o("Now, the panic is in call depth 0")
 
 	func() { // call depth 1
-		defer fmt.Println("Now, the panic is in call depth 1")
+		defer o("Now, the panic is in call depth 1")
 		func() { // call depth 2
-			defer fmt.Println("Now, the panic is in call depth 2")
+			defer o("Now, the panic is in call depth 2")
 			func() { // call depth 3
-				defer fmt.Println("Now, the panic is in call depth 3")
+				defer o("Now, the panic is in call depth 3")
 				panic(1)
 			}()
 		}()
@@ -256,26 +258,29 @@ there will be at most one active panic in the goroutine.
 
 <div>
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
 
 import "fmt"
 
 func main() { // call depth 0
-	defer fmt.Println("program will crash, for panic 3 is still active")
+	defer fmt.Println("to crash, for panic 3 is still active")
 
 	defer func() { // call depth 1
 		defer func() { // call depth 2
 			fmt.Println( recover() ) // 6
 		}()
 
-		// The depth of panic 3 is 0, and the depth of panic 6 is 1.
-		defer fmt.Println("now, there are two active panics: 3 and 6")
+		// The depth of panic 3 is 0,
+		// and the depth of panic 6 is 1.
+		defer fmt.Println("now, two active panics: 3 and 6")
 		defer panic(6) // will suppress panic 5
 		defer panic(5) // will suppress panic 4
-		panic(4) // will not suppress panic 3,
-		         // for they have different depths.
-		         // The depth of panic 3 is 0.
-		         // The depth of panic 4 is 1.
+
+		// The following panic will not suppress
+		// panic 3,  for they have different depths.
+		// The depth of panic 3 is 0.
+		// The depth of panic 4 is 1.
+		panic(4)
 	}()
 
 	defer fmt.Println("now, only panic 3 is active")

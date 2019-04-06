@@ -12,7 +12,7 @@ They are just for demonstration and education purpose, to show how to use the
 atomic functions provided in the <code>sync/atomic</code> standard package.
 </p>
 
-<a class="anchor" id="overview">&nbsp;</a>
+<a class="anchor" id="overview"></a>
 <h3>Overview of Atomic Operations Provided in Go</h3>
 
 <div>
@@ -21,7 +21,7 @@ The <code>sync/atomic</code> standard package provides the following five atomic
 for an integer type <code>T</code>, where <code>T</code> must be any of <code>int32</code>,
 <code>int64</code>, <code>uint32</code>, <code>uint64</code> and <code>uintptr</code>.
 
-<pre class="line-numbers"><code class="language-go">func AddT(addr *T, delta T)(new T)
+<pre class="line-numbers must-line-numbers"><code class="language-go">func AddT(addr *T, delta T)(new T)
 func LoadT(addr *T) (val T)
 func StoreT(addr *T, val T)
 func SwapT(addr *T, new T) (old T)
@@ -29,7 +29,7 @@ func CompareAndSwapT(addr *T, old, new T) (swapped bool)
 </code></pre>
 
 For example, the following five functions are provided for type <code>int32</code>.
-<pre class="line-numbers"><code class="language-go">func AddInt32(addr *int32, delta int32)(new int32)
+<pre class="line-numbers must-line-numbers"><code class="language-go">func AddInt32(addr *int32, delta int32)(new int32)
 func LoadInt32(addr *int32) (val int32)
 func StoreInt32(addr *int32, val int32)
 func SwapInt32(addr *int32, new int32) (old int32)
@@ -43,7 +43,7 @@ The following four atomic functions are provided for (safe) pointer types.
 As Go 1 doesn't support custom generic now, these functions are implemented
 through the <a href="unsafe.html">unsafe pointer type</a> <code>unsafe.Pointer</code>
 (the Go counterpart of C <code>void*</code>).
-<pre class="line-numbers"><code class="language-go">func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
+<pre class="line-numbers must-line-numbers"><code class="language-go">func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
 func StorePointer(addr *unsafe.Pointer, val unsafe.Pointer)
 func SwapPointer(addr *unsafe.Pointer, new T) (old unsafe.Pointer)
 func CompareAndSwapPointer(addr *unsafe.Pointer,
@@ -67,7 +67,7 @@ The remaining of this article shows some examples on how to use the atomic opera
 </p>
 </div>
 
-<a class="anchor" id="integer">&nbsp;</a>
+<a class="anchor" id="integer"></a>
 <h3>Atomic Operations for Integers</h3>
 
 <div>
@@ -182,15 +182,24 @@ func main() {
 	)
 
 	show := fmt.Println
-	atomic.AddUint64(&n, -m);             show(n) // 96 (97 - 1)
-	atomic.AddUint64(&n, -uint64(k));     show(n) // 94 (95 - 2)
-	atomic.AddUint64(&n, ^uint64(a - 1)); show(n) // 91 (94 - 3)
-	atomic.AddUint64(&n, ^(b - 1));       show(n) // 87 (91 - 4)
-	atomic.AddUint64(&n, ^uint64(c - 1)); show(n) // 82 (87 - 5)
-	atomic.AddUint64(&n, ^uint64(d - 1)); show(n) // 76 (82 - 6)
-	x := b; atomic.AddUint64(&n, -x);     show(n) // 72 (76 - 4)
-	atomic.AddUint64(&n, ^(m - 1));       show(n) // 71 (72 - 1)
-	atomic.AddUint64(&n, ^uint64(k - 1)); show(n) // 69 (71 - 2)
+	atomic.AddUint64(&n, -m)
+	show(n) // 96 (97 - 1)
+	atomic.AddUint64(&n, -uint64(k))
+	show(n) // 94 (95 - 2)
+	atomic.AddUint64(&n, ^uint64(a - 1))
+	show(n) // 91 (94 - 3)
+	atomic.AddUint64(&n, ^(b - 1))
+	show(n) // 87 (91 - 4)
+	atomic.AddUint64(&n, ^uint64(c - 1))
+	show(n) // 82 (87 - 5)
+	atomic.AddUint64(&n, ^uint64(d - 1))
+	show(n) // 76 (82 - 6)
+	x := b; atomic.AddUint64(&n, -x)
+	show(n) // 72 (76 - 4)
+	atomic.AddUint64(&n, ^(m - 1))
+	show(n) // 71 (72 - 1)
+	atomic.AddUint64(&n, ^uint64(k - 1))
+	show(n) // 69 (71 - 2)
 }
 </code></pre>
 
@@ -210,7 +219,7 @@ function call indicates whether or not the store operation is applied.
 </p>
 
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
 
 import (
 	"fmt"
@@ -221,10 +230,12 @@ func main() {
 	var n int64 = 123
 	var old = atomic.SwapInt64(&n, 789)
 	fmt.Println(n, old) // 789 123
-	fmt.Println(atomic.CompareAndSwapInt64(&n, 123, 456)) // false
-	fmt.Println(n) // 789
-	fmt.Println(atomic.CompareAndSwapInt64(&n, 789, 456)) // true
-	fmt.Println(n) // 456
+	swapped := atomic.CompareAndSwapInt64(&n, 123, 456)
+	fmt.Println(swapped) // false
+	fmt.Println(n)       // 789
+	swapped = atomic.CompareAndSwapInt64(&n, 789, 456)
+	fmt.Println(swapped) // true
+	fmt.Println(n)       // 456
 }
 </code></pre>
 
@@ -240,7 +251,7 @@ Please read <a href="memory-layout.html">memory layout</a> for details.
 
 </div>
 
-<a class="anchor" id="pointer">&nbsp;</a>
+<a class="anchor" id="pointer"></a>
 <h3>Atomic Operations for Pointers</h3>
 
 <div>
@@ -259,7 +270,7 @@ So values of <code>*unsafe.Pointer</code> type can also be explicitly converted 
 The following example is not a concurrent program.
 It just shows how to do atomic pointer operations.
 In this example, <code>T</code> can be an arbitrary type.
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
 
 import (
 	"fmt"
@@ -274,19 +285,21 @@ func main() {
 	var unsafePPT = (*unsafe.Pointer)(unsafe.Pointer(&pT))
 	var ta, tb T
 	// store
-	atomic.StorePointer(unsafePPT, unsafe.Pointer(&ta))
+	atomic.StorePointer(
+		unsafePPT, unsafe.Pointer(&ta))
 	// load
 	pa1 := (*T)(atomic.LoadPointer(unsafePPT))
 	fmt.Println(pa1 == &ta) // true
 	// swap
-	pa2 := atomic.SwapPointer(unsafePPT, unsafe.Pointer(&tb))
+	pa2 := atomic.SwapPointer(
+		unsafePPT, unsafe.Pointer(&tb))
 	fmt.Println((*T)(pa2) == &ta) // true
 	// compare and swap
-	b := atomic.CompareAndSwapPointer(unsafePPT, pa2,
-					unsafe.Pointer(&tb))
+	b := atomic.CompareAndSwapPointer(
+		unsafePPT, pa2, unsafe.Pointer(&tb))
 	fmt.Println(b) // false
-	b = atomic.CompareAndSwapPointer(unsafePPT,
-					unsafe.Pointer(&tb), pa2)
+	b = atomic.CompareAndSwapPointer(
+		unsafePPT, unsafe.Pointer(&tb), pa2)
 	fmt.Println(b) // true
 }
 </code></pre>
@@ -314,7 +327,7 @@ efficient than the ones introduced in the current section.
 </p>
 </div>
 
-<a class="anchor" id="arbitrary">&nbsp;</a>
+<a class="anchor" id="arbitrary"></a>
 <h3>Atomic Operations for Values of Arbitrary Types</h3>
 
 <div>

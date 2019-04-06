@@ -81,7 +81,7 @@ many other Go 101 articles later.
 </p>
 </div>
 
-<a class="anchor" id="if-else">&nbsp;</a>
+<a class="anchor" id="if-else"></a>
 <h3><code>if-else</code> Control Flow Blocks</h3>
 
 <div>
@@ -183,7 +183,9 @@ func main() {
 		fmt.Println("Now is evening time.")
 	} else {
 		fmt.Println("Now is afternoon time.")
-		h := h // a new "h" variable shadows the above one.
+		h := h // the right one is declared above
+		// The just new declared "h" variable
+		// shadows the above same-name one.
 		_ = h
 	}
 
@@ -196,7 +198,7 @@ func main() {
 
 </div>
 
-<a class="anchor" id="for">&nbsp;</a>
+<a class="anchor" id="for"></a>
 <h3><code>for</code> Loop Control Flow Blocks</h3>
 
 <div>
@@ -273,14 +275,16 @@ for i < 20 {
 
 If the <code>Condition</code> portion is absent,
 compilers will view it as <code>true</code>.
-<pre class="line-numbers"><code class="language-go">for i := 0; ; i++ { // same as: for i := 0; true; i++ {
+<pre class="line-numbers"><code class="language-go">for i := 0; ; i++ { // <=> for i := 0; true; i++ {
 	fmt.Println(i)
 	if i >= 10 {
-		break // break statement will be explained below
+		// "break" statement will be explained below.
+		break
 	}
 }
 
-// The following 4 endless loops are equivalent to each other.
+// The following 4 endless loops are
+// equivalent to each other.
 for ; true; {
 }
 for true {
@@ -296,14 +300,16 @@ for {
 
 If the <code>InitSimpleStatement</code> in a <code>for</code> block is a short variable declaration statement,
 then the declared variables will be viewed as being declared in the top nesting implicit code block of the <code>for</code> block.
-For example, the following code snippet print <code>012</code> instead of <code>0</code>.
+For example, the following code snippet prints <code>012</code> instead of <code>0</code>.
 
 <pre class="line-numbers"><code class="language-go">for i := 0; i < 3; i++ {
 	fmt.Print(i)
-	i := i // The left i is a new declared variable,
-	       // and the right i is the loop variable.
-	i = 10 // The new declared variable is modified, but
-	       // the old one (the loop variable) is not yet.
+	// The left i is a new declared variable,
+	// and the right i is the loop variable.
+	i := i
+	// The new declared variable is modified, but
+	// the old one (the loop variable) is not yet.
+	i = 10
 }
 </code></pre>
 
@@ -345,7 +351,7 @@ For example, the following code snippet will print <code>13579</code>.
 
 </div>
 
-<a class="anchor" id="switch-case">&nbsp;</a>
+<a class="anchor" id="switch-case"></a>
 <h3><code>switch-case</code> Control Flow Blocks</h3>
 
 <div>
@@ -462,17 +468,21 @@ func main() {
 	case 0:
 		fmt.Println(n, "is a multiple of 9.")
 
-		// Different from many other languages, in Go,
-		// the execution will automatically jumps out of the
-		// switch-case block at the end of each branch block.
+		// Different from many other languages,
+		// in Go, the execution will automatically
+		// jumps out of the switch-case block at
+		// the end of each branch block.
 		// No "break" statement is needed here.
 	case 1, 2, 3:
 		fmt.Println(n, "mod 9 is 1, 2 or 3.")
-		break // here, this "break" statement is nonsense.
+		// hHre, this "break" statement is nonsense.
+		break
 	case 4, 5, 6:
 		fmt.Println(n, "mod 9 is 4, 5 or 6.")
-	// case 6, 7, 8: // this case line may fail to compile, for 6
-	                 // is duplicate with the 6 in the last case.
+	// case 6, 7, 8:
+		// The above case line might fail to compile,
+		// for 6 is duplicate with the 6 in the last
+		// case. The behavior is compiler dependent.
 	default:
 		fmt.Println(n, "mod 9 is 7 or 8.")
 	}
@@ -512,14 +522,18 @@ will get executed, by their orders, from top to down.
 switch n := rand.Intn(100) % 5; n {
 case 0, 1, 2, 3, 4:
 	fmt.Println("n =", n)
-	fallthrough // make the execution slip into the next branch.
+	// The "fallthrough" statement makes the
+	// execution slip into the next branch.
+	fallthrough
 case 5, 6, 7, 8:
-	n := 99 // a new declared variable also called "n",
-	        // it is only visible in this branch code block.
+	// A new declared variable also called "n",
+	// it is only visible in the currrent
+	// branch code block.
+	n := 99
 	fmt.Println("n =", n) // 99
 	fallthrough
 default:
-	// This "n" is the same as the onein first branch block.
+	// This "n" is the switch expression "n".
 	fmt.Println("n =", n)
 }
 </code></pre>
@@ -543,17 +557,18 @@ For example, the following <code>fallthrough</code> uses are all illegal.
 <pre class="line-numbers"><code class="language-go">switch n := rand.Intn(100) % 5; n {
 case 0, 1, 2, 3, 4:
 	fmt.Println("n =", n)
-	// The if-block is the final statement in this branch.
+	// The if-block, not the fallthrough statement,
+	// is the final statement in this branch.
 	if true {
-		fallthrough // error: not the final statement in this branch.
+		fallthrough // error: not the final statement
 	}
 case 5, 6, 7, 8:
 	n := 99
-	fallthrough // error: not the final statement in this branch.
+	fallthrough // error: not the final statement
 	_ = n
 default:
 	fmt.Println(n)
-	fallthrough // error: shoud not show up in the final branch.
+	fallthrough // error: show up in the final branch
 }
 </code></pre>
 
@@ -605,7 +620,7 @@ default: fmt.Println("bye")
 <p>
 </p>
 
-<a class="anchor" id="default-branch-placement">&nbsp;</a>
+<a class="anchor" id="default-branch-placement"></a>
 
 Another obvious difference from many other languages is
 the order of the <code>default</code> branch
@@ -670,7 +685,7 @@ import "fmt"
 func main() {
 	i := 0
 
-Next: // a label is declared.
+Next: // here, a label is declared.
 	fmt.Println(i)
 	i++
 	if i < 5 {
@@ -719,7 +734,7 @@ func main() {
 	i := 0
 Next:
 	if i >= 5 {
-		// error: goto Exit jumps over declaration of k
+		// error: jumps over declaration of k
 		goto Exit
 	}
 
@@ -727,8 +742,10 @@ Next:
 	fmt.Println(k)
 	i++
 	goto Next
-Exit: // This label is declared in the scope of k,
-      // but its use is outside of the scope of k.
+
+// This label is declared in the scope of k,
+// but its use is outside of the scope of k.
+Exit:
 }
 </code></pre>
 
@@ -746,7 +763,8 @@ Next:
 	if i >= 5 {
 		goto Exit
 	}
-	// Create an explicit code block to shrink the scope of k.
+	// Create an explicit code block to
+	// shrink the scope of k.
 	{
 		k := i + i
 		fmt.Println(k)
@@ -835,7 +853,8 @@ Outer:
 func main() {
 	for i := 90; i < 100; i++ {
 		n := FindSmallestPrimeLargerThan(i)
-		fmt.Println("The smallest prime number larger than", i, "is", n)
+		fmt.Print("The smallest prime number larger than ")
+		fmt.Println(i, "is", n)
 	}
 }
 </code></pre>

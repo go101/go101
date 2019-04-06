@@ -8,7 +8,7 @@ Function operations are often called function calls.
 This article will introduce how to declare functions and call functions.
 </p>
 
-<a class="anchor" id="declaration">&nbsp;</a>
+<a class="anchor" id="declaration"></a>
 <h3>Function Declarations</h3>
 
 <div>
@@ -118,10 +118,12 @@ For example, the following function will always print (and return) <code>0 false
 If the types of some successive parameters or results in a function declaration
 are the same one, then the types of the former parameters or results can be absent.
 For example, the above two function declarations with the name <code>SquaresOfSumAndDiff</code> are equivalent to
-<pre class="line-numbers"><code class="language-go">func SquaresOfSumAndDiff(a, b int64) (s, d int64) {
+<pre class="line-numbers must-line-numbers"><code class="language-go">func SquaresOfSumAndDiff(a, b int64) (s, d int64) {
 	return (a+b) * (a+b), (a-b) * (a-b)
-	// The above line is equivalent to the following line
-	// s = (a+b) * (a+b); d = (a-b) * (a-b); return
+	// The above line is equivalent to the following line.
+	/*
+	s = (a+b) * (a+b); d = (a-b) * (a-b); return
+	*/
 }
 </code></pre>
 
@@ -142,9 +144,13 @@ even if the number of parameters of the declared function is zero.
 
 Here are more function declaration examples.
 <pre class="line-numbers"><code class="language-go">func CompareLower4bits(m, n uint32) (r bool) {
-	// The following two lines <=> return m&0xF > n&0xF
 	r = m&0xF > n&0xF
 	return
+	// The above two lines is equivalent to
+	// the following line.
+	/*
+	return m&0xF > n&0xF
+	*/
 }
 
 // This function has no parameters.
@@ -175,7 +181,7 @@ But anonymous functions are not function declarations.
 </p>
 </div>
 
-<a class="anchor" id="call">&nbsp;</a>
+<a class="anchor" id="call"></a>
 <h3>Function Calls</h3>
 
 <div>
@@ -206,7 +212,8 @@ func CompareLower4bits(m, n uint32) (r bool) {
 	return
 }
 
-// Initialize a package-level variable with a function call.
+// Initialize a package-level variable
+// with a function call.
 var v = VersionString()
 
 func main() {
@@ -215,7 +222,8 @@ func main() {
 	println(x, y) // 81 9
 	b := CompareLower4bits(uint32(x), uint32(y))
 	println(b) // false
-	// "Go" is deduced as a string, and 1 is deduced as an int32.
+	// "Go" is deduced as a string,
+	// and 1 is deduced as an int32.
 	doNothing("Go", 1)
 }
 
@@ -238,7 +246,7 @@ Function calls can be deferred and invoked in new goroutines (green threads) in 
 Please read the article <a href="control-flows-more.html">deferred function calls and goroutines</a> for details.
 </p>
 
-<a class="anchor" id="existing-phase">&nbsp;</a>
+<a class="anchor" id="existing-phase"></a>
 <h3>Exiting Phase of a Function Call</h3>
 
 <p>
@@ -263,7 +271,8 @@ Example:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	// This anonymous function has no parameters but has two results.
+	// This anonymous function has no parameters
+	// but has two results.
 	x, y := func() (int, int) {
 		println("This function has no parameters.")
 		return 3, 4
@@ -272,16 +281,19 @@ func main() {
 	// The following anonymous function have no results.
 
 	func(a, b int) {
-		println("a*a + b*b =", a*a + b*b) // a*a + b*b = 25
+		// The following line prints: a*a + b*b = 25
+		println("a*a + b*b =", a*a + b*b)
 	}(x, y) // pass argument x and y to parameter a and b.
 
 	func(x int) {
 		// The parameter x shadows the outer x.
-		println("x*x + y*y =", x*x + y*y) // x*x + y*y = 32
+		// The following line prints: x*x + y*y = 32
+		println("x*x + y*y =", x*x + y*y)
 	}(y) // pass argument y to parameter x.
 
 	func() {
-		println("x*x + y*y =", x*x + y*y) // x*x + y*y = 25
+		// The following line prints: x*x + y*y = 25
+		println("x*x + y*y =", x*x + y*y)
 	}() // no arguments are needed.
 }
 </code></pre>
@@ -327,16 +339,24 @@ The call is viewed as a constant expression.
 </p>
 
 Example:
-<pre class="line-numbers"><code class="language-go">const c = complex(1.6, 3.3) // c is a untyped complex constant.
+<pre class="line-numbers"><code class="language-go">// c is a untyped complex constant.
+const c = complex(1.6, 3.3)
 
-// The results of real(c) and imag(c) are both untyped floating-point values.
-
+// The results of real(c) and imag(c) are both
+// untyped floating-point values. They are both
+// deduced as values of type float32 below.
 var a, b float32 = real(c), imag(c)
-var d = complex(a, b) // d is deduced as a typed value of type complex64.
-var e = c             // e is deduced as a typed value of type complex128.
 
-// The results of real(d) and imag(d) are both typed values of type float32.
-// The results of real(e) and imag(e) are both typed values of type float64.
+// d is deduced as a typed value of type complex64.
+// The results of real(d) and imag(d) are both
+// typed values of type float32.
+var d = complex(a, b)
+
+// e is deduced as a typed value of type complex128.
+// The results of real(e) and imag(e) are both
+// typed values of type float64.
+var e = c
+
 </code></pre>
 
 <p>

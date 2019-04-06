@@ -24,7 +24,7 @@ and look cleaner, than the channel ways.
 the values of the types in the <code>sync</code> standard package.)
 </i></p>
 
-<a class="anchor" id="waitgroup">&nbsp;</a>
+<a class="anchor" id="waitgroup"></a>
 <h3>The <code>sync.WaitGroup</code> Type</h3>
 
 <div>
@@ -107,7 +107,8 @@ func main() {
 	}
 
 	wg.Wait()
-	// All elements are guaranteed to be initialized now.
+	// All elements are guaranteed to be
+	// initialized now.
 	log.Println("values:", values)
 }
 </code></pre>
@@ -167,14 +168,15 @@ When the counter becomes zero, all of them will be notified, in a broadcast way.
 	for i := 0; i < N; i++ {
 		values[i] = 50 + rand.Int31n(50)
 	}
-	wgB.Done() // will make a broadcast notification
+	// Make a broadcast notification.
+	wgB.Done()
 	wgA.Wait()
 }
 </code></pre>
 
 </div>
 
-<a class="anchor" id="once">&nbsp;</a>
+<a class="anchor" id="once"></a>
 <h3>The <code>sync.Once</code> Type</h3>
 
 <div>
@@ -245,7 +247,7 @@ And <code>Hello</code> is guaranteed to be printed before all five <code>world!<
 
 </div>
 
-<a class="anchor" id="mutex">&nbsp;</a>
+<a class="anchor" id="mutex"></a>
 <h3>The <code>sync.Mutex</code> and <code>sync.RWMutex</code> Types</h3>
 
 <div>
@@ -391,8 +393,9 @@ The last two rules are to ensure both readers and writers have chances to acquir
 </p>
 
 <p>
-Please note, a lock acquirer might not be not the holder of the lock it acquired,
-though this case is rare in practice.
+Please note, a lock acquirer might be not the holder of the lock it acquired.
+In other words, a lock doesn't know which goroutine acquired it,
+and any goroutine can release a lock which in acquired status.
 </p>
 
 <!--
@@ -504,7 +507,7 @@ please read <a href="memory-model.html#mutex">memory order guarantees in Go</a>.
 
 </div>
 
-<a class="anchor" id="cond">&nbsp;</a>
+<a class="anchor" id="cond"></a>
 <h3>The <code>sync.Cond</code> Type</h3>
 
 <div>
@@ -625,19 +628,24 @@ func main() {
 		d := time.Second * time.Duration(rand.Intn(10)) / 10
 		go func(i int) {
 			time.Sleep(d) // simulate a workload
-			// Changes must be made when cond.L is locked.
+
+			// Changes must be made when
+			// cond.L is locked.
 			cond.L.Lock()
 			values[i] = string('a' + i)
+
 			// Notify when cond.L lock is acquired.
 			cond.Broadcast()
 			cond.L.Unlock()
-			// "cond.Broadcast()" can also be put here,
-			// when cond.L lock is released.
+
+			// "cond.Broadcast()" can also be put
+			// here, when cond.L lock is released.
 			//cond.Broadcast()
 		}(i)
 	}
 
-	// This function must be called when cond.L is locked.
+	// This function must be called when
+	// cond.L is locked.
 	checkCondition := func() bool {
 		fmt.Println(values)
 		for i := 0; i < N; i++ {
@@ -648,7 +656,8 @@ func main() {
 		return true
 	}
 	for !checkCondition() {
-		cond.Wait() // must be called when cond.L is locked
+		// Must be called when cond.L is locked.
+		cond.Wait()
 	}
 	cond.L.Unlock()
 }

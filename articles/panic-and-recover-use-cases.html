@@ -32,7 +32,8 @@ func main() {
 		if err != nil {
 			log.Println(err)
 		}
-		// Handle each client connection in a new goroutine.
+		// Handle each client connection
+		// in a new goroutine.
 		go ClientHandler(conn)
 	}
 }
@@ -75,7 +76,9 @@ import "time"
 
 func shouldNotExit() {
 	for {
-		time.Sleep(time.Second) // simulate a workload
+		// Simulate a workload.
+		time.Sleep(time.Second)
+
 		// Simulate an unexpected panic.
 		if time.Now().UnixNano() & 0x3 == 0 {
 			panic("unexpected situation")
@@ -85,7 +88,8 @@ func shouldNotExit() {
 
 func NeverExit(name string, f func()) {
 	defer func() {
-		if v := recover(); v != nil { // a panic is detected.
+		if v := recover(); v != nil {
+			// A panic is detected.
 			log.Println(name, "is crashed. Restart it now.")
 			go NeverExit(name, f) // restart
 		}
@@ -97,7 +101,7 @@ func main() {
 	log.SetFlags(0)
 	go NeverExit("job#A", shouldNotExit)
 	go NeverExit("job#B", shouldNotExit)
-	select{} // blocks here for ever
+	select{} // block here for ever
 }
 </code></pre>
 </div>
@@ -153,7 +157,66 @@ func main() {
 
 An example:
 
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
+	defer func() {
+		err = recover()
+	}()
+
+	doStep1()
+	doStep2()
+	doStep3()
+	doStep4()
+	doStep5()
+
+	return
+}
+
+// In reality, the prototypes of the doStepN functions
+// might be different. For each of them,
+// * panic with nil for success and no needs to continue.
+// * panic with error for failure and no needs to contine.
+// * not panic for continuing.
+func doStepN() {...}
+</code></pre>
+
+<p>
+The above code is less verbose than the following one.
+</p>
+
+<pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
+	shouldContinue, err := doStep1()
+	if !shouldContinue {
+		return err
+	}
+	shouldContinue, err = doStep2()
+	if !shouldContinue {
+		return err
+	}
+	shouldContinue, err = doStep3()
+	if !shouldContinue {
+		return err
+	}
+	shouldContinue, err = doStep4()
+	if !shouldContinue {
+		return err
+	}
+	shouldContinue, err = doStep5()
+	if !shouldContinue {
+		return err
+	}
+
+	return
+}
+
+// If err is not nil, then shouldContinue must be true.
+// If shouldContinue is true, err might be nil or non-nil.
+func doStepN() (shouldContinue bool, err error) {...}
+</code></pre>
+
+
+<!--
+<pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
+package main
 
 import "fmt"
 
@@ -215,10 +278,11 @@ func doSomething() (err error) {
 	return
 }
 </code></pre>
+-->
 
 <p>
 However, usually, this panic/recover use pattern is not recommended to use.
-It is less readable and less efficient.
+It is less Go-idiomatic and less efficient.
 </p>
 </div>
 

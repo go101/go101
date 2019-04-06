@@ -37,7 +37,7 @@ Its direct part is referencing its indirect underlying part.
 </p>
 
 <p>
-The following two paragrapsh describe two categories of Go types.
+The following two paragraphs describe two categories of Go types.
 </p>
 
 <p>
@@ -93,7 +93,7 @@ Note,
 The types in the second category are not very fundamental types for a language,
 we can implement them from scratch by using the types from the first category.
 However, by encapsulating some common or unique functionalities and
-supporting these types as the first-level citizens in Go,
+supporting these types as the first-class citizens in Go,
 the experiences of Go programming become enjoyable and productive.
 </p>
 
@@ -184,8 +184,7 @@ https://groups.google.com/forum/#!topic/golang-nuts/91phVZwiDf8
 <div>
 The internal definitions of map, channel and function types are similar:
 <pre class="line-numbers"><code class="language-go">// map types
-type _map *hashtableImpl // Currently, the standard Go compiler
-                         // uses hashtables to implement maps.
+type _map *hashtableImpl
 
 // channel types
 type _channel *channelImpl
@@ -193,11 +192,16 @@ type _channel *channelImpl
 // function types
 type _function *functionImpl
 </code></pre>
+
 <p>
 So, internally, types of the three kinds are just pointer types.
 In other words, the direct parts of values of these types are pointers internally.
 For each non-zero value of these types,
 its direct part (a pointer) references its indirect underlying implementation part.
+</p>
+
+<p>
+BTW, the standard Go compiler uses hashtables to implement maps.
 </p>
 
 </div>
@@ -207,9 +211,10 @@ its direct part (a pointer) references its indirect underlying implementation pa
 <div>
 The internal definition of slice types is like:
 <pre class="line-numbers"><code class="language-go">type _slice struct {
-	elements unsafe.Pointer // referencing underlying elements
-	len      int            // number of elements
-	cap      int            // capacity
+	// referencing underlying elements
+	elements unsafe.Pointer
+	// number of elements and capacity
+	len, cap int
 }
 </code></pre>
 
@@ -239,7 +244,7 @@ by the <code>elements</code> field of that string value.
 </p>
 </div>
 
-<a class="anchor" id="interface-structure">&nbsp;</a>
+<a class="anchor" id="interface-structure"></a>
 <h4>Internal definition of interface types</h4>
 
 <div>
@@ -269,7 +274,7 @@ For non-blank interface types, the definition like the following one is used.
 <pre class="line-numbers"><code class="language-go">type _interface struct {
 	dynamicTypeInfo *struct {
 		dynamicType *_type       // the dynamic type
-		methods     []*_function // implemented methods
+		methods     []*_function // method table
 	}
 	dynamicValue unsafe.Pointer // the dynamic value
 }
@@ -300,7 +305,7 @@ which is referenced by the <code>dynamicValue</code> field.
 
 </div>
 
-<a class="anchor" id="about-value-copy">&nbsp;</a>
+<a class="anchor" id="about-value-copy"></a>
 <h3>Underlying Value Parts Are Not Copied in Value Assignments</h3>
 
 <p>
@@ -362,7 +367,7 @@ Slice, map and function values can't be used as map keys.
 </p>
 -->
 
-<a class="anchor" id="more=about-reference">&nbsp;</a>
+<a class="anchor" id="more=about-reference"></a>
 <h3>About the "Reference Type" and "Reference Value" Terminologies</h3>
 
 <div>

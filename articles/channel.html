@@ -156,7 +156,7 @@ writing bad concurrent code from the syntax level.
 
 <p>
 Although Go also supports traditional concurrency synchronization techniques.
-only channel is first-level citizen in Go. Channel is one kind of types in Go,
+only channel is first-class citizen in Go. Channel is one kind of types in Go,
 so we can use channels without importing any packages.
 On the other hand, those traditional concurrency synchronization techniques are provided
 in the <code>sync</code> and <code>sync/atomic</code> standard packages.
@@ -230,7 +230,7 @@ The second parameter is optional and its default value is zero.
 
 </div>
 
-<a class="anchor" id="assign-and-compare">&nbsp;</a>
+<a class="anchor" id="assign-and-compare"></a>
 <h3>Channel Value Comparisons</h3>
 
 <p>
@@ -246,7 +246,7 @@ In other words, the two channels represent the same internal channel object.
 The result of comparing them is <code>true</code>.
 </p>
 
-<a class="anchor" id="operations">&nbsp;</a>
+<a class="anchor" id="operations"></a>
 <h3>Channel Operations</h3>
 
 <div>
@@ -372,7 +372,7 @@ Channel send, receive and close operations will be explained in detail in the ne
 
 </div>
 
-<a class="anchor" id="channel-operation-explanations">&nbsp;</a>
+<a class="anchor" id="channel-operation-explanations"></a>
 <h3>Detailed Explanations for Channel Operations</h3>
 
 <div>
@@ -396,7 +396,7 @@ The following table simply summarizes the behaviors for all kinds of operations
 applying on nil, closed and not-closed non-nil channels.
 </p>
 
-<table class="table table-bordered text-center" style="width: auto !important;">
+<table border="1" class="table table-bordered text-center" style="width: auto !important;">
 <thead>
 	<tr class="active">
 	<th class="text-center">Operation</th>
@@ -680,18 +680,22 @@ func main() {
 	c := make(chan int) // an unbuffered channel
 	go func(ch chan<- int, x int) {
 		time.Sleep(time.Second)
-		// <-ch    // this operation fails to compile.
-		ch <- x*x  // blocking here until the result is received
+		// <-ch    // fails to compile.
+		// Block until the result is received.
+		ch <- x*x // 9 is sent
 	}(c, 3)
 	done := make(chan struct{})
 	go func(ch <-chan int) {
-		n := <-ch      // blocking here until 9 is sent
+		// Block here until 9 is sent.
+		n := <-ch
 		fmt.Println(n) // 9
-		// ch <- 123   // this operation fails to compile
+		// ch <- 123   // fails to compile
 		time.Sleep(time.Second)
 		done <- struct{}{}
 	}(c)
-	<-done // blocking here until a value is sent to channel "done"
+	// Block here until a value is sent to
+	// the channel "done".
+	<-done
 	fmt.Println("bye")
 }
 </code></pre>
@@ -732,7 +736,9 @@ func main() {
 	fmt.Println(x, ok) // 0 false
 	fmt.Println(len(c), cap(c)) // 0 2
 	close(c) // panic!
-	c <- 7   // also panic if the above close call is removed.
+	// The send will also panic if the above
+	// close call is removed.
+	c <- 7
 }
 </code></pre>
 
@@ -861,7 +867,7 @@ func main() {
 
 </div>
 
-<a class="anchor" id="range">&nbsp;</a>
+<a class="anchor" id="range"></a>
 <h3><code>for-range</code> on Channels</h3>
 
 <div>
@@ -906,7 +912,7 @@ shown in the last section can be simplified to
 </p>
 </div>
 
-<a class="anchor" id="select">&nbsp;</a>
+<a class="anchor" id="select"></a>
 <h3><code>select-case</code> Control Flow Code Blocks</h3>
 
 <div>
@@ -988,13 +994,15 @@ func main() {
 	tryReceive := func() string {
 		select {
 		case v := <-c: return v
-		default: return "-" // go here if c is empty.
+		default: return "-" // go here if c is empty
 		}
 	}
 	trySend("Hello!") // succeed to send
 	trySend("Hi!")    // succeed to send
-	trySend("Bye!")   // fail to send, but will not be blocked.
-	// The following two line both succeed to receive.
+	// Fail to send, but will not block.
+	trySend("Bye!")
+	// The following two lines will
+	// both succeed to receive.
 	fmt.Println(tryReceive()) // Hello!
 	fmt.Println(tryReceive()) // Hi!
 	// The following line fails to receive.
@@ -1014,7 +1022,8 @@ func main() {
 	c := make(chan struct{})
 	close(c)
 	select {
-	case c <- struct{}{}: // panic if this case is selected.
+	case c <- struct{}{}:
+		// Panic if the first case is selected.
 	case <-c:
 	}
 }
@@ -1023,7 +1032,7 @@ func main() {
 
 </div>
 
-<a class="anchor" id="select-implementation">&nbsp;</a>
+<a class="anchor" id="select-implementation"></a>
 <h3>The Implementation of the Select Mechanism</h3>
 
 <div>

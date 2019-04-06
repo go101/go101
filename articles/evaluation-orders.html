@@ -27,6 +27,65 @@ Please read <a href="packages-and-imports.html#initialization-order">program res
 for another example on package-level variable initialization orders.
 </p>
 
+<a class="anchor" id="package-level-variables"></a>
+<h3>Package-level Variables Initialization Order</h3>
+
+<div>
+<p>
+When a package is loaded at run time, Go runtime
+will try to initialize uninitialized package-level variables
+which have no dependencies on uninitialized variables,
+by their declaration order.
+The process might be applied (looped) several times,
+until no variables are initialized in such a process.
+For a successfully compiled Go program, there should be
+no uninitialized variables after all such processes end.
+</p>
+
+For example, the following program should print <code>yzxw</code>.
+<ol>
+<li>
+	In the first run of above described process, <code>y</code> and <code>z</code>
+	are the only two uninitialized variables which have no dependencies on
+	uninitialized variables, so they are initialized by their declaration order.
+</li>
+<li>
+	In the second run of above described process, <code>x</code>
+	is the only uninitialized variable which has no dependencies
+	on uninitialized variables, so it is initialized.
+</li>
+<li>
+	In the third run of above described process, <code>w</code>
+	is the only uninitialized variable which has no dependencies
+	on uninitialized variables, so it is initialized.
+</li>
+</ol>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+var (
+	w = f("w", x)
+	x = f("x", z)
+	y = f("y")
+	z = f("z")
+)
+
+func f(s string, deps ...int) int {
+	print(s);
+	return 0
+}
+
+func main() {
+	f("\n")
+}
+</code></pre>
+
+<p>
+Note, currently (Go 1.12), the standard Go compiler
+<a href="https://github.com/golang/go/issues/22326">doesn't implement the rule correctly</a>.
+If the above program is compiled with the standard Go compiler, it will print <code>zxwy</code>.
+</p>
+
 </div>
 
 <h3>The Usual Order</h3>
@@ -216,7 +275,7 @@ R0 := a; R1 := b
 
 Here is another example, in which <code>x[0]</code> instead of <code>x[1]</code> is modified.
 
-<pre class="line-numbers"><code class="language-go">	x := []int{0, 0}
+<pre class="line-numbers must-line-numbers"><code class="language-go">	x := []int{0, 0}
 	i := 0
 	i, x[i] = 1, 2
 	fmt.Println(x) // [2 0]
@@ -240,7 +299,7 @@ R0 := 1; R1 := 2
 
 An example which is a little more complex.
 
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
 
 import "fmt"
 
@@ -265,7 +324,8 @@ P0 := &s; PM1 := &m; K1 := "Go"; P2 := p; P3 := &s[2]
 R0 := []int{2, 2, 2}; R1 := s[1]; R2 := m["Go"]; R3 := 5
 // now, R1 == 1, R2 == 0
 
-// The elementary form: *P0, (*PM1)[K1], *P2, *P3 = R0, R1, R2, R3
+// The elementary form:
+//     *P0, (*PM1)[K1], *P2, *P3 = R0, R1, R2, R3
 
 // The carry-out phase:
 *P0 = R0

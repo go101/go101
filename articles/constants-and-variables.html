@@ -13,7 +13,7 @@ which are two predeclared (built-in) named constants.
 Custom named constant declarations will be introduced below in this article.
 </p>
 
-<a class="anchor" id="untyped-value">&nbsp;</a>
+<a class="anchor" id="untyped-value"></a>
 <h3>Untyped Values and Typed Values</h3>
 
 <p>
@@ -68,7 +68,7 @@ The default type of a literal constant is determined by its literal form.
 
 
 
-<a class="anchor" id="explicit-conversion">&nbsp;</a>
+<a class="anchor" id="explicit-conversion"></a>
 <h3>Explicit Conversions of Untyped Constants</h3>
 
 <p>
@@ -121,9 +121,11 @@ otherwise, the result is not a constant.
 </div>
 
 For example, the following conversions are all legal.
-<pre class="disable-line-numbers111"><code class="language-go">complex128(1 + -1e-1000i)  // 1.0+0.0i of type complex128. Rounding happens here.
-float32(0.49999999)        // 0.5 of type float32. Rounding happens here.
-float32(17000000000000000) // rounding happens here.
+<pre class="disable-line-numbers111"><code class="language-go">// Rounding happens in the following 3 lines.
+complex128(1 + -1e-1000i)  // 1.0+0.0i
+float32(0.49999999)        // 0.5
+float32(17000000000000000)
+// No rounding in the these lines.
 float32(123)
 uint(1.0)
 int8(-123)
@@ -142,15 +144,24 @@ string(0x2FFFFFFFF) // "\uFFFD"
 </p>
 
 And the following conversions are all illegal.
-<pre class="disable-line-numbers111"><code class="language-go">int(1.23)     // 1.23 is not representable as a value of int.
-uint8(-1)     // -1 is not representable as a value of uint8.
-float64(1+2i) // 1+2i is not representable as a value of float64.
+<pre class="disable-line-numbers111"><code class="language-go">// 1.23 is not representable as a value of int.
+int(1.23)
+// -1 is not representable as a value of uint8.
+uint8(-1)
+// 1+2i is not representable as a value of float64.
+float64(1+2i)
 
-float64(-1e1000)         // constant -1e+1000 overflows float64.
-int(0x10000000000000000) // constant 0x10000000000000000 overflows int.
+// Constant -1e+1000 overflows float64.
+float64(-1e1000)
+// Constant 0x10000000000000000 overflows int.
+int(0x10000000000000000)
 
-string(65.0)  // the default type of 65.0 is float64 (not an integer type).
-string(66+0i) // the default type of 66+0i is complex128 (not an integer type).
+// The default type of 65.0 is float64,
+// which is not an integer type.
+string(65.0)
+// The default type of 66+0i is complex128,
+// which is not an integer type.
+string(66+0i)
 </code></pre>
 
 <div class="note">
@@ -176,7 +187,7 @@ We will learn more explicit conversion rules later in other Go 101 articles.
 
 </div>
 
-<a class="anchor" id="type-deduce">&nbsp;</a>
+<a class="anchor" id="type-deduce"></a>
 <h3>Introduction of Type Deductions in Go</h3>
 
 <p>
@@ -216,7 +227,7 @@ will show some type deduction cases.
 More type deduction rules and cases will be introduced in other articles.
 </p>
 
-<a class="anchor" id="constant">&nbsp;</a>
+<a class="anchor" id="constant"></a>
 <h3>Constant Declarations</h3>
 
 <div>
@@ -227,14 +238,14 @@ boolean, numeric and string values.
 The keyword <code>const</code> is used to declare named constants.
 The following program contains some constant declarations.
 
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
 
-// Declare two individual constants.
-// Yes, non-ASCII letters can be used in identifiers.
+// Declare two individual constants. Yes,
+// non-ASCII letters can be used in identifiers.
 const π = 3.1416
 const Pi = π // equivalent to: Pi == 3.1416
 
-// Declare multiple constants as a group by using ().
+// Declare multiple constants in a group.
 const (
 	No         = !Yes
 	Yes        = true
@@ -243,7 +254,7 @@ const (
 )
 
 func main() {
-	// Declare multiple constants in one code line.
+	// Declare multiple constants in one line.
 	const DoublePi, HalfPi, Unit2 = π * 2, π * 0.5, "degree"
 }
 </code></pre>
@@ -358,22 +369,27 @@ If a basic value literal is bound to a typed constant, the basic value
 literal must be representable as a value of the type of the constant.
 The following typed constant declarations are invalid.
 
-<pre class="line-numbers"><code class="language-go">const a uint8 = 256             // error: 256 overflows uint8
-const b = uint8(255) + uint8(1) // error: 256 overflows uint8
-const c = int8(-128) / int8(-1) // error: 128 overflows int8
-const MaxUint_a = uint(^0)      // error: -1 overflows uint
-const MaxUint_b uint = ^0       // error: -1 overflows uint
+<pre class="line-numbers"><code class="language-go">// error: 256 overflows uint8
+const a uint8 = 256
+// error: 256 overflows uint8
+const b = uint8(255) + uint8(1)
+// error: 128 overflows int8
+const c = int8(-128) / int8(-1)
+// error: -1 overflows uint
+const MaxUint_a = uint(^0)
+// error: -1 overflows uint
+const MaxUint_b uint = ^0
 </code></pre>
 
 <p>
-In the above and following examples <code>^</code> is bitwise not operator.
+In the above and following examples <code>^</code> is bitwise-not operator.
 </p>
 
 The following typed constant declaration is valid on 64-bit OSes,
 but invalid on 32-bit OSes.
 For each <code>uint</code> value has only 32 bits on 32-bit OSes.
 <code>(1 &lt;&lt; 64) - 1</code> is not representable as 32-bit values.
-(Here, <code>&lt;&lt;</code> is bitwise left shift operator.)
+(Here, <code>&lt;&lt;</code> is bitwise-left-shift operator.)
 
 <pre class="line-numbers"><code class="language-go">const MaxUint uint = (1 << 64) - 1
 </code></pre>
@@ -390,7 +406,7 @@ the largest <code>uint</code> value to it? Use the following way instead.
 
 Similarly, we can declare a typed <code>int</code> constant
 and bind the largest <code>int</code> value to it.
-(Here, <code>&gt;&gt;</code> is bitwise right shift operator.)
+(Here, <code>&gt;&gt;</code> is bitwise-right-shift operator.)
 
 <pre class="line-numbers"><code class="language-go">const MaxInt = int(^uint(0) >> 1)
 </code></pre>
@@ -400,7 +416,8 @@ and bind the largest <code>int</code> value to it.
 A similar method can be used to get the number of bits of a native word,
 and check the current OS is 32-bit or 64-bit.
 
-<pre class="line-numbers"><code class="language-go">const NativeWordBits = 32 << (^uint(0) >> 63) // 64 or 32
+<pre class="line-numbers"><code class="language-go">// NativeWordBits is 64 or 32.
+const NativeWordBits = 32 << (^uint(0) >> 63)
 const Is64bitOS = ^uint(0) >> 63 != 0
 const Is32bitOS = ^uint(0) >> 32 == 0
 </code></pre>
@@ -424,12 +441,13 @@ complete the following code
 
 <pre class="line-numbers"><code class="language-go">const (
 	X float32 = 3.14
-	Y                // here must be one identifier
-	Z                // here must be one identifier
+	Y           // here must be one identifier
+	Z           // here must be one identifier
 
 	A, B = "Go", "language"
 	C, _
-	// In the above line, the blank identifier is required.
+	// In the above line, the blank identifier
+	// is required to be present.
 )
 </code></pre>
 
@@ -488,8 +506,8 @@ func main() {
 	const (
 		k = 3 // now, iota == 0
 
-		m float32 = iota + 0.1 // m float32 = 1 + 0.1
-		n                      // n float32 = 2 + 0.1
+		m float32 = iota + .5 // m float32 = 1 + .5
+		n                     // n float32 = 2 + .5
 
 		p = 9             // now, iota == 3
 		q = iota * 2      // q = 4 * 2
@@ -506,7 +524,8 @@ func main() {
 		z        // z = 1
 	)
 
-	println(m, n)          // +1.100000e+000 +2.100000e+000
+	println(m)             // +1.500000e+000
+	println(n)             // +2.500000e+000
 	println(q, r)          // 8 12
 	println(s, t, u, v, w) // 7 7 8 8 9
 	println(x, y, z)       // 0 0 1
@@ -543,7 +562,7 @@ Both of these operators will be introduced in the next article.
 
 </div>
 
-<a class="anchor" id="variable">&nbsp;</a>
+<a class="anchor" id="variable"></a>
 <h3>Variables, Variable Declarations and Value Assignments</h3>
 
 <div>
@@ -584,7 +603,7 @@ Variable names must be <a href="keywords-and-identifiers.html#identifier">identi
 The following are some full standard declaration forms.
 In these declarations,
 the types and initial values of the declared variables are all specified.</p>
-<pre class="line-numbers"><code class="language-go">var lang, website string = "Go", "https://golang.org"
+<pre class="line-numbers must-line-numbers"><code class="language-go">var lang, website string = "Go", "https://golang.org"
 var compiled, dynamic bool = true, false
 var announceYear int = 2008
 </code></pre>
@@ -611,16 +630,18 @@ The following declarations are equivalent to the above ones in fact.
 Please note, in the following declarations, the types of the multiple variables
 declared in the same declaration line can be different.
 
-<pre class="line-numbers"><code class="language-go">// The types of the lang and dynamic variables will be deduced as
-// built-in types "string" and "bool" by compilers, respectively.
+<pre class="line-numbers"><code class="language-go">// The types of the lang and dynamic variables
+// will be deduced as built-in types "string"
+// and "bool" by compilers, respectively.
 var lang, dynamic = "Go", false
 
-// The types of the compiled and announceYear variables will be
-// deduced as built-in types "bool" and "int", respectively.
+// The types of the compiled and announceYear
+// variables will be deduced as built-in
+// types "bool" and "int", respectively.
 var compiled, announceYear = true, 2009
 
-// The types of the website variable will be deduced
-// as the built-in type "string" by compilers.
+// The types of the website variable will be
+// deduced as the built-in type "string".
 var website = "https://golang.org"
 </code></pre>
 
@@ -632,9 +653,12 @@ The following are some standard declarations without specifying variable initial
 In these declarations, all declared variables are initialized
 as the zero values of their respective types.
 
-<pre class="line-numbers"><code class="language-go">var lang, website string      // both are initialized as blank strings.
-var interpreted, dynamic bool // both are initialized as false.
-var n int                     // is initialized as 0.
+<pre class="line-numbers"><code class="language-go">// Both are initialized as blank strings.
+var lang, website string
+// Both are initialized as false.
+var interpreted, dynamic bool
+// n is initialized as 0.
+var n int
 </code></pre>
 
 <p></p>
@@ -663,7 +687,7 @@ make code more readable.
 
 </div>
 
-<a class="anchor" id="assignment">&nbsp;</a>
+<a class="anchor" id="assignment"></a>
 <h4>Pure value assignments</h4>
 
 <div>
@@ -698,21 +722,21 @@ Example:
 var x int
 var y, z float32
 
-N = 789 // error: constant N is not modifiable
-y = N   // ok: N is implicitly converted to (deduced as a) float32
-x = y   // error: type mismatch
-x = N   // ok: N is implicitly converted to (deduced as an) int
-y = x   // error: type mismatch
-z = y   // ok
-_ = y   // ok
+N = 9 // error: constant N is not modifiable
+y = N // ok: N is deduced as a float32 value
+x = y // error: type mismatch
+x = N // ok: N is deduced as an int value
+y = x // error: type mismatch
+z = y // ok
+_ = y // ok
 
+x, y = y, x // error: type mismatch
+x, y = int(y), float32(x) // ok
 z, y = y, z               // ok
 _, y = y, z               // ok
 z, _ = y, z               // ok
 _, _ = y, z               // ok
 x, y = 69, 1.23           // ok
-x, y = y, x               // error: type mismatch
-x, y = int(y), float32(x) // ok
 </code></pre>
 
 <p>
@@ -741,12 +765,13 @@ Let's view an example which uses some short variable declarations.
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	// Both lang and year are two new declared variables.
+	// Both lang and year are newly declared.
 	lang, year := "Go language", 2007
 
 	// Only createdBy is a new declared variable.
-	// The year variable has already been declared before,
-	// so here its value is just modified.
+	// The year variable has already been
+	// declared before, so here its value is just
+	// modified, or we can say it is redeclared.
 	year, createdBy := 2009, "Google Research"
 
 	// This is a pure assignment.
@@ -757,7 +782,7 @@ func main() {
 }
 </code></pre>
 
-<p>Each short variable declaration must delcare at least one new variable.</p>
+<p>Each short variable declaration must declare at least one new variable.</p>
 
 There are several differences between short and standard variable declarations.
 <ol>
@@ -833,7 +858,8 @@ it will also be viewed as unused.
 
 <pre class="line-numbers"><code class="language-go">package main
 
-var x, y, z = 123, true, "foo" // package-level variables.
+// Some package-level variables.
+var x, y, z = 123, true, "foo"
 
 func main() {
 	var q, r = 789, false
@@ -959,27 +985,36 @@ the fraction part of the floating-point value will be discarded
 </p>
 
 In the following example, the intended implicit conversions
-at line <i>4</i> and line <i>11</i> both don't work.
-The explicit conversions at line <i>3</i> and line <i>10</i> are also not allowed.
+at line <i>7</i> and line <i>18</i> both don't work.
+The explicit conversions at line <i>5</i> and line <i>16</i> are also not allowed.
 
-<pre class="line-numbers"><code class="language-go">const a = -1.23
-var b = a        // the type of b is deduced as float64.
-var x = int32(a) // error: constant 1.23 truncated to integer.
-var y int32 = b  // error: cannot assign float64 to int32.
-var z = int32(b) // okay: z == -1, and the type of z is int32.
-                 //       The fraction part of -1.23 is discarded.
+<pre class="line-numbers must-line-numbers"><code class="language-go">const a = -1.23
+// The type of b is deduced as float64.
+var b = a
+// error: constant 1.23 truncated to integer.
+var x = int32(a)
+// error: cannot assign float64 to int32.
+var y int32 = b
+// okay: z == -1, and the type of z is int32.
+//       The fraction part of b is discarded.
+var z = int32(b)
 
 const k int16 = 255
-var n = k            // the type of n is deduced as int16.
-var f = uint8(k + 1) // error: constant 256 overflows uint8.
-var g uint8 = n + 1  // error: cannot assign int16 to uint8.
-var h = uint8(n + 1) // okay: h equals to 0, and the type of h is uint8.
-                     //       (n+1) overflows uint8 and is truncated.
+// The type of n is deduced as int16.
+var n = k
+// error: constant 256 overflows uint8.
+var f = uint8(k + 1)
+// error: cannot assign int16 to uint8.
+var g uint8 = n + 1
+// okay: h == 0, and the type of h is uint8.
+//       n+1 overflows uint8 and is truncated.
+var h = uint8(n + 1)
+
 </code></pre>
 
 <p>
-We can think that the type deductions happen at line <i>2</i>
-and line <i>9</i> are two implicit conversions,
+We can think that the type deductions happen at line <i>3</i>
+and line <i>14</i> are two implicit conversions,
 where <code>a</code> and <code>k</code> are both converted to
 their respective default type.
 More implicit conversion rules will be introduced in other articles later.
@@ -1010,12 +1045,15 @@ func main() {
 
 	// A nested code block.
 	{
-		x, y := x, y // Here, the left x and y are both
-		             // new declared variable. The right
-		             // ones are declared in outer blocks.
-		// In this code block, the just new declared x and y
-		// shadow the outer declared same-name identifiers.
-		x, z := !x, y/10 // only z is new declared.
+		// Here, the left x and y are both
+		// new declared variable. The right
+		// ones are declared in outer blocks.
+		x, y := x, y
+
+		// In this code block, the just new
+		// declared x and y shadow the outer
+		// declared same-name identifiers.
+		x, z := !x, y/10 // only z is new declared
 		y /= 100
 		println(x, y, z) // false 7 78
 	}
@@ -1052,12 +1090,12 @@ Code blocks and identifier scopes will be explained in detail in
 
 For example, the following code compiles okay.
 
-<pre class="line-numbers"><code class="language-go">package main
-
-// 3 untyped named constants.
-const n = 1 << 64          // overflows int but okay
-const r = 'a' + 0x7FFFFFFF // overflows rune but okay
-const x = 2e+308           // overflows float64 but okay
+<pre class="line-numbers"><code class="language-go">// 3 untyped named constants. Their bound
+// values all overflow their respective
+// default types. This is allowed.
+const n = 1 << 64          // overflows int
+const r = 'a' + 0x7FFFFFFF // overflows rune
+const x = 2e+308           // overflows float64
 
 func main() {
 	_ = n >> 2
@@ -1069,16 +1107,15 @@ func main() {
 <p>
 </p>
 
-But the the following code does't compile.
+But the the following code does't compile, for the constants are all typed.
 
-<pre class="line-numbers"><code class="language-go">package main
-
-// 3 typed named constants
-const n int = 1 << 64           // constant overflows int
-const r rune = 'a' + 0x7FFFFFFF // constant overflows rune
-const x float64 = 2e+308        // constant overflows float64
-
-func main() {}
+<pre class="line-numbers"><code class="language-go">// 3 typed named constants. Their bound
+// values are not allowed to overflow their
+// respective default types. The 3 lines
+// all fail to compile.
+const n int = 1 << 64           // overflows int
+const r rune = 'a' + 0x7FFFFFFF // overflows rune
+const x float64 = 2e+308        // overflows float64
 </code></pre>
 
 <p>

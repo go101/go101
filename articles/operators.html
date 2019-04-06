@@ -69,7 +69,7 @@ what it means is:</p>
 
 </div>
 
-<a class="anchor" id="constant-expression">&nbsp;</a>
+<a class="anchor" id="constant-expression"></a>
 <h3>Constant Expressions</h3>
 
 <p>
@@ -101,7 +101,7 @@ the expression is called a non-constant expression.
 Go supports five basic binary arithmetic operators:
 </p>
 
-<table class="table table-bordered text-center" style="width:100%;">
+<table border="1" class="table table-bordered text-center" style="width:100%;">
 <thead>
 	<tr class="active">
 	<th class="text-center" style="white-space: nowrap;">Operator</th>
@@ -159,7 +159,7 @@ Go 101 will not explain how these operator operations work in detail.
 Go supports six bitwise binary arithmetic operators:
 </p>
 
-<table class="table table-bordered text-center" style="width:100%;">
+<table border="1" class="table table-bordered text-center" style="width:100%;">
 <thead>
 	<tr class="active">
 	<th class="text-center" style="white-space: nowrap;">Operator</th>
@@ -226,7 +226,7 @@ Go supports six bitwise binary arithmetic operators:
 			<p>
 			The left operand must be an integer
 			and the right operand must be an unsigned integer
-			(or an <a href="type-system-overview.html#typed-and-untyped-values">untyped</a>
+			(or an <a href="constants-and-variables.html#untyped-value">untyped</a>
 			integer constant which is representable as an <code>uint</code> value) <sup>(1)</sup>.
 			</p>
 
@@ -272,7 +272,7 @@ will <a href="https://github.com/golang/go/issues/19113">be relaxed to any integ
 Go also supports three unary arithmetic operators:
 </p>
 
-<table class="table table-bordered text-center" style="width:100%;">
+<table border="1" class="table table-bordered text-center" style="width:100%;">
 <thead>
 	<tr class="active">
 	<th class="text-center" style="white-space: nowrap;">Operator</th>
@@ -363,8 +363,8 @@ Example:
 	)
 
 	// The ones compile okay.
-	_ = 12 + 'A' // two untyped operands (both are numeric)
-	_ = 12 - a   // one untyped operand and one typed operand
+	_ = 12 + 'A' // two numeric untyped operands
+	_ = 12 - a   // one untyped and one typed operand
 	_ = a * b    // two typed operands
 	_ = c % d
 	_, _ = c + int16(e), uint8(c) + e
@@ -443,19 +443,26 @@ Whether it is typed or untyped depends on specific scenarios.
 </ul>
 
 Example:
-<pre class="line-numbers"><code class="language-go">func main() {
-	const X, Y, Z = 2, 'A', 3i // three untyped values.
-	                           // Default types: int, rune, complex64.
+<pre class="line-numbers must-line-numbers"><code class="language-go">func main() {
+	// Three untyped values. Their default
+	// types are: int, rune, complex64.
+	const X, Y, Z = 2, 'A', 3i
 
 	var a, b int = X, Y // two typed values.
 
-	d := X + Y // the type of d is the default type of Y: rune (int32).
-	e := Y - a // the type of e is the type of a: int.
-	f := a * b // the type of f is the types of a and b: int.
-	g := Z * Y // the type of g is the default type of Z: complex64.
+	// The type of d is the default type of Y: rune (int32).
+	d := X + Y
+	// The type of e is the type of a: int.
+	e := Y - a
+	// The type of f is the types of a and b: int.
+	f := a * b
+	// The type of g is the default type of Z: complex64.
+	g := Z * Y
 
-	println(X, Y, Z)    // 2 65 (+0.000000e+000+3.000000e+000i)
-	println(d, e, f, g) // 67 63 130 (+0.000000e+000+1.950000e+002i)
+	// Output: 2 65 (+0.000000e+000+3.000000e+000i)
+	println(X, Y, Z)
+	// Output: 67 63 130 (+0.000000e+000+1.950000e+002i)
+	println(d, e, f, g)
 }
 </code></pre>
 
@@ -463,31 +470,39 @@ Example:
 </p>
 
 Another example (bitwise shift operations):
-<pre class="line-numbers"><code class="language-go">const N = 2
-const A = 3.0 << N       // A == 6, its default type is int.
-const B = int8(3.0) << N // B == 6, it is typed and its type is int8.
+<pre class="line-numbers must-line-numbers"><code class="language-go">const N = 2
+// A == 6. It is an untyped value (default type as int).
+const A = 3.0 << N
+// B == 6. It is typed value (type is int8).
+const B = int8(3.0) << N
 
 var m = uint(32)
-// The following three lines are equivalent to each other.
-var x int64 = 1 << m  // the type of 1 is deduced as int64, not int.
-var y = int64(1 << m) // the type of 1 is deduced as int64, not int.
+// The following three lines are equivalent to each
+// other. In the following twol lines, the types of the
+// two "1" are both deduced as int64, instead of int.
+var x int64 = 1 << m
+var y = int64(1 << m)
 var z = int64(1) << m
 
 // The following two lines fail to compile.
 /*
 var _ = 1.23 << m // error: shift of type float64
-const _ = 1 << B  // error: the right operand must be unsigned.
+const _ = 1 << B  // error: B is not unsigned.
 */
 </code></pre>
 
-<a class="anchor" id="bitwise-shift-left-operand-type-deduction">&nbsp;</a>
+<p>
+Please note, as above has mentioend, the last line might be compile ok since Go 1.13.
+</p>
+
+<a class="anchor" id="bitwise-shift-left-operand-type-deduction"></a>
 <p>
 The last rule for bitwise shift operator operation is to avoid the cases
 that some bitwise shift operations return different results on different architectures
 but the differences will not be detected in time.
 For example, if the operand <code>1</code> is deduced as
 <code>int</code> instead of <code>int64</code>,
-the bitwise operation at line <i>8</i> (or line <i>7</i>) will
+the bitwise operation at line <i>13</i> (or line <i>12</i>) will
 return different results between 32-bit architectures and 64-bit architectures,
 which may produce some bugs hard to detect.
 </p>
@@ -534,19 +549,24 @@ will not be truncated (or wrapped around).
 Example:
 <pre class="line-numbers"><code class="language-go">// Results are non-constants.
 var a, b uint8 = 255, 1
-var c = a + b  // ok: higher overflowed bits are truncated. c == 0
-var d = a << b // ok: higher overflowed bits are truncated. d == 254
+// Compiles ok, higher overflowed bits are truncated.
+var c = a + b  // c == 0
+// Compiles ok, higher overflowed bits are truncated.
+var d = a << b // d == 254
 
 // Results are untyped constants.
-const X = 0x1FFFFFFFF * 0x1FFFFFFFF // ok, though X overflows int.
-const R = 'a' + 0x7FFFFFFF          // ok, though R overflows rune.
+const X = 0x1FFFFFFFF * 0x1FFFFFFFF // overflows int
+const R = 'a' + 0x7FFFFFFF          // overflows rune
+// The above two lines both compile ok, though the
+// two untyped value X and R both overflow their
+// respective default types.
 
-// Operation results or conversion results are typed values.
-// These lines all fail to compile.
-var e = X                // error: untyped constant X overflows int.
-var h = R                // error: constant 2147483744 overflows rune.
+// Operation results or conversion results are
+// typed values. These lines all fail to compile.
+var e = X // error: untyped constant X overflows int
+var h = R // error: constant 2147483744 overflows rune
 const Y = 128 - int8(1)  // error: 128 overflows int8
-const Z = uint8(255) + 1 // error: the result 256 overflow uint8.
+const Z = uint8(255) + 1 // error: 256 overflow uint8
 </code></pre>
 
 <p>
@@ -588,7 +608,7 @@ println((1-1i)/(1+1i)) // -1i
 var a, b = 1.0, 0.0
 println(a/b, b/b) // +Inf NaN
 
-_ = int(a)/int(b) // compile okay but panic at run time.
+_ = int(a)/int(b) // compiles okay but panics at run time.
 
 // The following two lines fail to compile.
 println(1.0/0.0) // error: division by zero
@@ -670,7 +690,7 @@ func main() {
 As above has mentioned, the addition operator can also be used as
 string concatenation.
 
-<table class="table table-bordered text-center" style="width:100%;">
+<table border="1" class="table table-bordered text-center" style="width:100%;">
 <thead>
 	<tr class="active">
 	<th class="text-center" style="white-space: nowrap;">Operator</th>
@@ -722,7 +742,7 @@ the result is also an untyped string value.
 Go supports two boolean binary operators and one boolean unary operator:
 </p>
 
-<table class="table table-bordered text-center" style="width:100%;">
+<table border="1" class="table table-bordered text-center" style="width:100%;">
 <thead>
 	<tr class="active">
 	<th class="text-center" style="white-space: nowrap;">Operator</th>
@@ -786,7 +806,7 @@ the result is also an untyped boolean value.
 Go supports six comparison binary operators:
 </p>
 
-<table class="table table-bordered text-center" style="width:100%;">
+<table border="1" class="table table-bordered text-center" style="width:100%;">
 <thead>
 	<tr class="active">
 	<th class="text-center" style="white-space: nowrap;">Operator</th>
@@ -895,7 +915,7 @@ is that the precedence of <code>&lt;&lt;</code> and
 
 </div>
 
-<a class="anchor" id="constant-expression-more">&nbsp;</a>
+<a class="anchor" id="constant-expression-more"></a>
 <h3>More About Constant Expressions</h3>
 
 <div>

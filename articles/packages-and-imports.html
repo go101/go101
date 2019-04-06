@@ -9,14 +9,14 @@ except the <code>builtin</code> standard code package.
 This article will explain code packages and package imports in Go.
 </p>
 
-<a class="anchor" id="import">&nbsp;</a>
+<a class="anchor" id="import"></a>
 <h3>Introduction of Package Import</h3>
 
 <div>
 Let's view a small program which imports a standard code package.
 (Assume the source code of this program is stored in a file named <code>simple-import-demo.go</code>.)
 
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
 
 import "fmt"
 
@@ -172,7 +172,8 @@ import (
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano()) // set the random seed.
+	 // Set the random seed.
+	rand.Seed(time.Now().UnixNano())
 	fmt.Printf("Next random number is %v.\n", rand.Uint32())
 }
 </code></pre>
@@ -268,7 +269,7 @@ in a terminal.
 </p>
 </div>
 
-<a class="anchor" id="package">&nbsp;</a>
+<a class="anchor" id="package"></a>
 <h3>Package Folder, Package Import Path and Package Dependencies</h3>
 
 <div>
@@ -452,7 +453,7 @@ a meaningful name other than its package name, <code>main</code>.
 </p>
 </div>
 
-<a class="anchor" id="init">&nbsp;</a>
+<a class="anchor" id="init"></a>
 <h3>The <code>init</code> Functions</h3>
 
 <p>
@@ -511,7 +512,7 @@ bye
 
 </div>
 
-<a class="anchor" id="initialization-order">&nbsp;</a>
+<a class="anchor" id="initialization-order"></a>
 <h3>Resource Initialization Order</h3>
 
 <div>
@@ -532,9 +533,9 @@ before invoking the <code>main</code> entry function.
 
 <p>
 The invocation order of the <code>init</code> functions in the same source file
-is from top to bottom. Go specification recommends, but not requires, to invoke
+is from top to bottom. Go specification recommends, but doesn't require, to invoke
 the <code>init</code> functions in different source files of the same package
-by the lexical file name order of their containing source files.
+by the alphabetical order of filenames of their containing source files.
 So it is not a good idea to have dependency relations between
 two <code>init</code> functions in two different source files.
 </p>
@@ -544,7 +545,9 @@ All package-level variables declared in a package are initialized before
 any <code>init</code> function declared in the same package is invoked.
 </p>
 
-A package-level variable is initialized after all of its depended variables.
+Go runtime will try to initialize package-level variables in a package
+by their declaration order, but a package-level variable will be
+initialized after all of its depended variables for sure.
 For example, in the following code snippet, the initializations the four
 package-level variables happen in the order <code>y</code>, <code>z</code>,
 <code>x</code>, and <code>w</code>.
@@ -562,6 +565,11 @@ var (
 	x, y, z = f(), 123, g()
 )
 </code></pre>
+
+<p>
+About more detailed rule of the initialization order of package-level variables,
+please read the article <a href="evaluation-orders.html#package-level-variables">expression evaluation order</a>.
+</p>
 
 </div>
 
@@ -617,12 +625,13 @@ import (
 )
 
 func main() {
-	random.Seed(time.Now().UnixNano()) // set the random seed
+	random.Seed(time.Now().UnixNano())
 	format.Print("A random number: ", random.Uint32(), "\n")
 
-	// The following two lines fail to compile.
+	// The following two lines fail to compile,
+	// for "rand" is not identified.
 	/*
-	rand.Seed(time.Now().UnixNano()) // set the random seed
+	rand.Seed(time.Now().UnixNano())
 	fmt.Print("A random number: ", rand.Uint32(), "\n")
 	*/
 }
@@ -711,7 +720,7 @@ import (
 
 import (
 	format "fmt"  // okay: it is used once below
-	_ "math/rand" // okay: anonymous packages are not required to be used
+	_ "math/rand" // okay: it is not required to be used
 )
 
 func main() {

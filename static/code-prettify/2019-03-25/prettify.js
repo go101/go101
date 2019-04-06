@@ -169,9 +169,9 @@ var prettyPrint;
 (function () {
   var win = (typeof window !== 'undefined') ? window : {};
   var FLOW_CONTROL_KEYWORDS = ["break,default,case,else,continue,for,if,switch,return,range,fallthrough,defer,go,select,goto"];
-  var GO_KEYWORDS = [FLOW_CONTROL_KEYWORDS,"package,type,var,const,import"];
+  var GO_KEYWORDS = [FLOW_CONTROL_KEYWORDS,"func,package,type,var,const,import"];
   var ALL_KEYWORDS = [GO_KEYWORDS];
-  var GO_TYPES = /^(func|interface|chan|struct|map|bool|string|byte|rune|u?int(8|16|32|64)|float(32|64)|complex(64|128)\d*)\b/;
+  var GO_TYPES = /^(interface|chan|struct|map|bool|string|byte|rune|u?int(8|16|32|64)|float(32|64)|complex(64|128)\d*)\b/;
 
 
 

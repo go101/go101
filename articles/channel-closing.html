@@ -230,7 +230,7 @@ It may be not always essential to use it in real practice.)
 <div>
 This is the simplest situation, just let the sender close the data channel
 when it doesn't want to send more.
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-not-line-numbers-on-kindle"><code class="language-go">package main
 
 import (
 	"time"
@@ -244,7 +244,7 @@ func main() {
 	log.SetFlags(0)
 
 	// ...
-	const MaxRandomNumber = 100000
+	const Max = 100000
 	const NumReceivers = 100
 
 	wgReceivers := sync.WaitGroup{}
@@ -256,8 +256,9 @@ func main() {
 	// the sender
 	go func() {
 		for {
-			if value := rand.Intn(MaxRandomNumber); value == 0 {
-				// The only sender can close the channel safely.
+			if value := rand.Intn(Max); value == 0 {
+				// The only sender can close
+				// the channel safely.
 				close(dataCh)
 				return
 			} else {
@@ -271,8 +272,9 @@ func main() {
 		go func() {
 			defer wgReceivers.Done()
 
-			// Receive values until dataCh is closed and
-			// the value buffer queue of dataCh is empty.
+			// Receive values until dataCh is
+			// closed and the value buffer queue
+			// of dataCh becomes empty.
 			for value := range dataCh {
 				log.Println(value)
 			}
@@ -293,7 +295,7 @@ We can't let the receiver close the data channel to stop data transferring,
 for doing this will break the <b>channel closing principle</b>.
 But we can let the receiver close an additional signal channel to
 notify senders to stop sending values.
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-not-line-numbers-on-kindle"><code class="language-go">package main
 
 import (
 	"time"
@@ -307,7 +309,7 @@ func main() {
 	log.SetFlags(0)
 
 	// ...
-	const MaxRandomNumber = 100000
+	const Max = 100000
 	const NumSenders = 1000
 
 	wgReceivers := sync.WaitGroup{}
@@ -317,31 +319,35 @@ func main() {
 	dataCh := make(chan int, 100)
 	stopCh := make(chan struct{})
 		// stopCh is an additional signal channel.
-		// Its sender is the receiver of channel dataCh.
-		// Its receivers are the senders of channel dataCh.
+		// Its sender is the receiver of channel
+		// dataCh, and its receivers are the
+		// senders of channel dataCh.
 
 	// senders
 	for i := 0; i < NumSenders; i++ {
 		go func() {
 			for {
-				// The try-receive operation is to try to exit
-				// the goroutine as early as possible. For this
-				// specified example, it is not essential.
+				// The try-receive operation is to try
+				// to exit the goroutine as early as
+				// possible. For this specified example,
+				// it is not essential.
 				select {
 				case <- stopCh:
 					return
 				default:
 				}
 
-				// Even if stopCh is closed, the first branch in the
-				// second select may be still not selected for some
-				// loops if the send to dataCh is also unblocked.
-				// But this is acceptable for this example, so the
-				// first select block above can be omitted.
+				// Even if stopCh is closed, the first
+				// branch in the second select may be
+				// still not selected for some loops if
+				// the send to dataCh is also unblocked.
+				// But this is acceptable for this
+				// example, so the first select block
+				// above can be omitted.
 				select {
 				case <- stopCh:
 					return
-				case dataCh <- rand.Intn(MaxRandomNumber):
+				case dataCh <- rand.Intn(Max):
 				}
 			}
 		}()
@@ -352,10 +358,10 @@ func main() {
 		defer wgReceivers.Done()
 
 		for value := range dataCh {
-			if value == MaxRandomNumber-1 {
-				// The receiver of the dataCh channel is
-				// also the sender of the stopCh channel.
-				// It is safe to close the stop channel here.
+			if value == Max-1 {
+				// The receiver of channel dataCh is
+				// also the sender of stopCh. It is
+				// safe to close the stop channel here.
 				close(stopCh)
 				return
 			}
@@ -396,7 +402,7 @@ However, we can introduce a moderator role to close the additional signal channe
 One trick in the following example is how to use a try-send operation to
 notify the moderator to close the additional signal channel.
 
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers must-not-line-numbers-on-kindle"><code class="language-go">package main
 
 import (
 	"time"
@@ -411,7 +417,7 @@ func main() {
 	log.SetFlags(0)
 
 	// ...
-	const MaxRandomNumber = 100000
+	const Max = 100000
 	const NumReceivers = 10
 	const NumSenders = 1000
 
@@ -422,13 +428,15 @@ func main() {
 	dataCh := make(chan int, 100)
 	stopCh := make(chan struct{})
 		// stopCh is an additional signal channel.
-		// Its sender is the moderator goroutine shown below.
-		// Its receivers are all senders and receivers of dataCh.
+		// Its sender is the moderator goroutine shown
+		// below, and its receivers are all senders
+		// and receivers of dataCh.
 	toStop := make(chan string, 1)
-		// The channel toStop is used to notify the moderator
-		// to close the additional signal channel (stopCh).
-		// Its senders are any senders and receivers of dataCh.
-		// Its receiver is the moderator goroutine shown below.
+		// The channel toStop is used to notify the
+		// moderator to close the additional signal
+		// channel (stopCh). Its senders are any senders
+		// and receivers of dataCh, and its receiver is
+		// the moderator goroutine shown below.
 		// It must be a buffered channel.
 
 	var stoppedBy string
@@ -443,10 +451,11 @@ func main() {
 	for i := 0; i < NumSenders; i++ {
 		go func(id string) {
 			for {
-				value := rand.Intn(MaxRandomNumber)
+				value := rand.Intn(Max)
 				if value == 0 {
-					// Here, the try-send operation is to notify the
-					// moderator to close the additional signal channel.
+					// Here, the try-send operation is
+					// to notify the moderator to close
+					// the additional signal channel.
 					select {
 					case toStop <- "sender#" + id:
 					default:
@@ -454,21 +463,25 @@ func main() {
 					return
 				}
 
-				// The try-receive operation here is to try to exit the
-				// sender goroutine as early as possible. Try-receive
-				// try-send select blocks are specially optimized by the
-				// standard Go compiler, so they are very efficient.
+				// The try-receive operation here is to
+				// try to exit the sender goroutine as
+				// early as possible. Try-receive and
+				// try-send select blocks are specially
+				// optimized by the standard Go
+				// compiler, so they are very efficient.
 				select {
 				case <- stopCh:
 					return
 				default:
 				}
 
-				// Even if stopCh is closed, the first branch in this
-				// select block may be still not selected for some
-				// loops (and for ever in theory) if the send to dataCh
-				// is also non-blocking. If this is not acceptable,
-				// then the above try-receive operation is essential.
+				// Even if stopCh is closed, the first
+				// branch in this select block might be
+				// still not selected for some loops
+				// (and for ever in theory) if the send
+				// to dataCh is also non-blocking. If
+				// this is unacceptable, then the above
+				// try-receive operation is essential.
 				select {
 				case <- stopCh:
 					return
@@ -484,28 +497,32 @@ func main() {
 			defer wgReceivers.Done()
 
 			for {
-				// Same as the sender goroutine, the try-receive
-				// operation here is to try to exit the receiver
-				// goroutine as early as possible.
+				// Same as the sender goroutine, the
+				// try-receive operation here is to
+				// try to exit the receiver goroutine
+				// as early as possible.
 				select {
 				case <- stopCh:
 					return
 				default:
 				}
 
-				// Even if stopCh is closed, the first branch in this
-				// select block may be still not selected for some
-				// loops (and for ever in theory) if the receive from
-				// dataCh is also non-blocking. If this is not acceptable,
-				// then the above try-receive operation is essential.
+				// Even if stopCh is closed, the first
+				// branch in this select block might be
+				// still not selected for some loops
+				// (and forever in theory) if the receive
+				// from dataCh is also non-blocking. If
+				// this is not acceptable, then the above
+				// try-receive operation is essential.
 				select {
 				case <- stopCh:
 					return
 				case value := <-dataCh:
-					if value == MaxRandomNumber-1 {
-						// The same trick is used to notify
-						// the moderator to close the
-						// additional signal channel.
+					if value == Max-1 {
+						// Here, the same trick is
+						// used to notify the moderator
+						// to close the additional
+						// signal channel.
 						select {
 						case toStop <- "receiver#" + id:
 						default:
@@ -539,16 +556,16 @@ from <code>toStop</code>.
 We can also set the capacity of the <code>toStop</code> channel
 as the sum number of senders and receivers,
 then we don't need a try-send <code>select</code> block to notify the moderator.
-<pre class="line-numbers"><code class="language-go">...
+<pre class="line-numbers must-not-line-numbers-on-kindle"><code class="language-go">...
 toStop := make(chan string, NumReceivers + NumSenders)
 ...
-			value := rand.Intn(MaxRandomNumber)
+			value := rand.Intn(Max)
 			if value == 0 {
 				toStop <- "sender#" + id
 				return
 			}
 ...
-				if value == MaxRandomNumber-1 {
+				if value == Max-1 {
 					toStop <- "receiver#" + id
 					return
 				}

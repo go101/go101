@@ -140,14 +140,20 @@ func main() {
 	var helloWorld = "hello world!"
 
 	var hello = helloWorld[:5] // substring
-	// 104 is the ASCII code (and Unicode) of char 'h'
+	// 104 is the ASCII code (and Unicode) of char 'h'.
 	fmt.Println(hello[0])         // 104
 	fmt.Printf("%T \n", hello[0]) // uint8
-	// hello[0] = 'H'             // error: hello[0] is immutable
-	// fmt.Println(&hello[0])     // error: hello[0] is not addressable
 
-	fmt.Println(len(hello), len(helloWorld))          // 5 12
-	fmt.Println(strings.HasPrefix(helloWorld, hello)) // true
+	// hello[0] is unaddressable and immutable,
+	// so the following two lines fail to compile.
+	/*
+	hello[0] = 'H'         // error
+	fmt.Println(&hello[0]) // error
+	*/
+
+	// The next statement prints: 5 12 true
+	fmt.Println(len(hello), len(helloWorld),
+			strings.HasPrefix(helloWorld, hello))
 }
 </code></pre>
 </div>
@@ -180,7 +186,7 @@ For example, each English code point (which corresponds to one English character
 however each Chinese code point (which corresponds to one Chinese character) is stored as three bytes.
 </p>
 
-<a class="anchor" id="conversions">&nbsp;</a>
+<a class="anchor" id="conversions"></a>
 <h3>String Related Conversions</h3>
 
 <div>
@@ -325,7 +331,7 @@ func main() {
 </p>
 </div>
 
-<a class="anchor" id="conversion-optimizations">&nbsp;</a>
+<a class="anchor" id="conversion-optimizations"></a>
 <h3>Compiler Optimizations for Conversions Between Strings and Byte Slices</h3>
 
 <div>
@@ -360,17 +366,17 @@ import "fmt"
 
 func main() {
 	var str = "world"
-	// Here, the []byte(str) conversion will not copy
-	// the underlying bytes of str.
+	// Here, the []byte(str) conversion will
+	// not copy the underlying bytes of str.
 	for i, b := range []byte(str) {
 		fmt.Println(i, ":", b)
 	}
 
 	key := []byte{'k', 'e', 'y'}
 	m := map[string]string{}
-	// Here, the string(key) conversion will not copy the bytes
-	// in key. The optimization will be still made even if key
-	// is a package-level variable.
+	// Here, the string(key) conversion will not copy
+	// the bytes in key. The optimization will be still
+	// made, even if key is a package-level variable.
 	m[string(key)] = "value"
 	fmt.Println(m[string(key)]) // value
 }
@@ -508,7 +514,7 @@ Please note that the time complexities of these ways are all <code><i>O</i>(n)</
 
 </div>
 
-<a class="anchor" id="string-concatenation">&nbsp;</a>
+<a class="anchor" id="string-concatenation"></a>
 <h3>More String Concatenation Methods</h3>
 
 <div>
@@ -541,7 +547,7 @@ if the number of the concatenated strings is known at compile time.
 </p>
 </div>
 
-<a class="anchor" id="use-string-as-byte-slice">&nbsp;</a>
+<a class="anchor" id="use-string-as-byte-slice"></a>
 <h3>Sugar: Use Strings as Byte Slices</h3>
 
 <div>
@@ -567,20 +573,22 @@ func main() {
 	hello := []byte("Hello ")
 	world := "world!"
 
-	// helloWorld := append(hello, []byte(world)...) // the normal way
-	helloWorld := append(hello, world...)            // the sugar way
+	// The normal way:
+	// helloWorld := append(hello, []byte(world)...)
+	helloWorld := append(hello, world...) // sugar way
 	fmt.Println(string(helloWorld))
 
 	helloWorld2 := make([]byte, len(hello) + len(world))
 	copy(helloWorld2, hello)
-	// copy(helloWorld2[len(hello):], []byte(world)) // the normal way
-	copy(helloWorld2[len(hello):], world)            // the sugar way
+	// The normal way:
+	// copy(helloWorld2[len(hello):], []byte(world))
+	copy(helloWorld2[len(hello):], world) // sugar way
 	fmt.Println(string(helloWorld2))
 }
 </code></pre>
 </div>
 
-<a class="anchor" id="comparison">&nbsp;</a>
+<a class="anchor" id="comparison"></a>
 <h3>More About String Comparisons</h3>
 
 <div>
@@ -633,7 +641,8 @@ func main() {
 	// s0, s1 and s2 are three equal strings.
 	// The underlying bytes of s0 is a copy of bs.
 	// The underlying bytes of s1 is also a copy of bs.
-	// The underlying bytes of s0 and s1 are two different copies of bs.
+	// The underlying bytes of s0 and s1 are two
+	// different copies of bs.
 	// s2 shares the same underlying bytes with s1.
 
 	startTime := time.Now()

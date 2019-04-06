@@ -1,5 +1,11 @@
 
+### 1.12.b (2019/April/06)
 
+* add a [Package-level Variables Initialization Order](https://go101.org/article/evaluation-orders.html#package-level-variables) section.
+
+### 1.12.a (2019/March/02)
+
+* Go 1.12 ready.
 
 ### 1.11.f (2019/Jan/02)
 

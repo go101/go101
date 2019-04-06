@@ -61,8 +61,8 @@ Example:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
-	// There must be sufficient information for compiler
-	// to deduce the type of a nil value.
+	// There must be sufficient information for
+	// compiler to deduce the type of a nil value.
 	_ = (*struct{})(nil)
 	_ = []int(nil)
 	_ = map[int]bool(nil)
@@ -100,8 +100,9 @@ func main() {
 	nil := 123
 	fmt.Println(nil) // 123
 
-	// The following line will compile error, for
-	// nil represents an int value now in this scope.
+	// The following line fails to compile,
+	// for nil represents an int value now
+	// in this scope.
 	var _ map[string]int = nil
 }
 </code></pre>
@@ -112,7 +113,7 @@ are also not keywords.)
 </i></p>
 </div>
 
-<a class="anchor" id="sizes">&nbsp;</a>
+<a class="anchor" id="sizes"></a>
 <h3>The Sizes of Nil Values With Types of Different Kinds May Be Different</h3>
 
 <div>
@@ -174,8 +175,12 @@ are always the same. For example, the sizes of all values of all different slice
 
 <div>
 For example, the two comparisons in the following example both fail to compile.
-<pre class="line-numbers"><code class="language-go">var _ = (*int)(nil) == (*bool)(nil)         // error: mismatched types.
-var _ = (chan int)(nil) == (chan bool)(nil) // error: mismatched types.
+The reason is, in each comparison,
+neither operand can be implicitly converted to the type of the other.
+<pre class="line-numbers"><code class="language-go">
+// Compilation failure reason: mismatched types.
+var _ = (*int)(nil) == (*bool)(nil)         // error
+var _ = (chan int)(nil) == (chan bool)(nil) // error
 </code></pre>
 
 <p>
@@ -195,8 +200,9 @@ var _ = IntPtr(nil) == (*int)(nil)
 // Every type in Go implements interface{} type.
 var _ = (interface{})(nil) == (*int)(nil)
 
-// Values of a directional channel type can be converted to the
-// bidirectional channel type which has the same element type.
+// Values of a directional channel type can be
+// converted to the bidirectional channel type
+// which has the same element type.
 var _ = (chan int)(nil) == (chan<- int)(nil)
 var _ = (chan int)(nil) == (<-chan int)(nil)
 </code></pre>
@@ -238,7 +244,7 @@ That is why the comparison result is always <code>false</code>.
 </p>
 
 Example:
-<pre class="line-numbers"><code class="language-go">fmt.Println( (interface{})(nil) == (*int)(nil) ) // false
+<pre class="disable-line-numbers111"><code class="language-go">fmt.Println( (interface{})(nil) == (*int)(nil) ) // false
 </code></pre>
 </div>
 
@@ -331,10 +337,10 @@ func main() {
 	_ = ((Slice)(nil)).Length()
 	((*Slice)(nil)).DoNothing()
 
-	// The following two lines will panic. But panics will
-	// not be triggered at the time of invoking the methods.
-	// They will be triggered on dereferencing nil pointers
-	// in the method bodies.
+	// The following two lines will panic. But
+	// panics will not be triggered at the time of
+	// invoking the methods. They will be triggered on
+	// dereferencing nil pointers in the method bodies.
 	/*
 	((Slice)(nil)).Modify(0, true)
 	((*Slice)(nil)).Append(true)

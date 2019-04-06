@@ -13,7 +13,7 @@ are a little different from Go specification.)
 https://github.com/golang/go/issues/7429#issuecomment-282480782
 -->
 
-<a class="anchor" id="block">&nbsp;</a>
+<a class="anchor" id="block"></a>
 <h3>Code Blocks</h3>
 
 <div>
@@ -102,7 +102,7 @@ Here is a picture shows the block hierarchies in a program:
 Code blocks are mainly used to explain allowed declaration positions and scopes of source code element identifiers.
 </p>
 
-<a class="anchor" id="declaration">&nbsp;</a>
+<a class="anchor" id="declaration"></a>
 <h3>Source Code Element Declaration Places</h3>
 
 <div>
@@ -130,7 +130,7 @@ After the declaration, we can use the non-blank identifier to represent the decl
 
 <div>
 The following table shows which code blocks all kinds of source code elements can be directly declared in:
-<table class="table table-bordered text-center" style="width: auto !important;">
+<table border="1" class="table table-bordered text-center" style="width: auto !important;">
 <thead>
 	<tr>
 	<th class="text-center"></th>
@@ -250,7 +250,7 @@ The source code elements declared in package blocks but outside of any local blo
 Package-level source code elements can be named constants, named types, variables, or functions.
 </p>
 
-<a class="anchor" id="scope">&nbsp;</a>
+<a class="anchor" id="scope"></a>
 <h3>Scopes of Declared Source Code Elements</h3>
 
 <div>
@@ -307,7 +307,7 @@ Blank identifiers have no scopes.
 (Note, the predeclared <code>iota</code> is only visible in constant declarations.)
 </i></p>
 
-<a class="anchor" id="scope-difference-detail">&nbsp;</a>
+<a class="anchor" id="scope-difference-detail"></a>
 <div>
 You may have noticed the minor difference of identifier scope definitions
 between local type definitions and local variables, local constants and local type aliases.
@@ -358,8 +358,11 @@ func main() {
 And the scope difference between package-level and local declarations:
 <pre class="line-numbers"><code class="language-go">package main
 
-// Here the two identifiers at each line are the same one.
-// The right ones are all not the predeclared identifiers.
+// Here the two identifiers at each line are the
+// same one. The right ones are both not the
+// predeclared identifiers. Instead, they are
+// same as respective left one. So the two
+// lines both fail to compile.
 /*
 const iota = iota // error: constant definition loop
 var true = true   // error: typechecking loop
@@ -369,15 +372,16 @@ var a = b // can reference variables declared later
 var b = 123
 
 func main() {
-	// The right identifiers in the next two lines
-	// are the predeclared ones.
+	// The identifiers at the right side in the
+	// next two lines are the predeclared ones.
 	const iota = iota // ok
 	var true = true   // ok
 	_ = true
 
-	// The following lines fail to compile.
+	// The following lines fail to compile, for
+	// c references a later declared variable d.
 	/*
-	var c = d // can't reference variables declared later
+	var c = d
 	var d = 123
 	_ = c
 	*/
@@ -385,7 +389,7 @@ func main() {
 </code></pre>
 </div>
 
-<a class="anchor" id="shadow">&nbsp;</a>
+<a class="anchor" id="shadow"></a>
 <h3>Identifier Shadowing</h3>
 
 <div>
@@ -429,7 +433,8 @@ func main() {
 		}
 	}
 
-	fmt.Println(*p0, *p1, *p2, *p3, *p4, *p5) // 9999 888 77 6 3 -3
+	// 9999 888 77 6 3 -3
+	fmt.Println(*p0, *p1, *p2, *p3, *p4, *p5)
 }
 </code></pre>
 
@@ -451,19 +456,23 @@ import "strconv"
 func parseInt(s string) (int, error) {
 	n, err := strconv.Atoi(s)
 	if err != nil {
-		// Some new gophers may think err is an already declared
-		// variable in the following short variable declaration.
-		// However, both b and err are new declareds here in fact.
-		// The new declared err shadows the err declared above.
+		// Some new gophers may think err is an
+		// already declared variable in the following
+		// short variable declaration. However, both
+		// b and err are new declareds here in fact.
+		// The new declared err variable shadows the
+		// err variable declared above.
 		b, err := strconv.ParseBool(s)
 		if err != nil {
 			return 0, err
 		}
 
-		// If execution goes here, some new gophers might expected
-		// a nil error will be returned. But in fact, the outer
-		// non-nil error will be returned instead, for the scope of
-		// the inner "err" ends at the end of the first if clause.
+		// If execution goes here, some new gophers
+		// might expect a nil error will be returned.
+		// But in fact, the outer non-nil error will
+		// be returned instead, for the scope of the
+		// inner err variable ends at the end of the
+		// first if-clause.
 		if b {
 			n = 1
 		}
@@ -472,9 +481,13 @@ func parseInt(s string) (int, error) {
 }
 
 func main() {
-	// Output: 1 strconv.Atoi: parsing "TRUE": invalid syntax
 	fmt.Println(parseInt("TRUE"))
 }
+</code></pre>
+
+The output:
+
+<pre class="output"><code>1 strconv.Atoi: parsing "TRUE": invalid syntax
 </code></pre>
 
 <p>
@@ -492,7 +505,7 @@ possible mis-shadowing uses.
 https://github.com/golang/go/issues/29260#issuecomment-447694762
 -->
 
-<a class="anchor" id="weird-shadowing">&nbsp;</a>
+<a class="anchor" id="weird-shadowing"></a>
 
 Go only has <a href="keywords-and-identifiers.html#keyword">25 keywords</a>.
 Keywords can't be used as identifiers.
@@ -509,27 +522,39 @@ import (
 	"fmt"
 )
 
-const len = 3      // shadows the built-in function identifier "len"
-var true = 0       // shadows the built-in const identifier "true"
-type nil struct {} // shadows the built-in variable identifier "nil"
-func int(){}       // shadows the built-in type identifier "int"
+// Shadows the built-in function identifier "len".
+const len = 3
+// Shadows the built-in const identifier "true".
+var true = 0
+// Shadows the built-in variable identifier "nil".
+type nil struct {}
+// Shadows the built-in type identifier "int".
+func int(){}
 
 func main() {
 	fmt.Println("a weird program")
 	var print = fmt.Println
 
-	var fmt = [len]nil{{}, {}, {}} // shadows the package import "fmt".
-	// var n = len(fmt) // sorry, "len" is a constant.
-	var n = cap(fmt)    // use built-in cap function instead, :(
+	// Shadows the package import "fmt".
+	var fmt = [len]nil{{}, {}, {}}
+	// Sorry, "len" is a constant.
+	// var n = len(fmt)
+	// Use the built-in cap function instead, :(
+	var n = cap(fmt)
 
-	// The "for" keyword is followed by one implicit local code block
-	// and one explicit local code block. The iteration variable
-	// "true" shadows the package-level variable "true".
+	// The "for" keyword is followed by one
+	// implicit local code block and one explicit
+	// local code block. The iteration variable
+	// "true" shadows the package-level variable
+	// "true" declared above.
 	for true := 0; true < n; true++ {
-		var false = fmt[true] // shadows the built-in const "false"
-		var true = true+1 // the new declared "true" variable
-		                  // shadows the iteration variable "true".
-		// fmt.Println(true, false) // sorry, "fmt" is an array.
+		// Shadows the built-in const "false".
+		var false = fmt[true]
+		// The new declared "true" variable
+		// shadows the iteration variable "true".
+		var true = true+1
+		// Sorry, "fmt" is an array, not a package.
+		// fmt.Println(true, false)
 		print(true, false)
 	}
 }

@@ -84,7 +84,8 @@ func main() {
 	fmt.Println(tc.ChanDir()) // <-chan
 	tm := tc.Elem()
 	ta, tb := tm.Key(), tm.Elem()
-	fmt.Println(tm.Kind(), ta.Kind(), tb.Kind()) // map array slice
+	// The next line prints: map array slice
+	fmt.Println(tm.Kind(), ta.Kind(), tb.Kind())
 	tx, ty := ta.Elem(), tb.Elem()
 
 	// byte is an alias of uint8
@@ -125,7 +126,8 @@ func main() {
 
 	// Get two interface Types indirectly.
 	ti, tim := tp.Elem(), tt.Elem()
-	fmt.Println(ti.Kind(), tim.Kind()) // interface interface
+	// The next line prints: interface interface
+	fmt.Println(ti.Kind(), tim.Kind())
 
 	fmt.Println(tt.Implements(tim))  // true
 	fmt.Println(tp.Implements(tim))  // false
@@ -170,7 +172,8 @@ func main() {
 	fmt.Println(tf.NumIn(), tf.NumOut()) // 2 1
 	fmt.Println(tf.NumMethod())          // 1
 	ts, ti, tb := tf.In(0), tf.In(1), tf.Out(0)
-	fmt.Println(ts.Kind(), ti.Kind(), tb.Kind()) // string int bool
+	// The next line prints: string int bool
+	fmt.Println(ts.Kind(), ti.Kind(), tb.Kind())
 }
 </code></pre>
 
@@ -316,7 +319,7 @@ func main() {
 	fmt.Println(vy.CanSet(), vy.CanAddr()) // false true
 	vb := reflect.ValueOf(123)
 	vx.Set(vb)     // okay, for vx is modifiable.
-	// vy.Set(vb)  // will panic, for vy is not modifiable.
+	// vy.Set(vb)  // will panic, for vy is unmodifiable.
 	fmt.Println(s) // {123 &lt;nil&gt;}
 	fmt.Println(vx.IsNil(), vy.IsNil()) // false true
 }
@@ -436,7 +439,7 @@ func main() {
 	vf := reflect.ValueOf(neg)
 	fmt.Println(vf.Call(results[:1])[0].Int()) // -21
 	fmt.Println(vf.Call([]reflect.Value{
-		vt.FieldByName("A"), // panic if the field name is "b"
+		vt.FieldByName("A"), // panic on changing to "b"
 	})[0].Int()) // -5
 }
 </code></pre>
@@ -455,11 +458,12 @@ import "fmt"
 import "reflect"
 
 func main() {
+	vakueOf := reflect.ValueOf
 	m := map[string]int{"Unix": 1973, "Windows": 1985}
-	v := reflect.ValueOf(m)
+	v := vakueOf(m)
 	// A zero second Value argument means to delete an entry.
-	v.SetMapIndex(reflect.ValueOf("Windows"), reflect.Value{})
-	v.SetMapIndex(reflect.ValueOf("Linux"), reflect.ValueOf(1991))
+	v.SetMapIndex(vakueOf("Windows"), reflect.Value{})
+	v.SetMapIndex(vakueOf("Linux"), vakueOf(1991))
 	for i := v.MapRange(); i.Next(); {
 		fmt.Println(i.Key(), "\t:", i.Value())
 	}
@@ -491,7 +495,8 @@ func main() {
 	vs, sentBeforeClosed := vc.Recv()
 	fmt.Println(vs.String(), sentBeforeClosed) // Go false
 	vs, succeeded = vc.TryRecv()
-	fmt.Println(vs.String(), succeeded) // &lt;invalid Value&gt; false
+	fmt.Println(vs.String()) // &lt;invalid Value&gt;
+	fmt.Println(succeeded)   // false
 }
 </code></pre>
 
@@ -522,14 +527,15 @@ func main() {
 		{Dir: reflect.SelectRecv, Chan: vc, Send: vZero},
 		{Dir: reflect.SelectSend, Chan: vc, Send: vSend},
 	}
-	selIndex, vRecv, sentBeforeClosed := reflect.Select(branches)
-	fmt.Println(selIndex)         // 1
-	fmt.Println(sentBeforeClosed) // true
-	fmt.Println(vRecv.Int())      // 123
+	selIndex, vRecv, closed := reflect.Select(branches)
+	fmt.Println(selIndex)    // 1
+	fmt.Println(closed)      // true
+	fmt.Println(vRecv.Int()) // 123
 	vc.Close()
-	// Remove the send case branch this time, for it may cause panic.
-	selIndex, _, sentBeforeClosed = reflect.Select(branches[:2])
-	fmt.Println(selIndex, sentBeforeClosed) // 1 false
+	// Remove the send case branch this time,
+	// for it may cause panic.
+	selIndex, _, closed = reflect.Select(branches[:2])
+	fmt.Println(selIndex, closed) // 1 false
 }
 </code></pre>
 
@@ -584,7 +590,7 @@ func main() {
 }
 </code></pre>
 
-<a class="anchor" id="deep-equal">&nbsp;</a>
+<a class="anchor" id="deep-equal"></a>
 <p>
 There are more <code>reflect.Value</code> related functions and methods
 which are not used in above examples,

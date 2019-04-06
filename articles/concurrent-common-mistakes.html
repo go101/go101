@@ -35,7 +35,7 @@ There are two mistakes in the following program.
 	Second, the condition <code>b == true</code> can't ensure
 	that <code>a != nil</code> in the main goroutine.
 	Compilers and CPUs may make optimizations by
-	<a href="/article/memory-model.html">reordering instructions</a>
+	<a href="memory-model.html">reordering instructions</a>
 	in the new goroutine, so the assignment of <code>b</code> may happen
 	before the assignment of <code>a</code> at run time,
 	which makes that slice <code>a</code> is still <code>nil</code>
@@ -89,7 +89,8 @@ func main() {
 	}()
 
 	<-c
-	a[0], a[1], a[2] = 0, 1, 2 // will not panic for sure
+	// The next line will not panic for sure.
+	a[0], a[1], a[2] = 0, 1, 2
 }
 </code></pre>
 
@@ -97,7 +98,7 @@ func main() {
 </p>
 </div>
 
-<a class="anchor" id="sleep">&nbsp;</a>
+<a class="anchor" id="sleep"></a>
 <h3>Use <code>time.Sleep</code> Calls to Do Synchronizations</h3>
 
 <div>
@@ -284,7 +285,7 @@ it is possible that the channel receiver will miss all responses and hang.
 			}
 		}()
 	}
-	return <-c // might hang here.
+	return <-c // might hang here
 }
 </code></pre>
 
@@ -532,8 +533,8 @@ even if most of these <code>Timer</code> values have already become useless.
 	"time"
 )
 
-// The function will return if a message arrival interval
-// is larger than one minute.
+// The function will return if a message
+// arrival interval is larger than one minute.
 func longRunning(messages <-chan string) {
 	for {
 		select {
@@ -640,11 +641,13 @@ func main() {
 	select {
 	case <-timer.C:
 	default:
-		time.Sleep(time.Second) // most likely go here
+		// Most likely go here.
+		time.Sleep(time.Second)
 	}
-	timer.Reset(time.Second * 10) // potential data race
+	// Potential data race in the next line.
+	timer.Reset(time.Second * 10)
 	<-timer.C
-	fmt.Println(time.Since(start)) // 1.000188181s (about)
+	fmt.Println(time.Since(start)) // about 1s
 }
 </code></pre>
 
