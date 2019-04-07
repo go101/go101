@@ -123,16 +123,16 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 	if page == nil {
 		article, err := retrieveArticleContent(file)
 		if err == nil {
-			var pageURL string
-			if !isLocal {
-				//pageURL = r.URL.String() // looks only working for GAE
-				pageURL = schemes[r.TLS != nil] + r.Host + r.RequestURI
-			}
+			//var pageURL string
+			//if !isLocal {
+			//	//pageURL = r.URL.String() // looks only working for GAE
+			//	pageURL = schemes[r.TLS != nil] + r.Host + r.RequestURI
+			//}
 			pageParams := map[string]interface{}{
 				"Article":       article,
 				"Title":         article.TitleWithoutTags,
 				"IsLocalServer": isLocal,
-				"SocialLinkURL": pageURL, // non-blank to show social buttons
+				//"SocialLinkURL": pageURL, // non-blank to show social buttons
 			}
 			t := retrievePageTemplate(Template_Article, !isLocal)
 			var buf bytes.Buffer
