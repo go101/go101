@@ -116,7 +116,8 @@ So, up to now (Go 1.12), Go has 26 kinds of types.
 (<b>Type definition</b>, or type definition declaration,
 was called <b>type declaration</b> and was the only type declaration way before Go 1.9.
 Since Go 1.9, type definition has become one of two forms of type declarations in Go.
-The other new form is called <b>type alias declaration</b>, which will be introduced in the next section.)
+The other new form is called <b>type alias declaration</b>,
+which will be introduced in the next section.)
 </i></p>
 
 <div>
@@ -231,6 +232,11 @@ func f() {
 (<b>Type alias declaration</b> is one new kind of type declarations added since Go 1.9.)
 </i></p>
 
+<!--
+aliases should not be called as types:
+https://github.com/golang/go/issues/31243#issuecomment-481021726
+-->
+
 <p>
 As above mentioned, there are only two built-in type aliases in Go,
 <code>byte</code> (alias of <code>uint8</code>) and
@@ -259,7 +265,7 @@ Like type definitions, type aliases can also be declared within function bodies.
 <div>
 By the above declarations, <code>Name</code> is an alias of <code>string</code>,
 they denote the same type.
-The same relation is for the other three pairs of types:
+The same relation is for the other three pairs of type names and literals:
 <ul>
 <li>
 	<code>Age</code> and <code>int</code>
@@ -274,14 +280,14 @@ The same relation is for the other three pairs of types:
 </div>
 
 <p>
-In fact, type <code>map[string]int</code> and <code>map[Name]Age</code>
-also denote the same type. So the four types involved in the last two
-type alias declarations all denote the same type.
+In fact, the literals <code>map[string]int</code>
+and <code>map[Name]Age</code> also denote the same type.
+So, the same, aliases <code>table</code> and <code>Table</code> also denote the same type.
 </p>
 
 <p>
-Note, although <code>table</code> and <code>Table</code> denote the same type,
-<code>Table</code> is an exported type so it can be used by other packages
+Note, although aliases <code>table</code> and <code>Table</code> denote the same type,
+<code>Table</code> is exported so it can be used by other packages
 but <code>table</code> can't.
 </p>
 
@@ -304,9 +310,9 @@ All basic types are defined. A non-defined type must be a composite type.
 </p>
 
 <div>
-In the following example. alias type <code>C</code> and type literal
+In the following example. type alias <code>C</code> and type literal
 <code>[]string</code> are both non-defined types,
-but type <code>A</code> and alias type <code>B</code> are both defined types.
+but type <code>A</code> and type alias <code>B</code> are both defined types.
 <pre class="line-numbers"><code class="language-go">type A []string
 type B = A
 type C = []string
@@ -314,7 +320,8 @@ type C = []string
 
 </div>
 
-<a class="anchor" id="named-type"></a>
+<!--
+<a class="anchor" id="unnamed-type"></a>
 <h3>Concept: Named Types vs. Unnamed Types</h3>
 
 <div>
@@ -336,9 +343,10 @@ In Go,
 <p>
 An unnamed type must be a composite type,
 It is not true vice versa,
-for a composite type may be a defined type or an alias type.
+for a composite type may be a defined type.
 </p>
 </div>
+-->
 
 <a class="anchor" id="underlying-type"></a>
 <h3>Concept: Underlying Types</h3>
@@ -349,7 +357,7 @@ In Go, each type has an underlying type. Rules:
 <li>for built-in basic types, the underlying types are themselves.</li>
 <li>the underlying types of unsafe pointer types are all the <code>unsafe.Pointer</code>
 	which is defined in the <code>unsafe</code> standard code package.</li>
-<li>the underlying types of an unnamed type, which must be a composite type, is itself.</li>
+<li>the underlying types of a non-defined type, which must be a composite type, is itself.</li>
 <li>in a type declaration, the new declared type and the source type have the same underlying type.</li>
 </ul>
 
@@ -362,13 +370,13 @@ type (
 
 // The following new types have different underlying types.
 type (
-	IntSlice = []int   // underlying type is []int
+	IntSlice   []int   // underlying type is []int
 	MyIntSlice []MyInt // underlying type is []MyInt
 	AgeSlice   []Age   // underlying type is []Age
 )
 
 // The underlying types of []Age, Ages, and AgeSlice
-// are all the unnamed type []Age.
+// are all the non-defined type []Age.
 type Ages AgeSlice
 </code></pre>
 
@@ -378,7 +386,7 @@ type Ages AgeSlice
 <p>
 How to trace to the underlying type for a given user declared type?
 The rule is, when a built-in basic type, <code>unsafe.Pointer</code>
-or an unnamed type is met, the tracing will be stopped.
+or a non-defined type is met, the tracing will be stopped.
 Take the type declarations above as examples, let's trace their underlying types.
 </p>
 

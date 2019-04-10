@@ -22,11 +22,13 @@ import "net/http"
 
 func main() {
 	type P = *bool
+	type M = map[int]int
 	var x struct {
 		string // a defined non-pointer type
 		error  // a defined interface type
-		*int   // an unnamed pointer type
-		P      // an alias of an unnamed pointer type
+		*int   // a non-defined pointer type
+		P      // an alias of a non-defined pointer type
+		M      // an alias of a non-defined type
 
 		http.Header // a defined map type
 	}
@@ -34,12 +36,13 @@ func main() {
 	x.error = nil
 	x.int = new(int)
 	x.P = new(bool)
+	x.M = make(M)
 	x.Header = http.Header{}
 }
 </code></pre>
 
 <p>
-In the above example, five types are embedded in the struct type.
+In the above example, six types are embedded in the struct type.
 Each type embedding forms an embedded field.
 </p>
 
@@ -48,8 +51,8 @@ Embedded fields are also called as anonymous fields.
 However, in fact, each embedded field has a name specified implicitly.
 The <a href="https://golang.org/ref/spec#Qualified_identifiers">unqualified</a> type name
 of an embedded field acts as the name of the field.
-For example, the names of the five embedded fields in the above examples are
-<code>string</code>, <code>error</code>, <code>int</code>, <code>P</code>,
+For example, the names of the six embedded fields in the above examples are
+<code>string</code>, <code>error</code>, <code>int</code>, <code>P</code>, <code>M</code>,
 and <code>Header</code>, respectively.
 </p>
 </div>
@@ -74,58 +77,32 @@ For example, the description doesn't include the case of
 the <code>P</code> field in the example in the last section.
 </p>
 
-<p>
-The following descriptions are more accurate on which types can and can't be embedded.
-</p>
+Here, the article tries to provide more accurate descriptions.
+<ul>
+<li>
+	A type name <code>T</code> can be embedded as an embedded field
+	unless <code>T</code> denotes a pointer type which base type
+	is either a pointer or an interface type.
+</li>
+<li>
+	A pointer type <code>*T</code>, where <code>T</code> is a type name denoting
+	the base type of the pointer type, can be embedded as an embedded field
+	only if <code>T</code> doesn't denote a pointer or interface type.
+</li>
+</ul>
 
-<div class="alert alert-success">
-A type can be embedded if it satisfies any of the following three conditions.
-<ol>
-<li>
-	A <a href="type-system-overview.html#named-type">named type</a> which is not a pointer type.
-</li>
-<li>
-	An unnamed pointer type which based type presents as a named type but neither a pointer nor interface type.
-</li>
-<li>
-	An alias type of a type of the second case.
-</li>
-</ol>
-</div>
-
-<p>
-</p>
-
-In other words,
-
-<div class="alert alert-danger">
-the following types can't be embedded.
-<ol>
-<li>
-	<a href="type-system-overview.html#non-defined-type">Defined</a> pointer types.
-</li>
-<li>
-	Unnamed non-pointer types.
-</li>
-<li>
-	Pointer types whose base types are either interface or pointer types.
-</li>
-<li>
-	Pointer types whose base types represent as unnamed types.
-</li>
-</ol>
-</div>
-
+<!--
 <p>
 The above rules for which types can be embedded are some over-restricted and unnecessarily complicated,
 which makes it some hard to describe them clearly in brief.
 It looks they are intended to avoid types without methods being embedded.
 However, at the same time, they also already allow many types without methods to be embedded,
-such as built-in basic types and aliases of many unnamed types.
+such as built-in basic types and aliases of many non-defined types.
 There is <a href="https://github.com/golang/go/issues/24062">a proposal</a> trying to simplify the rules but it was declined.
 The rule specified in the proposal is quite simple and doesn't do any harm:
 <b>if a type can provide an unqualified name, then the type can be embedded</b>.
 </p>
+-->
 
 Following lists some example types which can and can't be embedded:
 <pre class="line-numbers"><code class="language-go">type Encoder interface {Encode([]byte) []byte}
@@ -133,8 +110,9 @@ type Person struct {name string; age int}
 type Alias = struct {name string; age int}
 type AliasPtr = *struct {name string; age int}
 type IntPtr *int
+type AliasPP = *IntPtr
 
-// These types can be embedded in a struct type.
+// These types and aliases can be embedded in struct types.
 Encoder
 Person
 *Person
@@ -144,16 +122,17 @@ AliasPtr
 int
 *int
 
-// These types can't be embedded.
+// These types and aliases can't be embedded.
+AliasPP          // base type is a pointer type
 *Encoder         // base type is an interface type
 *AliasPtr        // base type is a pointer type
 IntPtr           // defined pointer type
 *IntPtr          // base type is a pointer type
-*chan int        // base type is an unnamed type
-struct {age int} // unnamed non-pointer type
-map[string]int   // unnamed non-pointer type
-[]int64          // unnamed non-pointer type
-func()           // unnamed non-pointer type
+*chan int        // base type is a non-defined type
+struct {age int} // non-defined non-pointer type
+map[string]int   // non-defined non-pointer type
+[]int64          // non-defined non-pointer type
+func()           // non-defined non-pointer type
 </code></pre>
 
 <p>
@@ -163,14 +142,14 @@ func()           // unnamed non-pointer type
 No two fields are allowed to have the same name in a struct,
 there are not exceptions for anonymous struct fields.
 By the embedded field naming rules,
-an unnamed pointer type can't be embedded along with its base type
+a non-defined pointer type can't be embedded along with its base type
 in the same struct type.
 For example, <code>int</code> and <code>*int</code> can't be embedded in the same struct type.
 </p>
 </div>
 
 <p>
-A struct type can't embed itself or its alias types, recursively.
+A struct type can't embed itself or its aliases, recursively.
 </p>
 
 <p>
@@ -244,8 +223,8 @@ func main() {
 
 <p>
 From the above example, it looks that, after embedding type <code>Person</code>,
-the type <code>Singer</code> obtains (inherits) all methods and fields of type <code>Person</code>,
-and type <code>*Singer</code> obtains (inherits) all methods of type <code>*Person</code>.
+the type <code>Singer</code> obtains all methods and fields of type <code>Person</code>,
+and type <code>*Singer</code> obtains all methods of type <code>*Person</code>.
 Are the conclusions right? The following sections will answer this question.
 </p>
 
@@ -543,49 +522,47 @@ However, we never explicitly declare these methods
 for the two types. Where do these methods come from?
 </p>
 
-In fact,
+In fact, assume a struct type <code>S</code> embeds a type <code>T</code>
+and the embedding is legal,
 <ul>
 <li>
-	for each method of an embedded type,
+	for each method of the embedded type <code>T</code>,
 	if the selectors to that method neither collide with nor are shadowed
 	by other selectors, then compilers will implicitly declare
-	a corresponding method with the same prototype for the embedding struct type.
-	And consequently, compiler will also
+	a corresponding method with the same prototype
+	for the embedding struct type <code>S</code>.
+	And consequently, compilers will also
 	<a href="method.html#implicit-pointer-methods">implicitly declare
-	a corresponding method</a> for the unnamed pointer type
-	whose base type is the embedding struct type.
+	a corresponding method</a> for the pointer type <code>*S</code>.
 </li>
 <li>
-	assume a struct type <code>S</code> embeds a named non-pointer type <code>T</code>,
-	for each method of type <code>*T</code>,
+	for each method of the pointer type <code>*T</code>,
 	if the selectors to that method neither collide with nor are shadowed
 	by other selectors, then compilers will implicitly declare
-	a corresponding method with the same prototype for type <code>*S</code>.
-</li>
-</ul>
-
-Simply speaking, if no selector shadowing and collisions happen,
-<ul>
-<li>
-	type <code>struct{T}</code> obtains (inherit) all the methods of type <code>T</code>.
-</li>
-<li>
-	type <code>*struct{T}</code> obtains (inherit) all the methods of type <code>*T</code>.
-</li>
-<li>
-	both type <code>struct{*T}</code> and <code>*struct{*T}</code>
-	also obtain (inherit) all the methods of type <code>*T</code>.
+	a corresponding method with the same prototype for the pointer type <code>*S</code>.
 </li>
 </ul>
 
 <p>
-Note, as <a href="method.html#method-set">the method set of type <code>T</code> is always a subset of
-the method set of type <code>*T</code></a>, we can also say all the three types <code>*struct{T}</code>,
-<code>struct{*T}</code> and <code>*struct{*T}</code> obtain (inherit) all the methods of type <code>T</code>.
+The above facts still hold true even if <code>*T</code> is not embeddable
+(a.k.a, <code>T</code> is a pointer or interface type),
+in which cases, the method set of <code>*T</code> is blank.
 </p>
 
-Here are the implicitly declared methods for type <code>Singer</code>
-and type <code>*Singer</code>.
+Simply speaking, if no selector shadowing and collisions happen,
+<ul>
+<li>
+	type <code>struct{T}</code> and type <code>*struct{T}</code>
+	both obtain all the methods of the type denoted by <code>T</code>.
+</li>
+<li>
+	type <code>*struct{T}</code>, type <code>struct{*T}</code>,
+	and type <code>*struct{*T}</code> obtains all the methods of type <code>*T</code>.
+</li>
+</ul>
+
+The following methods are implicitly declared by compilers
+for type <code>Singer</code> and type <code>*Singer</code>.
 
 <pre class="line-numbers"><code class="language-go">func (s Singer) PrintName() {
 	s.Person.PrintName()
@@ -740,7 +717,7 @@ type Z X
 
 <p>
 Not only can struct types embed other types, but also can interface types.
-But interface types can only embed named interface types.
+But interface types can only embed interface types.
 Please read <a href="interface.html#embedding">interfaces in Go</a> for details.
 </p>
 

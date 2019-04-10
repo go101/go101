@@ -1,4 +1,9 @@
 
+### 1.12.c (2019/April/09)
+
+* remove the "named type" and "unnamed type" terminology.
+* adjust some discriptions in [Type Embdding](https://go101.org/article/type-embedding.html).
+
 ### 1.12.b (2019/April/06)
 
 * add a [Package-level Variables Initialization Order](https://go101.org/article/evaluation-orders.html#package-level-variables) section.
