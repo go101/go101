@@ -1,4 +1,6 @@
-**([update history](UPDATES.md))**
+**[Go 101 in Apple Books store](https://itunes.apple.com/us/book/id1459984231)** | **[Go 101 in Kindle store](https://www.amazon.com/dp/B07Q3HWZ98)** | **[update history](UPDATES.md)**
+
+----
 
 <b>[Go 101](https://go101.org)</b> is a book focusing on Go syntax/semantics and all kinds of details.
 The book also tries to help gophers gain a deep and thorough understanding of Go.
@@ -42,13 +44,13 @@ If it is not opened, please visit http://localhost:55555.
 
 ### Contributing
 Welcome to improve Go 101 by:
-* Submitting corrections for all kinds of mistakes, such as typos, grammar errors, wording inaccuracies, description flaws, code bugs and broken links. 
+* Submitting corrections for all kinds of mistakes, such as typos, grammar errors, wording inaccuracies, description flaws, code bugs and broken links.
 * Suggesting interesting Go related contents.
 
 Current contributors are listed on [this page](https://go101.org/article/acknowledgements.html).
 
 Translations are also welcome. Here is a list of the ongoing translation projects:
-*  [Chinese translation version](https://github.com/Golang101/golang101).
+* [Chinese translation version](/golang101/golang101).
 
 ### License
 Copyright (c) Tapir Liu. All rights reserved. Please read the [LICENSE](LICENSE) for more details.
