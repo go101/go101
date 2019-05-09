@@ -50,7 +50,7 @@ Welcome to improve Go 101 by:
 Current contributors are listed on [this page](https://go101.org/article/acknowledgements.html).
 
 Translations are also welcome. Here is a list of the ongoing translation projects:
-* [Chinese translation version](/golang101/golang101).
+* Chinese translation version: [on github](https://github.com/golang101/golang101) and [on gitlab](https://gitlab.com/golang101/golang101).
 
 ### License
 Copyright (c) Tapir Liu. All rights reserved. Please read the [LICENSE](LICENSE) for more details.
