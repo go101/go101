@@ -36,24 +36,24 @@ show which code lines still need bounds checks.
 package main
 
 func f1(s []int) {
-	_ = s[0] // line 5: bounds check
-	_ = s[1] // line 6: bounds check
-	_ = s[2] // line 7: bounds check
+  _ = s[0] // line 5: bounds check
+  _ = s[1] // line 6: bounds check
+  _ = s[2] // line 7: bounds check
 }
 
 func f2(s []int) {
-	_ = s[2] // line 11: bounds check
-	_ = s[1] // line 12: bounds check eliminated!
-	_ = s[0] // line 13: bounds check eliminated!
+  _ = s[2] // line 11: bounds check
+  _ = s[1] // line 12: bounds check eliminated!
+  _ = s[0] // line 13: bounds check eliminated!
 }
 
 func f3(s []int, index int) {
-	_ = s[index] // line 17: bounds check
-	_ = s[index] // line 18: bounds check eliminated!
+  _ = s[index] // line 17: bounds check
+  _ = s[index] // line 18: bounds check eliminated!
 }
 
 func f4(a [5]int) {
-	_ = a[4] // line 22: bounds check eliminated!
+  _ = a[4] // line 22: bounds check eliminated!
 }
 
 func main() {}
@@ -100,39 +100,39 @@ in function <code>f4</code> is safe.
 package main
 
 func f5(s []int) {
-	for i := range s {
-		_ = s[i]
-		_ = s[i:len(s)]
-		_ = s[:i+1]
-	}
+  for i := range s {
+    _ = s[i]
+    _ = s[i:len(s)]
+    _ = s[:i+1]
+  }
 }
 
 func f6(s []int) {
-	for i := 0; i < len(s); i++ {
-		_ = s[i]
-		_ = s[i:len(s)]
-		_ = s[:i+1]
-	}
+  for i := 0; i < len(s); i++ {
+    _ = s[i]
+    _ = s[i:len(s)]
+    _ = s[:i+1]
+  }
 }
 
 func f7(s []int) {
-	for i := len(s) - 1; i >= 0; i-- {
-		_ = s[i]
-		_ = s[i:len(s)]
-	}
+  for i := len(s) - 1; i >= 0; i-- {
+    _ = s[i]
+    _ = s[i:len(s)]
+  }
 }
 
 func f8(s []int, index int) {
-	if index >= 0 && index < len(s) {
-		_ = s[index]
-		_ = s[index:len(s)]
-	}
+  if index >= 0 && index < len(s) {
+    _ = s[index]
+    _ = s[index:len(s)]
+  }
 }
 
 func f9(s []int) {
-	if len(s) > 2 {
-	    _, _, _ = s[0], s[1], s[2]
-	}
+  if len(s) > 2 {
+      _, _, _ = s[0], s[1], s[2]
+  }
 }
 
 func main() {}
@@ -161,23 +161,23 @@ package main
 import "math/rand"
 
 func fa() {
-	s := []int{0, 1, 2, 3, 4, 5, 6}
-	index := rand.Intn(7)
-	_ = s[:index] // line 9: bounds check
-	_ = s[index:] // line 10: bounds check eliminated!
+  s := []int{0, 1, 2, 3, 4, 5, 6}
+  index := rand.Intn(7)
+  _ = s[:index] // line 9: bounds check
+  _ = s[index:] // line 10: bounds check eliminated!
 }
 
 func fb(s []int, i int) {
-	_ = s[:i] // line 14: bounds check
-	_ = s[i:] // line 15: bounds check, not smart enough?
+  _ = s[:i] // line 14: bounds check
+  _ = s[i:] // line 15: bounds check, not smart enough?
 }
 
 func fc() {
-	s := []int{0, 1, 2, 3, 4, 5, 6}
-	s = s[:4]
-	i := rand.Intn(7)
-	_ = s[:i] // line 22: bounds check
-	_ = s[i:] // line 23: bounds check, not smart enough?
+  s := []int{0, 1, 2, 3, 4, 5, 6}
+  s = s[:4]
+  i := rand.Intn(7)
+  _ = s[:i] // line 22: bounds check
+  _ = s[i:] // line 23: bounds check, not smart enough?
 }
 
 func main() {}
@@ -210,20 +210,20 @@ Let's view a simple example:
 <pre class="line-numbers must-line-numbers"><code class="language-go">package main
 
 func main() {
-	s0 := make([]int, 5, 10) // len(s0) == 5, cap(s0) == 10
+  s0 := make([]int, 5, 10) // len(s0) == 5, cap(s0) == 10
 
-	index := 8
+  index := 8
 
-	// In Go, for the subslice syntax s[a:b],
-	// the relations 0 <= a <= b <= cap(s) must
-	// be ensured to avoid panicking.
+  // In Go, for the subslice syntax s[a:b],
+  // the relations 0 <= a <= b <= cap(s) must
+  // be ensured to avoid panicking.
 
-	_ = s0[:index]
-	// The above line is safe can't ensure the
-	// following line is also safe. In fact, the
-	// following line will panic, for the starting
-	// index is larger than the end index.
-	_ = s0[index:] // panic
+  _ = s0[:index]
+  // The above line is safe can't ensure the
+  // following line is also safe. In fact, the
+  // following line will panic, for the starting
+  // index is larger than the end index.
+  _ = s0[index:] // panic
 }
 </code></pre>
 
@@ -251,16 +251,16 @@ package main
 import "math/rand"
 
 func fb2(s []int, index int) {
-	_ = s[index:] // line 7: bounds check
-	_ = s[:index] // line 8: bounds check eliminated!
+  _ = s[index:] // line 7: bounds check
+  _ = s[:index] // line 8: bounds check eliminated!
 }
 
 func fc2() {
-	s := []int{0, 1, 2, 3, 4, 5, 6}
-	s = s[:4]
-	index := rand.Intn(7)
-	_ = s[index:] // line 15 bounds check
-	_ = s[:index] // line 16: bounds check eliminated!
+  s := []int{0, 1, 2, 3, 4, 5, 6}
+  s = s[:4]
+  index := rand.Intn(7)
+  _ = s[index:] // line 15 bounds check
+  _ = s[:index] // line 16: bounds check eliminated!
 }
 
 func main() {}
@@ -274,10 +274,10 @@ func main() {}
 In this example, The standard Go compiler successfully concludes
 <ul>
 <li>
-	line <i>8</i> is also safe if line <i>7</i> is safe in function <code>fb2</code>.
+  line <i>8</i> is also safe if line <i>7</i> is safe in function <code>fb2</code>.
 </li>
 <li>
-	line <i>16</i> is also safe if line <i>15</i> is safe in function <code>fc2</code>.
+  line <i>16</i> is also safe if line <i>15</i> is safe in function <code>fc2</code>.
 </li>
 </ul>
 
@@ -299,37 +299,37 @@ Sometimes, we can make some hints to help the compiler eliminate some unnecessar
 package main
 
 func fd(is []int, bs []byte) {
-	if len(is) >= 256 {
-		for _, n := range bs {
-			_ = is[n] // line 7: bounds check
-		}
-	}
+  if len(is) >= 256 {
+    for _, n := range bs {
+      _ = is[n] // line 7: bounds check
+    }
+  }
 }
 
 func fd2(is []int, bs []byte) {
-	if len(is) >= 256 {
-		is = is[:256] // line 14: a hint
-		for _, n := range bs {
-			_ = is[n] // line 16: BCEed!
-		}
-	}
+  if len(is) >= 256 {
+    is = is[:256] // line 14: a hint
+    for _, n := range bs {
+      _ = is[n] // line 16: BCEed!
+    }
+  }
 }
 
 func fe(isa []int, isb []int) {
-	if len(isa) > 0xFFF {
-		for _, n := range isb {
-			_ = isa[n & 0xFFF] // line 24: bounds check
-		}
-	}
+  if len(isa) > 0xFFF {
+    for _, n := range isb {
+      _ = isa[n & 0xFFF] // line 24: bounds check
+    }
+  }
 }
 
 func fe2(isa []int, isb []int) {
-	if len(isa) > 0xFFF {
-		isa = isa[:0xFFF+1] // line 31: a hint
-		for _, n := range isb {
-			_ = isa[n & 0xFFF] // line 33: BCEed!
-		}
-	}
+  if len(isa) > 0xFFF {
+    isa = isa[:0xFFF+1] // line 31: a hint
+    for _, n := range isb {
+      _ = isa[n & 0xFFF] // line 33: BCEed!
+    }
+  }
 }
 
 func main() {}
@@ -339,20 +339,20 @@ func main() {}
 since Go SDK 1.11, the compiler becomes more smarter
 
 func ff(s []int) []int {
-	s2 := make([]int, len(s))
-	for i := range s {
-		s2[i] = -s[i] // line 41: bounds check, not smart enough
-	}
-	return s2
+  s2 := make([]int, len(s))
+  for i := range s {
+    s2[i] = -s[i] // line 41: bounds check, not smart enough
+  }
+  return s2
 }
 
 func ff2(s []int) []int {
-	s2 := make([]int, len(s))
-	s2 = s2[:len(s)] // line 48: to avoid bounds check at line 50
-	for i := range s {
-		s2[i] = -s[i] // line 50: bounds check eliminated!
-	}
-	return s2
+  s2 := make([]int, len(s))
+  s2 = s2[:len(s)] // line 48: to avoid bounds check at line 50
+  for i := range s {
+    s2[i] = -s[i] // line 50: bounds check eliminated!
+  }
+  return s2
 }
 -->
 
@@ -385,21 +385,21 @@ standard package. But the <code>reflect.DeepEqual</code> function is too slow.
 The following is a custom slice comparison function.
 
 <pre class="line-numbers"><code class="language-go">func CompareSlices_General(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
+  if len(a) != len(b) {
+    return false
+  }
 
-	if (a == nil) != (b == nil) {
-		return false
-	}
+  if (a == nil) != (b == nil) {
+    return false
+  }
 
-	for i, v := range a {
-		if v != b[i] { // here bounds check is needed for b[i]
-			return false
-		}
-	}
+  for i, v := range a {
+    if v != b[i] { // here bounds check is needed for b[i]
+      return false
+    }
+  }
 
-	return true
+  return true
 }
 </code></pre>
 
@@ -408,30 +408,30 @@ Bounds check is still needed for the <code>b[i]</code> in the
 We can modify the function a bit to remove the bounds check.
 
 <pre class="line-numbers"><code class="language-go">func CompareSlices_BCE(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
+  if len(a) != len(b) {
+    return false
+  }
 
-	if (a == nil) != (b == nil) {
-		return false
-	}
+  if (a == nil) != (b == nil) {
+    return false
+  }
 
-	b = b[:len(a)] // this line is the key.
-	for i, v := range a {
-		if v != b[i] { // no bounds check for b[i] now!
-			return false
-		}
-	}
+  b = b[:len(a)] // this line is the key.
+  for i, v := range a {
+    if v != b[i] { // no bounds check for b[i] now!
+      return false
+    }
+  }
 
-	return true
+  return true
 }
 </code></pre>
 
 Let's <a href="https://github.com/go101/go-benchmarks/blob/master/bce/bce_test.go">benchmark the two functions</a>.
 The result (update: no differences for the standard compiler 1.11+):
 
-<pre class="output"><code>Benchmark_SliceComparison/General-4         	 5000000	       287 ns/op
-Benchmark_SliceComparison/BCE-4             	 5000000	       251 ns/op
+<pre class="output"><code>Benchmark_SliceComparison/General-4            5000000         287 ns/op
+Benchmark_SliceComparison/BCE-4                5000000         251 ns/op
 </code></pre>
 
 <p>
