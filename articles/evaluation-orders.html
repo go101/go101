@@ -43,6 +43,11 @@ For a successfully compiled Go program, there should be
 no uninitialized variables after all such processes end.
 </p>
 
+<p>
+Package-level variables appearing as blank identifers are
+treated like any other variables in the initialization process.
+</p>
+
 For example, the following program should print <code>yzxw</code>.
 <ol>
 <li>
@@ -65,14 +70,14 @@ For example, the following program should print <code>yzxw</code>.
 <pre class="line-numbers"><code class="language-go">package main
 
 var (
-	w = f("w", x)
+	_ = f("w", x)
 	x = f("x", z)
 	y = f("y")
 	z = f("z")
 )
 
 func f(s string, deps ...int) int {
-	print(s);
+	print(s)
 	return 0
 }
 
@@ -86,6 +91,53 @@ Note, currently (Go 1.12), the standard Go compiler
 <a href="https://github.com/golang/go/issues/22326">doesn't implement the rule correctly</a>.
 If the above program is compiled with the standard Go compiler, it will print <code>zxwy</code>.
 </p>
+
+<!--
+https://github.com/golang/go/issues/31292
+https://github.com/golang/go/commit/451cf3e2cd8950571f436896a3987343f8c2d7f6
+-->
+
+<p>
+Multiple variables on the left-hand side of a variable declaration
+initialized by single multi-valued expression on the right-hand side
+are initialized together. For example, for a package-level variable
+declaration <code>var x, y = f()</code>, variables <code>x</code> and <code>y</code>
+will be initialized together. In other words, no other variables will
+be initialized between them.
+</p>
+
+If hidden dependencies exists between variables,
+the initialization order between those variables is unspecified.
+In the following example (copied from Go specification), 
+<ul>
+<li>
+	the variable <code>a</code> will be initialized after <code>b</code> for sure,
+</li>
+<li>
+	but whether <code>x</code> is initialized before <code>b</code>, between
+	<code>b</code> and <code>a</code>, or after <code>a</code>, is not specified.
+</li>
+<li>
+	and the moment at which function <code>sideEffect()</code> is called (before
+	or after <code>x</code> is initialized) is also not specified.
+</li>
+</ul>
+
+<pre class="line-numbers"><code class="language-go">// x has a hidden dependency on a and b
+var x = I(T{}).ab()
+// Assume sideEffect is unrelated to x, a, or b.
+var _ = sideEffect()
+var a = b
+var b = 42
+
+type I interface    { ab() []int }
+type T struct{}
+func (T) ab() []int { return []int{a, b} }
+</code></pre>
+
+<p>
+</p>
+
 
 </div>
 

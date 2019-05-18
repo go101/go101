@@ -1,4 +1,8 @@
 
+### 1.12.d (2019/May/18)
+
+* enrich the [Package-level Variables Initialization Order](https://go101.org/article/evaluation-orders.html#package-level-variables) section.
+
 ### 1.12.c (2019/April/09)
 
 * remove the "named type" and "unnamed type" terminology.
