@@ -53,4 +53,5 @@ Translations are also welcome. Here is a list of the ongoing translation project
 * Chinese translation version: [on github](https://github.com/golang101/golang101) and [on gitlab](https://gitlab.com/golang101/golang101).
 
 ### License
-Copyright (c) Tapir Liu. All rights reserved. Please read the [LICENSE](LICENSE) for more details.
+
+Please read the [LICENSE](LICENSE) for more details.
