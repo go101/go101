@@ -35,10 +35,10 @@ Calls to these functions can't nest multi-result function calls as arguments.
 </div>
 
 <p><i>
-(The basic rule may <a href="https://github.com/golang/go/issues/15992">apply to</a>
-<code>copy</code> function later,
-but will <a href="https://github.com/golang/go/issues/20656">never apply to</a>
-<code>print</code> and <code>println</code> functions.)
+(Since Go 1.13, the exception <a href="https://github.com/golang/go/issues/15992">will become invalid</a>
+for the <code>copy</code> and <code>delete</code> built-in functions,
+but it will <a href="https://github.com/golang/go/issues/20656">continue being valid</a>
+for the <code>print</code> and <code>println</code> built-in functions.)
 </i></p>
 
 <p><i>
@@ -46,7 +46,7 @@ but will <a href="https://github.com/golang/go/issues/20656">never apply to</a>
 the basic rule applies to the nesting calls of <code>complex</code> function,
 but with <a href="https://github.com/golang/go/issues/15992#issuecomment-337673303">one exception case</a>
 when a method call with an interface receiver argument as the only argument of the nesting calls.
-This exception case may be a bug of the standard Go compiler. At present, Go SDK 1.12, the bug still exists in the standard compiler.)
+This exception case may be a bug of the standard Go compiler. The bug will be fixed in Go SDK 1.13.)
 </i></p>
 
 Example:
@@ -80,9 +80,11 @@ func main() {
 	/*
 	f3(123, f1())
 	f3(f1(), 123)
+	println(f1())
+	// The following 3 lines will compile okay
+	// since Go 1.13.
 	copy(f4())
 	delete(f5())
-	println(f1())
 	_ = complex(I(T{}).m())
 	*/
 }
@@ -605,9 +607,9 @@ If a value is assignable to the type of another value, then the two values can b
 
 Exception:
 <div class="alert alert-success">
-The values of a non-interface uncomparable type can't be compared to values of an interface type,
-even if the non-interface uncomparable type implements the interface type
-(so values of the non-interface uncomparable type are assignable to the interface type).
+The values of a non-interface incomparable type can't be compared to values of an interface type,
+even if the non-interface incomparable type implements the interface type
+(so values of the non-interface incomparable type are assignable to the interface type).
 </div>
 
 Please read <a href="value-conversions-assignments-and-comparisons.html#comparison-rules">comparison rules</a> for examples.
@@ -619,14 +621,14 @@ Please read <a href="value-conversions-assignments-and-comparisons.html#comparis
 <div>
 The basic rule:
 <div class="alert alert-info">
-Comparing interface values with uncomparable dynamic values will panic.
+Comparing interface values with incomparable dynamic values will panic.
 </div>
 
 Exception:
 <div class="alert alert-success">
 If the dynamic types of two interface values are not the same one,
 then comparing them will never panic,
-even if either of the two dynamic values are uncomparable.
+even if either of the two dynamic values are incomparable.
 </div>
 
 Example:
@@ -638,7 +640,7 @@ func main() {
 	var x interface{} = s
 	var y interface{} = m
 	var z interface{} = nil
-	// The dynamic values of x and y are both uncomparable.
+	// The dynamic values of x and y are both incomparable.
 	//_ = x == x // will panic
 	//_ = y == y // will panic
 	_ = x == z // false, will not panic
