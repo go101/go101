@@ -8,32 +8,25 @@ The book is expected to be helpful for both beginner and experienced Go programm
 
 ### Install And Update
 
-Run
+Install
 
 ```
-$ go get -u gitlab.com/go101/go101
+$ git clone gitlab.com/go101/go101
 ```
 
-or
+Update
 
 ```
-$ go get -u github.com/go101/go101
+$ git pull github.com/go101/go101
 ```
-
-to install and update ***Go 101***.
-
-*(NOTE: if your last `go get -u` command run was before __July 28th, 2018__,
-please run this command again to install the latest `go101` program.)*
 
 ### Run Locally
 
-Add the path of the `bin` folder under `GOPATH`
-into `PATH` environment variable to run `go101`.
-The default value of the `GOPATH` environment variable
-is the path of the `go` folder under the home directory.
+Open a terminal window, then enter the Go 101 project folder
+(which contains the current `README.md` file), then run
 
 ```
-$ go101
+$ go run *.go
 Server started:
    http://localhost:55555 (non-cached version)
    http://127.0.0.1:55555 (cached version)
