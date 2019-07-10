@@ -6,24 +6,23 @@
 The book also tries to help gophers gain a deep and thorough understanding of Go.
 The book is expected to be helpful for both beginner and experienced Go programmers.
 
-### Install And Update
-
-Install
+### Install
 
 ```
 $ git clone gitlab.com/go101/go101
 ```
 
-Update
+###  Update
+
+Enter the Go 101 project folder (which contains the current `README.md` file), then run
 
 ```
-$ git pull github.com/go101/go101
+$ git pull
 ```
 
 ### Run Locally
 
-Open a terminal window, then enter the Go 101 project folder
-(which contains the current `README.md` file), then run
+Enter the Go 101 project folder (which contains the current `README.md` file), then run
 
 ```
 $ go run *.go
