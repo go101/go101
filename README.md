@@ -8,8 +8,16 @@ The book is expected to be helpful for both beginner and experienced Go programm
 
 ### Install
 
+Run
+
 ```
 $ git clone gitlab.com/go101/go101
+```
+
+or
+
+```
+$ git clone github.com/go101/go101
 ```
 
 ###  Update
