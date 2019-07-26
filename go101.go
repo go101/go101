@@ -415,36 +415,36 @@ func goGet(pkgPath string) {
 func (go101 *Go101) Update() {
 	<-time.After(time.Minute / 2)
 
-	output, err := runShellCommand(time.Minute/2, "git", "remote")
-	if err != nil {
-		log.Println("list git remotes error:", err)
-		return
-	}
-	k := bytes.IndexRune(output, '\n')
-	if k < 0 {
-		log.Println("find git remote failed:", output)
-		return
-	}
+	//output, err := runShellCommand(time.Minute/2, "git", "remote")
+	//if err != nil {
+	//	log.Println("list git remotes error:", err)
+	//	return
+	//}
+	//k := bytes.IndexRune(output, '\n')
+	//if k < 0 {
+	//	log.Println("find git remote failed:", output)
+	//	return
+	//}
 
-	configItem := "remote." + string(bytes.TrimSpace(output[:k])) + ".url"
-	output, err = runShellCommand(time.Minute/2, "git", "config", "--get", configItem)
-	if err != nil {
-		log.Println("get "+configItem+" error:", err)
-		return
-	}
-	a, b := bytes.Index(output, []byte("://")), bytes.Index(output, []byte(".git"))
-	if a += 3; a < 3 {
-		a = 0
-	}
-	if b < 0 {
-		b = len(output)
-	}
+	//configItem := "remote." + string(bytes.TrimSpace(output[:k])) + ".url"
+	//output, err = runShellCommand(time.Minute/2, "git", "config", "--get", configItem)
+	//if err != nil {
+	//	log.Println("get "+configItem+" error:", err)
+	//	return
+	//}
+	//a, b := bytes.Index(output, []byte("://")), bytes.Index(output, []byte(".git"))
+	//if a += 3; a < 3 {
+	//	a = 0
+	//}
+	//if b < 0 {
+	//	b = len(output)
+	//}
 
-	pkgPath := string(bytes.TrimSpace(output[a:b]))
-	goGet(pkgPath) // gitPull()
+	//pkgPath := string(bytes.TrimSpace(output[a:b]))
+	gitPull() // goGet(pkgPath)
 	for {
 		<-time.After(time.Hour * 24)
-		goGet(pkgPath) // gitPull()
+		gitPull() // goGet(pkgPath)
 	}
 }
 
