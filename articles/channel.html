@@ -449,11 +449,11 @@ The following will make more explanations for the four cases shown with superscr
 
 <p>
 To better understand channel types and values, and to make some explanations
-easier, learning the rough internal structures of internal channel objects
+easier, looking in the raw internal structures of internal channel objects
 is very helpful.
 </p>
 
-We can think of each channel as maintaining three queues (all can be viewed as FIFO queues) internally:
+We can think of each channel consisting of three queues (all can be viewed as FIFO queues) internally:
 <ol>
 <li>
 	the receiving goroutine queue.
@@ -577,7 +577,7 @@ Note, sending data to a closed channel is viewed as a <b>non-blocking operation<
 
 <u><b>Channel operation case C</b>:
 when a goroutine tries to close a not-closed non-nil channel</u>,
-once the goroutine has acquired the lock of of the channel,
+once the goroutine has acquired the lock of the channel,
 both of the following two steps will be performed by the following order.
 <ol>
 <li>
@@ -604,7 +604,7 @@ channel receive operations on the channel will never block</u>.
 The values in the value buffer of the channel can still be received.
 Once all the values in the value buffer are taken out and received,
 infinite zero values of the element type of the channel will be received
-by any of following receive operations on the channel.
+by any of the following receive operations on the channel.
 As mentioned above,
 the optional second return result of a channel receive operation is an untyped boolean
 value which indicates whether or not the first result (the received value)
@@ -621,12 +621,12 @@ blocks which will be introduced in a later section.
 
 <p>
 In the above explanations, if a goroutine is unshifted out of a queue
-(either the sending goroutine queue or the receiving goroutine queue) of a channel,
+(either the sending or the receiving goroutine queue) of a channel,
 and the goroutine was blocked for being pushed into the queue at a
 <a href="#select"><code>select</code> control flow code block</a>,
-then the goroutine will be resumed to running state at the step <i>9</i> of the
+then the goroutine will be resumed to running state at step <i>9</i> of the
 <a href="#select-implementation"><code>select</code> control flow code block execution</a>.
-It may be dequeued from the corresponding goroutine queues of
+It may be dequeued from the corresponding goroutine queue of
 several channels involved in the <code>select</code> control flow code block.
 </p>
 
@@ -663,11 +663,11 @@ According to the explanations listed above, we can get some facts about the inte
 
 <div>
 <p>
-Let's view some channel use examples to enhance the understanding by reading the last section.
+Let's view some examples which use channels to enhance the understanding by reading the last section.
 </p>
 
 A simple request/response example.
-The two goroutines in this example talk with each other
+The two goroutines in this example talk to each other
 through an unbuffered channel.
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -680,20 +680,20 @@ func main() {
 	c := make(chan int) // an unbuffered channel
 	go func(ch chan<- int, x int) {
 		time.Sleep(time.Second)
-		// <-ch    // fails to compile.
-		// Block until the result is received.
+		// <-ch    // fails to compilex.
+		// Send the value and block until the result is received
 		ch <- x*x // 9 is sent
 	}(c, 3)
 	done := make(chan struct{})
 	go func(ch <-chan int) {
-		// Block here until 9 is sent.
+		// Block until 9 is received
 		n := <-ch
 		fmt.Println(n) // 9
 		// ch <- 123   // fails to compile
 		time.Sleep(time.Second)
 		done <- struct{}{}
 	}(c)
-	// Block here until a value is sent to
+	// Block here until a value is received by
 	// the channel "done".
 	<-done
 	fmt.Println("bye")
