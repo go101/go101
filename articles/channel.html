@@ -115,7 +115,7 @@ One suggestion (made by <i>Rob Pike</i>) for concurrent programming is
 <p>
 Communicating by sharing memory and sharing memory by communicating
 are two programming manners in concurrent programming.
-When goroutines communicate by sharing memory, we need use some
+When goroutines communicate by sharing memory, we use
 traditional concurrency synchronization techniques, such as mutex locks,
 to protect the shared memory to prevent data races.
 We can use channels to implement sharing memory by communicating.
@@ -124,7 +124,7 @@ We can use channels to implement sharing memory by communicating.
 <p>
 Go provides a unique concurrency synchronization technique, channel.
 Channels make goroutines share memory by communicating.
-We can view a channel as an internal FIFO (first in, first out) data queue
+We can view a channel as an internal FIFO (first in, first out) queue
 within a program. Some goroutines send values to the queue (the channel)
 and some other goroutines receive values from the queue.
 </p>
@@ -177,7 +177,7 @@ the scenarios which channels are not best for.
 <div>
 <p>
 Like array, slice and map, each channel type has an element type.
-A channel can only transfer values of the element type of (the type of) the channel.
+A channel can only transfer values of the element type of the channel.
 </p>
 
 Channel types can be bi-directional or single-directional.
@@ -240,9 +240,9 @@ All channel types are comparable types.
 <p>
 From the article <a href="value-part.html">value parts</a>,
 we know that non-nil channel values are multi-part values.
-After one channel value is assigned to another,
+If one channel value is assigned to another,
 the two channels share the same underlying part(s).
-In other words, the two channels represent the same internal channel object.
+In other words, those two channels represent the same internal channel object.
 The result of comparing them is <code>true</code>.
 </p>
 
@@ -449,11 +449,11 @@ The following will make more explanations for the four cases shown with superscr
 
 <p>
 To better understand channel types and values, and to make some explanations
-easier, learning the rough internal structures of internal channel objects
+easier, looking in the raw internal structures of internal channel objects
 is very helpful.
 </p>
 
-We can think of each channel as maintaining three queues (all can be viewed as FIFO queues) internally:
+We can think of each channel consisting of three queues (all can be viewed as FIFO queues) internally:
 <ol>
 <li>
 	the receiving goroutine queue.
@@ -577,7 +577,7 @@ Note, sending data to a closed channel is viewed as a <b>non-blocking operation<
 
 <u><b>Channel operation case C</b>:
 when a goroutine tries to close a not-closed non-nil channel</u>,
-once the goroutine has acquired the lock of of the channel,
+once the goroutine has acquired the lock of the channel,
 both of the following two steps will be performed by the following order.
 <ol>
 <li>
@@ -604,7 +604,7 @@ channel receive operations on the channel will never block</u>.
 The values in the value buffer of the channel can still be received.
 Once all the values in the value buffer are taken out and received,
 infinite zero values of the element type of the channel will be received
-by any of following receive operations on the channel.
+by any of the following receive operations on the channel.
 As mentioned above,
 the optional second return result of a channel receive operation is an untyped boolean
 value which indicates whether or not the first result (the received value)
@@ -621,12 +621,12 @@ blocks which will be introduced in a later section.
 
 <p>
 In the above explanations, if a goroutine is unshifted out of a queue
-(either the sending goroutine queue or the receiving goroutine queue) of a channel,
+(either the sending or the receiving goroutine queue) of a channel,
 and the goroutine was blocked for being pushed into the queue at a
 <a href="#select"><code>select</code> control flow code block</a>,
-then the goroutine will be resumed to running state at the step <i>9</i> of the
+then the goroutine will be resumed to running state at step <i>9</i> of the
 <a href="#select-implementation"><code>select</code> control flow code block execution</a>.
-It may be dequeued from the corresponding goroutine queues of
+It may be dequeued from the corresponding goroutine queue of
 several channels involved in the <code>select</code> control flow code block.
 </p>
 
@@ -663,11 +663,11 @@ According to the explanations listed above, we can get some facts about the inte
 
 <div>
 <p>
-Let's view some channel use examples to enhance the understanding by reading the last section.
+Let's view some examples which use channels to enhance the understanding by reading the last section.
 </p>
 
 A simple request/response example.
-The two goroutines in this example talk with each other
+The two goroutines in this example talk to each other
 through an unbuffered channel.
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -680,20 +680,20 @@ func main() {
 	c := make(chan int) // an unbuffered channel
 	go func(ch chan<- int, x int) {
 		time.Sleep(time.Second)
-		// <-ch    // fails to compile.
-		// Block until the result is received.
+		// <-ch    // fails to compile
+		// Send the value and block until the result is received.
 		ch <- x*x // 9 is sent
 	}(c, 3)
 	done := make(chan struct{})
 	go func(ch <-chan int) {
-		// Block here until 9 is sent.
+		// Block until 9 is received.
 		n := <-ch
 		fmt.Println(n) // 9
 		// ch <- 123   // fails to compile
 		time.Sleep(time.Second)
 		done <- struct{}{}
 	}(c)
-	// Block here until a value is sent to
+	// Block here until a value is received by
 	// the channel "done".
 	<-done
 	fmt.Println("bye")
@@ -812,7 +812,7 @@ to avoid a large value copy cost.
 <p>
 Note, a channel is referenced by all the goroutines in either
 the sending or the receiving goroutine queue of the channel,
-so if neither of the two queues of the channel is empty,
+so if neither of the queues of the channel is empty,
 the channel will not be garbage collected for sure.
 On the other hand, if a goroutine is blocked and stays in either
 the sending or the receiving goroutine queue of a channel,
@@ -1102,7 +1102,7 @@ There are several steps to execute a <code>select-case</code> block:
 	make the current goroutine enter blocking state and unlock all channels by the inverse channel lock order.
 </li>
 <li>
-	..., in blocking state, waiting other channel operations to wake up the current goroutine, ...
+	wait in blocking state until other channel operations wake up the current goroutine, ...
 </li>
 <li>
 	the current goroutine is waken up by another channel operation in another goroutine.
