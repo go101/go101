@@ -592,16 +592,23 @@ both of the following two steps will be performed by the following order.
 	all the goroutines in the sending goroutine queue of the channel
 	will be unshifted one by one and
 	each of them will produce a panic for sending on a closed channel.
-	The values which have been already pushed into the value buffer
-	of the channel are still there.
+	This is the reason why we should avoid concurrent send and close operations on the same channel.
+	In fact, data races happen in concurrent send and close operations.
 </li>
 </ol>
+
+<p>
+Note: after a channle is closed, the values which have been already pushed into
+the value buffer of the channel are still there.
+Please read the closely following explanations for case D for details.
+</p>
 
 <p>
 <u><b>Channel operation case D</b>:
 after a non-nil channel is closed,
 channel receive operations on the channel will never block</u>.
 The values in the value buffer of the channel can still be received.
+The accompanying second optional bool return values are still <code>true</code>.
 Once all the values in the value buffer are taken out and received,
 infinite zero values of the element type of the channel will be received
 by any of the following receive operations on the channel.
@@ -783,7 +790,7 @@ for more channel use examples.
 
 </div>
 
-<h3>Channel Element Values are Transferred by Copy</h3>
+<h3>Channel Element Values Are Transferred by Copy</h3>
 
 <p>
 When a value is transferred from one goroutine to another goroutine,
@@ -821,7 +828,7 @@ even if the channel is referenced only by this goroutine.
 In fact, a goroutine can be only garbage collected when it has already exited.
 </p>
 
-<h3>Channel Send and Receive Operations are Simple Statements</h3>
+<h3>Channel Send and Receive Operations Are Simple Statements</h3>
 
 <div>
 <p>
