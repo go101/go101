@@ -97,7 +97,7 @@ if the sender is the only sender of the channel.
 Surely, this is not a universal principle to close channels.
 The universal principle is <b>don't close (or send values to) closed channels</b>.
 If we can guarantee that no goroutines will close
-(or send values to) a non-closed non-nil channel any more,
+and send values to a non-closed non-nil channel any more,
 then a goroutine can close the channel safely.
 However, making such guarantees by a receiver or by one of many senders of a channel
 usually needs much effort, and often makes code complicated.
@@ -251,14 +251,14 @@ func main() {
 	wgReceivers.Add(NumReceivers)
 
 	// ...
-	dataCh := make(chan int, 100)
+	dataCh := make(chan int)
 
 	// the sender
 	go func() {
 		for {
 			if value := rand.Intn(Max); value == 0 {
-				// The only sender can close
-				// the channel safely.
+				// The only sender can close the
+				// channel at any time safely.
 				close(dataCh)
 				return
 			} else {
@@ -316,7 +316,7 @@ func main() {
 	wgReceivers.Add(1)
 
 	// ...
-	dataCh := make(chan int, 100)
+	dataCh := make(chan int)
 	stopCh := make(chan struct{})
 		// stopCh is an additional signal channel.
 		// Its sender is the receiver of channel
@@ -425,7 +425,7 @@ func main() {
 	wgReceivers.Add(NumReceivers)
 
 	// ...
-	dataCh := make(chan int, 100)
+	dataCh := make(chan int)
 	stopCh := make(chan struct{})
 		// stopCh is an additional signal channel.
 		// Its sender is the moderator goroutine shown
@@ -573,18 +573,236 @@ toStop := make(chan string, NumReceivers + NumSenders)
 </code></pre>
 </div>
 
-<h4>4. More situations?</h4>
+<h4>4. A variant of the "M receivers, one sender" situation: the close request is made by a third-party goroutine</h4>
+
+<div>
+Sometimes, it is needed that the close signal must be made by a third-party goroutine.
+For such cases, we can use an extra signal chanel to notify the sender
+to close the data channel. For example,
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"time"
+	"math/rand"
+	"sync"
+	"log"
+)
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	log.SetFlags(0)
+
+	// ...
+	const Max = 100000
+	const NumReceivers = 100
+	const NumThirdParties = 15
+
+	wgReceivers := sync.WaitGroup{}
+	wgReceivers.Add(NumReceivers)
+
+	// ...
+	dataCh := make(chan int)
+	closing := make(chan struct{}) // signal channel
+	closed := make(chan struct{})
+	
+	// The stop function can be called
+	// multiple times safely.
+	stop := func() {
+		select {
+		case closing<-struct{}{}:
+			<-closed
+		case <-closed:
+		}
+	}
+	
+	// some thrid-party goroutines
+	for i := 0; i < NumThirdParties; i++ {
+		go func() {
+			r := 1 + rand.Intn(3)
+			time.Sleep(time.Duration(r) * time.Second)
+			stop()
+		}()
+	}
+
+	// the sender
+	go func() {
+		defer func() {
+			close(closed)
+			close(dataCh)
+		}()
+
+		for {
+			select{
+			case <-closing: return
+			default:
+			}
+
+			select{
+			case <-closing: return
+			case dataCh <- rand.Intn(Max):
+			}
+		}
+	}()
+
+	// receivers
+	for i := 0; i < NumReceivers; i++ {
+		go func() {
+			defer wgReceivers.Done()
+
+			for value := range dataCh {
+				log.Println(value)
+			}
+		}()
+	}
+
+	wgReceivers.Wait()
+}
+</code></pre>
 
 <p>
-There are more situation variants based on the above three ones.
-For example, one variant based on the most complicated one may require
-the receivers read all the remaining values out of the buffered data channel.
-This would be easy to handle and this article will not cover it.
+The idea used in the <code>stop</code> function is learned from
+<a href="https://groups.google.com/forum/#!msg/golang-nuts/lEKehHH7kZY/SRmCtXDZAAAJ">a comment</a> made by Roger Peppe.
 </p>
+</div>
+
+<h4>5. A variant of the "N sender" situation: the data channel must be closed to tell receivers that data sending is over</h4>
+
+<div>
+In the solutions for the above N-sender situations, to hold the <b>channel closing principle</b>,
+we avoid closing the data channels. However, sometimes, it is required that the data channels must be closed in the end
+to let receivers know data sending is over.
+For such cases, we can translate a N-sender situation to a one-sender situation by using a middle channel.
+The middle channel has only one sender, so that we can close it instead of closing the original data channel.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"time"
+	"math/rand"
+	"sync"
+	"log"
+	"strconv"
+)
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	log.SetFlags(0)
+
+	// ...
+	const Max = 1000000
+	const NumReceivers = 10
+	const NumSenders = 1000
+	const NumThirdParties = 15
+
+	wgReceivers := sync.WaitGroup{}
+	wgReceivers.Add(NumReceivers)
+
+	// ...
+	dataCh := make(chan int)     // will never be closed
+	middleCh := make(chan int)   // will be closed
+	closing := make(chan string) // signal channel
+	closed := make(chan struct{})
+
+	var stoppedBy string
+
+	// The stop function can be called
+	// multiple times safely.
+	stop := func(by string) {
+		select {
+		case closing <- by:
+			<-closed
+		case <-closed:
+		}
+	}
+	
+	// the middle layer
+	go func() {
+		exit := func(v int, needSend bool) {
+			close(closed)
+			if needSend {
+				dataCh <- v
+			}
+			close(dataCh)
+		}
+
+		for {
+			select {
+			case stoppedBy = <-closing:
+				exit(0, false)
+				return
+			case v := <- middleCh:
+				select {
+				case stoppedBy = <-closing:
+					exit(v, true)
+					return
+				case dataCh <- v:
+				}
+			}
+		}
+	}()
+	
+	// some thrid-party goroutines
+	for i := 0; i < NumThirdParties; i++ {
+		go func(id string) {
+			r := 1 + rand.Intn(3)
+			time.Sleep(time.Duration(r) * time.Second)
+			stop("3rd-party#" + id)
+		}(strconv.Itoa(i))
+	}
+
+	// senders
+	for i := 0; i < NumSenders; i++ {
+		go func(id string) {
+			for {
+				value := rand.Intn(Max)
+				if value == 0 {
+					stop("sender#" + id)
+					return
+				}
+
+				select {
+				case <- closed:
+					return
+				default:
+				}
+
+				select {
+				case <- closed:
+					return
+				case middleCh <- value:
+				}
+			}
+		}(strconv.Itoa(i))
+	}
+
+	// receivers
+	for range [NumReceivers]struct{}{} {
+		go func() {
+			defer wgReceivers.Done()
+
+			for value := range dataCh {
+				log.Println(value)
+			}
+		}()
+	}
+
+	// ...
+	wgReceivers.Wait()
+	log.Println("stopped by", stoppedBy)
+}
+</code></pre>
+
+<p></p>
+
+</div>
+
+<h4>More situations?</h4>
 
 <p>
-Although the above three situations can't cover all the Go channel using situations,
-they are the basic ones. Most situations in practice can be classified into the three ones.
+There should be more situation variants, but the above shown ones are the most common and basic ones.
+By using channels (and other concurrent programming techniques) cleverly,
+I believe a solution holding the <b>channel closing principle</b> for each situation variant can always be found.
 </p>
 
 <h3>Conclusion</h3>

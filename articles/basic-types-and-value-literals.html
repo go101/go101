@@ -215,16 +215,28 @@ are denoted with the predeclared <code>false</code> constant.
 
 <div>
 There are three integer value literal forms,
-the decimal (base 10) form, the octal (base 8) form and the hex (base 16) form.
+the decimal (base 10) form, the octal (base 8) form,
+the hex (base 16) form and the binary form (base 2).
 For example, the following three integer literals
 all denote <code>15</code> in decimal.
 
 <pre class="disable-line-numbers111"><code class="language-go">0xF // the hex form (starts with a "0x" or "0X")
-017 // the octal form (starts with a "0")
-15  // the decimal form (starts without a "0")
+0XF
+
+017 // the octal form (starts with a "0", "0o" or "0O")
+0o17
+0O17
+
+0b1111 // the binary form (starts with a "0b" or "0B")
+0B1111
+
+15 // the decimal form (starts without a "0")
 </code></pre>
 
-<p></p>
+<p>
+(Note: the binary form and the octal from starting with
+<code>0o</code> or <code>0O</code> are supported since Go 1.13.)
+</p>
 
 The following program will print two <code>true</code> texts.
 <pre class="line-numbers"><code class="language-go">package main
@@ -250,28 +262,14 @@ for other kinds of numeric types can also
 represent the zero value of any integer type.
 </p>
 
-Note: Since the next main Go version (1.13), which will be released at August 2019,
-the binary form of integer value literal will be supported.
-A binary integer literal must start with <code>0b</code> or <code>0B</code>.
-In addition, an octal integer literal will be allowed to start with <code>0o</code> or <code>0O</code>.
-For example, the followings are the new supported binary and octal integer literals for <code>15</code> in decimal:
-
-<pre class="disable-line-numbers111"><code class="language-go">0b1111
-0B1111
-0o17
-0O17
-</code></pre>
-
-<p>
-</p>
-
 <h4>Floating-point value literals</h4>
 
 <div>
 A floating-point value literal can contain an integer part,
 a decimal point, a fractional part, and an exponent part.
 Some parts can be omitted.
-Example:
+Example (<code>xEn</code> is equivalent to <code>x</code> is multiplied by <code>10<sup>n</sup></code>,
+and <code>xE-n</code> is equivalent to <code>x</code> is divided by <code>10<sup>n</sup></code>):
 <pre class="disable-line-numbers111"><code class="language-go">1.23
 01.23 // == 1.23
 .23
@@ -286,7 +284,7 @@ Example:
 </code></pre>
 </div>
 
-Note: the next main Go version (1.13) will support hexadecimal floating point literals.
+Since Go 1.13, Go also supports another floating point literal form, hexadecimal floating point literal form.
 <ul>
 <li>
 	Same as hex interger literals, a hexadecimal floating point literal also must start with <code>0x</code> or <code>0X</code>.
@@ -299,7 +297,9 @@ Note: the next main Go version (1.13) will support hexadecimal floating point li
 </li>
 </ul>
 
-The followings are some valid hexadecimal floating point literals:
+The followings are some valid hexadecimal floating point literals
+(<code>xPn</code> is equivalent to <code>x</code> is multiplied by <code>2<sup>n</sup></code>,
+and <code>xP-n</code> is equivalent to <code>x</code> is divided by <code>2<sup>n</sup></code>):
 <pre class="disable-line-numbers111"><code class="language-go">0x1p-2     // == 0.25
 0x2.p10    // == 2048.0
 0x1.Fp+0   // == 1.9375
@@ -324,17 +324,15 @@ The <code>e</code> in it means <code>14</code> in decimal.
 and <code>2</code> is a decimal interger literal.
 (Arithmetic operators will be introduced in the article <a href="operators.html">common operators</a>.)
 
-<pre class="disable-line-numbers111"><code class="language-go">0x15e-2 // == 0x15e - 2 (整数相减表达式)
+<pre class="disable-line-numbers111"><code class="language-go">0x15e-2 // == 0x15e - 2 // a subtraction expression
 </code></pre>
-
-<p></p>
 
 <p></p>
 
 <p>
 The standard literals for zero value of floating-point types are
 <code>0.0</code>, though there are many other legal literals,
-such as <code>0.</code>, <code>.0</code>, <code>0e0</code>, etc.
+such as <code>0.</code>, <code>.0</code>, <code>0e0</code>, <code>0x0p0</code>, etc.
 In fact, the zero value literals introduced in the current article
 for other kinds of numeric types can also
 represent the zero value of any floating-point type.
@@ -343,8 +341,8 @@ represent the zero value of any floating-point type.
 <h4>Imaginary value literals</h4>
 
 <div>
-An imaginary literal consists of a floating-point or decimal integer literal
-followed by the lower-case letter <code>i</code>.
+An imaginary literal consists of a floating-point or integer literal
+and a lower-case letter <code>i</code>.
 Examples:
 <pre class="disable-line-numbers111"><code class="language-go">1.23i
 1.i
@@ -355,7 +353,10 @@ Examples:
 1e-1i
 </code></pre>
 
-<p></p>
+<p>
+(Note: before Go 1.13, if the part before the lower-case letter <code>i</code> in an imaginary literal
+is an integer literal, then it must be presented as the decimal form.)
+</p>
 
 Imaginary literals are used to represent the imaginary parts of complex values.
 Here are some literals to denote complex values:
@@ -376,12 +377,6 @@ for other kinds of numeric types can also
 represent the zero value of any complex type.
 </p>
 
-<p>
-Note: since the next main Go version (1.13),
-an imaginary literal can consist of any (binary, octal, decimal, hexadecimal) integer or floating-point literal
-followed by the lower-case letter <code>i</code>.
-</p>
-
 </div>
 
 <a class="anchor" id="underscores-in-literals"></a>
@@ -389,8 +384,7 @@ followed by the lower-case letter <code>i</code>.
 
 <div>
 
-Note: since the next main Go version (1.13),
-underscores <code>_</code> can appear in integer, floating-point
+Since Go 1.13, underscores <code>_</code> can appear in integer, floating-point
 and maginary literals as digit separators to enhance code readability.
 But please note, in a numeric literal,
 <ul>
@@ -710,7 +704,7 @@ Some examples:
 </table>
 
 <div class="note">
-<strong>Notes</strong>
+Notes:
 <ul>
 <li>
 	Because no values of the basic integer types provided in Go can hold

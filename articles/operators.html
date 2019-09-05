@@ -225,9 +225,15 @@ Go supports six bitwise binary arithmetic operators:
 		<td style="vertical-align: middle;" class="text-left" rowspan="2" valign="middle" align="left">
 			<p>
 			The left operand must be an integer
-			and the right operand must be an unsigned integer
-			(or an <a href="constants-and-variables.html#untyped-value">untyped</a>
-			integer constant which is representable as an <code>uint</code> value) <sup>(1)</sup>.
+			and the right operand must be also an integer (if it is a constant, then it must be non-negative),
+			their types are not required to be identical.
+			(Note, before Go 1.13, the right operand must be an unsigned integer or
+			an<a href="constants-and-variables.html#untyped-value">untyped</a>
+			integer constant which is representable as an <code>uint</code> value.)
+			</p>
+
+			<p>
+			A negative right operand (must be a non-constant) will cause a panic at run time.
 			</p>
 
 			Mechanism explanations:
@@ -262,11 +268,6 @@ Go supports six bitwise binary arithmetic operators:
 	</tr>
 </tbody>
 </table>
-
-<p>
-<sup>(1)</sup> Since Go the coming 1.13, it is possible that the requirements of the right operand in a bitwise shift operation
-will <a href="https://github.com/golang/go/issues/19113">be relaxed to any integers</a>, either unsigned or signed.
-</p>
 
 <p>
 Go also supports three unary arithmetic operators:
@@ -379,7 +380,12 @@ Example:
 	_ = c + e   // error: type mismatching
 	_ = b >> 5  // error: b is not an integer
 	_ = c >> -5 // error: -5 is not representable as uint
-	_ = e << c  // error: c is not an unsigned integer
+
+	_ = e << uint(c) // compiles ok
+	_ = e << c       // only compiles ok since Go 1.13
+	_ = e << -c      // only compiles ok since Go 1.13,
+	                 // will cause a panic at run time.
+	_ = e << -1      // error: right operand is negative
 }
 </code></pre>
 
@@ -485,15 +491,13 @@ var x int64 = 1 << m
 var y = int64(1 << m)
 var z = int64(1) << m
 
-// The following two lines fail to compile.
+// The following line fails to compile.
 /*
 var _ = 1.23 << m // error: shift of type float64
-const _ = 1 << B  // error: B is not unsigned.
 */
 </code></pre>
 
 <p>
-Please note, as above has mentioned, the last line might be compile ok since Go 1.13.
 </p>
 
 <a class="anchor" id="bitwise-shift-left-operand-type-deduction"></a>
