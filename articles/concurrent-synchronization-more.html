@@ -64,7 +64,7 @@ For an addressable <code>WaitGroup</code> value <code>wg</code>,
 		otherwise (the counter is positive), the goroutine will enter blocking state.
 		It will enter running state again (a.k.a., the call <code>wg.Wait()</code> returns)
 		when another goroutine modifies the counter to zero,
-		generally by calling the <code>wg.Done()</code>.
+		generally by calling <code>wg.Done()</code>.
 	</li>
 	</ul>
 </li>
@@ -173,6 +173,16 @@ When the counter becomes zero, all of them will be notified, in a broadcast way.
 	wgA.Wait()
 }
 </code></pre>
+
+<p>
+</p>
+
+<p>
+A <code>WaitGroup</code> value can be reused after one call to its <code>Wait</code> method returns.
+But please note that each <code>Add</code> method call with a positive delta that occurs
+when the counter is zero must happen before any <code>Wait</code> call starts,
+otherwise, data races may happen.
+</p>
 
 </div>
 
@@ -404,7 +414,7 @@ https://github.com/golang/go/issues/17973
 -->
 
 The type of the <code>m</code> field of the <code>Counter</code> type in the last example
-can be changed to <code>sync.RWMutex</code>, as the following code shows, to a better performance.
+can be changed to <code>sync.RWMutex</code>, as the following code shows, to get a better performance.
 
 <pre class="line-numbers"><code class="language-go">...
 type Counter struct {

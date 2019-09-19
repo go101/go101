@@ -22,17 +22,17 @@ type Go101 struct {
 	staticHandler     http.Handler
 	articleResHandler http.Handler
 	isLocalServer     bool
-	articlePages      map[string][]byte
+	articlePages      Cache
+	gogetPages        Cache
 	serverMutex       sync.Mutex
 }
 
 var (
 	rootPath = findGo101ProjectRoot()
 	go101    = &Go101{
-		staticHandler:     http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(rootPath, "static")))),
+		staticHandler:     http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(rootPath, "web", "static")))),
 		articleResHandler: http.StripPrefix("/article/res/", http.FileServer(http.Dir(filepath.Join(rootPath, "articles", "res")))),
 		isLocalServer:     false, // may be modified later
-		articlePages:      map[string][]byte{},
 	}
 )
 
@@ -40,13 +40,13 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	group, item := "", ""
 	tokens := strings.SplitN(r.URL.Path, "/", 3)
 	if len(tokens) > 1 {
-		group = tokens[1]
+		group = strings.ToLower(tokens[1])
 		if len(tokens) > 2 {
 			item = tokens[2]
 		}
 	}
 
-	switch go101.ConfirmLocalServer(isLocalRequest(r)); strings.ToLower(group) {
+	switch go101.ConfirmLocalServer(isLocalRequest(r)); group {
 	case "static":
 		w.Header().Set("Cache-Control", "max-age=360000") // 10 hours
 		go101.staticHandler.ServeHTTP(w, r)
@@ -66,7 +66,7 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "":
 		http.Redirect(w, r, "/article/101.html", http.StatusTemporaryRedirect)
 	default:
-		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
+		go101.ServeGoGetPages(w, r, group, item)
 	}
 
 }
@@ -76,8 +76,9 @@ func (go101 *Go101) ConfirmLocalServer(isLocal bool) {
 	if go101.isLocalServer != isLocal {
 		go101.isLocalServer = isLocal
 		if go101.isLocalServer {
-			unloadPageTemplates()                    // loaded in one init function
-			go101.articlePages = map[string][]byte{} // invalidate article caches
+			unloadPageTemplates()      // loaded in one init function
+			go101.articlePages.Clear() // invalidate article caches
+			go101.gogetPages.Clear()   // invalidate go-gets caches
 		}
 	}
 	go101.serverMutex.Unlock()
@@ -90,20 +91,6 @@ func (go101 *Go101) IsLocalServer() (isLocal bool) {
 	return
 }
 
-func (go101 *Go101) ArticlePage(file string) ([]byte, bool) {
-	go101.serverMutex.Lock()
-	page := go101.articlePages[file]
-	isLocal := go101.isLocalServer
-	go101.serverMutex.Unlock()
-	return page, isLocal
-}
-
-func (go101 *Go101) CacheArticlePage(file string, page []byte) {
-	go101.serverMutex.Lock()
-	go101.articlePages[file] = page
-	go101.serverMutex.Unlock()
-}
-
 //===================================================
 // pages
 //==================================================
@@ -114,12 +101,11 @@ type Article struct {
 	FilenameWithoutExt string
 }
 
-var articlePagesMutex sync.Mutex
 var articlePages = map[string][]byte{}
 var schemes = map[bool]string{false: "http://", true: "https://"}
 
 func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, file string) {
-	page, isLocal := go101.ArticlePage(file)
+	page, isLocal := go101.articlePages.Get(file), go101.IsLocalServer()
 	if page == nil {
 		article, err := retrieveArticleContent(file)
 		if err == nil {
@@ -146,7 +132,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 		}
 
 		if !isLocal {
-			go101.CacheArticlePage(file, page)
+			go101.articlePages.Set(file, page)
 		}
 	}
 
@@ -210,7 +196,7 @@ const Anchor, _Anchor, LineToRemoveTag, endl = `<li><a class="index" href="`, `"
 const IndexContentStart, IndexContentEnd = `<!-- index starts (don't remove) -->`, `<!-- index ends (don't remove) -->`
 
 func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, printTarget, item string) {
-	page, isLocal := go101.ArticlePage(item)
+	page, isLocal := go101.articlePages.Get(item), go101.IsLocalServer()
 	if page == nil {
 		var err error
 		var pageParams map[string]interface{}
@@ -241,7 +227,7 @@ func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, prin
 		}
 
 		if !isLocal {
-			go101.CacheArticlePage(item, page)
+			go101.articlePages.Set(item, page)
 		}
 	}
 
@@ -276,6 +262,7 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 		err = errors.New(IndexContentStart + " not found")
 		return nil, err
 	}
+
 	i += len(IndexContentStart)
 	content = content[i:]
 	i = strings.Index(content, IndexContentEnd)
@@ -288,6 +275,7 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 		if i < 0 {
 			break
 		}
+
 		start := strings.LastIndex(content[:i], endl)
 		if start >= 0 {
 			builder.WriteString(content[:start])
@@ -314,6 +302,7 @@ func buildBook101PrintParams() (map[string]interface{}, error) {
 		if i < 0 {
 			break
 		}
+
 		content = content[i+len(Anchor):]
 		i = strings.Index(content, _Anchor)
 		if i < 0 {
@@ -342,6 +331,7 @@ type PageTemplate uint
 const (
 	Template_Article PageTemplate = iota
 	Template_PrintBook
+	Template_GoGet
 	NumPageTemplates
 )
 
@@ -366,9 +356,11 @@ func retrievePageTemplate(which PageTemplate, cacheIt bool) *template.Template {
 	if t == nil {
 		switch which {
 		case Template_Article:
-			t = parseTemplate(filepath.Join(rootPath, "templates"), "base", "article")
+			t = parseTemplate(filepath.Join(rootPath, "web", "templates"), "base", "article")
 		case Template_PrintBook:
-			t = parseTemplate(filepath.Join(rootPath, "templates"), "pdf")
+			t = parseTemplate(filepath.Join(rootPath, "web", "templates"), "pdf")
+		case Template_GoGet:
+			t = parseTemplate(filepath.Join(rootPath, "web", "templates"), "go-get")
 		default:
 			t = template.New("blank")
 		}
@@ -415,36 +407,10 @@ func goGet(pkgPath string) {
 func (go101 *Go101) Update() {
 	<-time.After(time.Minute / 2)
 
-	//output, err := runShellCommand(time.Minute/2, "git", "remote")
-	//if err != nil {
-	//	log.Println("list git remotes error:", err)
-	//	return
-	//}
-	//k := bytes.IndexRune(output, '\n')
-	//if k < 0 {
-	//	log.Println("find git remote failed:", output)
-	//	return
-	//}
-
-	//configItem := "remote." + string(bytes.TrimSpace(output[:k])) + ".url"
-	//output, err = runShellCommand(time.Minute/2, "git", "config", "--get", configItem)
-	//if err != nil {
-	//	log.Println("get "+configItem+" error:", err)
-	//	return
-	//}
-	//a, b := bytes.Index(output, []byte("://")), bytes.Index(output, []byte(".git"))
-	//if a += 3; a < 3 {
-	//	a = 0
-	//}
-	//if b < 0 {
-	//	b = len(output)
-	//}
-
-	//pkgPath := string(bytes.TrimSpace(output[a:b]))
-	gitPull() // goGet(pkgPath)
+	gitPull()
 	for {
 		<-time.After(time.Hour * 24)
-		gitPull() // goGet(pkgPath)
+		gitPull()
 	}
 }
 
@@ -482,8 +448,10 @@ func findGo101ProjectRoot() string {
 	}
 
 	for _, name := range []string{
-		"gitlab.com/go101/go101", "gitlab.com/Go101/go101",
-		"github.com/go101/go101", "github.com/Go101/go101",
+		"gitlab.com/go101/go101",
+		"gitlab.com/Go101/go101",
+		"github.com/go101/go101",
+		"github.com/Go101/go101",
 	} {
 		pkg, err := build.Import(name, "", build.FindOnly)
 		if err == nil {
@@ -509,4 +477,36 @@ func runShellCommand(timeout time.Duration, cmd string, args ...string) ([]byte,
 	command := exec.CommandContext(ctx, cmd, args...)
 	command.Dir = rootPath
 	return command.Output()
+}
+
+//===================================================
+// cache
+//===================================================
+
+type Cache struct {
+	sync.Mutex
+
+	pages map[string][]byte
+}
+
+func (c *Cache) Get(name string) []byte {
+	c.Lock()
+	page := c.pages[name]
+	c.Unlock()
+	return page
+}
+
+func (c *Cache) Set(name string, page []byte) {
+	c.Lock()
+	if c.pages == nil {
+		c.pages = map[string][]byte{}
+	}
+	c.pages[name] = page
+	c.Unlock()
+}
+
+func (c *Cache) Clear() {
+	c.Lock()
+	c.pages = map[string][]byte{}
+	c.Unlock()
 }

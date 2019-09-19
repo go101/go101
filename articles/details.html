@@ -278,7 +278,7 @@ the import path of the following package must be <code>"x.y.z/mypkg"</code>.
 </code></pre>
 
 <p>
-However, since Go SDK 1.11, the restriction doesn't apply for projects supporting modules.
+However, since Go SDK 1.11, the restriction <a href="https://golang.org/cmd/go/#hdr-Import_path_checking">doesn't apply for modules based and vendored packages</a>.
 </p>
 </div>
 
@@ -2039,6 +2039,7 @@ internal package
 
 "go doc xyz" may show the docs of the first package named with "xyz"
 https://github.com/golang/go/issues/24462
+For example, "go doc rand" show docs of "math/rand" instead of "crypto/rand".
 
 
 runtime.Caller/ Callers: depth onconsistencys
@@ -2070,6 +2071,34 @@ func main() {
 	println(x, y) // +Inf +0.000000e+000
 	println(x * y) // NaN
 }
+
+The String method of a reflect.Value value v returns the string form of the underlying value of v.
+However, the functions in the fmt package try to print the string form of the underlying value of the underlying value of v,
+if the underlying value of v is also a reflect.Value value.
+
+	package main
+
+	import (
+		"fmt"
+		"reflect"
+	)
+
+	func main() {
+		var v reflect.Value
+		fmt.Println(v.IsValid()) // false
+		fmt.Println(v)           // <invalid reflect.Value>
+		fmt.Println(v.String())  // <invalid Value>
+		
+		v = reflect.ValueOf(v)
+		fmt.Println(v.IsValid()) // true
+		fmt.Println(v)           // <invalid Value>
+		fmt.Println(v.String())  // <reflect.Value Value>
+		
+		v = reflect.ValueOf(v)
+		fmt.Println(v.IsValid()) // true
+		fmt.Println(v)           // <reflect.Value Value>
+		fmt.Println(v.String())  // <reflect.Value Value>
+	}
 
 io/ioutil since Go 1.11
  writer or writable values.

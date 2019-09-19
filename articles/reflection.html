@@ -52,7 +52,7 @@ The result <code>reflect.Type</code> value represents the type of the non-interf
 Surely, we can also pass an interface value to a <code>reflect.TypeOf</code> function call,
 but the call will return a <code>reflect.Type</code> value which represents the dynamic type of the interface value.
 In fact, the <code>reflect.TypeOf</code> function has only one parameter of type <code>interface{}</code>
-and always return a <code>reflect.Type</code> value which represents the dynamic type of the only interface parameter.
+and always returns a <code>reflect.Type</code> value which represents the dynamic type of the only interface parameter.
 Then how to get a <code>reflect.Type</code> value which represents an interface type?
 We must use indirect ways which will be introduced below to achieve this goal.
 </p>
@@ -257,10 +257,15 @@ we must use indirect ways which will be introduced below to achieve this goal.
 </p>
 
 <p>
+The value represented by a <code>reflect.Value</code> value <code>v</code>
+is often called the underlying value of <code>v</code>.
+</p>
+
+<p>
 There are <a href="https://golang.org/pkg/reflect/">plenty of methods</a>
 declared for the <code>reflect.Value</code> type.
 We can call these methods to inspect the information of (and manipulate)
-the Go value represented by a <code>reflect.Value</code> receiver value.
+the underlying value of a <code>reflect.Value</code> receiver value.
 Some of these methods apply for all kinds of values, some of them are one kind or several kinds specific.
 Please read the <code>reflect</code> standard package documentation for details.
 Calling a kind-specific method with an improper <code>reflect.Value</code> receiver value will produce a panic.
@@ -268,7 +273,7 @@ Calling a kind-specific method with an improper <code>reflect.Value</code> recei
 
 <p>
 The <code>CanSet</code> method of a <code>reflect.Value</code> value
-returns whether or not the Go value represented by the
+returns whether or not the underlying value of the
 <code>reflect.Value</code> value is modifiable (can be assigned to).
 If the Go value is modifiable, we can call the <code>Set</code> method
 of the corresponding <code>reflect.Value</code> value to modify the Go value.
@@ -331,7 +336,7 @@ func main() {
 </p>
 
 From the above two examples, we can learn that there are two ways to get a <code>reflect.Value</code> value
-which represents the value referenced by a pointer value.
+whose underlying value is referenced by the underlying value (a pointer value) of another <code>reflect.Value</code> value.
 <ol>
 <li>
 	One way is by calling the <code>Elem</code> method of a <code>reflect.Value</code> value
@@ -411,9 +416,9 @@ func main() {
 <p>
 </p>
 
-If a <code>reflect.Value</code> represents a function value,
+If the underlying value of a <code>reflect.Value</code> is a function value,
 then we can call the <code>Call</code> method of the <code>reflect.Value</code>
-to call the represented function.
+to call the underlying function.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -544,7 +549,8 @@ func main() {
 <p>
 </p>
 
-Some <code>reflect.Value</code> values may represent invalid Go values.
+The respective underlying values of some <code>reflect.Value</code> values may be nothing.
+For example, zero <code>reflect.Value</code> values.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -565,15 +571,13 @@ func main() {
 </code></pre>
 
 <p>
-As the above example has shown, a zero value of the <code>reflect.Value</code> type represents an invalid Go value
-(or represents no values).
 </p>
 
 For a Go value, we can use the <code>reflect.ValueOf</code> function to create a <code>reflect.Value</code> value
 representing the Go value, through the help of <code>interface{}</code>.
 The inverse process in similar, we can call the <code>Interface</code> method of a <code>reflect.Value</code> value
 to get an <code>interface{}</code> value, then type assert on the <code>interface{}</code> value
-to the Go value represented by the <code>reflect.Value</code> value.
+to the Go value represented by (a.k.a., the underlying value of ) the <code>reflect.Value</code> value.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -596,8 +600,8 @@ func main() {
 </p>
 
 <p>
-Since Go 1.13, we can use method <code>reflect.Value.IsZero</code> to
-check whether or not a <code>reflect.Value</code> value represents a zero value.
+Since Go 1.13, we can use the method <code>reflect.Value.IsZero</code> to
+check whether or not the underlying value of a <code>reflect.Value</code> value is a zero value.
 </p>
 
 <a class="anchor" id="deep-equal"></a>
