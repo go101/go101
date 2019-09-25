@@ -1,4 +1,8 @@
 
+### 1.13.c (2019/Sep/25)
+
+* remove <a href="https://go101.org/article/panic-and-recover-more.html#recover-order">the section containing a stupid code mistake</a> in the "The Right Places to Call the recover Function" article.
+
 ### 1.13.b (2019/Sep/19)
 
 * remove the inaccurate description "the address of a variable will never change"

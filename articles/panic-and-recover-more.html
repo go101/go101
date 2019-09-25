@@ -210,6 +210,7 @@ And, the depth of an alive panic will never
 be larger than the execution depth of the goroutine.
 </p>
 
+<a class="anchor" id="suppress"></a>
 <h3>Fact: New Created Panics Will Suppress Old Panics at the Same Depth</h3>
 
 <div>
@@ -311,18 +312,28 @@ goroutine 1 [running]
 </code></pre>
 </div>
 
+<a class="anchor" id="recover-order"></a>
 <h3>Fact: Deeper Panics May Be Recovered at First or Not</h3>
 
 <div>
+
+<p>
+<b><i>(I'm sorry that the code in this section is not correct.
+It contains a stupid mistake.
+It is unable to prove the conclusion in the section title.
+Two panics never coexist in the lifetime of the following program.
+This section will be removed after some days.)</i></b>
+</p>
+
 Example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
-func demo(recoverHighestPanicAtFirst bool) {
+func demo(recoverShallowerPanicAtFirst bool) {
 	fmt.Println("====================")
 	defer func() {
-		if !recoverHighestPanicAtFirst{
+		if !recoverShallowerPanicAtFirst{
 			// recover panic 1
 			defer fmt.Println("panic", recover(), "is recovered")
 		}
@@ -330,7 +341,7 @@ func demo(recoverHighestPanicAtFirst bool) {
 			// recover panic 2
 			fmt.Println("panic", recover(), "is recovered")
 		}()
-		if recoverHighestPanicAtFirst {
+		if recoverShallowerPanicAtFirst {
 			// recover panic 1
 			defer fmt.Println("panic", recover(), "is recovered")
 		}
