@@ -1,4 +1,9 @@
 
+### 1.13.d (2019/Sep/30)
+
+* added <a href="https://go101.org/article/unsafe.html#fact-value-address-might-change">a new fact</a> to the "type-unsafe pointers" article
+  and pointed out <a href="https://go101.org/article/unsafe.html#pattern-convert-to-uintptr-and-back">a serious mistake</a> was made in this article.
+
 ### 1.13.c (2019/Sep/25)
 
 * remove <a href="https://go101.org/article/panic-and-recover-more.html#recover-order">the section containing a stupid code mistake</a> in the "The Right Places to Call the recover Function" article.
@@ -62,7 +67,7 @@
 
 ### 1.11.c (2018/Sep/22)
 
-* add a new tip [How to make a struct type uncomparable?](https://go101.org/article/tips.html#make-struct-type-uncomparable).
+* add a new tip [How to make a struct type incomparable?](https://go101.org/article/tips.html#make-struct-type-uncomparable).
 * add a new tip [Try to reset pointers in freed-up slice elements](https://go101.org/article/tips.html#reset-pointers-for-dead-elements).
 * add a new tip [Make optimizations by using BCE](https://go101.org/article/tips.html#make-using-of-bce).
 * remove "Precedences Of Unary Operators" from [Syntax/Semantics Exceptions In Go](https://go101.org/article/exceptions.html).

@@ -320,7 +320,14 @@ for it is possible that the memory block has been already reallocated for anothe
 
 </div>
 
-<h4>Fact 3: we can use a <code>runtime.KeepAlive</code> function call to mark a value as still in using (reachable) before the Call</h4>
+<a class="anchor" id="fact-value-address-might-change"></a>
+<h4>Fact 3: the addresses of some values might change at run time</h4>
+
+<p>
+Please read the article <a href="memory-block.html#where-to-allocate">memory blocks</a> for details (see the end of the hyperlinked section).
+</p>
+
+<h4>Fact 4: we can use a <code>runtime.KeepAlive</code> function call to mark a value as still in using (reachable) before the call</h4>
 
 <div>
 <p>
@@ -353,7 +360,7 @@ call to the example in the last subsection,
 
 </div>
 
-<h4>Fact 4: the reachable range of a value at run time may be not as large as it looks in Code</h4>
+<h4>Fact 5: the reachable range of a value at run time may be not as large as it looks in code</h4>
 
 
 <div>
@@ -390,7 +397,7 @@ func bar() {
 
 </div>
 
-<h4>Fact 5: <code>*unsafe.Pointer</code> is a general safe pointer type</h4>
+<h4>Fact 6: <code>*unsafe.Pointer</code> is a general safe pointer type</h4>
 
 <div>
 <p>
@@ -523,6 +530,7 @@ The outputted addresses might be different for each run.
 </p>
 </div>
 
+<a class="anchor" id="pattern-convert-to-uintptr-and-back"></a>
 <h4>Pattern 3: convert unsafe pointer to uintptr, do arithmetic operations with the uintptr value, then convert it back</h4>
 
 <div>
@@ -566,7 +574,9 @@ Please read the comments in the code for the reason.
 	// Now the t value becomes unused, its memory may be
 	// garbage collected at this time. So the following
 	// use of the address of t.y[2] may become invalid
-	// and dangerous!
+	// and dangerous! The other reason why this is
+	// dangerous is the address of t might change
+	// before executing the next line (fact 3).
 	ty2 := (*int16)(unsafe.Pointer(addr))
 	fmt.Println(*ty2)
 }
@@ -575,6 +585,13 @@ Please read the comments in the code for the reason.
 <p>
 Such bugs are very subtle and hard to detect,
 which is why the uses of unsafe pointers are dangerous.
+</p>
+
+<p>
+<b><i>(I'm very sorry that the <code>runtime.KeepAlive</code> trick introduced
+below is not correct. Although it prevents the value <code>t</code> from being garbage collected,
+it is unable to prevent the address of <code>t</code> from changing (see fact 3 mentioned above for details).
+The trick will be remove from the Go 101 book since a later version.)</i></b>
 </p>
 
 If we do want to split that conversion line into two lines,
