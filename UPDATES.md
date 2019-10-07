@@ -1,4 +1,8 @@
 
+### 1.13.e (2019/Oct/07)
+
+* I decided to withdraw the last erratum in 1.13.d.
+
 ### 1.13.d (2019/Sep/30)
 
 * added <a href="https://go101.org/article/unsafe.html#fact-value-address-might-change">a new fact</a> to the "type-unsafe pointers" article

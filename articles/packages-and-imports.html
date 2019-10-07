@@ -282,41 +282,45 @@ The folder containing the source files of a code package is called the folder of
 </p>
 
 <p>
-Depending on different scenarios, a folder with name <code>vendor</code> might be viewed
-as a special folder. The following paragraphs will explain its specificity.
+For the official Go SDK, a package whose import path containing an <code>internal</code> folder name
+is viewed as a special package. It can only be imported by the packages rooted as the direct parent
+directory of the <code>internal</code> folder.
+For example, package <code>.../a/b/c/internal/d/e/f</code> and <code>.../a/b/c/internal</code>
+can only be imported by the packages whose import paths have a <code>.../a/b/c</code> prefix.
 </p>
-
-Go SDK 1.11 introduces a module feature.
-So now, we can let a code package support the module feature or not.
-Go SDK 1.11 introduces a <code>GO111MODULE</code> environment variable.
-The default value of this environment variable is <code>auto</code>.
-Its two other possible values are <code>on</code> and <code>off</code>.
-If the value of the <code>GO111MODULE</code> environment variable is <code>on</code>,
-then all code packages support the module feature.
-If the value of the <code>GO111MODULE</code> environment variable is <code>off</code>,
-then all code packages don't support the module feature.
-If the value of the <code>GO111MODULE</code> environment variable is <code>auto</code>,
-then only the packages which satisfy both of the following two conditions support the module feature.
-<ol>
-<li>
-	the package folder must be outside all the <code>src</code> subfolders
-	under the paths specified in the <code>GOPATH</code> environment variable.
-</li>
-<li>
-	the package folder contains a <code>go.mod</code> file
-	or is below a directory containing a <code>go.mod</code> file.
-</li>
-</ol>
 
 <p>
-A package doesn't support the module feature, generally,
-if is below a <code>GOPATH/src</code> directory and its
-import path of such is the relative path to the
-<code>GOPATH/src</code> directory or some <code>vendor</code> folder.
+Depending on different scenarios, a folder with name <code>vendor</code> might be also viewed
+as a special package folder. The following paragraphs will explain when this happens.
 </p>
 
-Assume all the packages in the following hierarchical directory structure
-don't support the module feature, then
+<p>
+In Go SDK 1.11, a modules feature was introduced.
+A module can be viewed as a collection of packages which have a common root (a package tree).
+Each module is associated with an root import path and
+<a href="https://semver.org/">a semantic version</a>.
+The major version should be contained in the root import path,
+execpt the <code>v0</code> or <code>v1</code> major versions.
+Modules with different root import paths are viewed as different modules.
+</p>
+
+<p>
+Go SDK 1.11 also introduced a <code>GO111MODULE</code> environment variable.
+Its value can be <code>auto</code>, <code>on</code> and <code>off</code>.
+Up to now (Go SDK v1.13), its default value is <code>auto</code>.
+By context, different SDK versions interpret <code>auto</code>
+as either <code>on</code> or <code>off</code> by different rules.
+Please check <a href="https://github.com/golang/go/wiki/Modules">the official wiki</a> for details.
+</p>
+
+<p>
+If a package is contained within a <code>GOPATH/src</code> directory,
+and the modules feature is off, then its import path is the relative path to
+either the <code>GOPATH/src</code> directory or the closest <code>vendor</code> folder
+which containing the package.
+</p>
+
+For example, when the modules feature is off, then for the following hierarchical directory structure,
 <ul>
 <li>
 	the import paths of the two <code>foo</code> packages are both <code>w/foo</code>.
@@ -361,34 +365,34 @@ Note,
 </p>
 
 <p>
-To make a package compatitable with the module feature,
-its corresponding <code>go.mod</code> must specify the import path of
-the innermost folder containing the <code>go.mod</code> file.
-The format of specifying the import path is <code>module ImportPath</code>.
-Only the <code>vendor</code> folder which shares the same parent folder with
-the <code>go.mod</code> file is viewed as a special folder,
-but please note that the packages under the top-level <code>vendor</code> folder will be ignored
-if the build option <code>-mod=vendor</code> of <code>go</code> command tools is not provided in the building.
+When the modules feature is on, the root import path of a module is
+often (but not required to be) specified in a <code>go.mod</code> file
+which is directly contained in the root package folder of the module.
+We often use the root import path to identify the module.
+The root import path is the common prefix of all packages in the module.
 </p>
 
-Assume all the packages in the following hierarchical directory structure
-support the module feature, then
+<p>
+Only the <code>vendor</code> folder directly under the root path of a module is viewed as a special folder.
+</p>
+
+For example, when the modules feature is on, then in the module identified with <code>example.com/mypkg</code> shown blow,
 <ul>
 <li>
-	The import path of the first <code>foo</code> package is <code>w/foo</code>.
+	the import path of the first <code>foo</code> package is <code>w/foo</code>.
 	The <code>MyProject/vendor</code> folder is viewed as a special folder.
 </li>
 <li>
-	The import path of the other  <code>foo</code> package is<code>example.com/mypkg/x/y/vendor/w/foo</code>.
+	the import path of the other  <code>foo</code> package is<code>example.com/mypkg/x/y/vendor/w/foo</code>.
 	Note, the <code>MyProject/x/y/vendor</code> folder is viewed as a normal package folder.
 </li>
 <li>
-	The import paths of the <code>x</code>, <code>y</code> and <code>z</code> packages
+	the import paths of the <code>x</code>, <code>y</code> and <code>z</code> packages
 	are <code>example.com/mypkg/x</code>, <code>example.com/mypkg/x/y</code> and <code>example.com/mypkg/x/z</code>, respectively.
 </li>
 </ul>
 
-Note, when the <code>x.go</code>, <code>y.go</code> or <code>z.go</code> file imports a package with import path <code>w/foo</code>,
+Note, when the <code>x.go</code>, <code>y.go</code> or <code>z.go</code> files import a package with import path <code>w/foo</code>,
 the imported package is always the package with folder <code>MyProject/vendor/w/foo</code>.
 
 <pre class="disable-line-numbers111"><code class="language-go">_ MyProject
@@ -410,8 +414,6 @@ the imported package is always the package with folder <code>MyProject/vendor/w/
 </code></pre>
 
 <p>
-Note, if a package folder contains a <code>go.mod</code> file,
-please don't put other <code>go.mod</code> files in its sub-package folders.
 </p>
 
 <p>
@@ -420,7 +422,7 @@ we say the importing package depends on the imported package.
 </p>
 
 <p>
-Go doesn't support circular dependency.
+Go doesn't support circular package dependencies.
 If package <code>a</code> depends on package <code>b</code>
 and package <code>b</code> depends on package <code>c</code>,
 then source files in package <code>c</code> can't import package <code>a</code> and <code>b</code>,
@@ -429,6 +431,12 @@ and source files in package <code>b</code> can't import package <code>a</code>.
 
 <p>
 Surely, source files in a package can't, and don't need to, import the package itself.
+</p>
+
+<p>
+Similar to package dependencies, a module might also depend on some other modules.
+The direct module dependecies and their versions are often specified in the <code>go.mod</code> file of the module.
+Circular module dependencies are supported, though such scenarios are rare in practice.
 </p>
 
 <p>

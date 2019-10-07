@@ -114,8 +114,8 @@ crossing compilers, and crossing compiler versions.
 </p>
 
 <p>
-Calls to the three function are always evaluated at compile time.
-Their results can be assigned to constants.
+Calls to the three functions are always evaluated at compile time.
+Their return results can be assigned/bound to named constants.
 </p>
 
 An example of using the three functions.
@@ -325,6 +325,9 @@ for it is possible that the memory block has been already reallocated for anothe
 
 <p>
 Please read the article <a href="memory-block.html#where-to-allocate">memory blocks</a> for details (see the end of the hyperlinked section).
+Here, we should just know that when the size of the stack of a goroutine changes,
+the memory blocks allocated on the stack will be moved.
+In other words, the addresses of the values hosted on these memory blocks will change.
 </p>
 
 <h4>Fact 4: we can use a <code>runtime.KeepAlive</code> function call to mark a value as still in using (reachable) before the call</h4>
@@ -574,9 +577,13 @@ Please read the comments in the code for the reason.
 	// Now the t value becomes unused, its memory may be
 	// garbage collected at this time. So the following
 	// use of the address of t.y[2] may become invalid
-	// and dangerous! The other reason why this is
-	// dangerous is the address of t might change
-	// before executing the next line (fact 3).
+	// and dangerous! 
+	// Another potential danger is, if some operations
+	// make the stack grow or shrink here, then the
+	// address of t might change, so that the address
+	// saved in addr will become invalid (fact 3),
+	// though this danger doesn't exist for this
+	// specified example.
 	ty2 := (*int16)(unsafe.Pointer(addr))
 	fmt.Println(*ty2)
 }
@@ -585,13 +592,6 @@ Please read the comments in the code for the reason.
 <p>
 Such bugs are very subtle and hard to detect,
 which is why the uses of unsafe pointers are dangerous.
-</p>
-
-<p>
-<b><i>(I'm very sorry that the <code>runtime.KeepAlive</code> trick introduced
-below is not correct. Although it prevents the value <code>t</code> from being garbage collected,
-it is unable to prevent the address of <code>t</code> from changing (see fact 3 mentioned above for details).
-The trick will be remove from the Go 101 book since a later version.)</i></b>
 </p>
 
 If we do want to split that conversion line into two lines,
@@ -614,10 +614,12 @@ after the split two lines. Like this
 </code></pre>
 
 <p>
+However, I don't recommend to use the <code>runtime.KeepAlive</code> trick for this use pattern,
+for the potential another danger mentioned above.
 </p>
 
 <p>
-Another detail needed to note is that,
+Another detail needs to note is that,
 it is not recommended to store the end boundary of a memory block
 in a pointer (either safe or unsafe one).
 Doing this will prevent another memory block which closely follows
@@ -662,55 +664,32 @@ In fact, compilers will make the guarantee.
 It is the privilege of calls to <code>syscall.Syscall</code> alike functions.
 </p>
 
-We can think that, compilers will append a <code>runtime.KeepAlive</code> call
+<p>
+We can think that, compilers will automatically insert some instructions
 for each of the unsafe pointer arguments who are converted to <code>uintptr</code>,
-like the third argument in the following <code>syscall.Syscall</code> call.
+like the third argument in the following <code>syscall.Syscall</code> call,
+to prevent the memory block referenced by that argument from being garbage collected or moved.
+</p>
 
+The following call is safe:
 <pre class="line-numbers"><code class="language-go">syscall.Syscall(SYS_READ, uintptr(fd),
 			uintptr(unsafe.Pointer(p)), uintptr(n))
-// Compilers will automatically append
-// the following lines for the above line.
-runtime.KeepAlive(unsafe.Pointer(p))
 </code></pre>
 
-<p>
-</p>
+But the following call is dangerous:
 
-<!--
-<p>
-Although the <code>syscall.Syscall</code> function has this privilege,
-there is a requirement to call this function.
-The conversions from unsafe pointers to <code>uintptr</code> must be present
-within the literal representations of the arguments of the calls to this function.
-</p>
-
-For example, the following call is invalid if the <code>p</code>
-is not guaranteed to be still used after the call.
 <pre class="line-numbers"><code class="language-go">u := uintptr(unsafe.Pointer(p))
+// At this time, the value referenced by p might
+// have become unused and been collected already,
+// or the address of the value has changed.
 syscall.Syscall(SYS_READ, uintptr(fd), u, uintptr(n))
 </code></pre>
 
 <p>
 </p>
--->
 
 <p>
 Again, never use this pattern when calling other functions.
-We should append the <code>runtime.KeepAlive</code> calls manually
-when calling other functions with <code>uintptr</code> parameters.
-</p>
-
-If we modify the <code>syscall.Syscall</code> call in the above example
-as the following one, then it becomes invalid and dangerous.
-
-<pre class="line-numbers"><code class="language-go">u := uintptr(unsafe.Pointer(p))
-// At this time, the values referenced by p might
-// have become unused and been collected already.
-syscall.Syscall(SYS_READ, uintptr(fd), u, uintptr(n))
-// Compilers will not append a runtime.KeepAlive call here.
-</code></pre>
-
-<p>
 </p>
 
 </div>
@@ -868,7 +847,7 @@ func String2ByteSlice(str string) (bs []byte) {
 	sliceHdr.Cap = strHdr.Len
 	// This KeepAlive line is essential to make the
 	// String2ByteSlice function be always valid
-	// when it is provided in other custom packages.
+	// when it is used in other custom packages.
 	runtime.KeepAlive(&str)
 	return
 }
@@ -943,6 +922,9 @@ for you code depending on the unsafe mechanism.
 <!--
 
 https://groups.google.com/forum/#!topic/golang-nuts/Ecwbd8SMoO0
+
+https://github.com/golang/go/issues/34684
+syscall.Proc.Call and syscall.LazyProc.Call are not implemented in assembly, and, as such, this rule does not apply to them.
 
 -->
 
