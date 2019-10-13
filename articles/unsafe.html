@@ -616,10 +616,17 @@ after the split two lines. Like this
 <p>
 However, I don't recommend to use the <code>runtime.KeepAlive</code> trick for this use pattern,
 for the potential another danger mentioned above.
+If is possible that the stack grows when the runtime allocates memory for the variable <code>ty2</code>,
+so that the address of <code>t</code> changes and the value stored in <code>addr</code> becomes invalid,
+which directly leads to the value of <code>ty2</code> is also invalid.
+But honestly speaking, this potential danger doesn't exist here if the code compiles with
+the standard Go compiler. In the implementation of the standard Go compiler,
+a <code>runtime.KeepAlive</code> call will makes its argument and the values referenced by
+the argument be allocated on heap and memory blocks allocated on heap will be never moved.
 </p>
 
 <p>
-Another detail needs to note is that,
+Another detail which should be also noted is that,
 it is not recommended to store the end boundary of a memory block
 in a pointer (either safe or unsafe one).
 Doing this will prevent another memory block which closely follows
@@ -731,6 +738,10 @@ p := (*int)(unsafe.Pointer(u))
 <p>
 </p>
 
+<p>
+Note: this pattern also applies to the <a href="https://golang.org/pkg/syscall/?GOOS=windows#Proc.Call">syscall.Proc.Call</a>
+and <a href="https://golang.org/pkg/syscall/?GOOS=windows#LazyProc.Call">syscall.LazyProc.Call</a> methods on Windows.
+</p>
 </div>
 
 <h4>Pattern 6: convert a <code>reflect.SliceHeader.Data</code> or <code>reflect.StringHeader.Data</code> field to unsafe pointer, and the inverse.</h4>
@@ -887,6 +898,39 @@ of the <code>Builder</code> type supported since Go 1.10 in the
 <code>strings</code> standard package.
 It makes use of the first pattern introduced above.
 </p>
+
+In fact, in practice, to avoid the danger caused by missing <code>runtime.KeepAlive</code> calls,
+it is more recommended to define our own custom <code>SliceHeader</code> and <code>StringHeader</code>
+struct types which hold <code>Data</code> fileds of the <code>unsafe.Pointer</code> type instead of
+the <code>uintptr</code> type. For example,
+
+<pre class="line-numbers"><code class="language-go">type SliceHeader struct {
+	Data unsafe.Pointer
+	Len  int
+	Cap  int
+}
+
+type StringHeader struct {
+	Data unsafe.Pointer
+	Len  int
+}
+
+func String2ByteSlice(str string) (bs []byte) {
+	strHdr := (*StringHeader)(unsafe.Pointer(&str))
+	sliceHdr := (*SliceHeader)(unsafe.Pointer(&bs))
+	sliceHdr.Data = strHdr.Data
+	sliceHdr.Len = strHdr.Len
+	sliceHdr.Cap = strHdr.Len
+	
+	// The KeepAlive call is unessential now.
+	//runtime.KeepAlive(&str)
+	return
+}
+</code></pre>
+
+<p>
+</p>
+
 
 </div>
 

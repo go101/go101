@@ -109,16 +109,20 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 	if page == nil {
 		article, err := retrieveArticleContent(file)
 		if err == nil {
-			//var pageURL string
-			//if !isLocal {
-			//	//pageURL = r.URL.String() // looks only working for GAE
-			//	pageURL = schemes[r.TLS != nil] + r.Host + r.RequestURI
-			//}
 			pageParams := map[string]interface{}{
 				"Article":       article,
 				"Title":         article.TitleWithoutTags,
 				"IsLocalServer": isLocal,
-				//"SocialLinkURL": pageURL, // non-blank to show social buttons
+				"Value":         func() func(string, ...interface{}) interface{} {
+					var kvs = map[string]interface{}{}
+					return func(k string, v ...interface{}) interface{} {
+						if len(v) == 0 {
+							return kvs[k]
+						}
+						kvs[k] = v[0]
+						return ""
+					}
+				}(),
 			}
 			t := retrievePageTemplate(Template_Article, !isLocal)
 			var buf bytes.Buffer
@@ -136,7 +140,6 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 		}
 	}
 
-	// ...
 	if len(page) == 0 { // blank page means page not found.
 		log.Printf("article page %s is not found", file)
 		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
@@ -209,9 +212,6 @@ func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, prin
 			if pageParams == nil {
 				pageParams = map[string]interface{}{}
 			}
-			//q := r.URL.Query().Get("showcovers")
-			//pageParams["ShowCovers"] = q == "1" || q == "true"
-			//pageParams["IndexTitle"] = r.URL.Query().Get("indextitle")
 			pageParams["PrintTarget"] = printTarget
 			pageParams["IsLocalServer"] = isLocal
 

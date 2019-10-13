@@ -23,15 +23,14 @@ Index:
 	<li><a class="index" href="#atomical-assignment">Are assignments of values atomic operations?</a></li>
 	<li><a class="index" href="#zero-values-zero-bytes">Is every zero value composed of a sequence of zero bytes in memory?</a></li>
 	<li><a class="index" href="#function-inline">Does the standard Go compiler support function inline?</a></li>
+	<li><a class="index" href="#finalizers">Can I use finalizers as object destructors?</a></li>
 	</ul>
 </li>
 
 <li>standard packages
 	<ul class="index">
-	<li><a class="index" href="#pointer-atomic">How to manipulate pointer values atomically?</a></li>
 	<li><a class="index" href="#get-days-of-month">How to get the number of days of any month by using as few code lines as possible?</a></li>
 	<li><a class="index" href="#time-sleep-after">What is the difference between the function call <code>time.Sleep(d)</code> and the channel receive operation <code>&lt;-time.After(d)</code>?</a></li>
-	<li><a class="index" href="#finalizers">Can I use finalizers as object destructors?</a></li>
 	<li><a class="index" href="#trim">Calls of the <code>TrimLeft</code> and <code>TrimRight</code> functions in the <code>strings</code> and <code>bytes</code>
 		standard packages often return unexpected results, are there bugs in these function implementations?</a></li>
 	<li><a class="index" href="#fmt-print-println">What are the differences between the <code>fmt.Print</code> and <code>fmt.Println</code> functions?</a></li>
@@ -60,6 +59,7 @@ Index:
 	<li><a class="index" href="#set-container-type">Why isn't there a built-in <code>set</code> container type?</a></li>
 	<li><a class="index" href="#byte-rune-slice-string">What is byte? What is rune?
 		How to convert <code>[]byte</code> and <code>[]rune</code> values to strings?</a></li>
+	<li><a class="index" href="#pointer-atomic">How to manipulate pointer values atomically?</a></li>
 	</ul>
 </li>
 <li>others
@@ -554,55 +554,43 @@ Currently (Go SDK 1.13), for the standard Go compiler,
 </ul>
 </div>
 
-<!-- standard packages  -->
-
-<a class="anchor" id="pointer-atomic"></a>
+<a class="anchor" id="finalizers"></a>
 <h3>
-	How to manipulate pointer values atomically?
+	Can I use finalizers as object destructors?
 </h3>
 
-<div>
-Example:
-<pre class="line-numbers"><code class="language-go">import (
-	"unsafe"
-	"sync/atomic"
-)
+<p>
+In Go programs, we can set a finalizer function for an object by using
+the <code>runtime.SetFinalizer</code> function.
+Generally, the finalizer function will be called before the object is garbage collected.
+But finalizers are never intended to be used as destructors of objects.
+The finalizers set by <code>runtime.SetFinalizer</code> are not guaranteed to run.
+So you shouldn't rely on finalizers for your program correctness.
+</p>
 
-type T int // just a demo
+<p>
+The main intention of finalizers is for libraries maintainers to
+make extra efforts to remedy the damage caused by libraries users don't use the
+libraries correctly. For example, in a program, if we use the <code>os.Open</code> to open
+many files but forget to close them after using them, then the program
+will hold many file descriptors until the program exits. This is resource leak.
+To avoid the program holding too many file descriptors, the maintainers of the
+<code>os</code> package will set a finalizer on the every created <code>os.File</code>
+object. The finalizer will close the file descriptor stored in the <code>os.File</code>
+object. As above mentioned, the finalizers are not guaranteed to be called.
+They are just used to make the extent of resource leak as small as possible.
+</p>
 
-var p *T
+<!-- to add best practices and more cases where finalizer doesn't work. -->
 
-func demo(newP *T) {
-	// load
-	var _ = (*T)(atomic.LoadPointer(
-		(*unsafe.Pointer)(unsafe.Pointer(&p)),
-		))
+<p>
+Please note, some finalizers will never get called for sure,
+and sometimes setting finalizers improperly will prevent some objects from being garbage collected.
+Please read the <a href="https://golang.org/pkg/runtime/#SetFinalizer">runtime.SetFinalizer function documentation</a>
+to get more details.
+</p>
 
-	// store
-	atomic.StorePointer(
-		(*unsafe.Pointer)(unsafe.Pointer(&p)),
-		unsafe.Pointer(newP),
-		)
-
-
-	// swap
-	var oldP = (*T)(atomic.SwapPointer(
-		(*unsafe.Pointer)(unsafe.Pointer(&p)),
-		unsafe.Pointer(newP),
-		))
-
-	// compare and swap
-	var swapped = atomic.CompareAndSwapPointer(
-		(*unsafe.Pointer)(unsafe.Pointer(&p)),
-		unsafe.Pointer(oldP),
-		unsafe.Pointer(newP),
-		)
-
-	_ = swapped
-}
-</code></pre>
-Yes, now it is much verbose to use the pointer atomic functions.
-</div>
+<!-- standard packages  -->
 
 <a class="anchor" id="get-days-of-month"></a>
 <h3>
@@ -661,42 +649,6 @@ will let the current goroutine enter sleeping sub-state,
 but still stay in <a href="control-flows-more.html#states-of-goroutine">running state</a>,
 whereas, the channel receive operation <code>&lt;-time.After(d)</code>
 will let the current goroutine enter blocking state.
-</p>
-
-<a class="anchor" id="finalizers"></a>
-<h3>
-	Can I use finalizers as object destructors?
-</h3>
-
-<p>
-In Go programs, we can set a finalizer function for an object by using
-the <code>runtime.SetFinalizer</code> function.
-Generally, the finalizer function will be called before the object is garbage collected.
-But finalizers are never intended to be used as destructors of objects.
-The finalizers set by <code>runtime.SetFinalizer</code> are not guaranteed to run.
-So you shouldn't rely on finalizers for your program correctness.
-</p>
-
-<p>
-The main intention of finalizers is for libraries maintainers to
-make extra efforts to remedy the damage caused by libraries users don't use the
-libraries correctly. For example, in a program, if we use the <code>os.Open</code> to open
-many files but forget to close them after using them, then the program
-will hold many file descriptors until the program exits. This is resource leak.
-To avoid the program holding too many file descriptors, the maintainers of the
-<code>os</code> package will set a finalizer on the every created <code>os.File</code>
-object. The finalizer will close the file descriptor stored in the <code>os.File</code>
-object. As above mentioned, the finalizers are not guaranteed to be called.
-They are just used to make the extent of resource leak as small as possible.
-</p>
-
-<!-- to add best practices and more cases where finalizer doesn't work. -->
-
-<p>
-Please note, some finalizers will never get called for sure,
-and sometimes setting finalizers improperly will prevent some objects from being garbage collected.
-Please read the <a href="https://golang.org/pkg/runtime/#SetFinalizer">runtime.SetFinalizer function documentation</a>
-to get more details.
 </p>
 
 <a class="anchor" id="trim"></a>
@@ -1289,11 +1241,62 @@ func main() {
 	fmt.Println(s0 == s2) // true
 }
 </code></pre>
-</div>
 
 <p>
 About more on strings, please read <a href="string.html">strings in Go</a>.
 </p>
+</div>
+
+<a class="anchor" id="pointer-atomic"></a>
+<h3>
+	How to manipulate pointer values atomically?
+</h3>
+
+<div>
+Example:
+<pre class="line-numbers"><code class="language-go">import (
+	"unsafe"
+	"sync/atomic"
+)
+
+type T int // just a demo
+
+var p *T
+
+func demo(newP *T) {
+	// load
+	var _ = (*T)(atomic.LoadPointer(
+		(*unsafe.Pointer)(unsafe.Pointer(&p)),
+		))
+
+	// store
+	atomic.StorePointer(
+		(*unsafe.Pointer)(unsafe.Pointer(&p)),
+		unsafe.Pointer(newP),
+		)
+
+
+	// swap
+	var oldP = (*T)(atomic.SwapPointer(
+		(*unsafe.Pointer)(unsafe.Pointer(&p)),
+		unsafe.Pointer(newP),
+		))
+
+	// compare and swap
+	var swapped = atomic.CompareAndSwapPointer(
+		(*unsafe.Pointer)(unsafe.Pointer(&p)),
+		unsafe.Pointer(oldP),
+		unsafe.Pointer(newP),
+		)
+
+	_ = swapped
+}
+</code></pre>
+
+<p>
+Yes, now it is much verbose to use the pointer atomic functions.
+</p>
+</div>
 
 <!-- others -->
 

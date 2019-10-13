@@ -24,30 +24,28 @@
 
 	<body>
 		<div class="container">
-		
-		
-		{{- template "navbar" .Article -}}
-		
+
+		{{ call .Value "top-bar" true  }}
+
+		{{- template "navbar" . -}}
+
 		{{ block "article" .Article }}to be replaced{{ end }}
-		
-		{{- template "navbar" .Article -}}
-		
-		
-		
-		
-		
+
+		{{- template "navbar" . -}}
+
 		</div>
 	</body>
 </html>
-
-
 	
-{{ define "navbar" }}
+{{- define "navbar" -}}
+
+{{- with .Article -}}
 
 {{- $is_details := and . (eq .FilenameWithoutExt "details") -}}
 {{- $is_faq := and . (eq .FilenameWithoutExt "unofficial-faq") -}}
 {{- $is_tips := and . (eq .FilenameWithoutExt "tips") -}}
-{{- $is_book := not (or $is_details $is_faq $is_tips) -}}
+{{- $is_quizzes := and . (eq .FilenameWithoutExt "quizzes") -}}
+{{- $is_book := not (or $is_details $is_faq $is_tips $is_quizzes) -}}
 
 <div class="row nav-bar-with-borders">
 	{{- if $is_book -}}
@@ -84,9 +82,28 @@
 
 	<div class="col-xs-6 col-sm-3 nav-item-inactive" style="color: #ccc;">Go Tools 101</div>
 
-	<div class="col-xs-6 col-sm-3 nav-item-inactive" style="color: #ccc;">Go Quizzes 101</div>
+
+	{{- if $is_quizzes -}}
+	<div class="col-xs-6 col-sm-3 nav-item-active">Go Quizzes 101</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-3 nav-item-inactive"><a href="/article/quizzes.html">Go Quizzes 101</a></div>
+	{{- end -}}
 </div>
-{{ end }}
+
+	{{- if (and (call $.Value "top-bar")  (not $is_quizzes)) -}}
+		<div class="alert alert-warning text-center"><small>
+		Learn Go facts and details by participating in <a href="quizzes.html">some quizzes</a>. <span style="color: #090; font-weight: bold;"><sup>NEW!</sup></span>
+		</small></div>
+		<p>
+		</p>
+	{{- end -}}
+
+{{- end -}}
+
+
+{{ call .Value "top-bar" false  }}
+
+{{- end -}}
 
 
 

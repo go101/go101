@@ -146,7 +146,7 @@ The same idea can be used for sending values to a potential closed channel.
 
 <p>
 Not only does the rude solution break the <b>channel closing principle</b>,
-but also Go specification and the standard Go compiler don't guarantee
+and data races might happen in the process.
 </p>
 </div>
 
@@ -170,9 +170,7 @@ func (mc *MyChannel) SafeClose() {
 }
 </code></pre>
 <p></p>
-</div>
 
-<div>
 Surely, we can also use <code>sync.Mutex</code> to avoid closing a channel multiple times:
 <pre class="line-numbers"><code class="language-go">type MyChannel struct {
 	C      chan T
@@ -200,13 +198,15 @@ func (mc *MyChannel) IsClosed() bool {
 }
 </code></pre>
 <p></p>
-</div>
 
 <p>
-We should comprehend that the reason of why Go doesn't support a built-in <code>SafeClose</code> function
-is that it is viewed as a bad design practice in Go to close a channel from the receiver side or from multiple concurrent senders.
-Go even forbids closing receive-only channels.
+These ways may be polite, but they may not avoid data races.
+Currently, Go specification doesn't guarantee that there are no data races happening
+when a channel close and a channel send operations are executed concurrently.
+If a <code>SafeClose</code> function is called concurrently with a channel send operation to the same channel,
+data races might happen (though such data races generally don't much harm).
 </p>
+</div>
 
 <h3>Solutions Which Close Channels Gracefully</h3>
 
