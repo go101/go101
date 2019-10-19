@@ -253,6 +253,7 @@ will be initialized with ambiguous values.
 
 </div>
 
+<a class="anchor" id="value-assignment"></a>
 <h3>Evaluation and Assignment Orders in Assignment Statements</h3>
 
 <div>
@@ -269,22 +270,28 @@ Second, the assignments are carried out in left-to-right order.
 </div>
 
 <p>
-Later, we call the first phase as evaluation phase and the second phase as carry-out phase.
+Later, we may call the first phase as evaluation phase and the second phase as carry-out phase.
 </p>
 
 <p>
-Go specification doesn't specify clearly how the operands in the mentioned expressions
-on the left should be exactly evaluated, which ever caused
+Go specification doesn't specify clearly whether or not the assignments carried-out
+during the second phase may affect the expression evaluation results got in the first phase,
+which ever caused
 <a href="https://github.com/golang/go/issues/23188#issuecomment-403951267">some</a>
 <a href="https://github.com/golang/go/issues/15620">disputes</a>.
 So, here, this article will explain more on the evaluation orders in value assignments.
 </p>
 
 <p>
+Firstly, let's clarify that the assignments carried-out during the second phase
+don't affect the expression evaluation results got in the first phase.
+</p>
+
+<p>
 To make the following explanations convenient, we assume that
-the map value of a map index destination expression in an assignment is always addressable.
-If it is not, we can think the map value has already been saved in and
-replaced by a temporary addressable map value before executing the assignment.
+the map (or slice) value of a map (or slice) index destination expression in an assignment is always addressable.
+If it is not, we can think the map (or slice) value has already been saved in and
+replaced by a temporary addressable map (or slice) value before carrying out the second phase.
 </p>
 
 At the time of the end of the evaluation phase and just before the carry-out phase starts,
@@ -296,13 +303,13 @@ Different destination expressions have different elementary forms.
 	If a destination expression is a blank identifier, then its elementary form is still a blank identifier.
 </li>
 <li>
-	If a destination expression is a map index expression <code>m[k]</code>,
-	then its elementary form is <code>(*mAddr)[k]</code>,
-	where <code>mAddr</code> is a pointer pointing to <code>m</code>.
+	If a destination expression is a map (or slice) index expression <code>c[k]</code>,
+	then its elementary form is <code>(*cAddr)[k]</code>,
+	where <code>cAddr</code> is a pointer pointing to <code>c</code>.
 </li>
 <li>
-	For other cases, the destination expression must be addressable,
-	then its elementary form is a dereference to the address of the destination expression.
+	For other cases, the destination expression must result an addressable value,
+	then its elementary form is a dereference to the address of the destination expression evaluation result.
 </li>
 </ul>
 
@@ -338,14 +345,15 @@ Here is another example, in which <code>x[0]</code> instead of <code>x[1]</code>
 The decomposed execution steps for the line <i>3</i> shown below are like:
 
 <pre class="line-numbers"><code class="language-go">// The evaluation phase:
-P0 := &i; P1 := &x[0];
+P0 := &i; P1 := &x; T2 := i
 R0 := 1; R1 := 2
+// Now, T2 == 0
 
-// The elementary form: *P0, *P1 = R0, R1
+// The elementary form: *P0, (*P1)[T2] = R0, R1
 
 // The carry-out phase:
 *P0 = R0
-*P1 = R1
+(*P1)[T2] = R1
 </code></pre>
 
 <p>
@@ -374,18 +382,18 @@ func main() {
 The decomposed execution steps for the line <i>10</i> shown below are like:
 
 <pre class="line-numbers"><code class="language-go">// The evaluation phase:
-P0 := &s; PM1 := &m; K1 := "Go"; P2 := p; P3 := &s[2]
+P0 := &s; PM1 := &m; K1 := "Go"; P2 := p; PS3 := &s; T3 := 2
 R0 := []int{2, 2, 2}; R1 := s[1]; R2 := m["Go"]; R3 := 5
 // now, R1 == 1, R2 == 0
 
 // The elementary form:
-//     *P0, (*PM1)[K1], *P2, *P3 = R0, R1, R2, R3
+//     *P0, (*PM1)[K1], *P2, (*PS3)[T3] = R0, R1, R2, R3
 
 // The carry-out phase:
 *P0 = R0
 (*PM1)[K1] = R1
 *P2 = R2
-*P3 = R3
+(*PS3)[T3] = R3
 </code></pre>
 
 <p>

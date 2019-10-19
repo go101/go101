@@ -1,4 +1,4 @@
-**[Go 101 in Leanpub store](https://leanpub.com/go101)** | **[Go 101 in Apple Books store](https://itunes.apple.com/us/book/id1459984231)** | **[Go 101 in Kindle store](https://www.amazon.com/dp/B07Q3HWZ98)** | **[eBooks](https://github.com/go101/go101/releases)** | **[update history](UPDATES.md)**
+**[Go 101 in Leanpub store](https://leanpub.com/go101)** | **[Go 101 in Apple Books store](https://itunes.apple.com/us/book/id1459984231)** | **[Go 101 in Kindle store](https://www.amazon.com/dp/B07Q3HWZ98)** | **[eBooks](https://github.com/go101/go101/releases)** | **[update history](UPDATES.md)** | **[wiki](https://github.com/go101/go101/wiki)**
 
 ----
 

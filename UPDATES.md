@@ -1,3 +1,7 @@
+### 1.13.f (2019/Oct/18)
+
+* correct the explanations for the [Evaluation and Assignment Orders in Assignment Statements](https://go101.org/article/evaluation-orders.html#value-assignment) section
+  in the "Expression Evaluation Orders" article.
 
 ### 1.13.e (2019/Oct/07)
 
