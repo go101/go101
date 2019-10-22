@@ -2,6 +2,7 @@
 
 * correct the explanations for the [Evaluation and Assignment Orders in Assignment Statements](https://go101.org/article/evaluation-orders.html#value-assignment) section
   in the "Expression Evaluation Orders" article.
+* add [two new summaries](https://go101.org/article/101.html#compiler-optimizations).
 
 ### 1.13.e (2019/Oct/07)
 
@@ -9,7 +10,7 @@
 
 ### 1.13.d (2019/Sep/30)
 
-* added <a href="https://go101.org/article/unsafe.html#fact-value-address-might-change">a new fact</a> to the "type-unsafe pointers" article
+* add <a href="https://go101.org/article/unsafe.html#fact-value-address-might-change">a new fact</a> to the "type-unsafe pointers" article
   and pointed out <a href="https://go101.org/article/unsafe.html#pattern-convert-to-uintptr-and-back">a serious mistake</a> was made in this article.
 
 ### 1.13.c (2019/Sep/25)

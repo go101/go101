@@ -322,7 +322,8 @@ func main() {
 	// const C int = C // error: C is undefined
 	/*
 	type T = struct {
-		*T // error: invalid recursive type alias T
+		*T    // error: T uses <T>
+		x []T // error: T uses <T>
 	}
 	*/
 
@@ -350,6 +351,7 @@ func main() {
 	var p P
 	p = &p
 	p = ***********************p
+	***********************p = p
 }
 </code></pre>
 
@@ -442,12 +444,57 @@ func main() {
 <p>
 </p>
 
+Another example: the following program prints <code>Sheep Goat</code> instead of <code>Sheep Sheep</code>.
+Please read the comments for explanations.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+var f = func(b bool) {
+	fmt.Print("Goat")
+}
+
+func main() {
+	var f = func(b bool) {
+		fmt.Print("Sheep")
+		if b {
+			fmt.Print(" ")
+			f(!b) // The f is the package-level f.
+		}
+	}
+	f(true) // The f is the local f.
+}
+</code></pre>
+
+<p>
+</p>
+
+If we remove the <code>var</code> keyword in the local <code>f</code> declaration,
+or modify the above program as the following shown, then it will print <code>Sheep Sheep</code>.
+
+<pre class="line-numbers"><code class="language-go">func main() {
+	var f func(b bool)
+	f = func(b bool) {
+		fmt.Print("Sheep")
+		if b {
+			fmt.Print(" ")
+			f(!b) // The f is also the local f now.
+		}
+	}
+	f(true)
+}
+</code></pre>
+
+<p>
+</p>
+
 For some circumstances, when identifiers are shadowed by variables
 declared with short variable declarations,
 some new gophers may get confused about whether a variable
 in a short variable declaration is redeclared or newly declared.
 The following example (which has bugs) shows the famous trap in Go.
-Almost every gopher has ever fallen into the trap in the early days using Go.
+Almost every gopher has ever fallen into the trap in the early days of using Go.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -473,7 +520,7 @@ func parseInt(s string) (int, error) {
 		// But in fact, the outer non-nil error will
 		// be returned instead, for the scope of the
 		// inner err variable ends at the end of the
-		// first if-clause.
+		// outer if-clause.
 		if b {
 			n = 1
 		}
