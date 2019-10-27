@@ -33,7 +33,7 @@ $ git pull
 Enter the Go 101 project folder (which contains the current `README.md` file), then run
 
 ```
-$ go run *.go
+$ go run .
 Server started:
    http://localhost:55555 (non-cached version)
    http://127.0.0.1:55555 (cached version)
