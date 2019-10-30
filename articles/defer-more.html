@@ -43,12 +43,35 @@ func main() {
 </code></pre>
 </div>
 
+<a class="anchor" id="function-evaluation-time"></a>
 <h3>The Evaluation Moment of Deferred Function Values</h3>
 
 <div>
+The called function (value) in a deferred function call is evaluated
+when the call is pushed into the deferred call stack of the current goroutine.
+For example, the following program will print <code>false</code>.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var f = func () {
+		fmt.Println(false)
+	}
+	defer f()
+	f = func () {
+		fmt.Println(true)
+	}
+}
+</code></pre>
+
+<p></p>
+
 The called function in a deferred function call may be a nil function value.
-For such a case, the panic will occur before the deferred call is prepared to
-be pushed into the deferred call stack of the current goroutine. An example:
+For such a case, the panic will occur when the call to the nil function is invoked,
+instead of when the call is pushed into the deferred call stack of the current goroutine.
+An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -57,9 +80,9 @@ func main() {
 	defer fmt.Println("reachable")
 	var f func() // f is nil by default
 	defer f()    // panic here
-	// The following lines are dead code.
-	fmt.Println("not reachable")
-	f = func() {}
+	// The following lines are also reachable.
+	fmt.Println("also reachable")
+	f = func() {} // useless to avoid panicking
 }
 </code></pre>
 

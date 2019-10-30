@@ -1,9 +1,12 @@
-### 1.13.g (2019/Oct/30)
 
-* fix a bug in the example code in the [Delete a segment of slice elements](https://gfw.go101.org/article/container.html#delete-slice-elements) section
+
+### 1.13.i (2019/Oct/30)
+
+* fix a bug in the example code in the [Delete a segment of slice elements](https://go101.org/article/container.html#delete-slice-elements) section
   of the "Arrays, Slices and Maps in Go" article.
+* correct explainations in [The Evaluation Moment of Deferred Function Values](https://go101.org/article/function.html#function-evaluation-time).
 
-### 1.13.f (2019/Oct/18)
+### 1.13.h (2019/Oct/18)
 
 * correct the explanations for the [Evaluation and Assignment Orders in Assignment Statements](https://go101.org/article/evaluation-orders.html#value-assignment) section
   in the "Expression Evaluation Orders" article.
