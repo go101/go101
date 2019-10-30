@@ -1,3 +1,8 @@
+### 1.13.g (2019/Oct/30)
+
+* fix a bug in the example code in the [Delete a segment of slice elements](https://gfw.go101.org/article/container.html#delete-slice-elements) section
+  of the "Arrays, Slices and Maps in Go" article.
+
 ### 1.13.f (2019/Oct/18)
 
 * correct the explanations for the [Evaluation and Assignment Orders in Assignment Statements](https://go101.org/article/evaluation-orders.html#value-assignment) section

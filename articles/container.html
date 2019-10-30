@@ -2198,8 +2198,12 @@ s = append(s[:from], s[to:]...)
 s = s[:from + copy(s[from:], s[to:])]
 
 // Don't preserve element orders:
-copy(s[from:to], s[len(s)+from-to:])
-s = s[:len(s)+from-to]
+if n := to-from; len(s)-to < n {
+	copy(s[from:to], s[to:])
+} else {
+	copy(s[from:to], s[len(s)-n:])
+}
+s = s[:len(s)-(to-from)]
 </code></pre>
 
 If the slice elements reference other values, we should reset
@@ -2316,6 +2320,14 @@ s = append(s, elements...)
 s = append(elements, s...)
 </code></pre>
 
+<p>
+The <code>make</code> call in the above code snippet clear the memory allocated for for slice <code>x</code>,
+this is actually an unnecessary operation for this specified use case.
+<a href="https://github.com/golang/go/issues/31592">Future compiler optimization</a> might remove the clear operation.
+</p>
+
+</div>
+
 <h4>Insert several individual elements</h4>
 
 <p>
@@ -2355,8 +2367,6 @@ So, please learn and apply elastically.
 This may be the reason why Go doesn't support the more operations
 introduced above in the built-in way.
 </p>
-
-</div>
 
 <h3>Use Maps to Simulate Sets</h3>
 
