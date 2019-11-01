@@ -11,13 +11,13 @@ The book is expected to be helpful for both beginner and experienced Go programm
 Run
 
 ```
-$ git clone gitlab.com/go101/go101
+$ git clone https://gitlab.com/Go101/go101.git
 ```
 
 or
 
 ```
-$ git clone github.com/go101/go101
+$ git clone https://github.com/go101/go101.git
 ```
 
 ###  Update
