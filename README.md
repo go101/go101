@@ -11,7 +11,7 @@ The book is expected to be helpful for both beginner and experienced Go programm
 Run
 
 ```
-$ git clone https://gitlab.com/Go101/go101.git
+$ git clone https://gitlab.com/go101/go101.git
 ```
 
 or

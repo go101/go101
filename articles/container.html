@@ -2272,7 +2272,8 @@ Sometimes, we may need to delete slice elements by some conditions.
 
 <pre class="line-numbers"><code class="language-go">// Assume T is a small-size type.
 func DeleteElements(s []T, keep func(T) bool, clear bool) []T {
-	result := make([]T, 0, len(s))
+	//result := make([]T, 0, len(s))
+	result := s[:0] // without allocating a new slice
 	for _, v := range s {
 		if keep(v) {
 			result = append(result, v)
@@ -2288,6 +2289,13 @@ func DeleteElements(s []T, keep func(T) bool, clear bool) []T {
 	return result
 }
 </code></pre>
+
+<p>
+Please note, if <code>T</code> is not a small-size type, then generally
+we should <a href="value-copy-cost.html#copy-costs">try to</a> avoid
+using <code>T</code> as function parameter types and using two-iteration-variable
+<code>for-range</code> block form to iterate slices with element types as <code>T</code>.
+</p>
 
 </div>
 

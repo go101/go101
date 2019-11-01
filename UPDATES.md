@@ -1,10 +1,11 @@
 
 
-### 1.13.i (2019/Oct/30)
+### 1.13.i (2019/Oct/31)
 
 * fix a bug in the example code in the [Delete a segment of slice elements](https://go101.org/article/container.html#delete-slice-elements) section
   of the "Arrays, Slices and Maps in Go" article.
 * correct explainations in [The Evaluation Moment of Deferred Function Values](https://go101.org/article/function.html#function-evaluation-time).
+* the article "The Right Places to Call the Built-in <code>recover</code> Function" is [renamed to](https://go101.org/article/panic-and-recover-more.html) "Explain Panic/Recover Mechanism in Detail". It was almost wholly re-written.
 
 ### 1.13.h (2019/Oct/18)
 
