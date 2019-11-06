@@ -30,7 +30,7 @@ A funciton call may enter its exiting phase (or exit directly) through three way
 	when a panic occurs in the call.
 </li>
 <li>
-	after the <code>runtime.Goexit</code> function is called and exits.
+	after the <code>runtime.Goexit</code> function is called and fully exits in the call.
 </li>
 </ol>
 
@@ -268,21 +268,19 @@ func main() {
 <p>
 </p>
 
-The following is another example (borrowed from <a href="https://github.com/golang/go/issues/29226">this issue</a>)
-neither gc nor gccgo compiles it correctly.
-The example program should not print <code>should be unreachable</code> texts,
-but it does if it is compiled with the current versions of gc and gccgo.
+The following is another example neither gc nor gccgo compiles it correctly.
+The example program should exit quickly in running,
+but in fact it never exit if it is compiled with the current versions of gc and gccgo.
 
 <pre class="line-numbers"><code class="language-go">package main
 
-import "fmt"
 import "runtime"
 
 func f() {
 	defer func() {
 		recover()
 	}()
-	panic("will cancel Goexit but should not")
+	defer panic("will cancel Goexit but should not")
 	runtime.Goexit()
 }
 
@@ -291,14 +289,17 @@ func main() {
 	go func() {
 		defer close(c)
 		f()
-		fmt.Println("should be unreachable")
+		for {
+			runtime.Gosched()
+		}
 	}()
 	<-c
 }
 </code></pre>
 
 <p>
-The problems in the current versions gc and gccgo <a href="https://github.com/golang/go/issues/29226">will be fixed later</a>.
+The problems in the current versions of gc and gccgo <a href="https://github.com/golang/go/issues/29226">will be</a>
+<a href="https://github.com/golang/go/issues/35378">fixed later</a>.
 </p>
 
 </div>
@@ -385,11 +386,11 @@ except the first one. Yes, the current descriptions are not precise yet.
 It is still <a href="https://go-review.googlesource.com/c/go/+/189377">being improved</a> now.
 </p>
 
-In fact, the current Go specification also doesn't explain why the second
+In fact, the current Go specification also doesn't explain well why the second
 <code>recover</code> call, which is expected to recover panic 1,
 in the following example doesn't take effect.
 
-<pre class="line-numbers"><code class="language-go">// This program exits without panic 1 being recoverd.
+<pre class="line-numbers"><code class="language-go">// This program exits without panic 1 being recovered.
 package main
 
 func demo() {
