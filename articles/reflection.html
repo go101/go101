@@ -27,7 +27,7 @@ packages, heavily rely on the reflection functionalities heavily.
 <p>
 We can inspect Go values through the values of the <code>Type</code> and
 <code>Value</code> types defined in the <code>reflect</code> standard package.
-The following two sections will show some examples on how to use
+The remaining of this article will show some examples on how to use
 values of the two types.
 </p>
 
@@ -180,6 +180,37 @@ func main() {
 
 <p>
 Note, the <code>reflect.Type.NumMethod</code> only returns the number of exported methods of a type.
+</p>
+
+<a class="anchor" id="struct-field-tag"></a>
+We can <a href="https://golang.org/pkg/reflect/#StructTag">inspect struct field tags through reflection</a>.
+The types of struct field tags are <code>reflect.StructTag</code>, which has two methods, <code>Get</code> and <code>Lookup</code>.
+An example of inspecting struct field tags:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "reflect"
+
+type T struct {
+	X int  `max:"99" min:"0"`
+	Y bool `optional:"yes"`
+}
+
+func main() {
+	t := reflect.TypeOf(T{})
+	x, y := t.Field(0).Tag, t.Field(1).Tag
+	fmt.Println(reflect.TypeOf(x)) // reflect.StructTag
+
+	tag, present := y.Lookup("default")
+	fmt.Println(len(tag), present)    // 0 false
+	fmt.Println(y.Lookup("optional")) // yes true
+
+	fmt.Println(x.Get("max"), x.Get("min")) // 99 0
+}
+</code></pre>
+
+<p>
 </p>
 
 Beside the <code>reflect.TypeOf</code> function,
@@ -534,15 +565,15 @@ func main() {
 		{Dir: reflect.SelectRecv, Chan: vc, Send: vZero},
 		{Dir: reflect.SelectSend, Chan: vc, Send: vSend},
 	}
-	selIndex, vRecv, closed := reflect.Select(branches)
-	fmt.Println(selIndex)    // 1
-	fmt.Println(closed)      // true
-	fmt.Println(vRecv.Int()) // 123
+	selIndex, vRecv, sentBeforeClosed := reflect.Select(branches)
+	fmt.Println(selIndex)         // 1
+	fmt.Println(sentBeforeClosed) // true
+	fmt.Println(vRecv.Int())      // 123
 	vc.Close()
 	// Remove the send case branch this time,
 	// for it may cause panic.
-	selIndex, _, closed = reflect.Select(branches[:2])
-	fmt.Println(selIndex, closed) // 1 false
+	selIndex, _, sentBeforeClosed = reflect.Select(branches[:2])
+	fmt.Println(selIndex, sentBeforeClosed) // 1 false
 }
 </code></pre>
 
