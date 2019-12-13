@@ -14,7 +14,7 @@ before reading those articles.
 Go can be viewed as a C-family language, which can be confirmed from
 the two previous articles <a href="pointer.html">pointers in Go</a>
 and <a href="struct.html">structs in Go</a>.
-Struct types and pointer types in Go and C are much alike.
+The memory structures of struct types and pointer types in Go and C are much alike.
 </p>
 
 <p>
@@ -22,57 +22,61 @@ On the other hand, Go can be also viewed as a C language framework.
 This is mainly reflected from the fact that Go supports several kinds of types
 whose value memory structures are not totally transparent, whereas
 the main characteristic of C types is the memory structures of C values are transparent.
-Each C value in memory occupies one continuous memory segment.
-However, values of some kinds of Go types may often consist of more than one continuous memory segments.
+Each C value in memory occupies <a href="memory-block.html">one memory block</a> (one continuous memory segment).
+However, a value of some kinds of Go types may often be hosted on more than one memory blocks.
 </p>
 
 <p>
-Each continuous memory segment hosts a value, more speaking precisely, a value part.
-The following picture depicts a multi-part value.
-Its direct part is referencing its indirect underlying part.
-
-<div class="text-center">
-<img src="res/value-parts.png" alt="value part"></img>
-</div>
+Later, we call the parts (being distributed on different memory blocks) of a value as value parts.
+A value hosting on more than one memory blocks is composed of one direct value part and several underlying indiect parts.
 </p>
 
-<p>
-The following two paragraphs describe two categories of Go types.
-</p>
+The above paragraphs describe two categories of Go types:
+		
+<table border="1" class="table table-bordered text-center" style="width: auto !important;">
+<thead>
+	<tr class="active">
+	<th class="text-center" valign="bottom" align="center" style="with: 50%">Types whose values each is only hosted on one memory block</th>
+	<th class="text-center" valign="bottom" align="center" style="with: 50%">Types whose values each may be hosted on multiple memory blocks</th>
+	</tr>
+</thead>
+<tbody>
+	<tr>
+		<td style="vertical-align: middle;" class="text-center" valign="middle" align="center">
+			<img src="res/value-parts-single.png" alt="值部"></img>
+		</td>
+		<td style="vertical-align: middle;" class="text-center" valign="middle" align="center">
+			<img src="res/value-parts-multiple.png" alt="值部"></img>
+		</td>
+	</tr>
+	<tr>
+		<td style="vertical-align: middle;" class="text-center" valign="middle" align="center">
+
+			boolean types<br/>
+			numeric types<br/>
+			pointer types<br/>
+			unsafe pointer types<br/>
+			struct types<br/>
+			array types<br/>
+			
+		</td>
+		<td style="vertical-align: middle;" class="text-center" valign="middle" align="center">
+
+			slice types<br/>
+			map types<br/>
+			channel types<br/>
+			function types<br/>
+			interface types<br/>
+			string types<br/>
+
+		</td>
+	</tr>
+</tbody>
+</table>
 
 <p>
-The kinds of types in the first category are all C alike.
-These types include boolean types, numeric types, struct types, pointer types,
-array types and unsafe pointer types.
-Array types will be explained in the next article
-and unsafe pointer types will be explained in the article
-<a href="unsafe.html">type-unsafe pointers</a> later.
-Each C alike value only consists of one direct transparent value part.
-</p>
-
-Other kinds of types belong to the second category.
-Values of types in the category may contain underlying parts,
-and their direct parts are not transparent.
-Specifically speaking, these kinds of types include
-<ul>
-<li>slice types</li>
-<li>map types</li>
-<li>channel types</li>
-<li>function types</li>
-<li>interface types</li>
-<li>string types</li>
-</ul>
-
-<p>
-The kinds of types in the second category bring much convenience to Go programming
-by encapsulating many implementation details.
-Different Go compilers may adopt different internal implementations
-for these types, but the external behaviors of values of these types
-must satisfy the requirements specified in Go specification.
-</p>
-
-<p>
-These types will be explained detailed in the following articles.
+The following Go 101 articles will make detailed explanations for many kinds of types listed in the above table.
+The current article is just to make a preparation to understand those explanations more easily.
 </p>
 
 Note,
@@ -90,6 +94,14 @@ Note,
 </ul>
 
 <p>
+The kinds of types in the second category bring much convenience to Go programming
+by encapsulating many implementation details.
+Different Go compilers may adopt different internal implementations
+for these types, but the external behaviors of values of these types
+must satisfy the requirements specified in Go specification.
+</p>
+
+<p>
 The types in the second category are not very fundamental types for a language,
 we can implement them from scratch by using the types from the first category.
 However, by encapsulating some common or unique functionalities and
@@ -101,7 +113,7 @@ the experiences of Go programming become enjoyable and productive.
 On the other hand, these encapsulations adopted in implementing the types
 in the second category hide many internal definitions of these types.
 This prevents Go programmers from viewing the whole pictures of these types,
-and sometimes makes some obstacles to understanding Go better.
+and sometimes makes some obstacles to understand Go better.
 </p>
 
 <p>
@@ -125,7 +137,7 @@ in the second category, let's clarify more on pointers and references.
 <p>
 We have learned <a href="pointer.html">Go pointers</a> in the article before the last.
 The pointer types in that article are type-safe pointer types.
-In fact, Go also supports type-unsafe pointer types.
+In fact, Go also supports <a href="unsafe.html">type-unsafe pointer types</a>.
 The <code>unsafe.Pointer</code> type provided in the <code>unsafe</code>
 standard package is like <code>void*</code> in C language.
 Types whose underlying types are <code>unsafe.Pointer</code>
@@ -136,8 +148,7 @@ are called unsafe pointer types in Go 101.
 In most other articles in Go 101, if not specially specified,
 when a pointer type is mentioned, it means a type-safe pointer type.
 However, in the following parts of the current article,
-when a pointer type is mentioned,
-it may be either a type-safe pointer type or a type-unsafe pointer type.
+when a pointer is mentioned, it might be either a type-safe pointer or a type-unsafe pointer.
 </p>
 
 A pointer value stores a memory address of another value,
