@@ -145,9 +145,8 @@ func main() {
 <p>
 </p>
 
-We can get the field type and (exported) method information of a type through reflection.
-We can also get the parameter and result type information of a function type
-through reflection.
+We can get all of the field types (of a struct type) and the method information of a type through reflection.
+We can also get the parameter and result type information of a function type through reflection.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -161,26 +160,42 @@ func (f F) Validate(s string) bool {
 
 func main() {
 	var x struct {
-		n int
+		N int
 		f F
 	}
 	tx := reflect.TypeOf(x)
-	fmt.Println(tx.Kind())     // struct
-	fmt.Println(tx.NumField()) // 2
+	fmt.Println(tx.Kind())        // struct
+	fmt.Println(tx.NumField())    // 2
+	fmt.Println(tx.Field(1).Name) // f
 	tf := tx.Field(1).Type
 	fmt.Println(tf.Kind())               // func
 	fmt.Println(tf.IsVariadic())         // false
 	fmt.Println(tf.NumIn(), tf.NumOut()) // 2 1
 	fmt.Println(tf.NumMethod())          // 1
+	fmt.Println(tf.Method(0).Name)       // Validate
 	ts, ti, tb := tf.In(0), tf.In(1), tf.Out(0)
 	// The next line prints: string int bool
 	fmt.Println(ts.Kind(), ti.Kind(), tb.Kind())
 }
 </code></pre>
 
+
 <p>
-Note, the <code>reflect.Type.NumMethod</code> only returns the number of exported methods of a type.
+Note, the <code>reflect.Type.NumMethod</code> only returns the number of exported methods (including implicitly declared ones) of a type.
 </p>
+
+Note,
+<ol>
+<li>
+	the <code>reflect.Type.NumMethod</code> only returns the number of exported methods (including implicitly declared ones) of a type.
+	We are unable to get the information of a non-exported method by using the <code>reflect.Type.MethodByName</code> method.
+</li>
+<li>
+	Although a <code>reflect.Type.NumField</code> method call returns the number of all fields (including non-exported ones) of a struct type,
+	it is <a href="https://golang.org/pkg/reflect/#pkg-note-BUG">not a good idea</a> to
+	use the <code>reflect.Type.FieldByName</code> method to get the information of a non-exported field.
+</li>
+</ol>
 
 <a class="anchor" id="struct-field-tag"></a>
 We can <a href="https://golang.org/pkg/reflect/#StructTag">inspect struct field tags through reflection</a>.

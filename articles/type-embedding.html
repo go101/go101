@@ -543,7 +543,64 @@ func f2() {
 <p>
 </p>
 
+<p>
+One detail which is unusual but should be noted is that two unexported fields (or methods) from two differnt packages
+are always viewed as two different identifiers, even if their names are identical.
+So they will not never collide with or shadow each other when their owner types are embedded in the same struct type.
+</p>
 
+For example, a program comprising two packages as the following shows will compile and run okay.
+But if all the <code>m()</code> occurrences are replaced with <code>M()</code>, then the program will fail to compile
+for <code>A.M</code> and <code>B.M</code> collide, so <code>c.M</code> is not a valid selector.
+
+<pre class="line-numbers"><code class="language-go">package foo // x.y/foo
+
+import "fmt"
+
+type A struct {
+	n int
+}
+
+func (a A) m() {
+	fmt.Println("A", a.n)
+}
+
+type I interface {
+	m()
+}
+
+func Bar(i I) {
+	i.m()
+}
+</code></pre>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "x.y/foo"
+
+type B struct {
+	n bool
+}
+
+func (b B) m() {
+	fmt.Println("B", b.n)
+}
+
+type C struct{
+	foo.A
+	B
+}
+
+func main() {
+	var c C
+	c.m()      // B false
+	foo.Bar(c) // A 0
+}
+</code></pre>
+
+<p>
+</p>
 
 </div>
 
@@ -616,6 +673,7 @@ func (s *Singer) SetAge(age int) {
 </code></pre>
 
 <p>
+The implicit methods can also be called promoted methods.
 </p>
 
 <p>
