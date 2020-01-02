@@ -749,12 +749,44 @@ And future gc versions may become smarter so that the trick will become unnecess
 
 select{}
 
+try to avoid using large-sized types as
+* map key and element types,
+* interface dynamic types: don't use string or large size values as error
+* channel element types
+
+define exported error values as constants, or maybe can make use of declared function values
+
+import "sync"
+type T struct {
+	_ [0]sync.Mutex
+}
+func main() {
+	var t T
+	_ = t // go vet: assignment copies lock value to _: main.T contains sync.Mutex
+}
+
+the current standard runtime implemention is not friendly when physics memory are not enough.
+machine will lag and hang and non-interactive.
+Often in devloping, buggy bare loop will cause such cases.
+Use "for range [N]struct{}{}" instead.
+
+add content to the efficiently slice clone item (also keep the wiki links)
+
+don't use == to compare two reflect.Value values, compare v1.Interface() and v2.Interface() instead (move to reflection article and tips)
+
+don't use == compare two time.Time values, use time.EqualTo instead (move to tips)
+
+
+
+
+
+
+
 how to declare a new type which will not has the same underlying type with any already delcared types.
 	type T *T
 
 use named returns, better readability
 
-define exported error values as constants, or maybe can make use of declared function values
 
 avoid gc too frequently by allocating a large memory block for a global variable.
 - aha, it is really used in practice: https://news.ycombinator.com/item?id=21670110
@@ -765,14 +797,7 @@ try to avoid unnecessary synchronization, for example, make data only be used in
 math/rand.NewSource() are faster but not concurrent safe.
 but Bytes() method is not fast
 
-try to avoid using large-sized types as
-* map key and element types,
-* interface dynamic types: don't use string or large size values as error
-* channel element types
-
-
 fmt.Print(v) // values referenced by v escape to heap
-
 
 sync.Pool, sync.Map
 
@@ -786,7 +811,6 @@ use {} to create a nested block to shadow identifiers declared in outer blocks.
 intermediate results should be stored out of the benchmark function
 
 select may slow: https://twitter.com/melvinodsa/status/1031434710184939522
-
 
 try to share Transport for http.Client values. (need a go practice article)
 avoid using the http.Get, ..., functions directly.
@@ -804,13 +828,13 @@ avoid using the http.Get, ..., functions directly.
         // TCP connections between requests to the same hosts, as if
         // Transport.DisableKeepAlives were set.
 
-+setting GOMAXPROCS with a value larger than NumCPUs is good for the performance of a program sometimes^M
-+https://news.ycombinator.com/item?id=18350362^
+setting GOMAXPROCS with a value larger than NumCPUs is good for the performance of a program sometimes
+https://news.ycombinator.com/item?id=18350362^
 
 simulate subPackages (not work for exported types)
 	package foo / import "a.b/foo"
-	type SubPkg_ struct{}
-	var SubPkg SubPkg_
+	type _SubPkg struct{}
+	var SubPkg _SubPkg
 	func (SubPkg_) FunctionX()
 	func (SubPkg_) FunctionY()
 
@@ -826,7 +850,6 @@ https://github.com/golang/go/issues/28737
 
 <a class="anchor" id="embed-unexported-alias-of-exported-type"></a>
 <h3>Embedding an unexported alias of an exported type to avoiding the corresponding anonymous field being modified in user packages.</h3>
-
 	type t = T
 	type X struct {
 		t
@@ -835,43 +858,14 @@ how to embed an exported type as a non-export field?
 so that package users can't modify the field.
 	type embeddedType = ExportedType
 
-use make() instead of composite literals to initilize map and slice
-if the accurate or approiximate number of elements is known.
-
-If the types of some results of a function are identifier,
+If the types of some results of a function are identical,
 it would be better to use named results for "code as docs"
 
 manually adjust struct field positions to save memory.
 
-
-import "sync"
-type T struct {
-	_ [0]sync.Mutex
-}
-func main() {
-	var t T
-	_ = t // go vet: assignment copies lock value to _: main.T contains sync.Mutex
-}
-
-the current standard runtime implemention is not friendly when physics memory are not enough.
-machine will lang and hang and non-interactive.
-Often in devloping, buggy bare loop will cause such cases.
-Use "for range [N]struct{}{}" instead.
-
 how to ignore a struct field in comparisons by using reflect.DeepEqual?
 * https://github.com/golang/go/issues/29934#issuecomment-475880025
 * especially for unepxorted fields
-
-
-define enum values as non-exported int wrappers.
-      type mode struct{m int}
-      var (
-          Mode0 = mode{0}
-          Mode1 = mode{1}
-          Mode2 = mode{2}
-      )
-      to avoid user passing invalid mode values from outside packages.
-      If type mode int, then users can pass (Mode2 + 1), which is invalid.
 
 avoid costy copying: dont't range array direct, range its pointer of slices instead.
 
@@ -880,8 +874,7 @@ don't expose package-level data to users.
 * bad: var A [3]int, good: func A() [3]int {...}
 * bad var S []int, good: func NumElementsOfS() int {} + func ElementOfS(i int) int {}
 
-
-go sdk 1.13: -trimpath
+go sdk 1.14: -trimpath
 https://docs.google.com/presentation/d/1RiZmupILuIQQ1Y-psDb1SzXNjCWh-I_-wagthdcwlq8/edit#slide=id.g604d13147b_0_29
 
 use //line directive: https://golang.org/src/cmd/compile/doc.go
@@ -896,14 +889,17 @@ Avoid two many allocations. The following code only makes two allocations.
 
 allocate map/slice to be capable to contain the max size you know (if it is possible) to avoid several allocations.
 
-add content to the efficiently slice clone item (also keep the wiki links)
-
 code should panic on fsync error (at least at present):
 * https://git.postgresql.org/gitweb/?p=postgresql.git;a=commit;h=9ccdd7f66e3324d2b6d3dec282cfa9ff084083f1
 * https://wiki.postgresql.org/wiki/Fsync_Errors
 * https://lwn.net/Articles/752613/
 * https://lwn.net/Articles/752063/
 * https://news.ycombinator.com/item?id=20491965
+
+map[k]*[]int is better than map[k][]T if map element modificaiton is frequent?
+
+higher GOMAXPROCS > numCPU might be good for performance sometimes:
+https://groups.google.com/forum/#!msg/golang-nuts/jPb_h3TvlKE/qdoHhxXeAwAJ
 
 -->
 

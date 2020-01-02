@@ -40,7 +40,7 @@ since a later Go version.
 If you really desire the code efficient improvements by using unsafe
 pointers for any reason, you should not only know the above mentioned risks,
 but also follow the instructions written in the official Go
-documentation and clearly understand the effects of each unsafe pointer use,
+documentation and clearly understand the effect of each unsafe pointer use,
 so that you can write safe Go code with unsafe pointers.
 </p>
 
@@ -81,7 +81,7 @@ The <code>unsafe</code> standard package also provides three functions.
 	which is used to get the address alignment of a value.
 	Please notes, the aligns for struct-field values and non-field values
 	of the same type may be different, though for the standard
-	Go compiler, they are always the same, for gccgo compiler, they may be different.
+	Go compiler, they are always the same. For the gccgo compiler, they may be different.
 
 </li>
 <li>
@@ -100,23 +100,30 @@ The <code>unsafe</code> standard package also provides three functions.
 </li>
 </ul>
 
-<p>
-Note that the types of the return results of the three functions are all
-<code>uintptr</code>. Below we will learn that uintptr values
-can be converted to unsafe pointers (and vice versa).
-</p>
-
-<p>
-Although the return results of calls of any of the three functions
-are consistent in the same program,
-they might be different crossing operating systems, crossing architectures,
-crossing compilers, and crossing compiler versions.
-</p>
-
-<p>
-Calls to the three functions are always evaluated at compile time.
-Their return results can be assigned/bound to named constants.
-</p>
+Note,
+<ul>
+<li>
+	the types of the return results of the three functions are all
+	<code>uintptr</code>. Below we will learn that uintptr values
+	can be converted to unsafe pointers (and vice versa).
+</li>
+<li>
+	although the return results of calls of any of the three functions
+	are consistent in the same program,
+	they might be different crossing operating systems, crossing architectures,
+	crossing compilers, and crossing compiler versions.
+</li>
+<li>
+	calls to the three functions are always evaluated at compile time.
+	The evaluation results are typed constants with type <code>uintptr</code>.
+</li>
+<li>
+	the argument passed to a call to the <code>unsafe.Offsetof</code> function
+	must the struct field selector form <code>value.field</code>.
+	The selector may denote an embedded field, but the field must be reachable
+	without implicit pointer indirections.
+</li>
+</ul>
 
 An example of using the three functions.
 <pre class="line-numbers"><code class="language-go">package main
@@ -144,64 +151,62 @@ func main() {
 </code></pre>
 
 <p>
+</p>
+
+An example which demostrates the last note mentioned above.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "unsafe"
+
+func main() {
+	type T struct {
+		c string
+	}
+	type S struct {
+		b bool
+	}
+	var x struct {
+		a int64
+		*S
+		T
+	}
+
+	fmt.Println(unsafe.Offsetof(x.a)) // 0
+	
+	fmt.Println(unsafe.Offsetof(x.S)) // 8
+	fmt.Println(unsafe.Offsetof(x.T)) // 16
+	
+	// This line compiles, for c can be reached
+	// without implicit pointer indirections.
+	fmt.Println(unsafe.Offsetof(x.c)) // 16
+	
+	// This line doesn't compile, for b must be
+	// reached with the implicit pointer field S.
+	//fmt.Println(unsafe.Offsetof(x.b)) // error
+	
+	// This line compiles. However, it prints
+	// the offset of field b in the value x.S.
+	fmt.Println(unsafe.Offsetof(x.S.b)) // 0
+}
+</code></pre>
+
+<p>
 Please note, the print results shown in the comments are for the standard
 Go compiler version 1.13 on Linux AMD64 architecture.
 </p>
 
-</div>
-
-<!--
-todo: remove most this section, except the Ian confirmed points,
-      move the confirmed points to the last section.
-
-<h3>The Warnings From Go Official Documentation</h3>
-
-<div>
-
-The <code>unsafe</code> package documentation
-<a href="https://golang.org/pkg/unsafe/#pkg-overview">says</a>:
-
-<div class="alert alert-success">
-Packages that import <code>unsafe</code> may be non-portable
-and are not protected by the Go 1 compatibility guidelines.
-</div>
-
-And the <a href="https://golang.org/doc/go1compat">Go 1 compatibility guidelines</a> says:
-<div class="alert alert-success">
-Packages that import <code>unsafe</code> may depend on internal properties of the Go implementation.
-We reserve the right to make changes to the implementation that may break such programs.
-</div>
-
-However, Ian, one of the core member of Go team,
-has <a href="https://groups.google.com/forum/?_escaped_fragment_=topic/golang-nuts/Pi7VveWDUPc">confirmed</a>:
-<ul>
-<li>
-	the signatures of the functions in <code>unsafe</code> package
-	will not change in future Go 1 versions,
-</li>
-<li>
-	and the <code>unsafe.Pointer</code> type will
-	always there in future Go 1 versions.
-</li>
-</ul>
-
 <p>
-So, the three functions provided in the <code>unsafe</code> package
-don't look much dangerous.
-Rob Pike, the Go project leader, even
-<a href="https://github.com/golang/go/issues/5602">made a proposal to move
-the three functions to elsewhere</a>.
-The only unsafety of these functions is their calls
-may return different values for later versions of Go compilers.
-</p>
-
-<p>
-Most of the unsafty of the <code>unsafe</code> package comes unsafe pointers.
-They are as dangerous as C pointers, which is Go always tries to avoid.
+The three functions provided in the <code>unsafe</code> package don't look much dangerous.
+The signatures of these functions are very
+<a href="https://groups.google.com/forum/?_escaped_fragment_=topic/golang-nuts/Pi7VveWDUPc">impossible to be changed in future Go 1 versions</a>.
+Rob Pike even ever <a href="https://github.com/golang/go/issues/5602">made a proposal to move the three functions to elsewhere</a>.
+Most of the unsafty of the <code>unsafe</code> package comes from unsafe pointers.
+They are as dangerous as C pointers, what is Go safe pointers always try to avoid.
 </p>
 
 </div>
--->
 
 <h3>Unsafe Pointers Related Conversion Rules</h3>
 
@@ -592,7 +597,6 @@ Please read the comments in the code for the reason.
 <p>
 Such bugs are very subtle and hard to detect,
 which is why the uses of unsafe pointers are dangerous.
-An <code>-d=checkptr</code> option <a href="https://go-review.googlesource.com/c/go/+/162237">might be added</a> for the official Go compiler v1.14.
 </p>
 
 If we do want to split that conversion line into two lines,
@@ -966,6 +970,8 @@ for you code depending on the unsafe mechanism.
 
 
 <!--
+	
+An <code>-d=checkptr</code> option <a href="https://go-review.googlesource.com/c/go/+/162237">might be added</a> for the official Go compiler v1.15.
 
 https://groups.google.com/forum/#!topic/golang-nuts/Ecwbd8SMoO0
 

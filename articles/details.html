@@ -40,7 +40,7 @@ Index:
 		<a class="index" href="#defer-modify-results">Nested deferred function calls can modify return result values of nesting functions.</a>
 	</li>
 	<li>
-		<a class="index" href="#no-op-recover-calls">Some <code>recover</code> calls may be NoOps.</a>
+		<a class="index" href="#no-op-recover-calls">Some <code>recover</code> calls may be no-ops.</a>
 	</li>
 	<li>
 		<a class="index" href="#os-exit-runtime-goexit">Exit a program with a <code>os.Exit</code> function call and exit a goroutine with a <code>runtime.Goexit</code> function call</a>.
@@ -210,7 +210,7 @@ Index:
 	</li>
 	-->
 	<li>
-		<a class="index" href="#stack-overflow-is-not-panic">Stack overflow is not panic.</a>
+		<a class="index" href="#stack-overflow-is-unrecoverable">Stack overflow is unrecoverable.</a>
 	</li>
 	<li>
 		<a class="index" href="#some-evaluation-order-are-compiler-dependent">Some expression evaluation orders in Go are compiler implementation dependent.</a>
@@ -556,7 +556,7 @@ func main() {
 </div>
 
 <a class="anchor" id="no-op-recover-calls"></a>
-<h3>Some <code>recover</code> calls may be NoOps.</h3>
+<h3>Some <code>recover</code> calls may be no-ops.</h3>
 
 <p>
 We should call the <code>recover</code> function at the right places.
@@ -1699,12 +1699,13 @@ var main int
 </div>
 -->
 
-<a class="anchor" id="stack-overflow-is-not-panic"></a>
+<a class="anchor" id="stack-overflow-is-unrecoverable"></a>
 <h3>Stack overflow is not panic.</h3>
 
 <div>
 
-Stack overflow in Go is fatal error. Once a stack overflow happens, program will crash with no recovery ways.
+For the current main stream Go compilers, stack overflows are fatal errors.
+Once a stack overflow happens, the whole program will crash without recovery ways.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -1730,6 +1731,10 @@ runtime stack:
 </code></pre>
 
 <p>
+</p>
+
+<p>
+About more crash cases, please read <a href="https://github.com/go101/go101/wiki/Panic-and-crash-cases">this wiki article</a>.
 </p>
 </div>
 
@@ -1983,6 +1988,10 @@ to get the output we expect:
 arguments: [arg0 arg1]
 </code></pre>
 
+<!--
+reason: https://github.com/golang/go/issues/36263#thread-subscription-status
+-->
+
 </div>
 
 <a class="anchor" id="printf-positional-arguments"></a>
@@ -2033,9 +2042,7 @@ non-exported field can't be set by reflection, but can be listed. Can read?
 
 reflection created embedding type will not obtain methods. still?
 
-don't use == to compare two reflect.Value values, compare v1.Interface() and v2.Interface() instead (move to reflection article and tips)
 
-don't use == compare two time.Time values, use time.EqualTo instead (move to tips)
 
 https://golang.org/pkg/reflect/#pkg-note-BUG
 
@@ -2044,7 +2051,6 @@ Print functions not always print the result of the String() method of a value.
 
 
 
-size_t in go is int instead of uint, ..., good design. (to faq)
 
 an untyped rune or int constant can be bound with a value which is larger than the max <code>rune</code> or <code>int</code> value in memory.
 
@@ -2054,6 +2060,8 @@ an untyped rune or int constant can be bound with a value which is larger than t
 greedy goroutine https://github.com/golang/go/issues/10958
 * It look some goroutines never get yielded, this make some other goroutines never get chances to run, why?
 http://stackoverflow.com/questions/13107958/what-exactly-does-runtime-gosched-do
+tight loops should be preemptible
+https://github.com/golang/go/issues/10958
 
 internal package
 
@@ -2121,34 +2129,17 @@ if the underlying value of v is also a reflect.Value value.
 	}
 
 io/ioutil since Go 1.11
- writer or writable values.
     The TempFile function now supports specifying where the random characters in the filename are placed.
     If the prefix argument includes a "*", the random string replaces the "*".
     For example, a prefix argument of "myname.*.bat" will result in a random filename such as "myname.123456.bat".
     If no "*" is included the old behavior is retained, and the random digits are appended to the end.
 
-go links 101
-   https://stackoverflow.com/questions/7044944/jquery-javascript-to-detect-os-without-a-plugin
-   https://golang.org/pkg/syscall/ list all OS/arch pages
 
-//godo/doc/builder
-var windowsOnlyPackages = map[string]bool{
-	"internal/syscall/windows":                     true,
-	"internal/syscall/windows/registry":            true,
-	"golang.org/x/exp/shiny/driver/internal/win32": true,
-	"golang.org/x/exp/shiny/driver/windriver":      true,
-	"golang.org/x/sys/windows":                     true,
-	"golang.org/x/sys/windows/registry":            true,
-}
+
 
 go term(inoledgie)s 101
 
 go contests 101 / summaries / snippets
-
-
-
-
-
 
 since Go 1.12, map entry print orders are specified,
 though iteration order is still unspecified.
@@ -2159,8 +2150,7 @@ then printing might consume much time.
 
 TrimSpace may return nil even if the input is not: https://github.com/golang/go/issues/31038
 
-tight loops should be preemptible
-https://github.com/golang/go/issues/10958
+
 
 
 method value evaluation timing
