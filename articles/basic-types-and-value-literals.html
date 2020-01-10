@@ -267,7 +267,7 @@ and <code>xE-n</code> is equivalent to <code>x</code> is divided by <code>10<sup
 01.23 // == 1.23
 .23
 1.
-// A "e" or "E" starts the exponent part (10-based).
+// An "e" or "E" starts the exponent part (10-based).
 1.23e2  // == 123.0
 123E2   // == 12300.0
 123.E+2 // == 12300.0
@@ -291,7 +291,7 @@ Since Go 1.13, Go also supports another floating point literal form, hexadecimal
 </li>
 </ul>
 
-The followings are some valid hexadecimal floating point literals
+The followings are some legal hexadecimal floating point literals
 (<code>yPn</code> is equivalent to <code>y</code> is multiplied by <code>2<sup>n</sup></code>,
 and <code>yP-n</code> is equivalent to <code>y</code> is divided by <code>2<sup>n</sup></code>):
 <pre class="disable-line-numbers111"><code class="language-go">0x1p-2     // == 0.25
@@ -303,7 +303,7 @@ and <code>yP-n</code> is equivalent to <code>y</code> is divided by <code>2<sup>
 
 <p></p>
 
-However, the following ones are invalid:
+However, the following ones are illegal:
 <pre class="disable-line-numbers111"><code class="language-go">0x.p1    // mantissa has no digits
 1p-2     // p exponent requires hexadecimal mantissa
 0x1.5e-2 // hexadecimal mantissa requires p exponent
@@ -311,7 +311,7 @@ However, the following ones are invalid:
 
 <p></p>
 
-Note: the following literal is valid, but it is not a floating point literal.
+Note: the following literal is legal, but it is not a floating point literal.
 It is a subtraction arithmetic expression actually.
 The <code>e</code> in it means <code>14</code> in decimal.
 <code>0x15e</code> is a hex interger literal, <code>-</code> is the subtraction operator,
@@ -335,21 +335,31 @@ represent the zero value of any floating-point type.
 <h4>Imaginary value literals</h4>
 
 <div>
-An imaginary literal consists of a floating-point or integer literal
-and a lower-case letter <code>i</code>.
+An imaginary literal consists of a floating-point or integer literal and a lower-case letter <code>i</code>.
 Examples:
 <pre class="disable-line-numbers111"><code class="language-go">1.23i
 1.i
 .23i
 123i
-0123i   // == 123i
+0123i   // == 123i (for backward-compatibility. See below.)
 1.23E2i // == 123i
 1e-1i
+011i   // == 11i (for backward-compatibility. See below.)
+00011i // == 11i (for backward-compatibility. See below.)
+// The following lines only compile okay since Go 1.13.
+0o11i    // == 9i
+0x11i    // == 17i
+0b11i    // == 3i
+0X.8p-0i // == 0.5i
 </code></pre>
 
 <p>
-(Note: before Go 1.13, if the part before the lower-case letter <code>i</code> in an imaginary literal
-is an integer literal, then it must be presented as the decimal form.)
+Note, before Go 1.13, in an imaginary literal, the letter <code>i</code>
+can only be prefixed with a floating-point literal.
+To be compatible with the older versions, since Go 1.13,
+the integer literals appearing as octal integer forms not starting with
+<code>0o</code> and <code>0O</code> are still viewed as floating-point literals,
+such as <code>011i</code>, <code>0123i</code> and <code>00011i</code> in the above example.
 </p>
 
 Imaginary literals are used to represent the imaginary parts of complex values.
@@ -392,16 +402,16 @@ But please note, in a numeric literal,
 </li>
 </ul>
 
-Some valid and invalid numeric literals which contain underscores:
+Some legal and illegal numeric literals which contain underscores:
 
-<pre class="disable-line-numbers111"><code class="language-go">// Valid ones:
+<pre class="disable-line-numbers111"><code class="language-go">// Legal ones:
 6_9          // == 69
 0_33_77_22   // == 0337722
 0x_Bad_Face  // == 0xBadFace
 0X_1F_FFP-16 // == 0X1FFFP-16
 0b1011_0111 + 0xA_B.Fp2i
 
-// Invalid ones:
+// Illegal ones:
 _69        // _ can't appear as the first character
 69_        // _ can't appear as the last character
 6__9       // one side of _ is a illegal character
