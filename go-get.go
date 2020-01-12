@@ -12,6 +12,7 @@ type GoGetInfo struct {
 	GoDocSourceRepo string
 }
 
+// ToDo: retire the SubPackage field.
 var gogetInfos = map[string]GoGetInfo{
 	"tinyrouter": {
 		SubPackage:      "",
@@ -24,6 +25,18 @@ var gogetInfos = map[string]GoGetInfo{
 		RootPackage:     "go101.org/skia",
 		GoGetSourceRepo: "https://github.com/go101/go-skia",
 		GoDocSourceRepo: "https://github.com/go101/go-skia",
+	},
+	"go101": {
+		SubPackage:      "",
+		RootPackage:     "go101.org/go101",
+		GoGetSourceRepo: "https://github.com/go101/go101",
+		GoDocSourceRepo: "https://github.com/go101/go101",
+	},
+	"golang101": {
+		SubPackage:      "",
+		RootPackage:     "go101.org/golang101",
+		GoGetSourceRepo: "https://github.com/golang101/golang101",
+		GoDocSourceRepo: "https://github.com/golang101/golang101",
 	},
 }
 

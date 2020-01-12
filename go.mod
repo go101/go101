@@ -1,3 +1,3 @@
-module github.com/go101/go101
+module go101.org/go101
 
-go 1.13
+go 1.11
