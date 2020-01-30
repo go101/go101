@@ -517,8 +517,8 @@ The same situation is for the selectors <code>v1.A.y</code> and <code>v1.B.y</co
 }
 
 func f1() {
-	_ = v1.x
-	_ = v1.y
+	_ = v1.x // error: ambiguous selector v1.x
+	_ = v1.y // error: ambiguous selector v1.y
 }
 </code></pre>
 
@@ -545,12 +545,48 @@ func f2() {
 <p>
 </p>
 
+Colliding or shadowed selectors will not prevent their deeper selectors being promoted.
+For example, the <code>.M</code> and <code>.z</code> selectors are still promoted in the following example.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type x string
+func (x) M() {}
+
+type y struct {
+	z byte
+}
+
+type A struct {
+	x
+}
+func (A) y(int) bool {
+	return false
+}
+
+type B struct {
+	y
+}
+func (B) x(string) {}
+
+func main() {
+	var v struct {
+		A
+		B
+	}
+	//_ = v.x // error: ambiguous selector v.x
+	//_ = v.y // error: ambiguous selector v.y
+	_ = v.M // ok. <=> v.A.x.M
+	_ = v.z // ok. <=> v.B.y.z
+}
+</code></pre>
+
 <p>
+</p>
+
 One detail which is unusual but should be noted is that two unexported fields (or methods) from two differnt packages
 are always viewed as two different identifiers, even if their names are identical.
 So they will not never collide with or shadow each other when their owner types are embedded in the same struct type.
-</p>
-
 For example, a program comprising two packages as the following shows will compile and run okay.
 But if all the <code>m()</code> occurrences are replaced with <code>M()</code>, then the program will fail to compile
 for <code>A.M</code> and <code>B.M</code> collide, so <code>c.M</code> is not a valid selector.

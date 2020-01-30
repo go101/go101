@@ -742,6 +742,9 @@ p := (*int)(unsafe.Pointer(u))
 <p>
 </p>
 
+<!--
+https://github.com/golang/go/issues/34684#issuecomment-540103545
+-->
 <p>
 Note: this pattern also applies to the <a href="https://golang.org/pkg/syscall/?GOOS=windows#Proc.Call">syscall.Proc.Call</a>
 and <a href="https://golang.org/pkg/syscall/?GOOS=windows#LazyProc.Call">syscall.LazyProc.Call</a> methods on Windows.
@@ -893,7 +896,7 @@ in the <code>reflect</code> standard package.
 </p>
 
 It is also possible to convert a byte slice to a string by using a similar way.
-However, currently (Go 1.13), there is a simpler but more efficient (and more unsafe) way to convert
+However, currently (Go 1.13), there is a simpler but more efficient way to convert
 a byte slice to a string.
 
 <pre class="line-numbers"><code class="language-go">func ByteSlice2String(bs []byte) string {
@@ -973,15 +976,13 @@ So please keep it easy to switch back to the safe implementations
 for you code depending on the unsafe mechanism.
 </p>
 
-
-<!--
-	
-An <code>-d=checkptr</code> option <a href="https://go-review.googlesource.com/c/go/+/162237">might be added</a> for the official Go compiler v1.15.
-
-https://groups.google.com/forum/#!topic/golang-nuts/Ecwbd8SMoO0
-
-https://github.com/golang/go/issues/34684
-syscall.Proc.Call and syscall.LazyProc.Call are not implemented in assembly, and, as such, this rule does not apply to them.
-
--->
+<p>
+In the end, it is worth mentioning that a dynamic analysis compiler option
+<code>-gcflags=all=-d=checkptr</code> will be supported.
+When this option is used, many incorrect unsafe pointer uses will be detected at run time.
+Once such an incorrect use is detected, a panic will occur.
+We can run the command <code>go run -gcflags=all=-d=checkptr bad-unsafe-use.go</code>
+to verify the functionality of this option.
+Thanks to Matthew Dempsky for implementing this <a href="https://github.com/golang/go/issues/22218">great feature</a>!
+</p>
 
