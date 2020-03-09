@@ -606,12 +606,13 @@ after the split two lines. Like this
 
 <pre class="line-numbers"><code class="language-go">func main() {
 	t := T{y: [3]int16{123, 456, 789}}
-	p := unsafe.Pointer(t)
+	p := unsafe.Pointer(&t)
 	addr := uintptr(p) + N + M + M
 	ty2 := (*int16)(unsafe.Pointer(addr))
 	// This following line ensures the memory of
 	// the value t will not get garbage collected
-	// currently for sure.
+	// for sure at this time if the code compiles
+	// with the official compilers.
 	runtime.KeepAlive(p)
 	fmt.Println(*ty2)
 }
@@ -624,7 +625,7 @@ https://github.com/golang/go/issues/34684#issuecomment-584461646
 <p>
 However, I don't recommend to use the <code>runtime.KeepAlive</code> trick for this use pattern,
 for the potential another danger mentioned above.
-If is possible that the stack grows when the runtime allocates memory for the variable <code>ty2</code>,
+It is possible that the stack grows when the runtime allocates memory for the variable <code>ty2</code>,
 so that the address of <code>t</code> changes and the value stored in <code>addr</code> becomes invalid,
 which directly leads to the value of <code>ty2</code> is also invalid.
 But honestly speaking, this potential danger doesn't exist here if the code compiles with
