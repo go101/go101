@@ -1057,10 +1057,18 @@ Following values can be taken addresses:
 </h3>
 
 <p>
-The main reason is making map elements addressable means the address of a map element
-must not be changed in its life cycle. This prevents Go compilers using more efficient
-algorithms to implement map. For the standard Go compiler, the internal addresses of
-map elements may be changed at run time.
+In Go, a map is designed as a container which can contain unlimited number of entries if memory is available.
+And, in the official Go runtime implementation, to ensure good map element indexing efficiency,
+each map value only maintains one continuous memory segment for the entries stored in that map.
+Therefor, Go runtime needs to allocate larger memory segments for a map from time to time
+when there are more and more entries being put into the map.
+In the process, the entries stored on older memory segments will be moved to newer memory segments.
+There might be also some other reasons caausing entry memory movements.
+In other words, the addresses of map elements will change from time to time on need.
+If map elements are allowed to be taken addresses, then when some map entries are moved,
+Go runtime must update all pointers which are storing the addresses of the moved elements,
+which brings many difficulties in implemnting Go compilers and runtimes and decrease Go program running performance much.
+So, currently, map elements are disallowed to be taken addresses. 
 </p>
 
 <a class="anchor" id="slice-elements-always-addressable"></a>
