@@ -6,7 +6,7 @@
 The book also tries to help gophers gain a deep and thorough understanding of Go.
 The book is expected to be helpful for both beginner and experienced Go programmers.
 
-For latest changes, please follow [@go100and1](https://twitter.com/go100and1).
+To get latest changes, please follow [@go100and1](https://twitter.com/go100and1).
 
 ### Install
 

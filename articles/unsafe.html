@@ -309,34 +309,35 @@ func foo() {
 	// uintptr can participate arithmetic operations.
 	p2 += 2; p2--; p2--
 
-	*p0 = 1                          // okay
-	*(*int)(p1) = 2                  // okay
-	*(*int)(unsafe.Pointer(p2))) = 3 // dangerous!
+	*p0 = 1                         // okay
+	*(*int)(p1) = 2                 // okay
+	*(*int)(unsafe.Pointer(p2)) = 3 // dangerous!
 }
 </code></pre>
 
 <p>
 In the above example, the fact that value <code>p2</code> is still in using can't guarantee
 that the memory block ever hosting the <code>int</code> value referenced by <code>z</code> has not been garbage collected yet.
-In other words, when <code>*(*T)(unsafe.Pointer(p2))) = 3</code> is executed, the memory block may be collected, or not.
+In other words, when <code>*(*int)(unsafe.Pointer(p2)) = 3</code> is executed, the memory block may be collected, or not.
 It is dangerous to dereference the address stored in value <code>p2</code> to an <code>int</code> value,
 for it is possible that the memory block has been already reallocated for another value (even for another program).
 </p>
 
 </div>
 
-<a class="anchor" id="fact-value-address-might-change"></a>
-<h4>Fact 3: the addresses of some values might change at run time</h4>
+<!--
+https://github.com/golang/go/issues/32115
+-->
+<strike>
+<h4>Fact 3: we can use a <code>runtime.KeepAlive</code> function call to mark a value as still in using (reachable) before the call</h4>
+</strike>
 
-<p>
-Please read the article <a href="memory-block.html#where-to-allocate">memory blocks</a> for details (see the end of the hyperlinked section).
-Here, we should just know that when the size of the stack of a goroutine changes,
-the memory blocks allocated on the stack will be moved.
-In other words, the addresses of the values hosted on these memory blocks will change.
-</p>
+<i>(I decided to remove this fact from this article. This doesn't means the fact is not existing.
+It just means that the fact is not very relevant to this article.
+And it is helpless to fix the problem shown in the last sub-section.
+Please read the next fact to the cause.)</i>
 
-<h4>Fact 4: we can use a <code>runtime.KeepAlive</code> function call to mark a value as still in using (reachable) before the call</h4>
-
+<strike>
 <div>
 <p>
 To mark a value and the value parts referenced by it still reachable, we should pass a value which references
@@ -346,7 +347,7 @@ A pointer to the value is often used as such an argument.
 
 For example, by appending a <code>runtime.KeepAlive(&amp;z)</code>
 call to the example in the last subsection,
-<code>*(*T)(unsafe.Pointer(p2))) = 3</code> can be executed safely now.
+<code>*(*int)(unsafe.Pointer(p2)) = 3</code> can be executed safely now.
 
 <pre class="line-numbers"><code class="language-go">func foo() {
 	p0, y, z := createInt(), createInt(), createInt()
@@ -357,7 +358,7 @@ call to the example in the last subsection,
 
 	*p0 = 1
 	*(*int)(p1) = 2
-	*(*int)(unsafe.Pointer(p2))) = 3 // safe now!
+	*(*int)(unsafe.Pointer(p2)) = 3 // safe now!
 
 	runtime.KeepAlive(&z) // This line k
 }
@@ -367,6 +368,17 @@ call to the example in the last subsection,
 </p>
 
 </div>
+</strike>
+
+<a class="anchor" id="fact-value-address-might-change"></a>
+<h4>Fact 4: the addresses of some values might change at run time</h4>
+
+<p>
+Please read the article <a href="memory-block.html#where-to-allocate">memory blocks</a> for details (see the end of the hyperlinked section).
+Here, we should just know that when the size of the stack of a goroutine changes,
+the memory blocks allocated on the stack will be moved.
+In other words, the addresses of the values hosted on these memory blocks will change.
+</p>
 
 <h4>Fact 5: the reachable range of a value at run time may be not as large as it looks in code</h4>
 
@@ -599,6 +611,7 @@ Such bugs are very subtle and hard to detect,
 which is why the uses of unsafe pointers are dangerous.
 </p>
 
+<strike>
 If we do want to split that conversion line into two lines,
 we should call the <code>runtime.KeepAlive</code> function and pass the unsafe pointer <code>p</code>
 (or any other value which is also referencing value <code>t.y[2]</code>) as the argument,
@@ -632,6 +645,12 @@ But honestly speaking, this potential danger doesn't exist here if the code comp
 the standard Go compiler. In the implementation of the standard Go compiler,
 a <code>runtime.KeepAlive</code> call will make the values referenced by
 its argument be allocated on heap, and memory blocks allocated on heap will be never moved.
+</p>
+</strike>
+<p>
+<i>(The above explanations are removed. The reason is it is not guaranteed that
+a <code>runtime.KeepAlive</code> call will make the values referenced by
+its argument be allocated on heap.)</i>
 </p>
 
 <p>
@@ -814,7 +833,7 @@ func main() {
 	bs := []byte("Golang")
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
 	hdr.Data = uintptr(unsafe.Pointer(&a))
-	runtime.KeepAlive(&a) // needed!
+	// runtime.KeepAlive(&a) // not essential
 	hdr.Len = 2
 	hdr.Cap = len(a)
 	fmt.Printf("%s\n", bs) // Go
@@ -824,8 +843,12 @@ func main() {
 </code></pre>
 
 <p>
+<strike>
 Note, a <code>runtime.KeepAlive</code> call is needed in this example,
 otherwise, the slice might reference an invalid underlying byte sequence.
+</strike>
+
+<i>(The <code>runtime.KeepAlive</code> call is not essential here.)</i>
 </p>
 
 In general,
@@ -862,12 +885,14 @@ import (
 	"unsafe"
 )
 
+// The string argument passed to this funciton should
+// not be used any more after the function exits.
 func String2ByteSlice(str string) (bs []byte) {
 	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
 	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
 	sliceHdr.Data = strHdr.Data
-	sliceHdr.Len = strHdr.Len
 	sliceHdr.Cap = strHdr.Len
+	sliceHdr.Len = strHdr.Len
 	// This KeepAlive line is essential to make the
 	// String2ByteSlice function be always valid
 	// when it is used in other custom packages.
@@ -936,10 +961,10 @@ func String2ByteSlice(str string) (bs []byte) {
 	strHdr := (*StringHeader)(unsafe.Pointer(&str))
 	sliceHdr := (*SliceHeader)(unsafe.Pointer(&bs))
 	sliceHdr.Data = strHdr.Data
-	sliceHdr.Len = strHdr.Len
 	sliceHdr.Cap = strHdr.Len
+	sliceHdr.Len = strHdr.Len
 	
-	// The KeepAlive call is inessential now.
+	// The KeepAlive call is not essential now.
 	//runtime.KeepAlive(&str)
 	return
 }

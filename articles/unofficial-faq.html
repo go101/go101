@@ -49,7 +49,7 @@ Index:
 	<li><a class="index" href="#slice-conversion">Why don't type <code>[]T1</code> and <code>[]T2</code> share the same underlying type
 		even if the two different types <code>T1</code> and <code>T2</code> share the same underlying type?</a></li>
 	<li><a class="index" href="#unaddressable-values">Which values can and which values can't be taken addresses?</a></li>
-	<li><a class="index" href="#maps-are-unaddressable">Why are map elements not addressable?</a></li>
+	<li><a class="index" href="#map-elements-are-unaddressable">Why are map elements not addressable?</a></li>
 	<li><a class="index" href="#slice-elements-always-addressable">Why elements of a non-nil slice are always addressable, even if the slice is unaddressable?</a></li>
 	<li><a class="index" href="#method-set-relation">For any non-pointer non-interface defined type <code>T</code>,
 		why is the method set of <code>*T</code> always a super set of the method set of <code>T</code>,
@@ -1052,6 +1052,7 @@ Following values can be taken addresses:
 </div>
 
 <a class="anchor" id="maps-are-unaddressable"></a>
+<a class="anchor" id="map-elements-are-unaddressable"></a>
 <h3>
 	Why are map elements unaddressable?
 </h3>
@@ -1059,7 +1060,7 @@ Following values can be taken addresses:
 <p>
 In Go, a map is designed as a container which can contain unlimited number of entries if memory is available.
 And, in the official Go runtime implementation, to ensure good map element indexing efficiency,
-each map value only maintains one continuous memory segment for the entries stored in that map.
+each map value only maintains one continuous memory segment for the entire entries stored in that map.
 Therefor, Go runtime needs to allocate larger memory segments for a map from time to time
 when there are more and more entries being put into the map.
 In the process, the entries stored on older memory segments will be moved to newer memory segments.
@@ -1067,8 +1068,14 @@ There might be also some other reasons caausing entry memory movements.
 In other words, the addresses of map elements will change from time to time on need.
 If map elements are allowed to be taken addresses, then when some map entries are moved,
 Go runtime must update all pointers which are storing the addresses of the moved elements,
-which brings many difficulties in implemnting Go compilers and runtimes and decrease Go program running performance much.
+which brings many difficulties in implemnting Go compilers and runtimes and decreases Go program running performance much.
 So, currently, map elements are disallowed to be taken addresses. 
+</p>
+
+<p>
+Another reason why map elements are unaddressable is the map index expression <code>aMap[key]</code> might
+return an element stored in map <code>aMap</code> or not, which means <code>aMap[key]</code> might still result
+a zero value after <code>(&aMap[key]).Modify()</code> is called. This will confuse many people.
 </p>
 
 <a class="anchor" id="slice-elements-always-addressable"></a>
@@ -1472,13 +1479,16 @@ Modules section:
 
 why map and slice are not comparble
 * rules determinstic
-  * from the point of view of being as map keys, the comparing parts of keys shouldn't be modifiable.
+  * from the point of view of being as map keys, the comparing parts of keys shouldn't be modifiable. Otherwise, confused.
   * from the point of view of equalness, people more prefer to think two slices are equal if their elements are also equal.
 * if elements are counted (which is most people prefer), map and slice, using a map keys, might be change.
   In other words, comparable <=> copy irrelavant.
 why function values are not comparable
 * some subtle details: promoted method value is not specified well.
                        will interface methods compare to concreate methods? 
+
+Why not pkg::Exported
+   array[pkg::exported] may cause some parsing difficuties?
 
 -->
 
