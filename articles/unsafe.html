@@ -901,10 +901,7 @@ func String2ByteSlice(str string) (bs []byte) {
 	sliceHdr.Data = strHdr.Data
 	sliceHdr.Cap = strHdr.Len
 	sliceHdr.Len = strHdr.Len
-	// This KeepAlive line is essential to make the
-	// String2ByteSlice function be always valid
-	// when it is used in other custom packages.
-	runtime.KeepAlive(&str)
+	// runtime.KeepAlive(&str) // not essential
 	return
 }
 
@@ -921,6 +918,12 @@ func main() {
 	fmt.Println(str) // Golang
 }
 </code></pre>
+
+<p>
+<i>(The current article ever stated that the <code>runtime.KeepAlive</code> call in the above example is essential.
+I'm very sorry I spread the wrong information. In fact, this call is not essential here,
+at least for the official standard compiler.)</i>
+</p>
 
 <p>
 <a href="https://golang.org/pkg/reflect/#SliceHeader">The docs</a>
@@ -949,6 +952,7 @@ of the <code>Builder</code> type supported since Go 1.10 in the
 It makes use of the first pattern introduced above.
 </p>
 
+<!--
 In fact, in practice, to avoid the danger caused by missing <code>runtime.KeepAlive</code> calls,
 it is more recommended to define our own custom <code>SliceHeader</code> and <code>StringHeader</code>
 struct types which hold <code>Data</code> fileds of the <code>unsafe.Pointer</code> type instead of
@@ -982,7 +986,7 @@ func String2ByteSlice(str string) (bs []byte) {
 Matthew Dempsky has made a proposal which <a href="https://github.com/golang/go/issues/19367">suggests</a>
 adding the two custom <code>SliceHeader</code> and <code>StringHeader</code> types to the <code>unsafe</code> standard package.
 </p>
-
+-->
 
 </div>
 
