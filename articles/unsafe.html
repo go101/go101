@@ -335,7 +335,7 @@ https://github.com/golang/go/issues/32115
 <i>(I decided to remove this fact from this article. This doesn't means the fact is not existing.
 It just means that the fact is not very relevant to this article.
 And it is helpless to fix the problem shown in the last sub-section.
-Please read the next fact to the cause.)</i>
+Please read the next fact for the reason.)</i>
 
 <strike>
 <div>
@@ -380,7 +380,7 @@ the memory blocks allocated on the stack will be moved.
 In other words, the addresses of the values hosted on these memory blocks will change.
 </p>
 
-<h4>Fact 5: the reachable range of a value at run time may be not as large as it looks in code</h4>
+<h4>Fact 5: the life range of a value at run time may be not as large as it looks in code</h4>
 
 
 <div>
@@ -461,7 +461,7 @@ As mentioned above, by using the unsafe pointer conversion rules above,
 we can convert a value of <code>*T1</code> to type <code>*T2</code>,
 where <code>T1</code> and <code>T2</code> are two arbitrary types.
 However, we should only do such conversions if the size of <code>T1</code>
-is no larger than <code>T2</code>, and only if the conversions are meaningful.
+is no smaller than <code>T2</code>, and only if the conversions are meaningful.
 </p>
 
 <p>
@@ -538,10 +538,9 @@ import "unsafe"
 func main() {
 	type T struct{a int}
 	var t T
-	fmt.Println(&t) // &{0}
-	println(&t)     // 0xc6233120a8
-	// The next line print: c6233120a8
-	fmt.Printf("%x\n", uintptr(unsafe.Pointer(&t)))
+	fmt.Printf("%p\n", &t)                          // 0xc6233120a8
+	println(&t)                                     // 0xc6233120a8
+	fmt.Printf("%x\n", uintptr(unsafe.Pointer(&t))) // c6233120a8
 }
 </code></pre>
 
@@ -555,6 +554,7 @@ The outputted addresses might be different for each run.
 
 <div>
 
+In this pattern, the result unsafe pointer must continue to point into the original allocated memory block.
 For example:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -567,7 +567,7 @@ type T struct {
 }
 
 const N = unsafe.Offsetof(T{}.y)
-const M = unsafe.Sizeof([3]int16{}[0])
+const M = unsafe.Sizeof(T{}.y[0])
 
 func main() {
 	t := T{y: [3]int16{123, 456, 789}}
@@ -651,6 +651,11 @@ its argument be allocated on heap, and memory blocks allocated on heap will be n
 <i>(The above explanations are removed. The reason is it is not guaranteed that
 a <code>runtime.KeepAlive</code> call will make the values referenced by
 its argument be allocated on heap.)</i>
+</p>
+
+<p>
+The intermediate uintptr value may also participate in <code>&amp;^</code> bitwise clear operations to do address alignment,
+as long as the result unsafe pointer and the original one point into the same allocated memory block.
 </p>
 
 <p>
@@ -850,6 +855,9 @@ otherwise, the slice might reference an invalid underlying byte sequence.
 
 <i>(The <code>runtime.KeepAlive</code> call is not essential here.)</i>
 </p>
+<!--
+https://groups.google.com/forum/#!topic/golang-nuts/MgIP2KvEAaU
+-->
 
 In general,
 we should only get a <code>*reflect.StringHeader</code> pointer value from an actual (already existed) string,

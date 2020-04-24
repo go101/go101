@@ -278,15 +278,16 @@ import (
 	"unsafe"
 )
 
-type T struct {a, b, c int}
+type T struct {x int}
 var pT *T
 
 func main() {
 	var unsafePPT = (*unsafe.Pointer)(unsafe.Pointer(&pT))
-	var ta, tb T
+	var ta, tb = T{1}, T{2}
 	// store
 	atomic.StorePointer(
 		unsafePPT, unsafe.Pointer(&ta))
+	fmt.Println(pT) // &{1}
 	// load
 	pa1 := (*T)(atomic.LoadPointer(unsafePPT))
 	fmt.Println(pa1 == &ta) // true
@@ -294,6 +295,7 @@ func main() {
 	pa2 := atomic.SwapPointer(
 		unsafePPT, unsafe.Pointer(&tb))
 	fmt.Println((*T)(pa2) == &ta) // true
+	fmt.Println(pT) // &{2}
 	// compare and swap
 	b := atomic.CompareAndSwapPointer(
 		unsafePPT, pa2, unsafe.Pointer(&tb))
