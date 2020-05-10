@@ -195,6 +195,11 @@ Index:
 	</li>
 	<li>
 		<a class="index" href="#non-exported-names-from-different-packages">Non-exported method names and struct field names from different packages are viewed as different names.</a>
+	<li>
+		<a class="index" href="#compare-values-with-both-comparable-and-incomprable-parts">The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.</a>
+	</li>
+	<li>
+		<a class="index" href="#blank-fields-are-ignored-in-comparisons">In struct value comparisons, blank fields will be ignored.</a>
 	</li>
 	</ul>
 </li>
@@ -1635,6 +1640,83 @@ func main() {
 </code></pre>
 
 </div>
+
+
+<a class="anchor" id="compare-values-with-both-comparable-and-incomprable-parts"></a>
+<h3>The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.</h3>
+
+<div>
+<p>
+Surely, the mentioned incomparable values here must present as interfaces, otherwise, the comparisons fail to compile.
+</p>
+
+Although it looks the implementation by the official standard Go compiler is comparing struct values fields by fields,
+and comparing array values elements by elements, until an inequality is found or a panic occurs, 
+but <a href="https://github.com/golang/go/issues/8606">the behavior is really unspecified</a> currently (Go 1.14).
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func cmpS(a, b S) {
+	defer func() {
+		if recover() != nil {
+			fmt.Println("panic")
+		}
+	}()
+	fmt.Println(a == b)
+}
+
+func cmpA(x, y A) {
+	defer func() {
+		if recover() != nil {
+			fmt.Println("panic")
+		}
+	}()
+	fmt.Println(x == y)
+}
+
+type S struct{x, y interface{}}
+type A [2]interface{}
+
+func main() {
+	var f func()
+	cmpS(S{1, f}, S{2, f}) // false (but panic is ok)
+	cmpS(S{f, 1}, S{f, 2}) // panic (but false is ok)
+	cmpA(A{1, f}, A{2, f}) // false (but panic is ok)
+	cmpA(A{f, 1}, A{f, 2}) // panic (but false is ok)
+}
+</code></pre>
+
+</div>
+
+<a class="anchor" id="blank-fields-are-ignored-in-comparisons"></a>
+<h3>In struct value comparisons, blank fields will be ignored.</h3>
+
+<div>
+Blank fields are those fields whose name are the blank identifier <code>_</code>.
+The following program will print <code>true</code>.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type T struct {
+	_ int
+	_ bool
+}
+
+func main() {
+	var t1 = T{123, true}
+	var t2 = T{789, false}
+	fmt.Println(t1 == t2) // true
+}
+</code></pre>
+
+<p>
+</p>
+
+</div>	
 
 <a class="anchor" id="sometimes-parentheses-are-required"></a>
 <h3>Parentheses are required in several rare scenarios to make code compile okay.</h3>

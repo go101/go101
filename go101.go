@@ -48,12 +48,12 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch go101.ConfirmLocalServer(isLocalRequest(r)); group {
 	case "static":
-		w.Header().Set("Cache-Control", "max-age=360000") // 10 hours
+		w.Header().Set("Cache-Control", "max-age=31536000") // one year
 		go101.staticHandler.ServeHTTP(w, r)
 	case "article":
 		item = strings.ToLower(item)
 		if strings.HasPrefix(item, "res/") {
-			w.Header().Set("Cache-Control", "max-age=360000") // 10 hours
+			w.Header().Set("Cache-Control", "max-age=31536000") // one year
 			go101.articleResHandler.ServeHTTP(w, r)
 			return
 		} else if go101.IsLocalServer() && (strings.HasPrefix(item, "print-") || strings.HasPrefix(item, "pdf-")) {
@@ -113,7 +113,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 				"Article":       article,
 				"Title":         article.TitleWithoutTags,
 				"IsLocalServer": isLocal,
-				"Value":         func() func(string, ...interface{}) interface{} {
+				"Value": func() func(string, ...interface{}) interface{} {
 					var kvs = map[string]interface{}{}
 					return func(k string, v ...interface{}) interface{} {
 						if len(v) == 0 {
@@ -142,7 +142,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 
 	if len(page) == 0 { // blank page means page not found.
 		log.Printf("article page %s is not found", file)
-		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+		//w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
 		return
 	}
@@ -150,7 +150,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 	if isLocal {
 		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 	} else {
-		w.Header().Set("Cache-Control", "max-age=5000") // about 1.5 hours
+		w.Header().Set("Cache-Control", "max-age=50000") // about 14 hours
 	}
 	w.Write(page)
 }
@@ -234,7 +234,7 @@ func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, prin
 	// ...
 	if len(page) == 0 { // blank page means page not found.
 		log.Printf("print page %s is not found", item)
-		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+		//w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
 		return
 	}
@@ -242,7 +242,7 @@ func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, prin
 	if isLocal {
 		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 	} else {
-		w.Header().Set("Cache-Control", "max-age=5000") // about 1.5 hours
+		w.Header().Set("Cache-Control", "max-age=50000") // about 14 hours
 	}
 	w.Write(page)
 }

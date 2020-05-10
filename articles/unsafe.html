@@ -517,6 +517,34 @@ func main() {
 <p>
 </p>
 
+A practice by using the pattern is to convert a byte slice, which will not be used after the conversion, to a string,
+as the following code shows. In this conversion, a duplication of the underlying byte sequence is avoided.
+
+<pre class="line-numbers"><code class="language-go">func ByteSlice2String(bs []byte) string {
+	return *(*string)(unsafe.Pointer(&bs))
+}
+</code></pre>
+
+<p>
+This is the implementation adopted by the <code>String</code> method
+of the <code>Builder</code> type supported since Go 1.10 in the
+<code>strings</code> standard package.
+The size of a byte slice is larger than a string,
+and <a href="value-part.html#internal-definitions">their internal structures</a> are similar, so the conversion is valid.
+</p>
+
+The converse, converting a string to a byte slice in the similar way, is invalid,
+for the size of a string is smaller than a byte slice.
+
+<pre class="line-numbers"><code class="language-go">func String2ByteSlice(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&s)) // dangerous!
+}
+</code></pre>
+
+<p>
+In the pattern 6 section below, a valid implementation to do the same job is introduced.
+</p>
+
 </div>
 
 <h4>Pattern 2: convert unsafe pointer to uintptr, then use the uintptr value.</h4>
@@ -525,7 +553,7 @@ func main() {
 <p>
 This pattern is not very useful.
 Usually, we print the result uintptr values to check the memory addresses
-stored in them. However, there are other less verbose ways to this job.
+stored in them. However, there are other both safe and less verbose ways to this job.
 So this pattern is not much useful.
 </p>
 
@@ -921,7 +949,7 @@ func main() {
 
 <p>
 <i>(The current article ever stated that the <code>runtime.KeepAlive</code> call in the above example is essential.
-I'm very sorry I spread the wrong information. In fact, this call is not essential here,
+I'm very sorry for that I spread the wrong information. In fact, this call is not essential here,
 at least for the official standard compiler.)</i>
 </p>
 
@@ -936,7 +964,12 @@ both recognize the representations of the two types declared
 in the <code>reflect</code> standard package.
 </p>
 
+<p>
 It is also possible to convert a byte slice to a string by using a similar way.
+However, it is more recommended to use the way shown in pattern 1 to do this job.
+</p>
+
+<!--
 However, currently (Go 1.14), there is a simpler but more efficient way to convert
 a byte slice to a string.
 
@@ -951,6 +984,7 @@ of the <code>Builder</code> type supported since Go 1.10 in the
 <code>strings</code> standard package.
 It makes use of the first pattern introduced above.
 </p>
+-->
 
 <!--
 In fact, in practice, to avoid the danger caused by missing <code>runtime.KeepAlive</code> calls,
@@ -1022,7 +1056,7 @@ for you code depending on the unsafe mechanism.
 In the end, it is worth mentioning that a dynamic analysis compiler option
 <code>-gcflags=all=-d=checkptr</code> is supported since Go SDK 1.14.
 When this option is used, some (but not all) incorrect unsafe pointer uses will be detected at run time.
-Once such an incorrect use is detected, a panic will occur. (Howver, it is not recommended to use this option on Windows now.)
+Once such an incorrect use is detected, a panic will occur. (However, it is not recommended to use this option on Windows now.)
 Thanks to Matthew Dempsky for implementing this <a href="https://github.com/golang/go/issues/22218">great feature</a>!
 </p>
 

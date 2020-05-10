@@ -1,4 +1,13 @@
 
+### 1.14.e (2020/?/?)
+
+* add [a new detail](https://go101.org/article/details.html#compare-values-with-both-comparable-and-incomprable-parts): The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.
+* add [a new detail](https://go101.org/article/details.html#blank-fields-are-ignored-in-comparisons): In struct value comparisons, blank fields will be ignored.
+
+### 1.14.d (2020/Apr/25)
+
+* `runtime.KeepAlive` related concents are removed from [Unsafe Pointers](https://go101.org/article/unsafe.html) article.
+  I'm sorry for spreading some wrong information in this article before.
 
 ### 1.13.i (2019/Oct/31)
 
@@ -15,7 +24,7 @@
 
 ### 1.13.e (2019/Oct/07)
 
-* I decided to withdraw the last erratum in 1.13.d.
+* I decided to withdraw the last erratum in 1.13.d. (Re-added in 1.14.d)
 
 ### 1.13.d (2019/Sep/30)
 

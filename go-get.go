@@ -72,7 +72,7 @@ func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, root
 	if isLocal {
 		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
 	} else {
-		w.Header().Set("Cache-Control", "max-age=5000") // about 1.5 hours
+		w.Header().Set("Cache-Control", "max-age=50000") // about 14 hours
 	}
 	w.Write(page)
 }
