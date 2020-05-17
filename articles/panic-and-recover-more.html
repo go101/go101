@@ -256,16 +256,19 @@ if it is compiled with the current versions of gc and gccgo.
 
 import "runtime"
 
+func f() {
+	// The Goexit signal shadows the "bye"
+	// panic now, but it should not.
+	defer runtime.Goexit()
+	panic("bye")
+}
+
 func main() {
-	c := make(chan struct{})
-	go func() {
-		defer close(c)
-		// The Goexit signal shadows the
-		// "bye" panic, but it should not.
-		defer runtime.Goexit()
-		panic("bye")
-	}()
-	<-c
+	go f()
+	
+	for runtime.NumGoroutine() > 1 {
+		runtime.Gosched()
+	}
 }
 </code></pre>
 
