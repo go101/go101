@@ -38,6 +38,12 @@ var gogetInfos = map[string]GoGetInfo{
 		GoGetSourceRepo: "https://github.com/golang101/golang101",
 		GoDocSourceRepo: "https://github.com/golang101/golang101",
 	},
+	"gold": {
+		SubPackage:      "",
+		RootPackage:     "go101.org/gold",
+		GoGetSourceRepo: "https://github.com/go101/gold",
+		GoDocSourceRepo: "https://github.com/go101/gold",
+	},
 }
 
 func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, rootPkg, subPkg string) {
@@ -55,6 +61,7 @@ func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, root
 	page, isLocal := go101.gogetPages.Get(item), go101.IsLocalServer()
 	if page == nil {
 		t := retrievePageTemplate(Template_GoGet, !isLocal)
+		info.SubPackage = subPkg
 
 		var err error
 		var buf bytes.Buffer
