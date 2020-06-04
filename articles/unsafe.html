@@ -328,16 +328,14 @@ for it is possible that the memory block has been already reallocated for anothe
 <!--
 https://github.com/golang/go/issues/32115
 -->
-<strike>
+<!--
 <h4>Fact 3: we can use a <code>runtime.KeepAlive</code> function call to mark a value as still in using (reachable) before the call</h4>
-</strike>
 
 <i>(I decided to remove this fact from this article. This doesn't means the fact is not existing.
 It just means that the fact is not very relevant to this article.
 And it is helpless to fix the problem shown in the last sub-section.
 Please read the next fact for the reason.)</i>
 
-<strike>
 <div>
 <p>
 To mark a value and the value parts referenced by it still reachable, we should pass a value which references
@@ -354,7 +352,7 @@ call to the example in the last subsection,
 	var p1 = unsafe.Pointer(y)
 	var p2 = uintptr(unsafe.Pointer(z))
 
-	p2 += 2; p2--; p2--
+	p2 += 2; p2 - -; p2 - -
 
 	*p0 = 1
 	*(*int)(p1) = 2
@@ -368,10 +366,10 @@ call to the example in the last subsection,
 </p>
 
 </div>
-</strike>
+-->
 
 <a class="anchor" id="fact-value-address-might-change"></a>
-<h4>Fact 4: the addresses of some values might change at run time</h4>
+<h4>Fact 3: the addresses of some values might change at run time</h4>
 
 <p>
 Please read the article <a href="memory-block.html#where-to-allocate">memory blocks</a> for details (see the end of the hyperlinked section).
@@ -380,7 +378,7 @@ the memory blocks allocated on the stack will be moved.
 In other words, the addresses of the values hosted on these memory blocks will change.
 </p>
 
-<h4>Fact 5: the life range of a value at run time may be not as large as it looks in code</h4>
+<h4>Fact 4: the life range of a value at run time may be not as large as it looks in code</h4>
 
 
 <div>
@@ -417,7 +415,7 @@ func bar() {
 
 </div>
 
-<h4>Fact 6: <code>*unsafe.Pointer</code> is a general safe pointer type</h4>
+<h4>Fact 5: <code>*unsafe.Pointer</code> is a general safe pointer type</h4>
 
 <div>
 <p>
@@ -639,7 +637,7 @@ Such bugs are very subtle and hard to detect,
 which is why the uses of unsafe pointers are dangerous.
 </p>
 
-<strike>
+<!--
 If we do want to split that conversion line into two lines,
 we should call the <code>runtime.KeepAlive</code> function and pass the unsafe pointer <code>p</code>
 (or any other value which is also referencing value <code>t.y[2]</code>) as the argument,
@@ -659,9 +657,8 @@ after the split two lines. Like this
 }
 </code></pre>
 
-<!--
 https://github.com/golang/go/issues/34684#issuecomment-584461646
--->
+
 
 <p>
 However, I don't recommend to use the <code>runtime.KeepAlive</code> trick for this use pattern,
@@ -674,12 +671,13 @@ the standard Go compiler. In the implementation of the standard Go compiler,
 a <code>runtime.KeepAlive</code> call will make the values referenced by
 its argument be allocated on heap, and memory blocks allocated on heap will be never moved.
 </p>
-</strike>
+
 <p>
 <i>(The above explanations are removed. The reason is it is not guaranteed that
 a <code>runtime.KeepAlive</code> call will make the values referenced by
 its argument be allocated on heap.)</i>
 </p>
+-->
 
 <p>
 The intermediate uintptr value may also participate in <code>&amp;^</code> bitwise clear operations to do address alignment,
@@ -866,7 +864,7 @@ func main() {
 	bs := []byte("Golang")
 	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
 	hdr.Data = uintptr(unsafe.Pointer(&a))
-	// runtime.KeepAlive(&a) // not essential
+
 	hdr.Len = 2
 	hdr.Cap = len(a)
 	fmt.Printf("%s\n", bs) // Go
@@ -875,17 +873,17 @@ func main() {
 }
 </code></pre>
 
+<!-- not correct
 <p>
-<strike>
 Note, a <code>runtime.KeepAlive</code> call is needed in this example,
 otherwise, the slice might reference an invalid underlying byte sequence.
-</strike>
 
 <i>(The <code>runtime.KeepAlive</code> call is not essential here.)</i>
 </p>
-<!--
 https://groups.google.com/forum/#!topic/golang-nuts/MgIP2KvEAaU
 -->
+<p>
+</p>
 
 In general,
 we should only get a <code>*reflect.StringHeader</code> pointer value from an actual (already existed) string,
@@ -929,7 +927,6 @@ func String2ByteSlice(str string) (bs []byte) {
 	sliceHdr.Data = strHdr.Data
 	sliceHdr.Cap = strHdr.Len
 	sliceHdr.Len = strHdr.Len
-	// runtime.KeepAlive(&str) // not essential
 	return
 }
 
@@ -948,9 +945,11 @@ func main() {
 </code></pre>
 
 <p>
+<!--
 <i>(The current article ever stated that the <code>runtime.KeepAlive</code> call in the above example is essential.
 I'm very sorry for that I spread the wrong information. In fact, this call is not essential here,
 at least for the official standard compiler.)</i>
+-->
 </p>
 
 <p>
@@ -1054,7 +1053,7 @@ for you code depending on the unsafe mechanism.
 
 <p>
 In the end, it is worth mentioning that a dynamic analysis compiler option
-<code>-gcflags=all=-d=checkptr</code> is supported since Go SDK 1.14.
+<code>-gcflags=all=-d=checkptr</code> is supported since Go Toolchain 1.14.
 When this option is used, some (but not all) incorrect unsafe pointer uses will be detected at run time.
 Once such an incorrect use is detected, a panic will occur. (However, it is not recommended to use this option on Windows now.)
 Thanks to Matthew Dempsky for implementing this <a href="https://github.com/golang/go/issues/22218">great feature</a>!

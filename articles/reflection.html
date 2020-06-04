@@ -624,6 +624,8 @@ representing the Go value, through the help of <code>interface{}</code>.
 The inverse process in similar, we can call the <code>Interface</code> method of a <code>reflect.Value</code> value
 to get an <code>interface{}</code> value, then type assert on the <code>interface{}</code> value
 to get the Go value represented by (a.k.a., the underlying value of ) the <code>reflect.Value</code> value.
+But please note that, calling the <code>Interface</code> method of a <code>reflect.Value</code> value
+which represents a non-exported field causes a panic.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -644,6 +646,12 @@ func main() {
 	z := vz.Interface().([]bool)
 	m := vt.MethodByName("IsZero").Interface().(func() bool)
 	fmt.Println(x, y, z, m()) // 123 abc [false true] true
+
+	type T struct {x int}
+	t := &T{3}
+	v := reflect.ValueOf(t).Elem().Field(0)
+	fmt.Println(v)             // 3
+	fmt.Println(v.Interface()) // panic
 }
 </code></pre>
 

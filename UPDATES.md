@@ -1,5 +1,10 @@
 
-### 1.14.e (2020/?/?)
+
+### 1.14.f (2020/Jun/02)
+
+* All "Go SDK" uses are changed to "Go Toolchain".
+
+### 1.14.e (2020/May/06)
 
 * add [a new detail](https://go101.org/article/details.html#compare-values-with-both-comparable-and-incomprable-parts): The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.
 * add [a new detail](https://go101.org/article/details.html#blank-fields-are-ignored-in-comparisons): In struct value comparisons, blank fields will be ignored.
@@ -106,7 +111,7 @@
 ### 1.11.a (2018/Sep/01)
 
 * mention 1.11 new `wasm` GOARCH in [More Go Related Knowledges](https://go101.org/article/more.html#cross-platform-compiling).
-* mention 1.11 new `go mod` command in [The Official Go SDK](https://go101.org/article/go-sdk.html).
+* mention 1.11 new `go mod` command in [The Go Toolchain](https://go101.org/article/go-toolchain.html).
 
 ### 1.10.g (2018/Jun/02)
 
