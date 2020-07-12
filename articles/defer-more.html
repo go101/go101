@@ -88,13 +88,42 @@ func main() {
 
 <p>
 </p>
+</div>
+
+<h3>The Evaluation Moment of Receiver Arguments of Deferred Method Calls</h3>
+
+<div>
 
 <p>
-The arguments of a deferred function call are
+As explained before, the arguments of a deferred function call are
 <a href="control-flows-more.html#argument-evaluation-moment">also evaluated before</a>
 the deferred call is pushed into the deferred call stack
 of the current goroutine.
 </p>
+
+Method receiver arguments are also not exceptions.
+For example, the following program prints <code>1342</code>.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type T int
+
+func (t T) M(n int) T {
+  print(n)
+  return t
+}
+
+func main() {
+	var t T
+	// "t.M(1)" is the receiver argument of the method
+	// call ".M(2)", so it is evaluated before the
+	// ".M(2)" call is pushed into deferred call stack.
+	defer t.M(1).M(2)
+	t.M(3).M(4)
+}
+</code></pre>
+
+<p></p>
 </div>
 
 <h3>Deferred Calls Make Code Cleaner and Less Bug Prone</h3>

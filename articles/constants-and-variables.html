@@ -108,8 +108,8 @@ there are two scenarios where <code>T(v)</code> is legal.
 	(a.k.a., <code>"\xef\xbf\xbd"</code>).
 	<code>0xFFFD</code> is the code point for the Unicode replacement character.
 	The result string of a conversion from an integer always contains one and only one rune.
-	(Note, later Go verison might <a href="https://github.com/golang/go/issues/3939">sonly allow converting rune intergers to strings</a>.
-	Since Go Toolchain 1.15, the <code>go vet</code> command will warn on conversions from non-rune integers to strings.)
+	(Note, later Go verison might <a href="https://github.com/golang/go/issues/3939">sonly allow converting rune or byte intergers to strings</a>.
+	Since Go Toolchain 1.15, the <code>go vet</code> command warns on conversions from non-rune and non-byte integers to strings.)
 </li>
 </ol>
 
@@ -946,8 +946,7 @@ and learn other addressable and unaddressable values from other articles later.
 <div>
 
 <p>
-In Go, two typed values of two different basic types
-can't be assigned to each other.
+In Go, two typed values of two different basic types can't be assigned to each other.
 In other words, the types of the destination and source values in an
 assignment must be identical if the two values are both basic values.
 If the type of the source basic value is not same as the type of
@@ -971,13 +970,17 @@ related conversion cases.
 </ul>
 
 <p>
-Unlike constant number conversions,
-overflows are allowed in non-constant number conversions.
-And when converting a non-constant floating-point value to an integer,
-rounding is also allowed.
+Unlike constant number conversions, overflows are allowed in non-constant number conversions.
+And when converting a non-constant floating-point value to an integer, rounding is also allowed.
 If a non-constant floating-point value doesn't overflow an integer type,
 the fraction part of the floating-point value will be discarded
 (towards zero) when it is converted to the integer type.
+</p>
+
+<p>
+In all non-constant conversions involving floating-point or complex values,
+if the result type cannot represent the value,
+then the conversion succeeds but the result value is implementation-dependent.
 </p>
 
 In the following example, the intended implicit conversions
@@ -1009,10 +1012,9 @@ var h = uint8(n + 1)
 </code></pre>
 
 <p>
-We can think that the type deductions happen at line <i>3</i>
-and line <i>14</i> are two implicit conversions,
-where <code>a</code> and <code>k</code> are both converted to
-their respective default type.
+We can think that value <code>a</code> at line <i>3</i> is implicitly
+converted to its default type (<code>float64</code>), so that the type
+of <code>b</code> is deducted as <code>float64</code>.
 More implicit conversion rules will be introduced in other articles later.
 </p>
 

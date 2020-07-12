@@ -737,18 +737,31 @@ like the third argument in the following <code>syscall.Syscall</code> call,
 to prevent the memory block referenced by that argument from being garbage collected or moved.
 </p>
 
+<p>
+Please note that, before Go 1.15, it was okay the conversion expressions <code>uintptr(anUnsafePointer)</code>
+act as sub-expressions of the talked arguments.
+Since Go 1.15, the requirement becomes a bit stricter:
+the talked arguments must present exactly as the <code>uintptr(anUnsafePointer)</code> form.
+</p>
+
 The following call is safe:
 <pre class="line-numbers"><code class="language-go">syscall.Syscall(SYS_READ, uintptr(fd),
 			uintptr(unsafe.Pointer(p)), uintptr(n))
 </code></pre>
 
-But the following call is dangerous:
+But the following calls are dangerous:
 
 <pre class="line-numbers"><code class="language-go">u := uintptr(unsafe.Pointer(p))
 // At this time, the value referenced by p might
 // have become unused and been collected already,
 // or the address of the value has changed.
 syscall.Syscall(SYS_READ, uintptr(fd), u, uintptr(n))
+
+// Arguments must be in the "uintptr(anUnsafePointer)"
+// form. In fact, the call was safe before Go 1.15.
+// But Go 1.15 changes the rule a bit.
+syscall.Syscall(SYS_XXX, uintptr(uintptr(fd)),
+			uint(uintptr(unsafe.Pointer(p))), uintptr(n))
 </code></pre>
 
 <p>

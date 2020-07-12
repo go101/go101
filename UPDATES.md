@@ -1,12 +1,19 @@
 
 
+
+### 1.14.g (2020/Jun/12)
+
+* remove the new detail added in 1.14.e: The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified. The reason is [the behavior will be specified](https://github.com/golang/go/issues/8606).
+* add [a new detail](https://go101.org/article/details.html#impossible-to-interface-assertion): About the impossible to-interface assertions which can be detected at compile time.
+
+
 ### 1.14.f (2020/Jun/02)
 
 * All "Go SDK" uses are changed to "Go Toolchain".
 
 ### 1.14.e (2020/May/06)
 
-* add [a new detail](https://go101.org/article/details.html#compare-values-with-both-comparable-and-incomprable-parts): The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.
+* add [a new detail](https://go101.org/article/details.html#compare-values-with-both-comparable-and-incomparable-parts): The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.
 * add [a new detail](https://go101.org/article/details.html#blank-fields-are-ignored-in-comparisons): In struct value comparisons, blank fields will be ignored.
 
 ### 1.14.d (2020/Apr/25)

@@ -157,6 +157,9 @@ Index:
 	<li>
 		<a class="index" href="#failed-type-assertion-may-panic">Whether or not the second optional result of a failed type assertion is present will affect the behavior of the type assertion.</a>
 	</li>
+	<li>
+		<a class="index" href="#impossible-to-interface-assertion">About the impossible to-interface assertions which can be detected at compile time.</a>
+	</li>
 	<!--
 	<li>
 		<a class="index" href="#interface-comparison-complexity">For the standard Go compiler, the time complexity of comparing two equal interface values may be <code><i>O</i>(1)</code> or <code><i>O</i>(n)</code>.</a>
@@ -196,9 +199,9 @@ Index:
 	<li>
 		<a class="index" href="#non-exported-names-from-different-packages">Non-exported method names and struct field names from different packages are viewed as different names.</a>
 	</li>
-	<li>
-		<a class="index" href="#compare-values-with-both-comparable-and-incomprable-parts">The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.</a>
-	</li>
+	<!--li>
+		<a class="index" href="#compare-values-with-both-comparable-and-incomparable-parts">The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.</a>
+	</li-->
 	<li>
 		<a class="index" href="#blank-fields-are-ignored-in-comparisons">In struct value comparisons, blank fields will be ignored.</a>
 	</li>
@@ -1375,7 +1378,39 @@ func main() {
 </p>
 </div>
 
+<a class="anchor" id="impossible-to-interface-assertion"></a>
+<h3>About the impossible to-interface assertions which can be detected at compile time.</h3>
 
+<div>
+At compile time, some to-interface assertions can be deducted as impossible to succeed.
+For example, the assertion shown in the following code:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type Ia interface {
+	m()
+}
+
+type Ib interface {
+	m() int
+}
+
+type T struct{}
+
+func (T) m() {}
+
+func main() {
+	var x Ia = T{}
+	_ = x.(Ib) // panic: main.T is not main.Ib
+}
+</code></pre>
+
+<p>
+Such assertions will not make code compilations fail (but the program will panic at run time).
+Since Go Toolchain 1.15, the <code>go vet</code> command warns on such assertions.
+<p>
+
+</div>
 
 <!--
 <a class="anchor" id="interface-comparison-complexity"></a>
@@ -1643,7 +1678,8 @@ func main() {
 </div>
 
 
-<a class="anchor" id="compare-values-with-both-comparable-and-incomprable-parts"></a>
+<!--
+<a class="anchor" id="compare-values-with-both-comparable-and-incomparable-parts"></a>
 <h3>The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.</h3>
 
 <div>
@@ -1690,6 +1726,7 @@ func main() {
 </code></pre>
 
 </div>
+-->
 
 <a class="anchor" id="blank-fields-are-ignored-in-comparisons"></a>
 <h3>In struct value comparisons, blank fields will be ignored.</h3>
