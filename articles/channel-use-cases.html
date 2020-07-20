@@ -1632,12 +1632,11 @@ number of data streams into one.
 <pre class="line-numbers"><code class="language-go">func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
 	out := make(chan uint64)
 	for _, in := range inputs {
-		in := in // this line is essential
-		go func() {
+		go func(in <-chan uint64) {
 			for {
 				out <- <-in // <=> out <- (<-in)
 			}
-		}()
+		}(in)
 	}
 	return out
 }
@@ -1655,8 +1654,7 @@ an input stream has been closed.
 	var wg sync.WaitGroup
 	for _, in := range inputs {
 		wg.Add(1)
-		in := in // this line is essential
-		go func() {
+		go func(int <-chan uint64) {
 			for {
 				x, ok := <-in
 				if ok {
@@ -1665,7 +1663,7 @@ an input stream has been closed.
 					wg.Done()
 				}
 			}
-		}()
+		}(in)
 	}
 	go func() {
 		wg.Wait()
@@ -1712,12 +1710,11 @@ but in practice, division workers are not very useful and seldom used.
 
 <pre class="line-numbers"><code class="language-go">func Divisor(input <-chan uint64, outputs ...chan<- uint64) {
 	for _, out := range outputs {
-		out := out // this line is essential
-		go func() {
+		go func(o chan<- uint64) {
 			for {
-				out <- <-input // <=> out <- (<-input)
+				o <- <-input // <=> o <- (<-input)
 			}
-		}()
+		}(out)
 	}
 }
 </code></pre>
