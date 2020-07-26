@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
+	//"errors"
 	"go/build"
 	"html/template"
 	"io/ioutil"
@@ -55,10 +55,10 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(item, "res/") {
 			w.Header().Set("Cache-Control", "max-age=31536000") // one year
 			go101.articleResHandler.ServeHTTP(w, r)
-		} else if go101.IsLocalServer() && (strings.HasPrefix(item, "print-") || strings.HasPrefix(item, "pdf-")) {
-			w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
-			idx := strings.IndexByte(item, '-')
-			go101.RenderPrintPage(w, r, item[:idx], item[idx+1:])
+			//} else if go101.IsLocalServer() && (strings.HasPrefix(item, "print-") || strings.HasPrefix(item, "pdf-")) {
+			//	w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+			//	idx := strings.IndexByte(item, '-')
+			//	go101.RenderPrintPage(w, r, item[:idx], item[idx+1:])
 		} else if !go101.RedirectArticlePage(w, r, item) {
 			go101.RenderArticlePage(w, r, item)
 		}
@@ -194,132 +194,132 @@ func retrieveArticleContent(file string) (Article, error) {
 	return article, nil
 }
 
-const Anchor, _Anchor, LineToRemoveTag, endl = `<li><a class="index" href="`, `">`, `(to remove)`, "\n"
-const IndexContentStart, IndexContentEnd = `<!-- index starts (don't remove) -->`, `<!-- index ends (don't remove) -->`
-
-func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, printTarget, item string) {
-	page, isLocal := go101.articlePages.Get(item), go101.IsLocalServer()
-	if page == nil {
-		var err error
-		var pageParams map[string]interface{}
-		switch item {
-		case "book101":
-			pageParams, err = buildBook101PrintParams()
-		}
-
-		if err == nil {
-			if pageParams == nil {
-				pageParams = map[string]interface{}{}
-			}
-			pageParams["PrintTarget"] = printTarget
-			pageParams["IsLocalServer"] = isLocal
-
-			t := retrievePageTemplate(Template_PrintBook, !isLocal)
-			var buf bytes.Buffer
-			if err = t.Execute(&buf, pageParams); err == nil {
-				page = buf.Bytes()
-			}
-		}
-
-		if err != nil {
-			page = []byte(err.Error())
-		}
-
-		if !isLocal {
-			go101.articlePages.Set(item, page)
-		}
-	}
-
-	// ...
-	if len(page) == 0 { // blank page means page not found.
-		log.Printf("print page %s is not found", item)
-		//w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
-		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
-		return
-	}
-
-	if isLocal {
-		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
-	} else {
-		w.Header().Set("Cache-Control", "max-age=50000") // about 14 hours
-	}
-	w.Write(page)
-}
-
-func buildBook101PrintParams() (map[string]interface{}, error) {
-	article, err := retrieveArticleContent("101.html")
-	if err != nil {
-		return nil, err
-	}
-
-	// get all index article content by removing some lines
-	var builder strings.Builder
-
-	content := string(article.Content)
-	i := strings.Index(content, IndexContentStart)
-	if i < 0 {
-		err = errors.New(IndexContentStart + " not found")
-		return nil, err
-	}
-
-	i += len(IndexContentStart)
-	content = content[i:]
-	i = strings.Index(content, IndexContentEnd)
-	if i >= 0 {
-		content = content[:i]
-	}
-
-	for range [1000]struct{}{} {
-		i = strings.Index(content, LineToRemoveTag)
-		if i < 0 {
-			break
-		}
-
-		start := strings.LastIndex(content[:i], endl)
-		if start >= 0 {
-			builder.WriteString(content[:start])
-		}
-		end := strings.Index(content[i:], endl)
-		content = content[i:]
-		if end < 0 {
-			end = len(content)
-		}
-		content = content[end:]
-	}
-	builder.WriteString(content)
-
-	// the index article
-	articles := make([]Article, 0, 100)
-	article.FilenameWithoutExt = "101"
-	article.Content = template.HTML(builder.String())
-	articles = append(articles, article)
-
-	// find all articles from links
-	content = string(article.Content)
-	for range [1000]struct{}{} {
-		i = strings.Index(content, Anchor)
-		if i < 0 {
-			break
-		}
-
-		content = content[i+len(Anchor):]
-		i = strings.Index(content, _Anchor)
-		if i < 0 {
-			break
-		}
-
-		article, err := retrieveArticleContent(content[:i])
-		if err != nil {
-			log.Printf("retrieve article %s error: %s", content[:i], err)
-		} else {
-			articles = append(articles, article)
-		}
-
-		content = content[i+len(_Anchor):]
-	}
-
-	return map[string]interface{}{"Articles": articles}, nil
-}
+//const Anchor, _Anchor, LineToRemoveTag, endl = `<li><a class="index" href="`, `">`, `(to remove)`, "\n"
+//const IndexContentStart, IndexContentEnd = `<!-- index starts (don't remove) -->`, `<!-- index ends (don't remove) -->`
+//
+//func (go101 *Go101) RenderPrintPage(w http.ResponseWriter, r *http.Request, printTarget, item string) {
+//	page, isLocal := go101.articlePages.Get(item), go101.IsLocalServer()
+//	if page == nil {
+//		var err error
+//		var pageParams map[string]interface{}
+//		switch item {
+//		case "book101":
+//			pageParams, err = buildBook101PrintParams()
+//		}
+//
+//		if err == nil {
+//			if pageParams == nil {
+//				pageParams = map[string]interface{}{}
+//			}
+//			pageParams["PrintTarget"] = printTarget
+//			pageParams["IsLocalServer"] = isLocal
+//
+//			t := retrievePageTemplate(Template_PrintBook, !isLocal)
+//			var buf bytes.Buffer
+//			if err = t.Execute(&buf, pageParams); err == nil {
+//				page = buf.Bytes()
+//			}
+//		}
+//
+//		if err != nil {
+//			page = []byte(err.Error())
+//		}
+//
+//		if !isLocal {
+//			go101.articlePages.Set(item, page)
+//		}
+//	}
+//
+//	// ...
+//	if len(page) == 0 { // blank page means page not found.
+//		log.Printf("print page %s is not found", item)
+//		//w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+//		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
+//		return
+//	}
+//
+//	if isLocal {
+//		w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+//	} else {
+//		w.Header().Set("Cache-Control", "max-age=50000") // about 14 hours
+//	}
+//	w.Write(page)
+//}
+//
+//func buildBook101PrintParams() (map[string]interface{}, error) {
+//	article, err := retrieveArticleContent("101.html")
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	// get all index article content by removing some lines
+//	var builder strings.Builder
+//
+//	content := string(article.Content)
+//	i := strings.Index(content, IndexContentStart)
+//	if i < 0 {
+//		err = errors.New(IndexContentStart + " not found")
+//		return nil, err
+//	}
+//
+//	i += len(IndexContentStart)
+//	content = content[i:]
+//	i = strings.Index(content, IndexContentEnd)
+//	if i >= 0 {
+//		content = content[:i]
+//	}
+//
+//	for range [1000]struct{}{} {
+//		i = strings.Index(content, LineToRemoveTag)
+//		if i < 0 {
+//			break
+//		}
+//
+//		start := strings.LastIndex(content[:i], endl)
+//		if start >= 0 {
+//			builder.WriteString(content[:start])
+//		}
+//		end := strings.Index(content[i:], endl)
+//		content = content[i:]
+//		if end < 0 {
+//			end = len(content)
+//		}
+//		content = content[end:]
+//	}
+//	builder.WriteString(content)
+//
+//	// the index article
+//	articles := make([]Article, 0, 100)
+//	article.FilenameWithoutExt = "101"
+//	article.Content = template.HTML(builder.String())
+//	articles = append(articles, article)
+//
+//	// find all articles from links
+//	content = string(article.Content)
+//	for range [1000]struct{}{} {
+//		i = strings.Index(content, Anchor)
+//		if i < 0 {
+//			break
+//		}
+//
+//		content = content[i+len(Anchor):]
+//		i = strings.Index(content, _Anchor)
+//		if i < 0 {
+//			break
+//		}
+//
+//		article, err := retrieveArticleContent(content[:i])
+//		if err != nil {
+//			log.Printf("retrieve article %s error: %s", content[:i], err)
+//		} else {
+//			articles = append(articles, article)
+//		}
+//
+//		content = content[i+len(_Anchor):]
+//	}
+//
+//	return map[string]interface{}{"Articles": articles}, nil
+//}
 
 //===================================================
 // templates
