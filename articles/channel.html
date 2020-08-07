@@ -410,21 +410,21 @@ Each channel internally holds a mutex lock which is used to avoid data races in 
 </p>
 
 <u><b>Channel operation case A</b>:
-when a goroutine <code>Gr</code> tries to receive a value from a not-closed non-nil channel</u>,
-the goroutine <code>Gr</code> will acquire the lock associated with the channel firstly,
+when a goroutine <code>R</code> tries to receive a value from a not-closed non-nil channel</u>,
+the goroutine <code>R</code> will acquire the lock associated with the channel firstly,
 then do the following steps until one condition is satisfied.
 <ol>
 <li>
 	If the value buffer queue of the channel is not empty, in which
 	case the receiving goroutine queue of the channel must be empty,
-	the goroutine <code>Gr</code> will receive (by unshifting) a value
+	the goroutine <code>R</code> will receive (by unshifting) a value
 	from the value buffer queue.
 	If the sending goroutine queue of the channel is also not empty,
 	a sending goroutine will be unshifted out of the sending goroutine queue
 	and resumed to running state again.
 	The value the just unshifted sending goroutine trying to send
 	will be pushed into the value buffer queue of the channel.
-	The receiving goroutine <code>Gr</code> continues running.
+	The receiving goroutine <code>R</code> continues running.
 	For this scenario, the channel receive operation
 	is called a <b>non-blocking operation</b>.
 </li>
@@ -432,19 +432,19 @@ then do the following steps until one condition is satisfied.
 	Otherwise (the value buffer queue of the channel is empty),
 	if the sending goroutine queue of the channel is not empty,
 	in which case the channel must be an unbuffered channel,
-	the receiving goroutine <code>Gr</code> will unshift a sending goroutine from the
+	the receiving goroutine <code>R</code> will unshift a sending goroutine from the
 	sending goroutine queue of the channel and receive the value
 	the just unshifted sending goroutine trying to send.
 	The just unshifted sending goroutine will get unblocked
 	and resumed to running state again.
-	The receiving goroutine <code>Gr</code> continues running.
+	The receiving goroutine <code>R</code> continues running.
 	For this scenario, the channel receive operation
 	is called a <b>non-blocking operation</b>.
 </li>
 <li>
 	If value buffer queue and the sending goroutine queue
 	of the channel are both empty,
-	the goroutine <code>Gr</code> will be pushed into the receiving goroutine queue
+	the goroutine <code>R</code> will be pushed into the receiving goroutine queue
 	of the channel and enter (and stay in) blocking state.
 	It may be resumed to running state when another goroutine
 	sends a value to the channel later.
@@ -454,19 +454,19 @@ then do the following steps until one condition is satisfied.
 </ol>
 
 <u><b>Channel rule case B</b>:
-when a goroutine <code>Gs</code> tries to send a value to a not-closed non-nil channel</u>,
-the goroutine <code>Gs</code> will acquire the lock associated with the channel firstly,
+when a goroutine <code>S</code> tries to send a value to a not-closed non-nil channel</u>,
+the goroutine <code>S</code> will acquire the lock associated with the channel firstly,
 then do the following steps until one step condition is satisfied.
 <ol>
 <li>
 	If the receiving goroutine queue of the channel is not empty,
 	in which case the value buffer queue of the channel must be empty,
-	the sending goroutine <code>Gs</code> will unshift a receiving goroutine
+	the sending goroutine <code>S</code> will unshift a receiving goroutine
 	from the receiving goroutine queue of the channel
 	and send the value to the just unshifted receiving goroutine.
 	The just unshifted receiving goroutine will get unblocked
 	and resumed to running state again.
-	The sending goroutine <code>Gs</code> continues running.
+	The sending goroutine <code>S</code> continues running.
 	For this scenario, the channel send operation
 	is called a <b>non-blocking operation</b>.
 </li>
@@ -474,15 +474,15 @@ then do the following steps until one step condition is satisfied.
 	Otherwise (the receiving goroutine queue is empty),
 	if the value buffer queue of the channel is not full,
 	in which case the sending goroutine queue must be also empty,
-	the value the sending goroutine <code>Gs</code> trying to send will be pushed into
-	the value buffer queue, and the sending goroutine <code>Gs</code> continues running.
+	the value the sending goroutine <code>S</code> trying to send will be pushed into
+	the value buffer queue, and the sending goroutine <code>S</code> continues running.
 	For this scenario, the channel send operation
 	is called a <b>non-blocking operation</b>.
 </li>
 <li>
 	If the receiving goroutine queue is empty
 	and the value buffer queue of the channel is already full,
-	the sending goroutine <code>Gs</code> will be pushed into the sending goroutine queue
+	the sending goroutine <code>S</code> will be pushed into the sending goroutine queue
 	of the channel and enter (and stay in) blocking state.
 	It may be resumed to running state when another goroutine
 	receives a value from the channel later.

@@ -1649,19 +1649,19 @@ A better implementation should consider whether or not
 an input stream has been closed.
 (Also valid for the following other module worker implementations.)
 
-<pre class="line-numbers"><code class="language-go">func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
+<pre class="line-numbers"><code class="language-go">import "sync"
+
+func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
 	output := make(chan uint64)
 	var wg sync.WaitGroup
 	for _, in := range inputs {
 		wg.Add(1)
 		go func(int <-chan uint64) {
-			for {
-				x, ok := <-in
-				if ok {
-					output <- x
-				} else {
-					wg.Done()
-				}
+			defer wg.Done()
+			// If in is closed, then the
+			// loop will ends eventually.
+			for x := range in {
+				output <- x
 			}
 		}(in)
 	}
@@ -1778,8 +1778,7 @@ An example:
 <pre class="line-numbers"><code class="language-go">func Duplicator(in <-chan uint64) (<-chan uint64, <-chan uint64) {
 	outA, outB := make(chan uint64), make(chan uint64)
 	go func() {
-		for {
-			x := <-in
+		for x := range in {
 			outA <- x
 			outB <- x
 		}
@@ -1810,8 +1809,7 @@ which inverts every bit of each transferred <code>uint64</code> value.
 		out = make(chan uint64)
 	}
 	go func() {
-		for {
-			x := <-in
+		for x := range in {
 			out <- ^x
 		}
 	}()
@@ -1834,14 +1832,13 @@ For example, the following worker function discards all non-prime numbers.
 
 <pre class="line-numbers"><code class="language-go">import "math/big"
 
-func Filter(input <-chan uint64, output chan uint64) <-chan uint64 {
+func Filter0(input <-chan uint64, output chan uint64) <-chan uint64 {
 	if output == nil {
 		output = make(chan uint64)
 	}
 	go func() {
 		bigInt := big.NewInt(0)
-		for {
-			x := <-input
+		for x := range input {
 			bigInt.SetUint64(x)
 			if bigInt.ProbablyPrime(1) {
 				output <- x
@@ -1850,9 +1847,14 @@ func Filter(input <-chan uint64, output chan uint64) <-chan uint64 {
 	}()
 	return output
 }
+
+func Filter(input <-chan uint64) <-chan uint64 {
+	return Filter0(input, nil)
+}
 </code></pre>
 
 <p>
+Please note that each of the two implementations is used by one of the final two examples shown below.
 </p>
 
 </div>
@@ -1869,13 +1871,8 @@ received from the input stream.
 <pre class="line-numbers"><code class="language-go">import "fmt"
 
 func Printer(input <-chan uint64) {
-	for {
-		x, ok := <-input
-		if ok {
-			fmt.Println(x)
-		} else {
-			return
-		}
+	for x := range input {
+		fmt.Println(x)
 	}
 }
 </code></pre>
@@ -1904,7 +1901,7 @@ func main() {
 	Printer(
 		Filter(
 			Calculator(
-				RandomGenerator(),
+				RandomGenerator(), nil,
 			),
 		),
 	)
@@ -1926,9 +1923,9 @@ Data flow system example 2 (a directed acyclic graph pipeline):
 ... // the worker functions declared above.
 
 func main() {
-	filterA := Filter(RandomGenerator(), nil)
-	filterB := Filter(RandomGenerator(), nil)
-	filterC := Filter(RandomGenerator(), nil)
+	filterA := Filter(RandomGenerator())
+	filterB := Filter(RandomGenerator())
+	filterC := Filter(RandomGenerator())
 	filter := Aggregator(filterA, filterB, filterC)
 	calculatorA := Calculator(filter, nil)
 	calculatorB := Calculator(filter, nil)
@@ -1971,9 +1968,9 @@ For example, the following example replaces the two aggregators with two channel
 
 func main() {
 	c1 := make(chan uint64, 100)
-	Filter(RandomGenerator(), c1) // filterA
-	Filter(RandomGenerator(), c1) // filterB
-	Filter(RandomGenerator(), c1) // filterC
+	Filter0(RandomGenerator(), c1) // filterA
+	Filter0(RandomGenerator(), c1) // filterB
+	Filter0(RandomGenerator(), c1) // filterC
 	c2 := make(chan uint64, 100)
 	Calculator(c1, c2) // calculatorA
 	Calculator(c1, c2) // calculatorB
