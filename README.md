@@ -38,6 +38,12 @@ Server started:
 The start page should be opened in a browser automatically.
 If it is not opened, please visit http://localhost:55555.
 
+Options:
+```
+-port=1234
+-theme=light # or dark (default)
+```
+
 ### Contributing
 Welcome to improve Go 101 by:
 * Submitting corrections for all kinds of mistakes, such as typos, grammar errors, wording inaccuracies, description flaws, code bugs and broken links.
