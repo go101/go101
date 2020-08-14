@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+
 	//"errors"
 	"go/build"
 	"html/template"
@@ -25,6 +26,7 @@ type Go101 struct {
 	articlePages      Cache
 	gogetPages        Cache
 	serverMutex       sync.Mutex
+	theme             string // default is "dark"
 }
 
 var (
@@ -111,6 +113,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 			pageParams := map[string]interface{}{
 				"Article":       article,
 				"Title":         article.TitleWithoutTags,
+				"Theme":         go101.theme,
 				"IsLocalServer": isLocal,
 				"Value": func() func(string, ...interface{}) interface{} {
 					var kvs = map[string]interface{}{}
@@ -274,7 +277,6 @@ func retrieveArticleContent(file string) (Article, error) {
 //		if i < 0 {
 //			break
 //		}
-//
 //		start := strings.LastIndex(content[:i], endl)
 //		if start >= 0 {
 //			builder.WriteString(content[:start])
@@ -301,7 +303,6 @@ func retrieveArticleContent(file string) (Article, error) {
 //		if i < 0 {
 //			break
 //		}
-//
 //		content = content[i+len(Anchor):]
 //		i = strings.Index(content, _Anchor)
 //		if i < 0 {
@@ -314,7 +315,6 @@ func retrieveArticleContent(file string) (Article, error) {
 //		} else {
 //			articles = append(articles, article)
 //		}
-//
 //		content = content[i+len(_Anchor):]
 //	}
 //
@@ -408,7 +408,6 @@ func goGet(pkgPath string) {
 
 func (go101 *Go101) Update() {
 	<-time.After(time.Minute / 2)
-
 	gitPull()
 	for {
 		<-time.After(time.Hour * 24)

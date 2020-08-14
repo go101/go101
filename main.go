@@ -12,6 +12,7 @@ import (
 
 var portFlag = flag.String("port", "55555", "server port")
 var genFlag = flag.Bool("gen", false, "HTML generation mode?")
+var themeFlag = flag.String("theme", "dark", "theme (dark | light), dark defaultly")
 
 func main() {
 	log.SetFlags(0)
@@ -27,6 +28,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	go101.theme = *themeFlag
 
 	genMode, rootPath := *genFlag, fmt.Sprintf("http://localhost:%v/", port)
 	if !genMode && !isAppEngine {
