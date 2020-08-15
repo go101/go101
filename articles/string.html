@@ -351,7 +351,7 @@ These scenarios include:
 	follows the <code>range</code> keyword in a <code>for-range</code> loop.
 </li>
 <li>
-	a conversion (from byte slice to string) which is used as a map key in map element indexing syntax.
+	a conversion (from byte slice to string) which is used as a map key in map element retrieval indexing syntax.
 </li>
 <li>
 	a conversion (from byte slice to string) which is used in a comparison.
@@ -378,15 +378,19 @@ func main() {
 
 	key := []byte{'k', 'e', 'y'}
 	m := map[string]string{}
-	// Here, the string(key) conversion will not copy
+	// The string(key) conversion copys the bytes in key.
+	m[string(key)] = "value"
+	// Here, this string(key) conversion doesn't copy
 	// the bytes in key. The optimization will be still
 	// made, even if key is a package-level variable.
-	m[string(key)] = "value"
-	fmt.Println(m[string(key)]) // value
+	fmt.Println(m[string(key)]) // value (very possible)
 }
 </code></pre>
 
 <p>
+Note, the last line might not output <code>value</code> if
+there are data races in evaluating <code>string(key)</code>.
+However, such data races will never cause panics.
 </p>
 
 Another example:
