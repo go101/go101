@@ -2,11 +2,12 @@
 
 ----
 
-<b>[Go 101](https://go101.org)</b> is a book focusing on Go syntax/semantics and all kinds of details.
-The book also tries to help gophers gain a deep and thorough understanding of Go.
+<b>[Go 101](https://go101.org)</b> is a book focusing on Go syntax/semantics and all kinds of runtime related things.
+It tries to help gophers gain a deep and thorough understanding of Go.
+This book also collects many details of Go and in Go programming.
 The book is expected to be helpful for both beginner and experienced Go programmers.
 
-To get latest changes, please follow [@go100and1](https://twitter.com/go100and1).
+To get latest changes of Go 101, please follow the official twitter account: [@go100and1](https://twitter.com/go100and1).
 
 ### Install
 
@@ -18,7 +19,7 @@ $ git clone https://github.com/go101/go101.git
 
 ###  Update
 
-Enter the Go 101 project folder (which contains the current `README.md` file), then run
+Enter the Go 101 project directory (which contains the current `README.md` file), then run
 
 ```
 $ git pull
@@ -26,7 +27,7 @@ $ git pull
 
 ### Run Locally
 
-Enter the Go 101 project folder (which contains the current `README.md` file), then run
+Enter the Go 101 project directory (which contains the current `README.md` file), then run
 
 ```
 $ go run .
@@ -52,7 +53,7 @@ Welcome to improve Go 101 by:
 Current contributors are listed on [this page](https://go101.org/article/acknowledgements.html).
 
 Translations are also welcome. Here is a list of the ongoing translation projects:
-* [Chinese translation version](https://github.com/golang101/golang101)
+* [中文版](https://github.com/golang101/golang101)
 
 ### License
 

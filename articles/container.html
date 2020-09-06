@@ -1688,6 +1688,8 @@ Surely, array and slice elements can also be iterated by using the traditional <
 </code></pre>
 
 <p>
+Since version 1.11, the standard Go compiler has specially optimized the above loop block
+so that the loop block runs much faster than it looks.
 </p>
 
 For a <code>for-range</code> loop block
@@ -2159,15 +2161,30 @@ For the latest standard Go compiler (version 1.15), the simplest way to clone a 
 <pre class="disable-line-numbers111"><code class="language-go">sClone := append(s[:0:0], s...)
 </code></pre>
 
-For slices with large lengths (thousands of elements),
-the above way is more efficient than
+We can also use the following way:
 <pre class="disable-line-numbers111"><code class="language-go">sClone := make([]T, len(s))
 copy(sClone, s)
 </code></pre>
 
 <p>
-The second way has a drawback that
-if <code>s</code> is a nil slice, the second way results a non-nil clone.
+</p>
+
+The second way has a drawback that if <code>s</code> is a nil slice, the second way results a non-nil clone.
+However, in practice, we often needn't to pursue the perfection.
+If we do, then three more lines are needed:
+
+<pre class="disable-line-numbers111"><code class="language-go">var sClone []T
+if s != nil {
+	sClone := make([]T, len(s))
+	copy(sClone, s)
+}
+</code></pre>
+
+<p>
+Before Go Toolchain 1.15, for some common cases, the "append" way is
+<a href="https://github.com/go101/go101/wiki/How-to-efficiently-clone-a-slice%3F">much more efficient than</a>
+the "make+copy" way. However, since version 1.15, the "make+copy" way is specially optimzied by the
+official Go compiler so that this way is always more efficient than the "append" way.
 </p>
 
 </div>
