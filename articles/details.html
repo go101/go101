@@ -1899,8 +1899,10 @@ An example showing these differences:
 
 <pre class="line-numbers"><code class="language-go">package main
 
-import "fmt"
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 func main() {
 	type Book struct {page int}
@@ -1930,13 +1932,34 @@ func main() {
 </code></pre>
 
 <p>
-Note, if the two arguments of a <code>DeepEqual</code> call are both function values,
-then the call returns <code>true</code> only if the two function arguments are both nil and their types are identical.
 </p>
 
+Note, if the two arguments of a <code>DeepEqual</code> call are both function values,
+then the call returns <code>true</code> only if the two function arguments are both nil and their types are identical.
+It is similar to compare container values whose elements contain function values or compare struct values whose fields contain function values.
+But please also note that the result of comparing two slices (of the same type) is always <code>true</code> if the two slices exactly share
+the same elements (in other words, they have the same length and each pair of their corresponding elements have the same address).
+An example:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	a := [1]func(){func(){}}
+	b := a
+	fmt.Println(reflect.DeepEqual(a, a))       // false
+	fmt.Println(reflect.DeepEqual(a[:], a[:])) // true
+	fmt.Println(reflect.DeepEqual(a[:], b[:])) // false
+	a[0] = nil
+	fmt.Println(reflect.DeepEqual(a, a)) // true
+}
+</code></pre>
+
 <p>
-So, to compare values of a type by using <code>reflect.DeepEqual</code>,
-a programmer needs to understand the structure definition of the type well.
 </p>
 </div>
 
@@ -2325,6 +2348,37 @@ Remove element from list
 
 reflect: DeepEqual always returns true for unexported C structures in dynamic library
 https://github.com/golang/go/issues/38980
+
+
+https://twitter.com/dgryski/status/1302984936870223874
+An http.ResponseWriter will set the status to "200 Ok" if Write() is called before the status code is set explicitly with WriteHeader().
+If you call WriteHeader afterwards, the new status code is ignored but the server will log to stderr.
+Check your logs!
+
+
+...
+f is much faster than g, for f makes no allocations (optimized by Go Toolchain).
+	func f(x, y, z []byte){
+	  switch {
+	  case string(x) == string(y):
+	  case string(x) == string(z):
+	  }
+	}
+	func g(x, y, z []byte){
+	  switch string(x) {
+	  case string(y):
+	  case string(z):
+	  }
+	}
+
+func foo(buf []byte) {
+	f := func() {
+		type buf struct{} // mute buf in this block to avoid misusing it.
+		data := make([]byte, 100)
+		...
+	}
+}
+
 -->
 
 

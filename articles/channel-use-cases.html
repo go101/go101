@@ -135,7 +135,7 @@ func main() {
 <p>
 </p>
 
-In fact, for the above-specified example,
+In fact, for the above specified example,
 we don't need two channels to transfer results.
 Using one channel is okay.
 
@@ -609,9 +609,7 @@ each of binary semaphores can have at most one owner at any time.
 Counting semaphores are often used to enforce a maximum number of concurrent requests.
 </p>
 
-Like using channels as mutexes,
-there are also two manners to acquire one piece of ownership
-of a channel semaphore.
+Like using channels as mutexes, there are also two manners to acquire one piece of ownership of a channel semaphore.
 <ol>
 <li>
 	Acquire ownership through a send, release through a receive.
@@ -686,9 +684,9 @@ So it is best to create a customer goroutine only if there is an available seat.
 <pre class="line-numbers must-line-numbers"><code class="language-go">... // same code as the above example
 
 func (bar Bar) ServeCustomerAtSeat(c int, seat Seat) {
-	log.Print("customer#", c, " drinks at seat#", seat)
+	log.Print("++ customer#", c, " drinks at seat#", seat)
 	time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
-	log.Print("<- customer#", c, " frees seat#", seat)
+	log.Print("-- customer#", c, " frees seat#", seat)
 	bar <- seat // free seat and leave the bar
 }
 
@@ -712,11 +710,78 @@ func main() {
 
 <p>
 There will be at most about ten live customer goroutines
-coexisting in the above-optimized version.
+coexisting in the above optimized version (but there will still be
+a lots of customer goroutines to be created in the program lifetime).
 </p>
 
-The manner of acquiring ownership through sending is simpler comparatively.
-There is no step of placing seats.
+In a more efficient implementation shown below, at most
+ten customer serving goroutines will be created in the program lifetime.
+
+<pre class="line-numbers must-line-numbers"><code class="language-go">... // same code as the above example
+
+func (bar Bar) ServeCustomerAtSeat(consumers chan int) {
+	for c := range consumers {
+		seatId := <- bar
+		log.Print("++ customer#", c, " drinks at seat#", seatId)
+		time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
+		log.Print("-- customer#", c, " frees seat#", seatId)
+		bar <- seatId // free seat and leave the bar
+	}
+}
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+
+	bar24x7 := make(Bar, 10)
+	for seatId := 0; seatId < cap(bar24x7); seatId++ {
+		bar24x7 <- Seat(seatId)
+	}
+
+	consumers := make(chan int)
+	for i := 0; i < cap(bar24x7); i++ {
+		go bar24x7.ServeCustomerAtSeat(consumers)
+	}
+	
+	for customerId := 0; ; customerId++ {
+		time.Sleep(time.Second)
+		consumers <- customerId
+	}
+}
+</code></pre>
+
+Off-topic: surely, if we don't care about seat IDs (which is common in practice), then the <code>bar24x7</code> semaphore is not essential at all:
+
+<pre class="line-numbers must-line-numbers"><code class="language-go">... // same code as the above example
+
+func ServeCustomer(consumers chan int) {
+	for c := range consumers {
+		log.Print("++ customer#", c, " drinks at the bar")
+		time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
+		log.Print("-- customer#", c, " leaves the bar")
+	}
+}
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+
+	const BarSeatCount = 10
+	consumers := make(chan int)
+	for i := 0; i < BarSeatCount; i++ {
+		go ServeCustomer(consumers)
+	}
+	
+	for customerId := 0; ; customerId++ {
+		time.Sleep(time.Second)
+		consumers <- customerId
+	}
+}
+</code></pre>
+
+<p>
+</p>
+
+The manner of acquiring semaphore ownership through sending is simpler comparatively.
+The step of placing seats is not needed.
 
 <pre class="line-numbers must-line-numbers"><code class="language-go">package main
 

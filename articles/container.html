@@ -2328,7 +2328,7 @@ and <code>elements</code> is the slice whose elements are to be inserted.
 <pre class="line-numbers"><code class="language-go">// One-line implementation:
 s = append(s[:i], append(elements, s[i:]...)...)
 
-// A more efficient but more verbose way:
+// A much more efficient but more verbose way:
 if cap(s)-len(s) >= len(elements) {
 	s = s[:len(s)+len(elements)]
 	copy(s[i+len(elements):], s[i:])
@@ -2344,14 +2344,11 @@ if cap(s)-len(s) >= len(elements) {
 // Push:
 s = append(s, elements...)
 
-// Unshift:
+// Unshift (insert at the beginning):
 s = append(elements, s...)
 </code></pre>
 
 <p>
-The <code>make</code> call in the above code snippet clear the memory allocated for for slice <code>x</code>,
-this is actually an unnecessary operation for this specified use case.
-<a href="https://github.com/golang/go/issues/31592">Future compiler optimization</a> might remove the clear operation.
 </p>
 
 </div>
@@ -2374,13 +2371,19 @@ Assume the pushed or popped element is <code>e</code> and slice
 s, e = s[1:], s[0]
 // Pop back:
 s, e = s[:len(s)-1], s[len(s)-1]
-// Push front:
+// Push front
 s = append([]T{e}, s...)
 // Push back:
 s = append(s, e)
 </code></pre>
 
 <p>
+PLease note, using <code>append<code> to insert elements is often inefficient,
+for all the elements after the insertion postion need to be move backwards,
+and a larger space needs to be allocated to store all the elements if the free capacity is insufficient.
+These might be not serious problems for small slices, but for large slices,
+they often are. So if the number of the elements needing to be moved is large,
+it is best to use a linked list to do the insertions.
 </p>
 </div>
 

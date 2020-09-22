@@ -1,5 +1,11 @@
 
+### 1.15.b (2020/Sep/28)
 
+* desctibe more about [reflect.DeepEqual](https://gfw.go101.org/article/details.html#reflect-deep-equal) related details.
+
+### 1.15.a (2020/Aug/07)
+
+* point out that, since Go Toolchain 1.15, using make+copy to clone slices is always more efficient than using apeend to clone.
 
 ### 1.14.g (2020/Jun/12)
 
