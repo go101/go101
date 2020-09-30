@@ -392,6 +392,47 @@ Example:
 
 </div>
 
+<h4>About overflows</h4>
+
+<div>
+
+<p>
+Overflows are not allowed for typed constant values
+but are allowed for non-constant and untyped constant values,
+either the values are intermediate or final results.
+Overflows will be truncated (or wrapped around) for non-constant values,
+but overflows (for default types) on untyped constant value
+will not be truncated (or wrapped around).
+</p>
+
+Example:
+<pre class="line-numbers"><code class="language-go">// Results are non-constants.
+var a, b uint8 = 255, 1
+// Compiles ok, higher overflowed bits are truncated.
+var c = a + b  // c == 0
+// Compiles ok, higher overflowed bits are truncated.
+var d = a << b // d == 254
+
+// Results are untyped constants.
+const X = 0x1FFFFFFFF * 0x1FFFFFFFF // overflows int
+const R = 'a' + 0x7FFFFFFF          // overflows rune
+// The above two lines both compile ok, though the
+// two untyped value X and R both overflow their
+// respective default types.
+
+// Operation results or conversion results are
+// typed values. These lines all fail to compile.
+var e = X // error: untyped constant X overflows int
+var h = R // error: constant 2147483744 overflows rune
+const Y = 128 - int8(1)  // error: 128 overflows int8
+const Z = uint8(255) + 1 // error: 256 overflow uint8
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
 <h4>About the results of arithmetic operator operations</h4>
 
 <div>
@@ -535,47 +576,30 @@ var _ = 1.0 << m // error: shift of type float64
 
 <p>
 </p>
-</div>
 
-<h4>About overflows</h4>
+Another example:
 
-<div>
+<pre class="line-numbers"><code class="language-go">package main
 
-<p>
-Overflows are not allowed for typed constant values
-but are allowed for non-constant and untyped constant values,
-either the values are intermediate or final results.
-Overflows will be truncated (or wrapped around) for non-constant values,
-but overflows (for default types) on untyped constant value
-will not be truncated (or wrapped around).
-</p>
+const n = uint(8)
+var m = uint(8)
 
-Example:
-<pre class="line-numbers"><code class="language-go">// Results are non-constants.
-var a, b uint8 = 255, 1
-// Compiles ok, higher overflowed bits are truncated.
-var c = a + b  // c == 0
-// Compiles ok, higher overflowed bits are truncated.
-var d = a << b // d == 254
+func main() {
+	println(a, b) // 2 0
+}
 
-// Results are untyped constants.
-const X = 0x1FFFFFFFF * 0x1FFFFFFFF // overflows int
-const R = 'a' + 0x7FFFFFFF          // overflows rune
-// The above two lines both compile ok, though the
-// two untyped value X and R both overflow their
-// respective default types.
+var a byte = 1 << n / 128
+var b byte = 1 << m / 128
+</code></pre>
 
-// Operation results or conversion results are
-// typed values. These lines all fail to compile.
-var e = X // error: untyped constant X overflows int
-var h = R // error: constant 2147483744 overflows rune
-const Y = 128 - int8(1)  // error: 128 overflows int8
-const Z = uint8(255) + 1 // error: 256 overflow uint8
+The above program prints <code>2 0</code>, because the last two lines are eqivalent to
+
+<pre class="line-numbers"><code class="language-go">var a = byte(int(1) << n / 128)
+var b = byte(1) << m / 128
 </code></pre>
 
 <p>
 </p>
-
 </div>
 
 <h4>About integer division and remainder operations</h4>

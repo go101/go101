@@ -754,7 +754,7 @@ try to avoid using large-sized types as
 * interface dynamic types: don't use string or large size values as error
 * channel element types
 
-define exported error values as constants, or maybe can make use of declared function values
+define exported error values as constants,
 
 import "sync"
 type T struct {
@@ -768,9 +768,9 @@ func main() {
 the current standard runtime implemention is not friendly when physics memory are not enough.
 machine will lag and hang and non-interactive.
 Often in devloping, buggy bare loop will cause such cases.
-Use "for range [N]struct{}{}" instead.
+Use "for range [N]struct{}{}" instead, where N is safe max count the real loop steps will not exceed.
 
-add content to the efficiently slice clone item (also keep the wiki links)
+
 
 don't use == to compare two reflect.Value values, compare v1.Interface() and v2.Interface() instead (move to reflection article and tips)
 
@@ -830,10 +830,14 @@ avoid using the http.Get, ..., functions directly.
 
 setting GOMAXPROCS with a value larger than NumCPUs is good for the performance of a program sometimes
 https://news.ycombinator.com/item?id=18350362^
+higher GOMAXPROCS > numCPU might be good for performance sometimes:
+https://groups.google.com/forum/#!msg/golang-nuts/jPb_h3TvlKE/qdoHhxXeAwAJ
 
 simulate subPackages (not work for exported types)
 	package foo / import "a.b/foo"
-	type _SubPkg struct{}
+	type _SubPkg struct{
+		FakeExportedVariable int
+	}
 	var SubPkg _SubPkg
 	func (SubPkg_) FunctionX()
 	func (SubPkg_) FunctionY()
@@ -898,8 +902,7 @@ code should panic on fsync error (at least at present):
 
 map[k]*[]int is better than map[k][]T if map element modificaiton is frequent?
 
-higher GOMAXPROCS > numCPU might be good for performance sometimes:
-https://groups.google.com/forum/#!msg/golang-nuts/jPb_h3TvlKE/qdoHhxXeAwAJ
+
 
 https://golang.org/doc/go1.14#runtime
 	A consequence of the implementation of preemption is that on Unix systems, 
@@ -920,6 +923,9 @@ https://news.ycombinator.com/item?id=24338758
 use `GODEBUG=netdns=cgo`  on Linux if dns resolving is very frequently.
 https://golang.org/pkg/net/
 
+
+clear most fields of a struct value of T, which has many fields
+	v = T{Keeped1: v.Keeped1, Keeped2: v.Keeped2}
 
 -->
 
