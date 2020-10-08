@@ -808,7 +808,58 @@ func main() {
 
 </div>
 
-<!--
-https://github.com/golang/go/issues/27451
--->
+<a class="anchor" id="code-block-following-else"></a>
+<h3><code>else</code> keyword followed by a code block</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+The <code>else</code> keyword must be followed by an explicit code block <code>{...}</code>.
+</div>
+
+Sugar:
+<div class="alert alert-success">
+The <code>else</code> keyword may be followed by a <code>if</code> code block (which is implicit).
+</div>
+
+For example, in the following code, function <code>foo</code> compiles okay, but function <code>bar</code> doesn't.
+<pre class="line-numbers"><code class="language-go">func f() []int {
+	return nil
+}
+
+func foo() {
+	if vs := f(); len(vs) == 0 {
+	} else if len(vs) == 1 {
+	}
+
+	if vs := f(); len(vs) == 0 {
+	} else {
+		switch {
+		case len(vs) == 1:
+		default:
+		}
+	}
+	
+	if vs := f(); len(vs) == 0 {
+	} else {
+		for _, _ = range vs {
+		}
+	}
+}
+
+func bar() {
+	if vs := f(); len(vs) == 0 {
+	} else switch { // error
+	case len(vs) == 1:
+	default:
+	}
+	
+	if vs := f(); len(vs) == 0 {
+	} else for _, _ = range vs { // error
+	}
+}
+</code></pre>
+
+</div>
+
 
