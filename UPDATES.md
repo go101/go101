@@ -6,7 +6,7 @@
 
 ### 1.15.a (2020/Aug/07)
 
-* point out that, since Go Toolchain 1.15, using make+copy to clone slices is always more efficient than using apeend to clone.
+* point out that, since Go Toolchain 1.15, using make+copy to clone slices is always more efficient than using append to clone.
 
 ### 1.14.g (2020/Jun/12)
 
