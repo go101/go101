@@ -143,6 +143,7 @@ func main() {
 </code></pre>
 
 <p>
+The above example also shows how to (indrectly) get a <code>reflect.Type</code> value which represents an interface type.
 </p>
 
 We can get all of the field types (of a struct type) and the method information of a type through reflection.
@@ -154,52 +155,62 @@ import "fmt"
 import "reflect"
 
 type F func(string, int) bool
-func (f F) Validate(s string) bool {
+func (f F) m(s string) bool {
 	return f(s, 32)
 }
+func (f F) M() {}
+
+type I interface{m(s string) bool; M()}
 
 func main() {
 	var x struct {
-		N int
-		f F
+		F F
+		i I
 	}
 	tx := reflect.TypeOf(x)
 	fmt.Println(tx.Kind())        // struct
 	fmt.Println(tx.NumField())    // 2
-	fmt.Println(tx.Field(1).Name) // f
-	tf := tx.Field(1).Type
-	fmt.Println(tf.Kind())               // func
-	fmt.Println(tf.IsVariadic())         // false
-	fmt.Println(tf.NumIn(), tf.NumOut()) // 2 1
-	fmt.Println(tf.NumMethod())          // 1
-	fmt.Println(tf.Method(0).Name)       // Validate
-	ts, ti, tb := tf.In(0), tf.In(1), tf.Out(0)
-	// The next line prints: string int bool
-	fmt.Println(ts.Kind(), ti.Kind(), tb.Kind())
-
+	fmt.Println(tx.Field(1).Name) // i
 	// Package path is an intrinsic property of
 	// non-exported selectors (fields or methods).
 	fmt.Println(tx.Field(0).PkgPath) // 
 	fmt.Println(tx.Field(1).PkgPath) // main
+
+	tf, ti := tx.Field(0).Type, tx.Field(1).Type
+	fmt.Println(tf.Kind())               // func
+	fmt.Println(tf.IsVariadic())         // false
+	fmt.Println(tf.NumIn(), tf.NumOut()) // 2 1
+	t0, t1, t2 := tf.In(0), tf.In(1), tf.Out(0)
+	// The next line prints: string int bool
+	fmt.Println(t0.Kind(), t1.Kind(), t2.Kind())
+
+	fmt.Println(tf.NumMethod(), ti.NumMethod()) // 1 2
+	fmt.Println(tf.Method(0).Name)              // M
+	fmt.Println(ti.Method(1).Name)              // m
+	_, ok1 := tf.MethodByName("m")
+	_, ok2 := ti.MethodByName("m")
+	fmt.Println(ok1, ok2) // false true
 }
 </code></pre>
 
-
-Note,
+From the above example, we could find that,
 <ol>
 <li>
-	the <code>reflect.Type.NumMethod</code> only returns the number of exported methods (including implicitly declared ones) of a type.
+	for non-interface types, the <code>reflect.Type.NumMethod</code> only returns the number of exported methods
+    (including implicitly declared ones) of a type.
 	We are unable to get the information of a non-exported method by using the <code>reflect.Type.MethodByName</code> method.
+    For interface types, the limits don't exist (the docs of the two methods was inaccurate before Go 1.16).
+    Such situation also applies to the corresponding methods of the <code>reflect.Value</code> type introduced in the next section.
 </li>
 <li>
-	Although a <code>reflect.Type.NumField</code> method call returns the number of all fields (including non-exported ones) of a struct type,
-	it is <a href="https://golang.org/pkg/reflect/#pkg-note-BUG">not a good idea</a> to
+	although a <code>reflect.Type.NumField</code> method call returns the number of all fields (including non-exported ones)
+    of a struct type, it is <a href="https://golang.org/pkg/reflect/#pkg-note-BUG">not a good idea</a> to
 	use the <code>reflect.Type.FieldByName</code> method to get the information of a non-exported field.
 </li>
 </ol>
 
 <a class="anchor" id="struct-field-tag"></a>
-We can <a href="https://golang.org/pkg/reflect/#StructTag">inspect struct field tags through reflection</a>.
+We may <a href="https://golang.org/pkg/reflect/#StructTag">inspect struct field tags through reflection</a>.
 The types of struct field tags are <code>reflect.StructTag</code>, which has two methods, <code>Get</code> and <code>Lookup</code>.
 An example of inspecting struct field tags:
 

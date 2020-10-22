@@ -7,7 +7,8 @@ import (
 )
 
 var redirectPages = map[string]string{
-	"go-sdk.html": "go-toolchain.html",
+	"go-sdk.html":    "go-toolchain.html",
+	"tool-gold.html": "tool-golds.html",
 }
 
 func (go101 *Go101) RedirectArticlePage(w http.ResponseWriter, r *http.Request, file string) bool {
