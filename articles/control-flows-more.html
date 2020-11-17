@@ -328,7 +328,7 @@ Later, we will learn more operations which will make goroutines enter blocking s
 <p>
 Not all goroutines in running state are being executed at a given time.
 At any given time, the maximum number of goroutines being executed will
-not exceed the number of the logical CPUs available for the current program.
+not exceed the number of logical CPUs available for the current program.
 We can call the <a href="https://golang.org/pkg/runtime/#NumCPU"><code>runtime.NumCPU</code></a>
 function to get the number of logical CPUs available for the current program.
 Each logical CPU can only execute one goroutine at any given time.
@@ -409,7 +409,7 @@ After a function call <code>fc(...)</code> returns and enters its
 <a href="function-declarations-and-calls.html#exiting-phase">exiting phase</a>,
 all the deferred function calls pushed in the function call (<code>fc...</code>)
 (which has not exited yet) will be executed,
-by their inverse order being pushed into the defer-call stack.
+in first-in, last-out order, that is, the reverse of the order in which they were pushed into the defer-call stack.
 Once all these deferred calls are executed,
 the function call <code>fc(...)</code> exits.
 </p>
@@ -505,21 +505,6 @@ func main() {
 }
 </code></pre>
 </div>
-
-<h3>The Necessary and Benefits of the Deferred Function Feature</h3>
-
-<p>
-In the above examples, the deferred function calls are not absolutely necessary.
-However, the deferred function call feature is a necessary feature for the
-panic and recover mechanism which will be introduced below.
-</p>
-
-<p>
-Deferred function calls can also help us write cleaner and more robust code.
-We can read more code examples by using deferred function calls
-and learn more details on deferred function calls in the article
-<a href="defer-more.html">more about deferred functions</a> later.
-</p>
 
 <a class="anchor" id="argument-evaluation-moment"></a>
 <h3>The Evaluation Moment of the Arguments of Deferred and Goroutine Function Calls</h3>
@@ -640,6 +625,23 @@ to do synchronizations in formal projects.
 </p>
 
 </div>
+
+<h3>The Necessity of the Deferred Function Feature</h3>
+
+<p>
+In the above examples, the deferred function calls are not absolutely necessary.
+However, the deferred function call feature is a necessary feature for the
+panic and recover mechanism which will be introduced below.
+</p>
+
+<p>
+Deferred function calls can also help us write cleaner and more robust code.
+We can read more code examples that make use of deferred function calls
+and learn more details on deferred function calls in the article
+<a href="defer-more.html">more about deferred functions</a> later. For now,
+we will explore the importance of deferred functions for panic and recovery.
+</p>
+
 
 <a class="anchor" id="panic-recover"></a>
 <h3>Panic and Recover</h3>
@@ -788,11 +790,10 @@ in later Go 101 articles.
 </p>
 
 <p>
-Generally, panics are used for logic errors, such as human careless errors.
-Logic errors are the errors which should never happen at run time.
-If they are happen, there must be bugs in the code.
-On the other hand, non-logic errors are the errors
-which are hard to absolutely avoid at run time.
+Generally, panics are used for logic errors, such as careless human errors.
+Logic errors should never happen at run time.
+If they happen, there must be bugs in the code.
+On the other hand, non-logic errors are hard to absolutely avoid at run time.
 In other words, non-logic errors are errors happening in reality.
 Such errors should not cause panics and should be explicitly returned and handled properly.
 </p>
