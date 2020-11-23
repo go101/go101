@@ -41,8 +41,8 @@ var gogetInfos = map[string]GoGetInfo{
 	"gold": {
 		SubPackage:      "",
 		RootPackage:     "go101.org/gold",
-		GoGetSourceRepo: "https://github.com/go101/golds",
-		GoDocSourceRepo: "https://github.com/go101/golds",
+		GoGetSourceRepo: "https://github.com/go101/gold",
+		GoDocSourceRepo: "https://github.com/go101/gold",
 	},
 	"golds": {
 		SubPackage:      "",
