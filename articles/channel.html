@@ -513,7 +513,8 @@ both of the following two steps will be performed by the following order.
 	each of them will produce a panic for sending on a closed channel.
 	This is the reason why we should avoid concurrent send and close operations on the same channel.
 	In fact, when the data race detector option (<code>-race</code>) is enabled,
-    the standard Go compiler might be very possible to report data racing for concurrent send and close operation cases.
+    the standard Go compiler might be able to detect data racing for concurrent send and close operation cases,
+    and give a compile-time warning.
 </li>
 </ol>
 
@@ -561,7 +562,7 @@ According to the explanations listed above, we can get some facts about the inte
 <ul>
 <li>
 	If the channel is closed,
-	both of its sending goroutine queue and receiving goroutine queue must be empty,
+	both its sending goroutine queue and receiving goroutine queue must be empty,
 	but its value buffer queue may not be empty.
 </li>
 <li>
@@ -574,12 +575,12 @@ According to the explanations listed above, we can get some facts about the inte
 </li>
 <li>
 	If the channel is buffered, then at any time,
-	one of its sending goroutine queue and receiving goroutine queue must be empty.
+	at least one queue must be empty (either the sending goroutine queue, the receiving goroutine queue, or both).
 </li>
 <li>
-	If the channel is unbuffered, then at any time, generally
+	If the channel is unbuffered, most of the time 
 	one of its sending goroutine queue and the receiving goroutine queue must be empty,
-	but with an exception that a goroutine may be pushed into both of
+	but the exception that a goroutine may be pushed into both of
 	the two queues when executing a
 	<a href="#select"><code>select</code> control flow code block</a>.
 </li>
@@ -590,7 +591,7 @@ According to the explanations listed above, we can get some facts about the inte
 
 <div>
 <p>
-Let's view some examples which use channels to enhance the understanding by reading the last section.
+Now that you've read the above section, let's view some examples which use channels to enhance your understanding.
 </p>
 
 A simple request/response example.
@@ -740,12 +741,12 @@ to avoid a large value copy cost.
 Note, a channel is referenced by all the goroutines in either
 the sending or the receiving goroutine queue of the channel,
 so if neither of the queues of the channel is empty,
-the channel will not be garbage collected for sure.
+the channel cannot be garbage collected.
 On the other hand, if a goroutine is blocked and stays in either
 the sending or the receiving goroutine queue of a channel,
-then the goroutine will also not be garbage collected for sure,
+then the goroutine also cannot be garbage collected,
 even if the channel is referenced only by this goroutine.
-In fact, a goroutine can be only garbage collected when it has already exited.
+In fact, a goroutine can only be garbage collected when it has already exited.
 </p>
 
 <h3>Channel Send and Receive Operations Are Simple Statements</h3>
@@ -801,9 +802,8 @@ func main() {
 The <code>for-range</code> control flow code block applies to channels.
 The loop will try to iteratively receive the values sent to a channel,
 until the channel is closed and its value buffer queue becomes blank.
-Unlike the <code>for-range</code> syntax on arrays, slices and maps,
-most one iteration variable, which is used to store the received values,
-is allowed to be present in the <code>for-range</code> syntax on channels.
+With <code>for-range</code> syntax on arrays, slices and maps, multiple variables are allowed.
+For <code>for-range</code> blocks applied to channels, you can use at most one iteration variable, which is used to store the received values.
 
 <pre class="line-numbers"><code class="language-go">for v := range aChannel {
 	// use v
@@ -863,12 +863,12 @@ But there are also some obvious differences between them.
 	Later, a channel operation following a <code>case</code> keyword will be called a <code>case</code> operation.
 </li>
 <li>
-	In case of there are some non-blocking <code>case</code> operations,
+	If there are multiple non-blocking <code>case</code> operations,
 	Go runtime will <b>randomly select one of them to execute</b>,
 	then continue to execute the corresponding <code>case</code> branch.
 </li>
 <li>
-	In case of all the <code>case</code> operations
+	If the <code>case</code> operations
 	in a <code>select-case</code> code block are blocking operations,
 	the <code>default</code> branch will be selected to execute
 	if the <code>default</code> branch is present.
@@ -978,7 +978,7 @@ There are several steps to execute a <code>select-case</code> block:
 <li>
 	evaluate all involved channel expressions and value expressions to be potentially sent in <code>case</code> operations,
 	from top to bottom and left to right.
-	Destination values for receive operations (as source values) in assignments needn't to be evaluated at this time.
+	Destination values for receive operations (as source values) in assignments needn't be evaluated at this time.
 </li>
 <li>
 	randomize the branch orders for polling in step <i>5</i>.
@@ -1072,10 +1072,10 @@ From the implementation, we know that
 	receiving goroutine queue of the same channel at the same time.
 </li>
 <li>
-	when a goroutine being blocked at a <code>select-case</code> code block gets resumed later,
+	when a goroutine currently being blocked at a <code>select-case</code> code block gets resumed later,
 	it will be removed from all the sending goroutine queues
-	and the receiving goroutine queues of every channels
-	involved in the channel operations followed <code>case</code> keywords
+	and the receiving goroutine queues of all channel
+	involved in the channel operations following <code>case</code> keywords
 	in the <code>select-case</code> code block.
 </li>
 </ul>
