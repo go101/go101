@@ -513,8 +513,8 @@ both of the following two steps will be performed by the following order.
 	each of them will produce a panic for sending on a closed channel.
 	This is the reason why we should avoid concurrent send and close operations on the same channel.
 	In fact, when the data race detector option (<code>-race</code>) is enabled,
-    the standard Go compiler might be able to detect data racing for concurrent send and close operation cases,
-    and give a compile-time warning.
+  a <code>go test -race mypkg </code> might be able to detect data racing for concurrent send and close operation cases,
+  and give a runtime warning. For more, see the <a href="https://golang.org/doc/articles/race_detector.html">golang race detector docs</a>.
 </li>
 </ol>
 
@@ -575,7 +575,7 @@ According to the explanations listed above, we can get some facts about the inte
 </li>
 <li>
 	If the channel is buffered, then at any time,
-	at least one queue must be empty (either the sending goroutine queue, the receiving goroutine queue, or both).
+	at least one queue must be empty (out of the sending goroutine queue, the value buffer queue, and the receiving goroutine queue).
 </li>
 <li>
 	If the channel is unbuffered, most of the time 
@@ -803,7 +803,7 @@ The <code>for-range</code> control flow code block applies to channels.
 The loop will try to iteratively receive the values sent to a channel,
 until the channel is closed and its value buffer queue becomes blank.
 With <code>for-range</code> syntax on arrays, slices and maps, multiple iteration variables are allowed.
-For <code>for-range</code> blocks applied to channels, you can use at most one iteration variable, which is used to store the received values.
+However, for <code>for-range</code> blocks applied to channels, you can use at most one iteration variable, which is used to store the received values.
 
 <pre class="line-numbers"><code class="language-go">for v := range aChannel {
 	// use v
@@ -863,12 +863,12 @@ But there are also some obvious differences between them.
 	Later, a channel operation following a <code>case</code> keyword will be called a <code>case</code> operation.
 </li>
 <li>
-	If there are multiple non-blocking <code>case</code> operations,
-	Go runtime will <b>randomly select one of them to execute</b>,
+	If there is one or more non-blocking <code>case</code> operation,
+	Go runtime will <b>randomly select one of these non-blocking operatons to execute</b>,
 	then continue to execute the corresponding <code>case</code> branch.
 </li>
 <li>
-	If the <code>case</code> operations
+	If all the <code>case</code> operations
 	in a <code>select-case</code> code block are blocking operations,
 	the <code>default</code> branch will be selected to execute
 	if the <code>default</code> branch is present.
