@@ -203,7 +203,7 @@ exception: https://github.com/golang/go/issues/8560
 No. <a href="https://golang.org/ref/spec#For_range">Go 1 specification</a>
 says the iteration order over a map is not specified and
 is not guaranteed to be the same from one iteration to the next.
-For the standard Go compiler, the map iteration orders are some randomized.
+For the standard Go compiler, the map iteration orders are sometimes randomized.
 If you require a stable iteration order for a map you must maintain the order by yourself.
 Please read <a href="https://blog.golang.org/go-maps-in-action#TOC_7.">Go maps in action</a> for more information.
 </p>
@@ -285,7 +285,7 @@ https://github.com/golang/go/issues/9401
 <p>
 In the current standard Go runtime implementation,
 if a memory block is referenced by at least one active pointer,
-then the memory block will not be viewed as garbage and will not be collected for sure.
+then the memory block will not be viewed as garbage and will never be collected.
 </p>
 
 <p>
@@ -299,7 +299,7 @@ the other allocated memory block will not get garbage collected, which may cause
 </p>
 
 <p>
-To avoid the problems, the standard Go compiler will ensure that taking the address of
+To avoid these kinds of memory leak problems, the standard Go compiler will ensure that taking the address of
 the final field in a non-zero-sized struct will never return an address which is beyond
 the allocated memory block for the struct.
 The standard Go compiler implements this by padding some bytes after the final zero-sized field
@@ -342,8 +342,8 @@ func main() {
 </h3>
 
 <p>
-Generally we can think so, though there would some subtle differences between the two, depending on compiler implementations.
-The memory block allocated by <code>new</code> may be either on stack or on heap.
+Generally we can think so, though there may be some subtle differences between the two, depending on compiler implementations.
+The memory block allocated by <code>new</code> may be either on stack or on heap. See further discussion in <a href="https://stackoverflow.com/questions/10866195/stack-vs-heap-allocation-of-structs-in-go-and-how-they-relate-to-garbage-collec">this stack overflow question</a>.
 </p>
 
 <a class="anchor" id="fatal-error-deadlock"></a>
@@ -526,23 +526,23 @@ nil pointers are not zero in memory.
 
 <a class="anchor" id="function-inline"></a>
 <h3>
-	Does the standard Go compiler support function inline?
+	Does the standard Go compiler support inline functions?
 </h3>
 
 <p>
-Yes, the standard Go compiler supports function inline.
-The compiler will automatically inline some very short functions which satisfying some requirements.
+Yes, the standard Go compiler supports inline functions.
+The compiler will automatically inline some very short functions which satisfy certain requirements.
 The specific inline requirements may change from version to version.
 </p>
 
 <div>
-Currently (Go Toolchain 1.15), for the standard Go compiler,
+Currently (Go Toolchain 1.15), for the standard Go compiler:
 <ul>
-<li>there is no explicit ways to specify which functions should be inlined in user programs.</li>
-<li>although <code>-gcflags "-l"</code> build option can prevent any functions being inline,
-	there are not formal ways to avoid specified functions being inline in user programs.
+<li>There are no explicit ways to specify which functions should be inlined in user programs.</li>
+<li>The <code>-gcflags "-l"</code> build option disables inlining globally, which will prevent all functions from being inline expanded.
+<li>In user programs, there are not formal ways to prevent inlining of particular functions.
 	You can add a line <code>//go:noinline</code> directive before a function declaration to
-	avoid the function being inline now, but this way is not guaranteed to work in the future.
+	avoid the function being inlined now, but this way is not guaranteed to work in the future.
 </li>
 </ul>
 </div>
@@ -562,15 +562,15 @@ So you shouldn't rely on finalizers for your program correctness.
 </p>
 
 <p>
-The main intention of finalizers is for libraries maintainers to
-make extra efforts to remedy the damage caused by libraries users don't use the
-libraries correctly. For example, in a program, if we use the <code>os.Open</code> to open
-many files but forget to close them after using them, then the program
-will hold many file descriptors until the program exits. This is resource leak.
+The main intention of finalizers is to allow the maintainers of a library to
+compensate for problems caused by incorrect library use.
+For example, if a programmer uses <code>os.Open</code> to open
+many files but forgets to close them after using them, then the program
+will hold many file descriptors until the program exits. This is a classic example of resource leak.
 To avoid the program holding too many file descriptors, the maintainers of the
 <code>os</code> package will set a finalizer on the every created <code>os.File</code>
 object. The finalizer will close the file descriptor stored in the <code>os.File</code>
-object. As above mentioned, the finalizers are not guaranteed to be called.
+object. As mentioned above, the finalizers are not guaranteed to be called.
 They are just used to make the extent of resource leak as small as possible.
 </p>
 
@@ -587,11 +587,11 @@ to get more details.
 
 <a class="anchor" id="get-days-of-month"></a>
 <h3>
-	How to get the number of days of any month by using as few code lines as possible?
+	How to get the number of days of any month in as few lines as possible?
 </h3>
 
 <div>
-Assume the input year is a nature year and the input month is also a nature month (January is 1).
+Assume the input year and month are from the Gregorian Calendar (January is 1).
 <pre class="disable-line-numbers111"><code class="language-go">days := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
 </code></pre>
 For Go time APIs, the usual month range is <code>[1, 12]</code> and the start day of each month is <code>1</code>.
@@ -716,7 +716,7 @@ only if both of (the concrete values of) the two adjacent arguments are not stri
 </p>
 
 <p>
-Another difference is <code>fmt.Println</code> will write
+Another difference is that <code>fmt.Println</code> will write
 a newline character in the end,
 but the <code>fmt.Print</code> function will not.
 </p>
@@ -759,12 +759,12 @@ there are some other differences between the three sets of functions.
 <ol>
 <li>
 	The built-in <code>print</code>/<code>println</code> functions
-	will write to the standard error.
+	will write to standard error.
 	The print functions in the <code>fmt</code> standard package
-	will write to the standard output.
+	will write to standard output.
 	The print functions in the <code>log</code> standard package
-	will write to the standard error by default,
-	whereas which can be configured through the
+	will write to standard error by default,
+	though this can be changed using the
 	<code>log.SetOutput</code> function.
 
 </li>
@@ -825,7 +825,7 @@ have been added since Go 1.10.
 </p>
 
 <p>
-Before Go 1.10, there is a long time in
+Before Go 1.10, much time and effort was spent 
 <a href="https://github.com/golang/go/issues/4594">disputing</a> whether or not
 the <code>math.Round</code> function should be added to standard package or not.
 In the end, the proposal is adopted.
@@ -866,7 +866,7 @@ their values can be compared to the bare <code>nil</code> identifier.
 </li>
 <li>
 <a href="interface.html#comparison">comparing two interface values</a>
-with will panic at run time if the two dynamic types of the two interface values
+with <code>==</code> will panic at run time if the two dynamic types of the two interface values
 are identical and incomparable.
 </li>
 </ul>
@@ -961,7 +961,7 @@ to the other.
 The reasons for the underlying types of <code>[]T1</code> and <code>[]T2</code> are not same are:
 <ul>
 <li>the request of converting values of <code>[]T1</code> and <code>[]T2</code> to each other is not strong in practice.</li>
-<li>to make <a href="type-system-overview.html#underlying-type">underlying type tracing rule</a> simpler.</li>
+<li>to make the <a href="type-system-overview.html#underlying-type">underlying type tracing rules</a> simpler.</li>
 </ul>
 
 <p>
@@ -996,11 +996,11 @@ func main() {
 
 <a class="anchor" id="unaddressable-values"></a>
 <h3>
-	Which values can and which values can't be taken addresses?
+	Which values can and which values can't have their addresses taken?
 </h3>
 
 <div>
-Following values can't be taken addresses:
+You can't take the address of the following values:
 <ul>
 <li>bytes in strings</li>
 <li>map elements</li>
@@ -1028,13 +1028,13 @@ Following values can't be taken addresses:
 <div class="alert alert-success">
 Please note, there is a syntax sugar, <code>&amp;T{}</code>, in Go.
 It is a short form of <code>tmp := T{}; (&amp;tmp)</code>.
-So <code>&amp;T{}</code> is legal doesn't mean
-the literal <code>T{}</code> is addressable.
+However, though <code>&amp;T{}</code> is legal, 
+the literal <code>T{}</code> is still not addressable.
 </div>
 <p></p>
 
 <div>
-Following values can be taken addresses:
+Following values can have their addresses taken:
 <ul>
 <li>variables</li>
 <li>fields of addressable structs</li>
@@ -1051,24 +1051,25 @@ Following values can be taken addresses:
 </h3>
 
 <p>
-In Go, a map is designed as a container which can contain unlimited number of entries if memory is available.
-And, in the official Go runtime implementation, to ensure good map element indexing efficiency,
-each map value only maintains one continuous memory segment for the entire entries stored in that map.
-Therefor, Go runtime needs to allocate larger memory segments for a map from time to time
-when there are more and more entries being put into the map.
+The first reason is that it would conflict with maps' internal memory management process.
+In Go, a map is designed as a container which can contain an unlimited number of entries if memory is available.
+To ensure good map element indexing efficiency, in the official Go runtime implementation 
+each map value only maintains one continuous memory segment for the entirety of entries stored in that map.
+Therefore, Go runtime needs to allocate larger memory segments for a map from time to time
+when more and more entries are being put into the map.
 In the process, the entries stored on older memory segments will be moved to newer memory segments.
-There might be also some other reasons causing entry memory movements.
+There might be also some other reasons causing memory movements of entries.
 In other words, the addresses of map elements will change from time to time on need.
-If map elements are allowed to be taken addresses, then when some map entries are moved,
-Go runtime must update all pointers which are storing the addresses of the moved elements,
-which brings many difficulties in implemnting Go compilers and runtimes and decreases Go program running performance much.
-So, currently, map elements are disallowed to be taken addresses. 
+If map elements are allowed to have their addresses taken, then when some map entries are moved,
+Go runtime would have to update all pointers which are storing the addresses of the moved elements,
+which brings many difficulties in implementing Go compilers and runtimes and greatly decreases execution performance.
+So, currently, map elements cannot have their addresses taken. 
 </p>
 
 <p>
-Another reason why map elements are unaddressable is the map index expression <code>aMap[key]</code> might
+Secondly, the map index expression <code>aMap[key]</code> might
 return an element stored in map <code>aMap</code> or not, which means <code>aMap[key]</code> might still result
-a zero value after <code>(&amp;aMap[key]).Modify()</code> is called. This will confuse many people.
+in a zero value after <code>(&amp;aMap[key]).Modify()</code> is called. This would confuse many people.
 </p>
 
 <a class="anchor" id="slice-elements-always-addressable"></a>
@@ -1108,25 +1109,39 @@ However, I can't make sure whether this is guaranteed by Go specification or not
 </h3>
 
 <div>
-In Go, for convenience,
-<ul>
-<li>
-	a value of type <code>T</code> can call methods defined on type <code>*T</code>,
-	but only if the value of <code>T</code> are addressable.
-	Compilers will take the address of the <code>T</code> value automatically
-	before calling the pointer receiver methods.
-	For not any values of type <code>T</code> are addressable,
-	not any values of type <code>T</code> are capable of calling methods defined on type <code>*T</code>.
-	This convenience is just a sugar, not an intrinsic rule.
-</li>
-<li>
-	a value of type <code>*T</code>  can always call methods defined on type <code>T</code>.
-	This is because it is always legal to dereference a pointer value.
-	This convenience is not only a sugar, but also an intrinsic rule.
-</li>
-</ul>
+  <p>
+    Both of these situations involve sugaring, but only one is an intrinsic rule.
+  </p>
+  <ul>
+    <li>
+  <p>
+    A value of type <code>T</code> can call methods defined on type <code>*T</code>,
+    but only if the values of <code>T</code> are addressable.
+  </p>
+  <p>
+    Compilers will take the address of the <code>T</code> value automatically
+    before calling the pointer receiver methods.
+    Because type <code>T</code> can have values that are not addressable,
+    not all values of type <code>T</code> are capable of calling methods defined on type <code>*T</code>.
+  </p>
+  <p>
+  <b>This convenience is just a sugar, not an intrinsic rule.</b>
+  </p>
+    </li>
+  <li>
+  <p>
+    A value of type <code>*T</code>  can always call methods defined on type <code>T</code>.
+  </p>
+  <p>
+    This is because it is always legal to dereference a pointer value.
+  </p>
+  <p>
+  <b>This convenience is not only a sugar, but also an intrinsic rule.</b>
+  </p>
+  </li>
+  </ul>
 <p>
-So it is much reasonable that the method set of <code>*T</code> is always
+So, it makes sense that the method set of <code>*T</code> is always
 a super set of the method set of <code>T</code>, but not vice versa.
 </p>
 </div>
@@ -1301,7 +1316,7 @@ func demo(newP *T) {
 </code></pre>
 
 <p>
-Yes, now it is much verbose to use the pointer atomic functions.
+Yes, now it is very verbose to use the pointer atomic functions.
 </p>
 </div>
 
@@ -1317,6 +1332,7 @@ Iota is the ninth letter of the Greek alphabet.
 In Go, <code>iota</code> is used in constant declarations.
 In each constant declaration group, its value is <code>N</code>
 in the <b><i>N</i></b>th constant specification in that constant declaration group.
+This allows for easy <a href="https://golang.org/ref/spec#Iota">declaration of related constants</a>.
 </div>
 
 <a class="anchor" id="check-if-channels-closed"></a>
@@ -1325,10 +1341,10 @@ in the <b><i>N</i></b>th constant specification in that constant declaration gro
 </h3>
 
 <p>
-The reason is the usefulness of such function is very limited.
+The reason is that the usefulness of such function would be very limited, while the potential for misuse is high.
 The return result of a call to such function may be not able to
 reflect the latest status of the input channel argument.
-So it is not a good idea to make decisions relying on the return result.
+So, it is not a good idea to make decisions relying on the return result.
 </p>
 
 <p>
@@ -1349,8 +1365,8 @@ Yes, it is absolutely safe in Go.
 <p>
 Go compilers which support stack will do escape analysis.
 For the standard Go compiler, if the escape analyzer thinks a memory block
-will only be used in current function call for sure, it will allocate the
-memory block on stack, otherwise, then the memory block will be allocated on heap.
+will only be used in the current function call for sure, it will allocate the
+memory block on stack. If not, the memory block will be allocated on the heap.
 Please read <a href="memory-block.html">memory block</a> for more information.
 </p>
 
@@ -1360,8 +1376,8 @@ Please read <a href="memory-block.html">memory block</a> for more information.
 </h3>
 
 <p>
-In Go community, a <b><i>gopher</i></b> means a Go programmer.
-This nickname may be originated from the fact that Go language
+In the Go community, a <b><i>gopher</i></b> means a Go programmer.
+This nickname may originate from the fact that Go language
 adopted <a href="https://blog.golang.org/gopher">a cartoon gopher</a> as the mascot.
 BTW, the cartoon gopher is designed by <i>Renee French</i>,
 who is the wife of the (first) Go project leader, <i>Rob Pike</i>.
