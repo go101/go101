@@ -203,7 +203,7 @@ exception: https://github.com/golang/go/issues/8560
 No. <a href="https://golang.org/ref/spec#For_range">Go 1 specification</a>
 says the iteration order over a map is not specified and
 is not guaranteed to be the same from one iteration to the next.
-For the standard Go compiler, the map iteration orders are sometimes randomized.
+For the standard Go compiler, the map iteration orders are always partially randomized to varying extent. 
 If you require a stable iteration order for a map you must maintain the order by yourself.
 Please read <a href="https://blog.golang.org/go-maps-in-action#TOC_7.">Go maps in action</a> for more information.
 </p>
@@ -284,8 +284,8 @@ https://github.com/golang/go/issues/9401
 
 <p>
 In the current standard Go runtime implementation,
-if a memory block is referenced by at least one active pointer,
-then the memory block will not be viewed as garbage and will never be collected.
+as long as a memory block is referenced by at least one active pointer,
+that memory block will not be viewed as garbage and will not be collected.
 </p>
 
 <p>
@@ -343,7 +343,7 @@ func main() {
 
 <p>
 Generally we can think so, though there may be some subtle differences between the two, depending on compiler implementations.
-The memory block allocated by <code>new</code> may be either on stack or on heap. See further discussion in <a href="https://stackoverflow.com/questions/10866195/stack-vs-heap-allocation-of-structs-in-go-and-how-they-relate-to-garbage-collec">this stack overflow question</a>.
+The memory block allocated by <code>new</code> may be either on stack or on heap.
 </p>
 
 <a class="anchor" id="fatal-error-deadlock"></a>
@@ -826,9 +826,9 @@ have been added since Go 1.10.
 
 <p>
 Before Go 1.10, much time and effort was spent 
-<a href="https://github.com/golang/go/issues/4594">disputing</a> whether or not
+<a href="https://github.com/golang/go/issues/4594">discussing</a> whether or not
 the <code>math.Round</code> function should be added to standard package or not.
-In the end, the proposal is adopted.
+In the end, the proposal was adopted.
 </p>
 
 <!-- type system -->
@@ -1000,7 +1000,7 @@ func main() {
 </h3>
 
 <div>
-You can't take the address of the following values:
+We can't take the address of the following values:
 <ul>
 <li>bytes in strings</li>
 <li>map elements</li>
@@ -1069,7 +1069,7 @@ So, currently, map elements cannot have their addresses taken.
 <p>
 Secondly, the map index expression <code>aMap[key]</code> might
 return an element stored in map <code>aMap</code> or not, which means <code>aMap[key]</code> might still result
-in a zero value after <code>(&amp;aMap[key]).Modify()</code> is called. This would confuse many people.
+in a zero value after <code>(&amp;aMap[key]).Modify()</code> is called. This would confuse many people. (Here <code>Modify()</code> refers to a hypothetical method  which would modify the value <code>aMap[key]</code>).
 </p>
 
 <a class="anchor" id="slice-elements-always-addressable"></a>
@@ -1116,7 +1116,7 @@ However, I can't make sure whether this is guaranteed by Go specification or not
     <li>
   <p>
     A value of type <code>T</code> can call methods defined on type <code>*T</code>,
-    but only if the values of <code>T</code> are addressable.
+    but only if the value of <code>T</code> is addressable.
   </p>
   <p>
     Compilers will take the address of the <code>T</code> value automatically
@@ -1365,7 +1365,7 @@ Yes, it is absolutely safe in Go.
 <p>
 Go compilers which support stack will do escape analysis.
 For the standard Go compiler, if the escape analyzer thinks a memory block
-will only be used in the current function call for sure, it will allocate the
+will only be used in the current goroutine for sure, it will allocate the
 memory block on stack. If not, the memory block will be allocated on the heap.
 Please read <a href="memory-block.html">memory block</a> for more information.
 </p>
