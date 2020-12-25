@@ -199,7 +199,7 @@ From the above example, we could find that,
 	for non-interface types, the <code>reflect.Type.NumMethod</code> only returns the number of exported methods
     (including implicitly declared ones) of a type.
 	We are unable to get the information of a non-exported method by using the <code>reflect.Type.MethodByName</code> method.
-    For interface types, the limits don't exist (the docs of the two methods was inaccurate before Go 1.16).
+    For interface types, the limits don't exist (the fact was not mentioned in the docs of the two methods before Go 1.16).
     Such situation also applies to the corresponding methods of the <code>reflect.Value</code> type introduced in the next section.
 </li>
 <li>
@@ -211,10 +211,11 @@ From the above example, we could find that,
 
 <a class="anchor" id="struct-field-tag"></a>
 We may <a href="https://golang.org/pkg/reflect/#StructTag">inspect struct field tags through reflection</a>.
-The types of struct field tags are <code>reflect.StructTag</code>, which has two methods, <code>Get</code> and <code>Lookup</code>.
+The types of struct field tags are <code>reflect.StructTag</code>, which has two methods,
+<code>Get</code> and <code>Lookup</code>, to inspect the key-value pairs specified in field tags.
 An example of inspecting struct field tags:
 
-<pre class="line-numbers"><code class="language-go">package main
+<!--pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -245,11 +246,37 @@ func main() {
 	// print "5 yes". However, before Go 1.16,
 	// they both print " false".
 }
+</code></pre-->
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "reflect"
+
+type T struct {
+	X    int  `max:"99" min:"0" default:"0"`
+	Y, Z bool `optional:"yes"`
+}
+
+func main() {
+	t := reflect.TypeOf(T{})
+	x := t.Field(0).Tag
+	y := t.Field(1).Tag
+	z := t.Field(2).Tag
+	fmt.Println(reflect.TypeOf(x)) // reflect.StructTag
+	// v is a string
+	v, present := x.Lookup("max")     
+	fmt.Println(len(v), present)      // 2 true
+	fmt.Println(x.Get("max"))         // 99
+	fmt.Println(x.Lookup("optional")) //  false
+	fmt.Println(y.Lookup("optional")) // yes true
+	fmt.Println(z.Lookup("optional")) // yes true
+}
 </code></pre>
 
 Note,
 <ul>
-<li>
+<!--li>
 	since Go 1.16, the tag of the <code>Foo</code> field contains two key-value pairs.
 	It is equivalent to<br/>
 	<code>`json:"foo" xml:"foo"`</code> actually.<br/>
@@ -257,18 +284,26 @@ Note,
 	For the same reason, the tag of the <code>Y</code> field contains three key-value pairs.
 	However, we should know that the combination format is only supported since Go 1.16.
 	Before Go 1.16, the combination format doesn't any form key-value pair.
-</li>
+</li-->
 <li>
 	to form a valid key-value pair, no space characters are allowed to
 	be adjacent to the semicolon in the supposed key-value pair. So<br/>
-	<code>`json: "title`</code> and<br/>
-	<code>`json :"title`</code> both don't form key-value pairs.
+	<code>`optional: "yes"`</code> and<br/>
+	<code>`optional :"yes"`</code> both don't form key-value pairs.
 </li>
 <li>
 	space characters in tag values are important (not be ignored). So<br/>
-	<code>`json:"author, omitempty`</code>,<br/>
-	<code>`json:" author,omitempty`</code> and<br/>
-	<code>`json:"author,omitempty`</code> are different from each other.
+	<code>`json:"author, omitempty"`</code>,<br/>
+	<code>`json:" author,omitempty"`</code> and<br/>
+	<code>`json:"author,omitempty"`</code> are different from each other.
+</li>
+<li>
+	each struct field tag should present as a single line to be wholly meaningful.
+	<!--
+	https://github.com/golang/go/issues/43379
+	https://github.com/golang/go/issues/38641
+	https://github.com/golang/go/issues/15893
+	-->
 </li>
 </ul>
 
