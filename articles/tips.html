@@ -152,7 +152,7 @@ func main() {
 <div>
 
 <p>
-Currently (Go 1.15), there are
+Currently (Go 1.16), there are
 <a href="https://github.com/go101/go101/wiki/Some-evaluation-orders-in-multi-value-assignments-are-unspecified">some evaluation orders in a multi-value assignment are unspecified</a> when the expressions involved in the multi-value assignment interact with each other.
 So try to split a multi-value assignment into multiple single value assignments
 if there are, or you can't make sure whether or not there are, dependencies between the involved expressions.
@@ -754,7 +754,7 @@ try to avoid using large-sized types as
 * interface dynamic types: don't use string or large size values as error
 * channel element types
 
-define exported error values as constants,
+try to define exported error values (in fact, any exported values) as constants,
 
 import "sync"
 type T struct {
@@ -764,6 +764,10 @@ func main() {
 	var t T
 	_ = t // go vet: assignment copies lock value to _: main.T contains sync.Mutex
 }
+	type noCopy struct{}
+	// Lock is a no-op used by -copylocks checker from `go vet`.
+	func (*noCopy) Lock()   {}
+	func (*noCopy) Unlock() {}
 
 the current standard runtime implementation is not friendly when physics memory are not enough.
 machine will lag and hang and non-interactive.
@@ -811,7 +815,7 @@ use types without pointer components as container elements would ... the burden 
 use {} to shrink scope of identifiers as needed.
 use {} to create a nested block to shadow identifiers declared in outer blocks.
 
-intermediate results should be stored out of the benchmark function
+intermediate results should be stored out of the benchmark function (still?)
 
 select may slow: https://twitter.com/melvinodsa/status/1031434710184939522
 
@@ -903,7 +907,7 @@ code should panic on fsync error (at least at present):
 * https://lwn.net/Articles/752063/
 * https://news.ycombinator.com/item?id=20491965
 
-map[k]*[]int is better than map[k][]T if map element modificaiton is frequent?
+
 
 
 
@@ -958,6 +962,8 @@ https://twitter.com/cuonglm_/status/1314529472662519808
 Now (Go Toolchain 1.15), with the standard Go compiler, functions containing for-loops will never be inlined: https://github.com/golang/go/issues/14768
 Now you can rewrite a small for-loop with goto to make such functions inlinable if you do care about the performance gain.
 https://github.com/golang/go/commit/497ea0610ea3757c6171cae3a85627459b572e5d
+
+add "type _ int" to prevent inlining.
 
 exit with a code and also run deferred calls: https://github.com/golang/go/issues/42078#issuecomment-712529616
 

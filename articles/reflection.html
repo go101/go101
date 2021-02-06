@@ -34,7 +34,7 @@ values of the two types.
 <p>
 One of the Go reflection design goals is any non-reflection operation
 should be also possible to be applied through the reflection ways.
-For all kinds of reasons, this goal is not 100 percent achieved currently (Go 1.15).
+For all kinds of reasons, this goal is not 100 percent achieved currently (Go 1.16).
 However, most non-reflection operations can be applied through the reflection ways now.
 On the other hand, through the reflection ways, we can do some operations
 which are impossible to be achieved through non-reflection ways.
@@ -215,39 +215,6 @@ The types of struct field tags are <code>reflect.StructTag</code>, which has two
 <code>Get</code> and <code>Lookup</code>, to inspect the key-value pairs specified in field tags.
 An example of inspecting struct field tags:
 
-<!--pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-import "reflect"
-
-type T struct {
-	X    int    `max:"99" min:"0" default:"0"`
-	Y    int    `max:"22" min default:"5"`
-	Z, W bool   `optional:"yes"`
-	Foo  string `json xml:"foo"` // `json:"foo" xml:"foo"`
-}
-
-func main() {
-	t := reflect.TypeOf(T{})
-	x, y := t.Field(0).Tag, t.Field(1).Tag
-	z, w := t.Field(2).Tag, t.Field(3).Tag
-	fmt.Println(reflect.TypeOf(x)) // reflect.StructTag
-
-	dv, present := x.Lookup("max")    // dv is a string
-	fmt.Println(len(dv), present)     // 2 true
-	fmt.Println(x.Get("max"))         // 99
-	fmt.Println(x.Get("optional"))    //
-	fmt.Println(z.Lookup("optional")) // yes true
-	fmt.Println(w.Lookup("optional")) // yes true
-	fmt.Println(y.Lookup("optional")) //  false
-	fmt.Println(y.Lookup("min"))      // 5 yes
-	fmt.Println(y.Lookup("default"))  // 5 yes
-	// Since Go 1.16, the above two lines both
-	// print "5 yes". However, before Go 1.16,
-	// they both print " false".
-}
-</code></pre-->
-
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
@@ -276,20 +243,14 @@ func main() {
 
 Note,
 <ul>
-<!--li>
-	since Go 1.16, the tag of the <code>Foo</code> field contains two key-value pairs.
-	It is equivalent to<br/>
-	<code>`json:"foo" xml:"foo"`</code> actually.<br/>
-	In other words, same-value pairs could be combined as one item.
-	For the same reason, the tag of the <code>Y</code> field contains three key-value pairs.
-	However, we should know that the combination format is only supported since Go 1.16.
-	Before Go 1.16, the combination format doesn't any form key-value pair.
-</li-->
+<li>
+	tag keys may not contain space (Unicode value 32),
+	quote (Unicode value 34) and colon (Unicode value 58) characters.
+</li>
 <li>
 	to form a valid key-value pair, no space characters are allowed to
-	be adjacent to the semicolon in the supposed key-value pair. So<br/>
-	<code>`optional: "yes"`</code> and<br/>
-	<code>`optional :"yes"`</code> both don't form key-value pairs.
+	follow the semicolon in the supposed key-value pair. So<br/>
+	<code>`optional: "yes"`</code> doesn't form key-value pairs.
 </li>
 <li>
 	space characters in tag values are important (not be ignored). So<br/>
@@ -349,7 +310,7 @@ documentation for their usages.
 </p>
 
 <p>
-Note, up to now (Go 1.15), there are no ways to create interface types through reflection.
+Note, up to now (Go 1.16), there are no ways to create interface types through reflection.
 This is a known limitation of Go reflection.
 </p>
 
