@@ -12,7 +12,7 @@ import (
 
 const GeneratedFolderName = "generated"
 
-func genStaticFiles(rootPath string) {
+func genStaticFiles(rootURL string) {
 	log.SetFlags(log.Lshortfile)
 
 	wd, err := os.Getwd()
@@ -30,7 +30,7 @@ func genStaticFiles(rootPath string) {
 	}
 
 	loadFile := func(uri string) []byte {
-		fullPath := rootPath + uri
+		fullPath := rootURL + uri
 
 		res, err := http.Get(fullPath)
 		if err != nil {

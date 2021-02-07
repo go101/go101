@@ -9,27 +9,36 @@ The book is expected to be helpful for both beginner and experienced Go programm
 
 To get latest changes of Go 101, please follow the official twitter account: [@go100and1](https://twitter.com/go100and1).
 
-### Install
+### Install, Update, and Read Locally
 
-Run
+If you use Go toolchian v1.16+, then you don't need to clone the project respository:
 
+```shell
+### Install or update.
+
+$ go install go101.org/go101@latest
+
+### Read. (GOBIN path, defaulted as GOPATH/bin, should be set in PATH)
+
+$ go101
+Server started:
+   http://localhost:55555 (non-cached version)
+   http://127.0.0.1:55555 (cached version)
 ```
+
+If you use Go toolchian v1.15-, or you would make some modifications (for contribution, etc.):
+```shell
+### Install.
+
 $ git clone https://github.com/go101/go101.git
-```
 
-###  Update
+### Update. Enter the Go 101 project directory (which
+# contains the current `README.md` file), then run
 
-Enter the Go 101 project directory (which contains the current `README.md` file), then run
-
-```
 $ git pull
-```
 
-### Run Locally
+### Read. Enter the Go 101 project directory, then run
 
-Enter the Go 101 project directory (which contains the current `README.md` file), then run
-
-```
 $ go run .
 Server started:
    http://localhost:55555 (non-cached version)

@@ -31,14 +31,14 @@ func main() {
 
 	go101.theme = *themeFlag
 
-	genMode, rootPath := *genFlag, fmt.Sprintf("http://localhost:%v/", port)
+	genMode, rootURL := *genFlag, fmt.Sprintf("http://localhost:%v/", port)
 	if !genMode && !isAppEngine {
 		err = openBrowser(fmt.Sprintf("http://localhost:%v", port))
 		if err != nil {
 			log.Println(err)
 		}
 
-		go go101.Update()
+		go updateGo101()
 	}
 
 	runServer := func() {
@@ -54,7 +54,7 @@ func main() {
 
 	if genMode {
 		go runServer()
-		genStaticFiles(rootPath)
+		genStaticFiles(rootURL)
 		return
 	}
 
