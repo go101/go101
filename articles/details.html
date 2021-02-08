@@ -129,8 +129,15 @@ Index:
 	<li>
 		<a class="index" href="#different-loops">For a slice <code>s</code>, the loop <code>for i = range s {...}</code> is not equivalent to the loop <code>for i = 0; i &lt; len(s); i++ {...}</code>.</a>
 	</li>
+	<li>
+		<a class="index" href="#map-entry-iteration">The iteration order over maps is not guaranteed to be the same from one iteration to the next.</a>
+	</li>
+	<li>
+		<a class="index" href="#create-entry-in-map-entry-iteration">If a map entry is created during an iteration of the map, that entry may be iterated during the iteration or may be skipped.</a>
+	</li>
 	</ul>
 </li>
+
 <li>
 	Function and method related details:
 	<ul class="index">
@@ -1282,6 +1289,73 @@ func main() {
 </p>
 </div>
 
+<a class="anchor" id="map-entry-iteration"></a>
+<h3>The iteration order over maps is not guaranteed to be the same from one iteration to the next.</h3>
+
+<div>
+
+For example, the following program will not run infinitely:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func f(m map[byte]byte) string {
+	bs := make([]byte, 0, 2*len(m))
+	for k, v := range m {
+		bs = append(bs, k, v)
+	}
+	return string(bs)
+}
+
+func main() {
+	m := map[byte]byte{'a':'A', 'b':'B', 'c':'C'}
+	s0 := f(m)
+	for i := 1; ; i++{
+		if s := f(m); s != s0 {
+			fmt.Println(s0)
+			fmt.Println(s)
+			fmt.Println(i)
+			return
+		}
+	}
+}
+</code></pre>
+
+<p>
+Please note, the enrties in the JSON marshal result on maps are sorted by their keys.
+And since Go 1.12, printing maps (with the print functions in the standard
+<code>fmt</code> package) also results sorted entries.
+</p>
+</div>
+
+<a class="anchor" id="create-entry-in-map-entry-iteration"></a>
+<h3>If a map entry is created during an iteration of the map, that entry may be iterated during the iteration or may be skipped.</h3>
+
+<div>
+A proof:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	m := map[int]int{0: 0, 1: 100, 2: 200}
+	r, n, i:= len(m), len(m), 0
+	for range m {
+		m[n] = n*100
+		n++
+		i++
+	}
+	fmt.Printf("%d new entries, iterate %d and skip %d\n",
+		i, i - r, n - i,
+	)
+}
+</code></pre>
+
+<p>
+Thanks to Valentin Deleplace for the above <a href="https://twitter.com/val_deleplace/status/1358784287399698434">two detail suggestions</a>.
+</p>
+</div>
+
 <a class="anchor" id="call-as-expression"></a>
 <h3>A multi-result function call can't mix with other expressions when the call is used as the sources in an assignment or the arguments of another function call.</h3>
 
@@ -2286,11 +2360,7 @@ go term(inoledgie)s 101
 
 go contests 101 / summaries / snippets
 
-since Go 1.12, map entry print orders are specified,
-though iteration order is still unspecified.
-If there are a large quantity of entries in a map,
-then printing might consume much time.
-In JSON marshal results, the map entries will be sorted by their keys, but the items in slices will not be sorted.
+
 
 1.13+: one more DeepEqual exception: https://go-review.googlesource.com/c/go/+/168438/3/src/reflect/deepequal.go
 * (cancelled)
@@ -2384,6 +2454,9 @@ func foo(buf []byte) {
 "go 1.N" directive in a "go.mod" file specifies the features the containing module could use (https://golang.org/ref/mod#go-mod-file-go). It likes the "-lang=go1.N" compilation option. So
   it doesn't specify the minimum Go Toolchain version to compile the module. Higher or lower Toolchain versions may be used if the desired features are supported these Toolchain versions.
   it doesn't cover other modules in a program. https://play.golang.org/p/hMNDpRPh7Em
+
+
+
 
 -->
 
