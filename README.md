@@ -16,7 +16,7 @@ If you use Go toolchian v1.16+, then you don't need to clone the project resposi
 ```shell
 ### Install or update.
 
-$ go install go101.org/go101@latest
+$ go install -tags=embed go101.org/go101@latest
 
 ### Read. (GOBIN path, defaulted as GOPATH/bin, should be set in PATH)
 

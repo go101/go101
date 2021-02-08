@@ -24,22 +24,25 @@ func genStaticFiles(rootURL string) {
 		return filepath.Join(append([]string{wd}, relPath...)...)
 	}
 
-	_, err = os.Stat(fullPath("go101.go"))
-	if err != nil && os.IsNotExist(err) { //errors.Is(err, os.ErrNotExist) {
-		log.Fatal("File go101.org not found. Not run in go101 folder?")
+	_, err = os.Stat(fullPath("web", "static", "go101"))
+	if err != nil {
+		if os.IsNotExist(err) { //errors.Is(err, os.ErrNotExist) {
+			log.Fatal("File web/static/go101 not found. Not run in go101 folder?")
+		}
+		log.Fatal(err)
 	}
 
 	loadFile := func(uri string) []byte {
-		fullPath := rootURL + uri
+		fullURL := rootURL + uri
 
-		res, err := http.Get(fullPath)
+		res, err := http.Get(fullURL)
 		if err != nil {
 			log.Fatalf("Load file %s error: %s", uri, err)
 		}
 
 		content, err := ioutil.ReadAll(res.Body)
 
-		log.Println(len(content), fullPath)
+		log.Println(len(content), fullURL)
 
 		res.Body.Close()
 		if err != nil {

@@ -1,4 +1,4 @@
-// +build !go1.16
+// +build !embed
 
 package main
 
