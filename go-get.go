@@ -3,13 +3,16 @@ package main
 import (
 	"bytes"
 	"net/http"
+	"strings"
 )
 
 type GoGetInfo struct {
 	SubPackage, // assume most one-depth sub-packages
 	RootPackage,
 	GoGetSourceRepo,
-	GoDocSourceRepo string
+	GoDocSourceRepo,
+	// starts with '@'
+	Version string
 }
 
 // ToDo: retire the SubPackage field.
@@ -53,6 +56,27 @@ var gogetInfos = map[string]GoGetInfo{
 }
 
 func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, rootPkg, subPkg string) {
+	var version string
+	if subPkg != "" {
+		atIndex := strings.IndexByte(subPkg, '@')
+		if atIndex >= 0 {
+			subPkg = subPkg[:atIndex]
+			version = subPkg[atIndex:]
+		}
+	} else {
+		atIndex := strings.IndexByte(rootPkg, '@')
+		println(111, atIndex)
+		if atIndex > 0 {
+			version = rootPkg[atIndex:]
+			rootPkg = rootPkg[:atIndex]
+		}
+	}
+
+	// simple handling for pkg.go.dev
+	if len(version) < 3 || version[1] != 'v' || version[2] < '0' || version[2] > '9' {
+		version = ""
+	}
+
 	info, exists := gogetInfos[rootPkg]
 	if !exists {
 		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
@@ -63,11 +87,14 @@ func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, root
 	if subPkg != "" {
 		item += "/" + subPkg
 	}
+	item += version
 
 	page, isLocal := go101.gogetPages.Get(item), go101.IsLocalServer()
 	if page == nil {
 		t := retrievePageTemplate(Template_GoGet, !isLocal)
 		info.SubPackage = subPkg
+		info.Version = version
+		println("info.Version=", info.Version)
 
 		var err error
 		var buf bytes.Buffer
