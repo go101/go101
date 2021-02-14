@@ -120,13 +120,6 @@ More facts about string types and values in Go.
 </li>
 </ul>
 
-<p>
-Note, if <code>aString</code> and the indexes in expressions <code>aString[i]</code> and <code>aString[start:end]</code> are all constants,
-then out-of-range constant indexes will make compilations fail.
-And please note that the evaluation results of such expressions are always non-constants
-(<a href="https://github.com/golang/go/issues/28591">this might change since a later Go version</a>).
-</p>
-
 Example:
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -155,6 +148,36 @@ func main() {
 			strings.HasPrefix(helloWorld, hello))
 }
 </code></pre>
+
+<p>
+</p>
+
+Note, if <code>aString</code> and the indexes in expressions <code>aString[i]</code> and <code>aString[start:end]</code> are all constants,
+then out-of-range constant indexes will make compilations fail.
+And please note that the evaluation results of such expressions are always non-constants
+(<a href="https://github.com/golang/go/issues/28591">this might or might not change since a later Go version</a>).
+For example, the following program will print <code>4 0</code>.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+const s = "Go101.org" // len(s) == 9
+
+// len(s) is a constant expression,
+// whereas len(s[:]) is not.
+var a byte = 1 << len(s) / 128
+var b byte = 1 << len(s[:]) / 128
+
+func main() {
+	fmt.Println(a, b) // 4 0
+}
+</code></pre>
+
+<p>
+About why variables <code>a</code> and <code>b</code> are evaluated to different values,
+please read <a href="operators.html#bitwise-shift-left-operand-type-deduction">the special type deduction rule in bitwise shift operator operation</a> and <a href="summaries.html#compile-time-evaluation">which function calls are evaluated at compile time</a>。
+</p>
 </div>
 
 <h3>String Encoding and Unicode Code Points</h3>

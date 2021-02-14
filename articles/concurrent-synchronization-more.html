@@ -349,52 +349,61 @@ will be never used by multiple goroutines at the same time.
 
 <p>
 A <code>RWMutex</code> value is often called a reader+writer mutual exclusion lock.
-For an addressable <code>RWMutex</code> value <code>m</code>,
-data writers can acquire the write lock of <code>m</code> through <code>m.Lock()</code> method calls,
-and data readers can acquire the read lock of <code>m</code> through <code>m.RLock()</code> method calls.
-Method calls <code>m.Unlock()</code> and <code>m.RUnlock()</code>
-are used to release the write and read locks of <code>m</code>.
+It has two locks, the write lock and the read lock.
+The locks of a zero <code>RWMutex</code> value are both unlocked.
+For an addressable <code>RWMutex</code> value <code>rwm</code>,
+data writers can lock the write lock of <code>rwm</code> through <code>rwm.Lock()</code> method calls,
+and data readers can lock the read lock of <code>rwm</code> through <code>rwm.RLock()</code> method calls.
+Method calls <code>rwm.Unlock()</code> and <code>rwm.RUnlock()</code>
+are used to unlock the write and read locks of <code>rwm</code>.
+The read lock of <code>rwm</code> maintains a lock count, which increases by one
+when <code>rwm.Lock()</code> is called successfully and decreases by one
+when <code>rwm.Unlock()</code> is called successfully.
+A zero lock count means the read lock is in unlocked status
+and a non-zero one (must be larger than one) means the read lock is locked.
 </p>
 
 <p>
-Please note that <code>m.Lock()</code>, <code>m.Unlock()</code>,
-<code>m.RLock()</code> and <code>m.RUnlock()</code>
+Please note that <code>rwm.Lock()</code>, <code>rwm.Unlock()</code>,
+<code>rwm.RLock()</code> and <code>rwm.RUnlock()</code>
 are shorthands of <code>(&amp;m).Lock()</code>, <code>(&amp;m).Unlock()</code>,
 <code>(&amp;m).RLock()</code> and <code>(&amp;m).RUnlock()</code>, respectively.
 </p>
 
-For an addressable <code>RWMutex</code> value <code>m</code>, the following rules exist.
+For an addressable <code>RWMutex</code> value <code>rwm</code>, the following rules exist.
 <ul>
 <li>
-	A data writer can acquire the write lock of <code>m</code>
-	only if neither of the read lock and write lock of <code>m</code> is not held by others.
-	In other words, the write lock of <code>m</code> can only be held by most one writer at any given time,
-	and the read lock and write lock of <code>m</code> can't be held at the same time.
+	The write lock of <code>rwm</code> may be locked only if neither of
+	the read lock and write lock of <code>rwm</code> is in locked status.
+	In other words, the write lock of <code>rwm</code> may only be held by at most one writer at any given time,
+	and the read lock and write lock of <code>rwm</code> may not be held at the same time.
 </li>
 <li>
-	When the write lock of <code>m</code> is held by a data writer,
-	any newer attempts to acquire the write lock or the read lock will be blocked
-	until the initial write lock is released.
+	When the write lock of <code>rwm</code> is in locked status, any newer
+	attempts to lock the write lock or the read lock of <code>rwm</code>
+	will be blocked until the initial write lock is unlocked.
 </li>
 <li>
-	When the read lock of <code>m</code> is held by a data reader,
-	any newer attempts to acquire the write lock will be blocked.
-	However, newer attempts to acquire the read lock will succeed
-	unless the attempts are performed after a blocked attempt to acquire the write lock
-	(see the next rule for details).
-	In other words, the read lock can be held by multiple readers at the same time.
+	When the read lock of <code>rwm</code> is in locked status,
+	any newer attempts to lock the write lock will be blocked
+	untile the read lock is unlocked.
+	However, newer attempts to lock the read lock will succeed
+	as long as the attempts are performed before any blocked attempts to lock the write lock
+	(see the next rule for details). 
+	In other words, the read lock may be held by more than one readers at a time.
+	The read lock will return to unlocked status when its lock count returns to zero. 
 </li>
 <li>
-	Assume the read lock of the value <code>m</code> is held by some data readers now,
-	to avoid recursive read locking, any newer attempts to acquire the read lock after
-	the a being blocked attempt to acquire the write lock will be blocked.
+	Assume the read lock of the value <code>rwm</code> is in locked status now,
+	to avoid endless read locking, any newer attempts to lock the read lock after
+	the a being blocked attempt to lock the write lock will be blocked.
 </li>
 <li>
-	Assume the write lock of the value <code>m</code> is held by a data writer now,
-	for the official standard Go compiler, to avoid recursive write locking,
-	the attempts to acquire the read lock before releasing the write lock will succeed for sure
-	once the write lock is released, even if some of the attempts are made
-	after some still being blocked another attempt to acquire the write lock.
+	Assume the write lock of the value <code>rwm</code> is in locked status now,
+	for the official standard Go compiler, to avoid endless write locking,
+	the attempts to lock the read lock before releasing the write lock will succeed for sure
+	once the write lock is unlocked, even if some of the attempts are made
+	after some still being blocked attempts to lock the write lock.
 </li>
 </ul>
 
@@ -403,10 +412,9 @@ The last two rules are to ensure both readers and writers have chances to acquir
 </p>
 
 <p>
-Please note, locks are not bound to goroutines. In other words,
-a lock acquirer might be not the holder of the lock it acquired.
-In other words, a lock doesn't know which goroutine acquired it,
-and any goroutine can release a lock which in acquired status.
+Please note, locks are not bound to goroutines.
+A lock may be locked in one goroutine and unlocked in another one later.
+In other words, a lock doesn't know which goroutine successfully locked or unlocked it.
 </p>
 
 <!--
@@ -554,7 +562,7 @@ For an addressable <code>sync.Cond</code> value <code>c</code>,
 		the waiting goroutine queue maintained by <code>c</code>,
 	</li>
 	<li>
-		then call <code>c.L.Unlock()</code> to unhold/release the lock <code>c.L</code>.
+		then call <code>c.L.Unlock()</code> to unlock/unhold the lock <code>c.L</code>.
 	</li>
 	<li>
 		<p>
@@ -570,7 +578,7 @@ For an addressable <code>sync.Cond</code> value <code>c</code>,
 		</p>
 		Once the caller goroutine is unblocked and enters running state again,
 		<code>c.L.Lock()</code> will be called (in the resumed <code>c.Wait()</code> call)
-		to try to acquire and hold the lock <code>c.L</code> again,
+		to try to lock and hold the lock <code>c.L</code> again,
 		The <code>c.Wait()</code> call will exit after
 		the <code>c.L.Lock()</code> call returns.
 	</li>
@@ -648,12 +656,12 @@ func main() {
 			cond.L.Lock()
 			values[i] = string('a' + i)
 
-			// Notify when cond.L lock is acquired.
+			// Notify when cond.L lock is locked.
 			cond.Broadcast()
 			cond.L.Unlock()
 
 			// "cond.Broadcast()" can also be put
-			// here, when cond.L lock is released.
+			// here, when cond.L lock is unlocked.
 			//cond.Broadcast()
 		}(i)
 	}

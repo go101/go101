@@ -65,7 +65,6 @@ func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, root
 		}
 	} else {
 		atIndex := strings.IndexByte(rootPkg, '@')
-		println(111, atIndex)
 		if atIndex > 0 {
 			version = rootPkg[atIndex:]
 			rootPkg = rootPkg[:atIndex]
