@@ -7,51 +7,40 @@ import (
 )
 
 type GoGetInfo struct {
-	SubPackage, // assume most one-depth sub-packages
 	RootPackage,
-	GoGetSourceRepo,
-	GoDocSourceRepo,
-	// starts with '@'
-	Version string
+	GoGetSourceRepo, // only supports github now
+	GoDocWebsite string
 }
 
 // ToDo: retire the SubPackage field.
 var gogetInfos = map[string]GoGetInfo{
 	"tinyrouter": {
-		SubPackage:      "",
 		RootPackage:     "go101.org/tinyrouter",
-		GoGetSourceRepo: "https://github.com/go101/tinyrouter",
-		GoDocSourceRepo: "https://github.com/go101/tinyrouter",
+		GoGetSourceRepo: "go101/tinyrouter",
+		GoDocWebsite:    "https://pkg.go.dev/",
 	},
 	"skia": {
-		SubPackage:      "",
 		RootPackage:     "go101.org/skia",
-		GoGetSourceRepo: "https://github.com/go101/go-skia",
-		GoDocSourceRepo: "https://github.com/go101/go-skia",
+		GoGetSourceRepo: "go101/go-skia",
+		GoDocWebsite:    "https://pkg.go.dev/",
 	},
 	"go101": {
-		SubPackage:      "",
 		RootPackage:     "go101.org/go101",
-		GoGetSourceRepo: "https://github.com/go101/go101",
-		GoDocSourceRepo: "https://github.com/go101/go101",
+		GoGetSourceRepo: "go101/go101",
 	},
 	"golang101": {
-		SubPackage:      "",
 		RootPackage:     "go101.org/golang101",
-		GoGetSourceRepo: "https://github.com/golang101/golang101",
-		GoDocSourceRepo: "https://github.com/golang101/golang101",
+		GoGetSourceRepo: "golang101/golang101",
 	},
 	"gold": {
-		SubPackage:      "",
 		RootPackage:     "go101.org/gold",
-		GoGetSourceRepo: "https://github.com/go101/gold",
-		GoDocSourceRepo: "https://github.com/go101/gold",
+		GoGetSourceRepo: "go101/gold",
+		GoDocWebsite:    "https://pkg.go.dev/",
 	},
 	"golds": {
-		SubPackage:      "",
 		RootPackage:     "go101.org/golds",
-		GoGetSourceRepo: "https://github.com/go101/golds",
-		GoDocSourceRepo: "https://github.com/go101/golds",
+		GoGetSourceRepo: "go101/golds",
+		GoDocWebsite:    "https://pkg.go.dev/",
 	},
 }
 
@@ -84,19 +73,26 @@ func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, root
 
 	item := rootPkg
 	if subPkg != "" {
-		item += "/" + subPkg
+		item += "/" + subPkg + version
+	} else {
+		item += version
 	}
-	item += version
 
 	page, isLocal := go101.gogetPages.Get(item), go101.IsLocalServer()
 	if page == nil {
-		t := retrievePageTemplate(Template_GoGet, !isLocal)
-		info.SubPackage = subPkg
-		info.Version = version
-		println("info.Version=", info.Version)
+		info.GoGetSourceRepo = "https://github.com/" + info.GoGetSourceRepo
+		if info.GoDocWebsite != "" {
+			info.GoDocWebsite += info.RootPackage + "/" + subPkg + version
+		} else {
+			info.GoDocWebsite = info.GoGetSourceRepo
+			if subPkg != ""  {
+				info.GoDocWebsite += "/tree/master/" + subPkg
+			}
+		}
 
 		var err error
 		var buf bytes.Buffer
+		t := retrievePageTemplate(Template_GoGet, !isLocal)
 		if err = t.Execute(&buf, &info); err == nil {
 			page = buf.Bytes()
 		} else {
