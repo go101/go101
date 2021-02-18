@@ -1,4 +1,8 @@
 
+### 1.16.a (2021/Feb/18)
+
+* support Go 1.16 embedding feature.
+
 ### 1.15.b (2020/Oct/09)
 
 * describe more about [reflect.DeepEqual](https://go101.org/article/details.html#reflect-deep-equal) related details.
