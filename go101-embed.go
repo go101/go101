@@ -50,10 +50,11 @@ func loadArticleFile(file string) ([]byte, error) {
 	return content, nil
 }
 
-func parseTemplate(commonPath string, files ...string) *template.Template {
+func parseTemplate(commonPaths []string, files ...string) *template.Template {
+	cp := path.Join(commonPaths...)
 	ts := make([]string, len(files))
 	for i, f := range files {
-		ts[i] = path.Join(commonPath, f)
+		ts[i] = path.Join(cp, f)
 	}
 	return template.Must(template.ParseFS(allFiles, ts...))
 }

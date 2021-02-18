@@ -18,10 +18,11 @@ func loadArticleFile(file string) ([]byte, error) {
 	return ioutil.ReadFile(filepath.Join(rootPath, "articles", file))
 }
 
-func parseTemplate(commonPath string, files ...string) *template.Template {
+func parseTemplate(commonPaths []string, files ...string) *template.Template {
+	cp := filepath.Join(commonPaths...)
 	ts := make([]string, len(files))
 	for i, f := range files {
-		ts[i] = filepath.Join(rootPath, commonPath, f)
+		ts[i] = filepath.Join(rootPath, cp, f)
 	}
 	return template.Must(template.ParseFiles(ts...))
 }

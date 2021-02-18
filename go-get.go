@@ -85,7 +85,7 @@ func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, root
 			info.GoDocWebsite += info.RootPackage + "/" + subPkg + version
 		} else {
 			info.GoDocWebsite = info.GoGetSourceRepo
-			if subPkg != ""  {
+			if subPkg != "" {
 				info.GoDocWebsite += "/tree/master/" + subPkg
 			}
 		}
