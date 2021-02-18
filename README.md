@@ -11,7 +11,7 @@ To get latest changes of Go 101, please follow the official twitter account: [@g
 
 ### Install, Update, and Read Locally
 
-If you use Go toolchian v1.16+, then you don't need to clone the project respository:
+If you use Go toolchain v1.16+, then you don't need to clone the project respository:
 
 ```shell
 ### Install or update.
