@@ -26,7 +26,7 @@ Server started:
    http://127.0.0.1:55555 (cached version)
 ```
 
-If you use Go toolchian v1.15-, or you would make some modifications (for contribution, etc.):
+If you use Go toolchain v1.15-, or you would make some modifications (for contribution, etc.):
 ```shell
 ### Install.
 
