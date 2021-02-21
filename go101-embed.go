@@ -1,4 +1,4 @@
-// +build embed
+// +build go1.16
 
 package main
 
@@ -21,6 +21,10 @@ import (
 var allFiles embed.FS
 
 var staticFilesHandler, resFilesHandler = func() (http.Handler, http.Handler) {
+	if wdIsGo101ProjectRoot {
+		return staticFilesHandler_NonEmbedding, resFilesHandler_NonEmbedding
+	}
+
 	staticFiles, err := fs.Sub(allFiles, path.Join("web", "static"))
 	if err != nil {
 		panic(fmt.Sprintf("construct static file system error: %s", err))
@@ -43,6 +47,10 @@ var staticFilesHandler, resFilesHandler = func() (http.Handler, http.Handler) {
 }()
 
 func loadArticleFile(file string) ([]byte, error) {
+	if wdIsGo101ProjectRoot {
+		return loadArticleFile_NonEmbedding(file)
+	}
+
 	content, err := allFiles.ReadFile(path.Join("articles", file))
 	if err != nil {
 		return nil, err
@@ -51,6 +59,10 @@ func loadArticleFile(file string) ([]byte, error) {
 }
 
 func parseTemplate(commonPaths []string, files ...string) *template.Template {
+	if wdIsGo101ProjectRoot {
+		parseTemplate_NonEmbedding(commonPaths, files...)
+	}
+
 	cp := path.Join(commonPaths...)
 	ts := make([]string, len(files))
 	for i, f := range files {
@@ -60,6 +72,10 @@ func parseTemplate(commonPaths []string, files ...string) *template.Template {
 }
 
 func updateGo101() {
+	if wdIsGo101ProjectRoot {
+		updateGo101_NonEmbedding()
+	}
+
 	if _, err := os.Stat(filepath.Join(".", "go101.go")); err == nil {
 		pullGo101Project("")
 		return
