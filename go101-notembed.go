@@ -2,6 +2,8 @@
 
 package main
 
+import "html/template"
+
 var staticFilesHandler = staticFilesHandler_NonEmbedding
 var resFilesHandler = resFilesHandler_NonEmbedding
 
@@ -10,7 +12,7 @@ func loadArticleFile(file string) ([]byte, error) {
 }
 
 func parseTemplate(commonPaths []string, files ...string) *template.Template {
-	parseTemplate_NonEmbedding(commonPaths, files...)
+	return parseTemplate_NonEmbedding(commonPaths, files...)
 }
 
 func updateGo101() {
