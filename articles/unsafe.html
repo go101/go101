@@ -528,7 +528,11 @@ This is the implementation adopted by the <code>String</code> method
 of the <code>Builder</code> type supported since Go 1.10 in the
 <code>strings</code> standard package.
 The size of a byte slice is larger than a string,
-and <a href="value-part.html#internal-definitions">their internal structures</a> are similar, so the conversion is valid.
+and <a href="value-part.html#internal-definitions">their internal structures</a> are similar,
+so the conversion is valid (for main stream Go compilers).
+However, despite the implementation may be safely used in standard packages now,
+it is not recommended to be used in general user code.
+In user code, we should try to use another implementation provided at the end of the current article.
 </p>
 
 The converse, converting a string to a byte slice in the similar way, is invalid,
@@ -545,7 +549,7 @@ In the pattern 6 section below, a valid implementation to do the same job is int
 
 <p>
 Note: when using the just introduced unsafe way to convert a byte slice to a string,
-please make sure not to modify the bytes in the byte slice if the result string is still in use.
+please make sure not to modify the bytes in the byte slice if the result string still survives.
 </p>
 </div>
 
@@ -936,8 +940,6 @@ import (
 	"unsafe"
 )
 
-// The string argument passed to this function should
-// not be used any more after the function exits.
 func String2ByteSlice(str string) (bs []byte) {
 	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
 	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
@@ -987,63 +989,26 @@ However, it is more recommended to use the way shown in pattern 1 to do this job
 
 <p>
 Note: when using the just introduced unsafe way to convert a string to a byte slice,
-please make sure not to modify the bytes in the result byte slice if the string is still in use.
+please make sure not to modify the bytes in the result byte slice if the string still survives.
 And it is recommended to never modify the bytes in the result byte slice.
 </p>
 
-<!--
-However, currently (Go 1.16), there is a simpler but more efficient way to convert
-a byte slice to a string.
+</div>
 
-<pre class="line-numbers"><code class="language-go">func ByteSlice2String(bs []byte) string {
-	return *(*string)(unsafe.Pointer(&bs))
-}
-</code></pre>
+<h4>More patterns?</h4>
 
-<p>
-This is the implementation adopted by the <code>String</code> method
-of the <code>Builder</code> type supported since Go 1.10 in the
-<code>strings</code> standard package.
-It makes use of the first pattern introduced above.
-</p>
--->
-
-<!--
-In fact, in practice, to avoid the danger caused by missing <code>runtime.KeepAlive</code> calls,
-it is more recommended to define our own custom <code>SliceHeader</code> and <code>StringHeader</code>
-struct types which hold <code>Data</code> fileds of the <code>unsafe.Pointer</code> type instead of
-the <code>uintptr</code> type. For example,
-
-<pre class="line-numbers"><code class="language-go">type SliceHeader struct {
-	Data unsafe.Pointer
-	Len  int
-	Cap  int
-}
-
-type StringHeader struct {
-	Data unsafe.Pointer
-	Len  int
-}
-
-func String2ByteSlice(str string) (bs []byte) {
-	strHdr := (*StringHeader)(unsafe.Pointer(&str))
-	sliceHdr := (*SliceHeader)(unsafe.Pointer(&bs))
-	sliceHdr.Data = strHdr.Data
-	sliceHdr.Cap = strHdr.Len
-	sliceHdr.Len = strHdr.Len
-	
-	// The KeepAlive call is not essential now.
-	//runtime.KeepAlive(&str)
-	return
-}
-</code></pre>
-
-<p>
-Matthew Dempsky has made a proposal which <a href="https://github.com/golang/go/issues/19367">suggests</a>
-adding the two custom <code>SliceHeader</code> and <code>StringHeader</code> types to the <code>unsafe</code> standard package.
-</p>
--->
-
+<div>
+No more patterns now. But it should be mentioned that the design of valid unsafe pointer use patterns
+is still evolving and being improved. There are several approved proposals to be adopted
+in later Go versions:
+<ul>
+<li>
+	<a href="https://github.com/golang/go/issues/19367">Add a <code>Slice(ptr *T, len anyIntegerType) []T</code> function in the <code>unsafe</code> package.</a>
+</li>
+<li>
+	<a href="https://github.com/golang/go/issues/40481">Add a <code>Add(p Pointer, x uintptr) Pointer</code> function in the <code>unsafe</code> package.</a>
+</li>
+</ul>
 </div>
 
 <h3>Final Words</h3>
