@@ -1,9 +1,9 @@
 ﻿<h1>Interfaces in Go</h1>
 
 <p>
-Interface types are one special kind of types in Go.
-Interface kind plays several important roles in Go.
-Firstly, interface types make Go support value boxing.
+Interface types are one special kind of type in Go.
+Interfaces play several important roles in Go.
+Fundamentally, interface types make Go support value boxing.
 Consequently, through value boxing, reflection and polymorphism get supported.
 </p>
 
@@ -19,8 +19,7 @@ An interface type specifies a collection of
 <a href="method.html#method-set">method prototypes</a>.
 In other words, each interface type defines a <a href="method.html#method-set">method set</a>.
 In fact, we can view an interface type as a method set.
-For any of the method prototype specified in an interface type,
-its name can't be the blank identifier <code>_</code>.
+Note that unlike for non-interface types, method prototypes specified in an interface can't use the blank identifier <code>_</code> as  their name.
 </p>
 
 <p>
@@ -96,24 +95,23 @@ the method set of any value of the type.
 
 <p>
 Two non-defined interface types are identical if their method sets are identical.
-Please note, non-exported method names, which start with lower-case letters,
+Please note, non-exported method names (which start with lower-case letters),
 from different packages will be always viewed as two different method names,
-even if the two method names are the same in literal.
+even if the two method names themselves are the same.
 </p>
 
 <a class="anchor" id="implementation"></a>
 <h3>What Are Implementations?</h3>
 
 <p>
-If the method set of an arbitrary type <code>T</code>, <code>T</code>
-may be an interface type or not,
-is a super set of the method set of an interface type <code>I</code>,
+Take some arbitrary type, <code>T</code> which may or may not be an interface type, and an interface type <code>I</code>.
+If the method set of <code>T</code> is a super set of the method set of <code>I</code>,
 then we say type <code>T</code> implements interface <code>I</code>.
 </p>
 
 <p>
 Implementations are all implicit in Go.
-The implementation relations are not needed to be specified for compilers in code explicitly.
+The compiler does not require implementation relations to be specified in code explicitly.
 There is not an <code>implements</code> keyword in Go.
 Go compilers will check the implementation relations automatically as needed.
 </p>
@@ -255,7 +253,7 @@ so it is not a nil interface value.)
 </i></p>
 
 <p>
-As any type implements any blank interface types,
+As any type implements all blank interface types,
 so any non-interface value can be boxed in (or assigned to) a blank interface value.
 For this reason, blank interface types can be viewed as the
 <code>any</code> type in many other languages.
@@ -358,7 +356,7 @@ the Go runtime (at least for the standard Go runtime) will analyze and build
 the implementation information for the type pair of the two values,
 and store the implementation information in the interface value.
 The implementation information for each non-interface type and interface type pair will only be
-built most once and cached in a global map for execution efficiency consideration.
+built once and cached in a global map for execution efficiency consideration.
 The number of entries of the global map never decreases.
 In fact, a non-nil interface value just uses <a href="value-part.html#interface-structure">an internal pointer field
 which references a cached implementation information entry</a>.
@@ -376,7 +374,7 @@ includes two pieces of information:
 </li>
 </ol>
 
-The two pieces of information are essential for implementing two important features in Go.
+These two pieces of information are essential for implementing two important features in Go:
 <ol>
 <li>
 	The dynamic type information is the key to implement <a href="#reflection">reflection</a> in Go.
@@ -402,8 +400,8 @@ calling a method specified by the interface type <code>I</code>
 on the interface value <code>i</code>
 will call the corresponding method declared for the non-interface type <code>T</code>
 on the non-interface value <code>t</code> actually.
-In other words, <b>calling the method of an interface value will
-call the corresponding method of the dynamic value of the interface value actually</b>.
+In other words, <b>calling the method of an interface value will actually
+call the corresponding method of the dynamic value of the interface value</b>.
 For example, calling method <code>i.m</code> will call method <code>t.m</code> actually.
 With different dynamic values of different dynamic types boxed into the interface value,
 the interface value behaves differently. This is called polymorphism.
@@ -412,12 +410,12 @@ the interface value behaves differently. This is called polymorphism.
 <p>
 When method <code>i.m</code> is called, the method table in the implementation information
 stored in <code>i</code> will be looked up to find and call the corresponding method <code>t.m</code>.
-The method table is a slice and the lookup is just a slice element indexing, so no much time is consumed.
+The method table is a slice and the lookup is just a slice element indexing, so this is quick.
 </p>
 
 <p><i>
 (Note, calling methods on a nil interface value will panic at run time,
-for there are no available declared methods can be called.)
+for there are no available declared methods to be called.)
 </i></p>
 
 <div>
@@ -468,7 +466,7 @@ func (mf MultipleFilter) Process(inputs []int) []int {
 // With the help of polymorphism, only one
 // "filterAndPrint" function is needed.
 func filterAndPrint(fltr Filter, unfiltered []int) []int {
-	// Call the methods of "fltr" will call the
+	// Calling the methods of "fltr" will call the
 	// methods of the value boxed in "fltr" actually.
 	filtered := fltr.Process(unfiltered)
 	fmt.Println(fltr.About() + ":\n\t", filtered)
@@ -510,7 +508,7 @@ keep multiples of 3:
 
 <p>
 In the above example, polymorphism makes it unnecessary to
-write one <code>filterAndPrint</code> function for each filter types.
+write one <code>filterAndPrint</code> function for each filter type.
 </p>
 
 <p>
@@ -542,7 +540,7 @@ This is called reflection in programming.
 </p>
 
 <p>
-Currently (Go 1.16), Go doesn't support generic for custom functions and types.
+Currently (Go 1.16), Go doesn't support generics for custom functions and types (though the process to add them is [underway](https://blog.golang.org/generics-proposal)).
 Reflection partially remedies the inconveniences caused by the lack of generics.
 </p>
 
@@ -559,7 +557,7 @@ In Go, built-in reflections are achieved with type assertions and <code>type-swi
 <h4>Type assertion</h4>
 
 <div>
-There are four kinds of interface value involving value conversion cases in Go:
+There are four kinds of interface-value-involving value conversion cases in Go:
 <ol>
 <li>
 	convert a non-interface value to an interface value,
@@ -586,7 +584,7 @@ There are four kinds of interface value involving value conversion cases in Go:
 </ol>
 
 <p>
-Above has explained the first two kinds of cases.
+We have already explained the first two kinds of cases.
 They both require that the source value type implements the destination interface type.
 The convertibility for the first two are verified at compile time.
 </p>
@@ -595,7 +593,7 @@ The convertibility for the first two are verified at compile time.
 Here will explain the later two kinds of cases.
 The convertibility for the later two are verified at run time,
 by using a syntax called <b><i>type assertion</i></b>.
-In fact, the syntax also applies to the second kind of conversions.
+In fact, the syntax also applies to the second kind of conversion in our above list.
 </p>
 
 The form of a type assertion expression is <code>i.(T)</code>,
@@ -617,14 +615,14 @@ and <code>T</code> is called the asserted type.
 A type assertion might succeed or fail.
 <ul>
 <li>
-	In case of <code>T</code> being a non-interface type,
+	In the case of <code>T</code> being a non-interface type,
 	if the dynamic type of <code>i</code> exists and is identical to <code>T</code>, then the assertion will succeed,
 	otherwise, the assertion will fail.
 	When the assertion succeeds, the evaluation result of the assertion is a copy of the dynamic value of <code>i</code>.
-	We can view assertions of this case as value unboxing attempt.
+	We can view assertions of this kind as value unboxing attempts.
 </li>
 <li>
-	In case of <code>T</code> being an interface type,
+	In the case of <code>T</code> being an interface type,
 	if the dynamic type of <code>i</code> exists and implements <code>T</code>,
 	then the assertion will succeed, otherwise, the assertion will fail.
 	When the assertion succeeds, a copy of the dynamic value of <code>i</code> will be boxed into a <code>T</code> value
@@ -925,11 +923,11 @@ type Ie interface {
 <p>
 </p>
 
-Before Go 1.14, two interface types can't embed each other
+Before Go 1.14, two interface types couldn't embed each other
 if they both specify a method prototype with the same name,
-and they also can't be embedded together in the same third interface type,
-even if the two overlapping method prototypes are identical.
-For example, the following interface type declartions are all illegal (before Go 1.14).
+and they also can't be embedded together in the same third interface type
+(even if the two overlapping method prototypes are identical).
+For example, the following interface type declarations were all illegal (before Go 1.14).
 
 <pre class="line-numbers"><code class="language-go">type Ix interface {
 	Ia
@@ -958,10 +956,10 @@ An interface type can't embed itself or any other interface types that embed the
 </div>
 
 <a class="anchor" id="comparison"></a>
-<h4>Interface values involved comparisons</h4>
+<h4>Comparisons involving interface values</h4>
 
 <div>
-There are two cases of interface values involved comparisons:
+There are two cases of comparisons involving interface values:
 <ol>
 <li>
 	comparisons between a non-interface value and an interface value.
@@ -999,7 +997,7 @@ The steps of comparing two interface values (with the <code>==</code> operator):
 	then the comparison result is <code>false</code>.
 </li>
 <li>
-	for the case of the dynamic types of the two interface values are the same type,
+	in the case where the dynamic types of the two interface values are the same type,
 	<ul>
 	<li>
 		if the same dynamic type is an
@@ -1013,7 +1011,7 @@ The steps of comparing two interface values (with the <code>==</code> operator):
 </li>
 </ol>
 
-In short, two interface values are equal only if one of the following conditions is satisfied.
+In short, two interface values are equal only if one of the following conditions are satisfied.
 <ol>
 <li>
 	They are both nil interface values.
@@ -1078,8 +1076,8 @@ todo: need a picture. Three parts
 
 <p>
 The official Go compiler/runtime makes an optimization
-which makes that boxing pointer values into interface values
-is more efficient than boxing non-pointer values.
+which makes boxing pointer values into interface values
+more efficient than boxing non-pointer values.
 For <a href="value-copy-cost.html">small size values</a>,
 the efficiency differences are small,
 but for large size values, the differences may be not small.
@@ -1098,7 +1096,7 @@ So please try to avoid boxing large size values, box their pointers instead.
 <div>
 For example, sometimes, we may need to convert a <code>[]string</code> value
 to <code>[]interface{}</code> type. Unlike some other languages, there is no
-direct ways to make the conversion. We must make the conversion manually in a loop:
+direct way to make the conversion. We must make the conversion manually in a loop:
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
