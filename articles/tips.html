@@ -1008,6 +1008,43 @@ for functions which prototypes might change later, to keep capatibility,
 sometimes, it is would be good to convert this functions to methods of
 a strcuct type, as a function collection, future possible parameters can
 be added to the struct type later, to avoid function prototype changes.
+
+https://groups.google.com/g/golang-nuts/c/laNVQ5AokBI
+When the garbage collector finds an unreachable block with an associated finalizer, it clears the association and runs finalizer(obj) in a separate goroutine. This makes obj reachable again, but now without an associated finalizer. Assuming that SetFinalizer is not called again, the next time the garbage collector sees that obj is unreachable, it will free obj.
+	package main
+	import (
+		"runtime"
+		"runtime/metrics"
+	)
+	func m() {
+		runtime.GC()
+		sample := []metrics.Sample{{Name: "/memory/classes/heap/objects:bytes"}}
+		metrics.Read(sample)
+		println(sample[0].Value.Uint64())
+	}
+	type A [1<<20]byte
+	var x *A
+	func f(v *A) {
+		runtime.SetFinalizer(v, f)
+	}
+	func main() {
+		m()
+		m()
+		x = &A{100:99}
+		runtime.SetFinalizer(x, f) // this line makes the A array never collected
+		m()
+		m()
+		x = nil
+		m()
+		m()
+		runtime.KeepAlive(x)
+	}
+
+if map elements are not of basic types, and they are never deleted, and they are modified frequently,
+them mak map elements immutable and use a map[Key]int + slice instead.
+	map[strring]*T is faster than map[string]T is elements are updated frequently and use byte slices as keys.
+	https://github.com/golang/go/issues/45021
+
 -->
 
 

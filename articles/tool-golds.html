@@ -6,17 +6,58 @@
 <b><i>Golds</i></b> is an experimental Go local docs server, a Go docs generator, and a Go code reader.
 </p>
 
-<p>
-Demo: <a href="https://docs.go101.org/index.html" target="_blank">the generated docs for standard packages</a>.
-</p>
+<ul>
+<li>
+Demo: <a href="https://docs.go101.org/index.html" target="_blank">docs and source code of standard packages</a>
+(generated with <code>golds -gen -nouses -only-list-exporteds std</code>).
+</li>
 
-<p>
-Code: <a href="https://github.com/go101/golds">on github</a>. Any feedback, including PR and bug reports, are welcomed.
-</p>
+<li>
+Code is <a href="https://github.com/go101/golds">hosted on Github</a>. Any feedback, including PR and bug reports, are welcome.
+</li>
 
-<p>
+<li>
 Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> to get the latest news of <b><i>Golds</i></b>
 (and all kinds of Go details/facts/tips/etc.).
+</li>
+</ul>
+
+<h3 id="faq">Features and Limitations</h3>
+
+Please read <a href="https://github.com/go101/golds">the project home page</a> for details.
+
+<h3 id="faq">Installation</h3>
+
+<ul>
+<li>With Go Toolchain 1.16+, run <code>go install go101.org/golds@latest</code></li>
+<li>With Go Toolchain 1.15-, run <code>go get -u go101.org/golds</code> (the <code>GO111MODULE</code> enviroment variable needs to be set as <code>on</code> temporarily to utilize the <code>GOPROXY</code> setting).</li>
+</ul>
+
+If the tool program name <code>golds</code> conflicts with another tool with the same name you are using, you can run any of the following commands to install <b><i>Golds</i></b> as a program with a different name:
+<ul>
+<li>
+Go docs generator<br/>
+With Go Toolchain 1.16+, run <code>go install go101.org/golds/godoge@latest</code><br/>
+With Go Toolchain 1.15-, run <code>go get -u go101.org/golds/godoge</code>
+</li>
+<li>
+Go code reader<br/>
+With Go Toolchain 1.16+, run <code>go install go101.org/golds/gocore@latest</code><br/>
+With Go Toolchain 1.15-, run <code>go get -u go101.org/golds/gocore</code>
+</li>
+<li>
+Go local docs (mainly for legacy. gold was the old default program name of <b><i>Golds</i></b>)<br/>
+With Go Toolchain 1.16+, run <code>go install go101.org/golds/gold@latest</code><br/>
+With Go Toolchain 1.15-, run <code>go get -u go101.org/golds/gold</code>
+</li>
+</ul>
+
+<p>
+You may also clone this project firstly, then run the <code>go install</code> command in the respective program folders to install <b><i>Golds</i></b> as <code>golds</code>, <code>godoge</code>, or <code>gocore</code>.
+</p>
+
+<p>
+(NOTE: Go commands will install output binaries into the Go binary installation path specified by the <code>GOBIN</code> environment variable, which defaults to the path of the <code>bin</code> subfolder under the first path specified in the <code>GOPATH</code> environment variable, which defaults to the path of the <code>go</code> subfolder under the path specified by the <code>HOME</code> environment variable. Please specify the Go binary installation path in the <code>PATH</code> environment variable to run <b><i>Golds</i></b> commands successfully.)
 </p>
 
 <h3>Usages</h3>
@@ -27,7 +68,10 @@ We can
 <ul>
 <li>run <code>golds .</code> to show docs of the package in the current directory (and all its dependency packages).</li>
 <li>run <code>golds ./...</code> to show docs of all the package under the current directory (and all their dependency packages).</li>
-<li>run <Code>golds std</code> to show docs of standard packages.</li>
+<li>run <code>golds toolchain</code> to show docs of official toolchain packages (and all their dependency packages). <code>toolchain</code> should be used exclusively with the above two arguments: <code>.</code> and <code>./...</code>.</li>
+<li>run <code>golds std</code> to show docs of standard packages. <code>std</code> can be mixed with any one of the above three arguments.</li>
+<li>run <code>golds aPackage</code> in a module aware directory to show docs of the specified package (and all its dependency packages).</li>
+<li>run <code>golds foo.go bar.go baz.go</code> to show docs of the specified files (and all their dependency packages).</li>
 </ul>
 
 <p>
@@ -35,25 +79,50 @@ Each of the above commands will open a browser window automatically.
 We can use the <code>-s</code> or <code>-silent</code> options to turn off the behavior.
 </p>
 
-The second usage of <b><i>Golds</i></b> is to generate static HTML doc pages for a project:
+The second usage of <b><i>Golds</i></b> is to generate static HTML doc pages for a project,
+with the <code>-gen</code> option:
 <ul>
-<li><code>golds -gen -dir=generated .</code></li>
-<li><code>golds -gen -dir=generated ./...</code></li>
-<li><code>golds -gen -dir=generated std</code></li>
+<li><code>golds -gen -dir=generated -nouses .</code></li>
+<li><code>golds -gen -dir=generated -nouses ./...</code></li>
+<li><code>golds -gen -dir=generated -nouses std</code></li>
 </ul>
 
 <p>
 The <code>-dir</code> option is optional and its default value is <code>.</code> (the working directory).
+The <code>-nouses</code> option used here is to generate docs with moderate sizes.
 </p>
 
-<p>
-Please read <a href="https://github.com/go101/golds">the project readme file</a> to get more options.
-</p>
+Options to control docs sizes:
+<ul>
+<li><code>-nouses</code>: don't generate identifier-uses pages (identifier-uses pages will occupy about 9/10 of the total page count and 2/3 of the full docs size).</li>
+<li><code>-plainsrc</code>: generate simpler source code pages (no highlighting and no code navigations to reduce the total page size by 1/6 of the full docs size).</li>
+<li><code>-only-list-exporteds</code>: don't list unexported package-level resources in package-details pages.</li>
+<li><code>-compact</code> is a shortcut of the combination of the above compact docs generation options.</li>
+</ul>
 
 <p>
-The third usage of <b><i>Golds</i></b> is to serve files within a directory.
+The size of the docs generated by <code>golds -gen -compact ./...</code> is about 1/6 of <code>golds -gen ./...</code>
+and about 1/2 of <code>golds -gen -nouses ./...</code>.
+</p>
+
+
+The <code>-wdpkgs-listing</code> option is used to specify how to list the packages in the working directory. Availabe values include
+<ul>
+<li><code>general</code> (the default, list them with others by alphabetical order)</li>
+<li><code>promoted</code> (list them before others)</li>
+<li><code>solo</code> (list them without others)</li>
+</ul>
+
+<p>
+The third usage of <b><i>Golds</i></b> is to serve files within a directory
+("Golds" also means Go local directory server).
 For example, we can run <code>golds -dir=.</code> (or simply <code>golds</code>)
 from the HTML docs generation directory to view the generated docs in browser.
+The <code>-s</code> and <code>-silent</code> options also work in this mode.
+</p>
+
+<p>
+The <code>golds</code> command recognizes the <code>GOOS</code> and <code>GOARCH</code> environment variables.
 </p>
 
 </div>
@@ -64,6 +133,7 @@ from the HTML docs generation directory to view the generated docs in browser.
 
 <p>
 "Golds" is an abbreviation of <b>Go</b> <b>l</b>ocal <b>d</b>ocs <b>s</b>erver.
+It also means <b>Go</b> <b>l</b>ocal <b>d</b>irectory <b>s</b>erver.
 </p>
 
 <h4>Why <b><i>Golds</i></b>?</h4>

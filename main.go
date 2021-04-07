@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -23,17 +24,28 @@ func main() {
 		port = prt
 		isAppEngine = true
 	}
-
-	l, err := net.Listen("tcp", fmt.Sprintf(":%v", port))
+	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%v", port))
 	if err != nil {
+		log.Fatal(err)
+	}
+
+Retry:
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		if strings.Index(err.Error(), "bind: address already in use") >= 0 {
+			addr.Port++
+			if addr.Port < 65535 {
+				goto Retry
+			}
+		}
 		log.Fatal(err)
 	}
 
 	go101.theme = *themeFlag
 
-	genMode, rootURL := *genFlag, fmt.Sprintf("http://localhost:%v/", port)
+	genMode, rootURL := *genFlag, fmt.Sprintf("http://localhost:%v/", addr.Port)
 	if !genMode && !isAppEngine {
-		err = openBrowser(fmt.Sprintf("http://localhost:%v", port))
+		err = openBrowser(rootURL)
 		if err != nil {
 			log.Println(err)
 		}
@@ -43,8 +55,8 @@ func main() {
 
 	runServer := func() {
 		log.Println("Server started:")
-		log.Printf("   http://localhost:%v (non-cached version)\n", port)
-		log.Printf("   http://127.0.0.1:%v (cached version)\n", port)
+		log.Printf("   http://localhost:%v (non-cached version)\n", addr.Port)
+		log.Printf("   http://127.0.0.1:%v (cached version)\n", addr.Port)
 		(&http.Server{
 			Handler:      go101,
 			WriteTimeout: 10 * time.Second,
