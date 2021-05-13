@@ -249,11 +249,30 @@ A memory block created by calling <code>new</code> function may be allocated on 
 This is different to C++.
 </p>
 
-<p>
 When the size of a goroutine stack changes, a new memory segment will be allocated for the stack.
 So the memory blocks allocated on the stack will very likely be moved, or their addresses will change.
 Consequently, the pointers, which must be also allocated on the stack,
 referencing these memory blocks also need to be modified accordingly.
+The following is such an example.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func f(i int) byte {
+	type T int // avoid f being inline
+	var a [1<<20]byte // make stack grow
+	return a[i]
+}
+
+func main(){
+	var x int
+	println(&x)
+	f(100)
+	println(&x)
+}
+</code></pre>
+
+<p>
+We will find that the two printed addresses are different (as of the standard Go compiler v1.16).
 </p>
 
 <!--p>

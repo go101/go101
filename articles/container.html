@@ -1468,6 +1468,43 @@ which is allowed.
 
 </div>
 
+<a class="anchor" id="slice-to-array-pointer"></a>
+<h3>Convert Slice to Array Pointer</h3>
+
+<div>
+<p>
+Since Go 1.17, a slice may be converted to an array pointer.
+In such a conversion, if the length of the base array type of the pointer type
+is larger than the length of the slice, a panic occurs.
+</p>
+
+An example:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type S []int
+type A [2]int
+type P *A
+
+func main() {
+    var x = make([]int, 3, 5)
+    var _ = (*[3]int)(x) // okay
+    var _ = (*[2]int)(x) // okay
+    var _ = (*A)(x)      // okay
+    var _ = P(x)         // okay
+    
+    var y = S(x)
+    var _ = (*[3]int)(y) // okay
+    var _ = (*[2]int)(y) // okay
+    var _ = (*A)(y)      // okay
+    var _ = P(y)         // okay
+    
+    var _ = (*[4]int)(x) // will panic
+}
+</code></pre>
+
+</div>
+
 <a class="anchor" id="copy-slice-elements"></a>
 <h3>Copy Slice Elements With the Built-in <code>copy</code> Function</h3>
 
@@ -2023,8 +2060,8 @@ fmt.Println(len(pa), cap(pa)) // 5 5
 
 <div>
 Assume <code>t0</code> is a literal presentation of the zero value of
-type <code>T</code>, and <code>a</code> is an array which element type is
-<code>T</code>, then the standard Go compiler will translate the following
+type <code>T</code>, and <code>a</code> is an array or slice which element type
+is <code>T</code>, then the standard Go compiler will translate the following
 one-iteration-variable <code>for-range</code> loop block
 <pre class="line-numbers"><code class="language-go">for i := range a {
 	a[i] = t0
@@ -2040,23 +2077,8 @@ than resetting each element one by one.
 The optimization was adopted in the standard Go compiler 1.5.
 </p>
 
-The optimization also works if the ranged container is a slice. Sadly,
-it doesn't work if the ranged value is an array pointer (up to Go 1.16).
-So if you want to reset an array, don't range its pointer. In particular,
-it is recommended to range a slice derived from the array, like this:
-
-<pre class="line-numbers"><code class="language-go">s := a[:]
-for i := range s {
-	s[i] = t0
-}
-</code></pre>
-
-<p>
-The reason of why it is not recommended to range over the array directly is
-it is very possible that other Go compilers don't make the above optimization,
-and as above has mentioned, ranging over the array will make a copy
-of the array (though the standard Go compiler won't in this optimization).
-</p>
+The optimization doesn't work if the ranged value is an array pointer (up to Go 1.16).
+So if you want to reset an array, don't range its pointer.
 
 </div>
 
@@ -2165,15 +2187,29 @@ For the latest standard Go compiler (version 1.16), the simplest way to clone a 
 <pre class="disable-line-numbers111"><code class="language-go">sClone := append(s[:0:0], s...)
 </code></pre>
 
-We can also use the following way:
-<pre class="disable-line-numbers111"><code class="language-go">sClone := make([]T, len(s))
+We can also use the following line instead, but comparing with the above way, it has one imperfection.
+If the source slice <code>s</code> is blank non-nil slice, then the result slice is nil.
+<pre class="disable-line-numbers111"><code class="language-go">sClone := append([]T(nil), s...)
+</code></pre>
+
+The above append ways have one drawback.
+They both might allocate (then initialize) more elements than needed.
+We can also use the following ways to avoid this drawback:
+<pre class="disable-line-numbers111"><code class="language-go">// The two-line make+copy way.
+sClone := make([]T, len(s))
 copy(sClone, s)
+
+// Or the following one-line make+append way.
+// As of Go Toolchain v1.16, this way is a bit
+// slower than the above two-line make+copy way.
+sClone := append(make([]T, 0, len(s)), s...)
 </code></pre>
 
 <p>
 </p>
 
-The second way has a drawback that if <code>s</code> is a nil slice, the second way results a non-nil clone.
+The "make" ways have a drawback that if <code>s</code> is a nil slice,
+then they both result a non-nil blank slice.
 However, in practice, we often needn't to pursue the perfection.
 If we do, then three more lines are needed:
 
@@ -2185,10 +2221,10 @@ if s != nil {
 </code></pre>
 
 <p>
-Before Go Toolchain 1.15, for some common cases, the "append" way is
+Before Go Toolchain 1.15, for some common cases, the "append" ways are
 <a href="https://github.com/go101/go101/wiki/How-to-efficiently-clone-a-slice%3F">much more efficient than</a>
-the "make+copy" way. However, since version 1.15, the "make+copy" way is specially optimized by the
-official Go compiler so that this way is always more efficient than the "append" way.
+the "make+copy" way. However, since version 1.15, the "make+copy" way has been specially optimized by the
+official Go compiler so that this way becomes always more efficient than the "append" ways.
 </p>
 
 </div>

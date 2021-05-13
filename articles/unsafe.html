@@ -74,7 +74,7 @@ The zero values of unsafe pointers are also represented with
 the predeclared identifier <code>nil</code>.
 </p>
 
-The <code>unsafe</code> standard package also provides three functions.
+Before Go 1.17, the <code>unsafe</code> standard package has already provided three functions.
 <ul>
 <li>
 	<code>func Alignof(variable ArbitraryType) uintptr</code>,
@@ -200,10 +200,66 @@ Go compiler version 1.16 on Linux AMD64 architecture.
 <p>
 The three functions provided in the <code>unsafe</code> package don't look much dangerous.
 The signatures of these functions are very
-<a href="https://groups.google.com/forum/?_escaped_fragment_=topic/golang-nuts/Pi7VveWDUPc">impossible to be changed in future Go 1 versions</a>.
+<a href="https://groups.google.com/g/golang-nuts/c/Pi7VveWDUPc">impossible to be changed in future Go 1 versions</a>.
 Rob Pike even ever <a href="https://github.com/golang/go/issues/5602">made a proposal to move the three functions to elsewhere</a>.
 Most of the unsafety of the <code>unsafe</code> package comes from unsafe pointers.
 They are as dangerous as C pointers, what is Go safe pointers always try to avoid.
+</p>
+
+Go 1.17 introduces one new type and two new functions into the <code>unsafe</code> package.
+The new type is <code>IntegerType</code>, The following is its definition.
+This type doesn't denote a specified type. It just represents any arbitrary integer type.
+We can view it as a generic type.
+<pre class="disable-line-numbers111"><code class="language-go">type IntegerType int
+</code></pre>
+
+The two functions introduced in Go 1.17 are:
+<ul>
+<li>
+	<code>func Add(ptr Pointer, len IntegerType) Pointer</code>.
+	This function adds an offset to the address represented by an unsafe pointer
+	and return a new unsafe pointer which represents the new address.
+	This function partially covers the usages of the below introduced
+	unsafe pointer use pattern 3.
+</li>
+<li>
+	<code>func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType</code>.
+	This function is used to derive a slice with the specified length from a safe pointer.
+</li>
+</ul>
+
+The two functions introduced in Go 1.17 have certain dangerousness.
+They need to be used with caution. This following is an example
+which uses the two functions.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+func main() {
+	a := [16]int{3: 3, 9: 9, 11: 11}
+	fmt.Println(a) // make a allocated on heap
+	eleSize := int(unsafe.Sizeof(a[0]))
+	p9 := &a[9]
+	up9 := unsafe.Pointer(p9)
+	p3 := (*int)(unsafe.Add(up9, -6 * eleSize))
+	fmt.Println(*p3) // 3
+	s := unsafe.Slice(p9, 5)[:3]
+	fmt.Println(s) // [9 0 11]
+	fmt.Println(len(s), cap(s)) // 3 5
+	
+	// The two calls are bad uses of the two
+	// funcitons. They make the results
+	// reference unknown memory blocks.
+	_ = unsafe.Add(up9, 7 * eleSize)
+	_ = unsafe.Slice(p9, 8)
+}
+</code></pre>
+
+<p>
 </p>
 
 </div>
@@ -613,6 +669,8 @@ func main() {
 </code></pre>
 
 <p>
+In fact, since Go 1.17, it is more recommended to use the above introduced
+<code>unsafe.Add</code> function to do such address offset operations.
 </p>
 
 Please note, in this specified example,
@@ -993,22 +1051,6 @@ please make sure not to modify the bytes in the result byte slice if the string 
 And it is recommended to never modify the bytes in the result byte slice.
 </p>
 
-</div>
-
-<h4>More patterns?</h4>
-
-<div>
-No more patterns now. But it should be mentioned that the design of valid unsafe pointer use patterns
-is still evolving and being improved. There are several approved proposals to be adopted
-in later Go versions:
-<ul>
-<li>
-	<a href="https://github.com/golang/go/issues/19367">Add a <code>Slice(ptr *T, len anyIntegerType) []T</code> function in the <code>unsafe</code> package.</a>
-</li>
-<li>
-	<a href="https://github.com/golang/go/issues/40481">Add a <code>Add(p Pointer, x uintptr) Pointer</code> function in the <code>unsafe</code> package.</a>
-</li>
-</ul>
 </div>
 
 <h3>Final Words</h3>

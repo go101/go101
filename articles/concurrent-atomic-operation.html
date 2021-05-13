@@ -339,24 +339,20 @@ can be used to atomically load and store values of any type.
 </p>
 
 <p>
-Type <code>*Value</code> has two methods, <code>Load</code> and <code>Store</code>.
-<code>Add</code> and <code>Swap</code> methods are not available for type <code>*Value</code>.
-</p>
-
-<p>
-The input parameter type and output result type of the <code>Load</code> and <code>Store</code>
-methods are both <code>interface{}</code>.
-So a call of the <code>Store</code> can take a value of any type.
+Type <code>*Value</code> has several methods: <code>Load</code>, <code>Store</code>,
+<code>Swap</code> and <code>CompareAndSwap</code> (The latter two are introduced in Go 1.17).
+The input parameter types of these methods are all <code>interface{}</code>.
+So any value may be passed to the calls to these methods.
 But for an addressable <code>Value</code> value <code>v</code>,
 once the <code>v.Store()</code> (a shorthand of <code>(&amp;v).Store()</code>)
 call has ever been called,
-then the subsequent <code>v.Store()</code> calls must also take argument values
+then the subsequent method calls on value <code>v</code> must also take argument values
 of the same concrete type as the argument of the first <code>v.Store()</code> call,
-otherwise, panic will occur.
+otherwise, panics will occur.
 A <code>nil</code> interface argument will also make the <code>v.Store()</code> call panic.
 </p>
 
-Example:
+An example:
 <pre class="line-numbers"><code class="language-go">package main
 
 import (
@@ -374,6 +370,32 @@ func main() {
 	fmt.Println(ta == tb) // true
 
 	v.Store("hello") // will panic
+}
+</code></pre>
+
+Another example (for Go 1.17+):
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"sync/atomic"
+)
+
+func main() {
+	type T struct {a, b, c int}
+	var x = T{1, 2, 3}
+	var y = T{4, 5, 6}
+	var z = T{7, 8, 9}
+	var v atomic.Value
+	v.Store(x)
+	fmt.Println(v) // {{1 2 3}}
+	old := v.Swap(y)
+	fmt.Println(v)       // {{4 5 6}}
+	fmt.Println(old.(T)) // {1 2 3}
+	swapped := v.CompareAndSwap(x, z)
+	fmt.Println(swapped, v) // false {{4 5 6}}
+	swapped = v.CompareAndSwap(y, z)
+	fmt.Println(swapped, v) // true {{7 8 9}}
 }
 </code></pre>
 

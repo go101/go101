@@ -60,7 +60,7 @@ which is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
 <table border="1" class="table table-bordered text-center" style="width: auto !important;">
 	<thead>
 		<tr>
-			<th class="text-center" valign="bottom" align="center">Kind of Types</th>
+			<th class="text-center" valign="bottom" align="center">Kinds of Types</th>
 			<th class="text-center" valign="bottom" align="center">Value Size</th>
 			<th class="text-center" valign="bottom" align="center">
 				<a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">Required</a>
@@ -118,7 +118,7 @@ which is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
 			<td valign="middle" align="center">not specified</td>
 		</tr>
 		<tr>
-			<th scope="row" class="text-center" valign="middle" align="center">pointer</th>
+			<th scope="row" class="text-center" valign="middle" align="center">pointer (safe or unsafe)</th>
 			<td valign="middle" align="center">1 word</td>
 			<td valign="middle" align="center">not specified</td>
 		</tr>
@@ -149,16 +149,16 @@ which is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
 		</tr>
 		<tr class="active">
 			<th scope="row" class="text-center" valign="middle" align="center">struct</th>
-			<td valign="middle" align="center">(the sum of sizes of all fields) + (number of
+			<td valign="middle" align="center">(the sum of sizes of all fields) + (the number of
 				<a href="memory-layout.html#size-and-padding">padding</a> bytes)
 			</td>
-			<td valign="middle" align="center">a <b>struct</b> type has size zero if it contains no fields
+			<td valign="middle" align="center">the size of a <b>struct</b> type is zero if it contains no fields
 				that have a size greater than zero</td>
 		</tr>
 		<tr class="active">
 			<th scope="row" class="text-center" valign="middle" align="center">array</th>
 			<td valign="middle" align="center">(element value size) * (array length)</td>
-			<td valign="middle" align="center">an <b>array</b> type has size zero if its element type
+			<td valign="middle" align="center">the size of an <b>array</b> type is zero if its element type
 				has zero size</td>
 		</tr>
 	</tbody>
@@ -171,7 +171,7 @@ which is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
 <p>
 Generally speaking, the cost to copy a value is proportional to the size of the value.
 However, value sizes are not the only factor determining value copy costs.
-Different CPU architectures may specially optimize value copying for values with specific sizes.
+Different CPU models and compiler versions may specially optimize value copying for values with specific sizes.
 </p>
 
 <p>
@@ -219,7 +219,7 @@ The following is an example which benchmarks different ways to iterate slice ele
 
 import "testing"
 
-type S struct{a, b, c, d, e int64}
+type S [12]int64
 var sX = make([]S, 1000)
 var sY = make([]S, 1000)
 var sZ = make([]S, 1000)
@@ -229,7 +229,7 @@ func Benchmark_Loop(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		sumX = 0
 		for j := 0; j < len(sX); j++ {
-			sumX += sX[j].a
+			sumX += sX[j][0]
 		}
 	}
 }
@@ -238,7 +238,7 @@ func Benchmark_Range_OneIterVar(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		sumY = 0
 		for j := range sY {
-			sumY += sY[j].a
+			sumY += sY[j][0]
 		}
 	}
 }
@@ -247,7 +247,7 @@ func Benchmark_Range_TwoIterVar(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		sumZ = 0
 		for _, v := range sZ {
-			sumZ += v.a
+			sumZ += v[0]
 		}
 	}
 }
@@ -256,9 +256,9 @@ func Benchmark_Range_TwoIterVar(b *testing.B) {
 Run the benchmarks in the directory of the test file,
 we will get a result similar to:
 
-<pre class="output"><code>Benchmark_Loop-4                500000   3228 ns/op
-Benchmark_Range_OneIterVar-4    500000   3203 ns/op
-Benchmark_Range_TwoIterVars-4   200000   6616 ns/op
+<pre class="output"><code>Benchmark_Loop-4             424342 2708 ns/op
+Benchmark_Range_OneIterVar-4 407905 2808 ns/op
+Benchmark_Range_TwoIterVar-4 214860 5222 ns/op
 </code></pre>
 
 <p>
@@ -266,7 +266,7 @@ We can find that the efficiency of the two-iteration-variable form is much
 lower than the other two.
 But please note that, some compilers might make special optimizations
 to remove the performance differences between these forms.
-The above benchmark result is for the standard Go compiler 1.13.
+The above benchmark result is for the standard Go compiler 1.16.
 </p>
 
 </div>
