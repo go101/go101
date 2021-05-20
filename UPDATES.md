@@ -1,3 +1,10 @@
+### 1.16.b (2021/May/18)
+
+* add Go 1.17 contents
+
+### 1.16.a (2021/Feb/18)
+
+* support Go 1.16 embedding feature.
 
 ### 1.16.a (2021/Feb/18)
 
