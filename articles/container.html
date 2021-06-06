@@ -2368,8 +2368,17 @@ and <code>elements</code> is the slice whose elements are to be inserted.
 <pre class="line-numbers"><code class="language-go">// One-line implementation:
 s = append(s[:i], append(elements, s[i:]...)...)
 
-// A much more efficient but more verbose way:
-if cap(s)-len(s) >= len(elements) {
+// The one-line way always copies s[i:] twice and
+// might make at most two allocations.
+// The following verbose way always copies s[i:]
+// once and will only make at most one allocation.
+// However, as of Go Toolchain v1.16, the "make"
+// call will clear all just allocated elements,
+// which is actually unnecessary. So the verbose
+// way is more efficient than the one-line way
+// only for small slices now.
+
+if cap(s) >= len(s) + len(elements) {
 	s = s[:len(s)+len(elements)]
 	copy(s[i+len(elements):], s[i:])
 	copy(s[i:], elements)
@@ -2475,4 +2484,4 @@ for details.
 
 
 
-
+verbose
