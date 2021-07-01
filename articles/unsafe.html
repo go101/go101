@@ -569,6 +569,7 @@ func main() {
 </code></pre>
 
 <p>
+Note: since Go 1.17, we may also use <code>unsafe.Slice((*string)(&ms[0]), len(ms))</code> to do the conversion.
 </p>
 
 A practice by using the pattern is to convert a byte slice, which will not be used after the conversion, to a string,
@@ -683,6 +684,9 @@ Please read the comments in the code for the reason.
 	p := unsafe.Pointer(&t)
 	// ty2 := (*int16)(unsafe.Pointer(uintptr(p)+N+M+M))
 	addr := uintptr(p) + N + M + M
+	
+	// ... (some other operations)
+	
 	// Now the t value becomes unused, its memory may be
 	// garbage collected at this time. So the following
 	// use of the address of t.y[2] may become invalid
@@ -690,9 +694,7 @@ Please read the comments in the code for the reason.
 	// Another potential danger is, if some operations
 	// make the stack grow or shrink here, then the
 	// address of t might change, so that the address
-	// saved in addr will become invalid (fact 3),
-	// though this danger doesn't exist for this
-	// specified example.
+	// saved in addr will become invalid (fact 3).
 	ty2 := (*int16)(unsafe.Pointer(addr))
 	fmt.Println(*ty2)
 }
@@ -755,7 +757,9 @@ Another detail which should be also noted is that,
 it is not recommended to store the end boundary of a memory block
 in a pointer (either safe or unsafe one).
 Doing this will prevent another memory block which closely follows
-the former memory block from being garbage collected.
+the former memory block from being garbage collected,
+or crash program if that boundary address is not valid for any allocated memory blocks
+(depending on compiler implementation).
 Please read <a href="unofficial-faq.html#final-zero-size-field">this FAQ item</a> to get more explanations.
 </p>
 
