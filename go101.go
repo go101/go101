@@ -23,6 +23,7 @@ type Go101 struct {
 	articleResHandler http.Handler
 	isLocalServer     bool
 	articlePages      Cache
+	indexContent      template.HTML
 	gogetPages        Cache
 	serverMutex       sync.Mutex
 	theme             string // default is "dark"
@@ -32,6 +33,7 @@ var go101 = &Go101{
 	staticHandler:     http.StripPrefix("/static/", staticFilesHandler),
 	articleResHandler: http.StripPrefix("/article/res/", resFilesHandler),
 	isLocalServer:     false, // may be modified later
+	indexContent:      retrieveIndexContent(),
 }
 
 func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -102,12 +104,12 @@ func pullGo101Project(wd string) {
 //==================================================
 
 type Article struct {
-	Content, Title     template.HTML
-	TitleWithoutTags   string
-	FilenameWithoutExt string
+	Content, Title, Index template.HTML
+	TitleWithoutTags      string
+	Filename              string
+	FilenameWithoutExt    string
 }
 
-var articlePages = map[string][]byte{}
 var schemes = map[bool]string{false: "http://", true: "https://"}
 
 func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, file string) {
@@ -115,6 +117,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, fi
 	if page == nil {
 		article, err := retrieveArticleContent(file)
 		if err == nil {
+			article.Index = disableArticleLink(go101.indexContent, file)
 			pageParams := map[string]interface{}{
 				"Article":       article,
 				"Title":         article.TitleWithoutTags,
@@ -174,6 +177,7 @@ func retrieveArticleContent(file string) (Article, error) {
 	}
 
 	article.Content = template.HTML(content)
+	article.Filename = file
 	article.FilenameWithoutExt = strings.TrimSuffix(file, ".html")
 
 	// retrieve titles
@@ -200,6 +204,65 @@ func retrieveArticleContent(file string) (Article, error) {
 	}
 
 	return article, nil
+}
+
+func retrieveIndexContent() template.HTML {
+	page101, err := retrieveArticleContent("101.html")
+	if err != nil {
+		panic(err)
+	}
+	content := []byte(page101.Content)
+	start := []byte("<!-- index starts (don't remove) -->")
+	i := bytes.Index(content, start)
+	if i < 0 {
+		panic("index not found")
+	}
+	content = content[i+len(start):]
+	end := []byte("<!-- index ends (don't remove) -->")
+	i = bytes.Index(content, end)
+	if i < 0 {
+		panic("index not found")
+	}
+	content = content[:i]
+	comments := [][]byte{
+		[]byte("<!-- (to remove) for printing"),
+		[]byte("(to remove) -->"),
+	}
+	for _, cmt := range comments {
+		i = bytes.Index(content, cmt)
+		if i >= 0 {
+			filleBytes(content[i:i+len(cmt)], ' ')
+		}
+	}
+	return template.HTML(content)
+}
+
+var (
+	aEnd  = []byte(`</a>`)
+	aHref = []byte(`href="`)
+	aID   = []byte(`id="i-`)
+)
+
+func disableArticleLink(htmlContent template.HTML, page string) (r template.HTML) {
+	content := []byte(htmlContent)
+	aStart := []byte(`<a class="index" href="` + page + `">`)
+	i := bytes.Index(content, aStart)
+	if i >= 0 {
+		content := content[i:]
+		i = bytes.Index(content[len(aStart):], aEnd)
+		if i >= 0 {
+			i += len(aStart)
+			//filleBytes(content[:len(start)], 0)
+			//filleBytes(content[i:i+len(end)], 0)
+			k := bytes.Index(content, aHref)
+			if i >= 0 {
+				content[1] = 'b'
+				content[i+2] = 'b'
+				copy(content[k:], aID)
+			}
+		}
+	}
+	return template.HTML(content)
 }
 
 const Anchor, _Anchor, LineToRemoveTag, endl = `<li><a class="index" href="`, `">`, `(to remove)`, "\n"
@@ -361,7 +424,7 @@ func retrievePageTemplate(which PageTemplate, cacheIt bool) *template.Template {
 	if t == nil {
 		switch which {
 		case Template_Article:
-			t = parseTemplate(pageTemplatesCommonPaths, "base", "article")
+			t = parseTemplate(pageTemplatesCommonPaths, "article")
 		case Template_PrintBook:
 			t = parseTemplate(pageTemplatesCommonPaths, "pdf")
 		case Template_GoGet:
@@ -438,6 +501,12 @@ func findGo101ProjectRoot() (string, bool) {
 //===================================================
 // utils
 //===================================================
+
+func filleBytes(s []byte, b byte) {
+	for i := range s {
+		s[i] = b
+	}
+}
 
 func openBrowser(url string) error {
 	var cmd string

@@ -569,7 +569,7 @@ func main() {
 </code></pre>
 
 <p>
-Note: since Go 1.17, we may also use <code>unsafe.Slice((*string)(&ms[0]), len(ms))</code> to do the conversion.
+Note: since Go 1.17, we may also use <code>unsafe.Slice((*string)(&amp;ms[0]), len(ms))</code> to do the conversion.
 </p>
 
 A practice by using the pattern is to convert a byte slice, which will not be used after the conversion, to a string,
@@ -759,7 +759,7 @@ in a pointer (either safe or unsafe one).
 Doing this will prevent another memory block which closely follows
 the former memory block from being garbage collected,
 or crash program if that boundary address is not valid for any allocated memory blocks
-(depending on compiler implementation).
+(depending on compiler implementations).
 Please read <a href="unofficial-faq.html#final-zero-size-field">this FAQ item</a> to get more explanations.
 </p>
 
@@ -939,7 +939,6 @@ import (
 	"fmt"
 	"unsafe"
 	"reflect"
-	"runtime"
 )
 
 func main() {
@@ -997,7 +996,6 @@ for the result slice in each conversion.
 import (
 	"fmt"
 	"reflect"
-	"runtime"
 	"strings"
 	"unsafe"
 )
@@ -1045,15 +1043,73 @@ in the <code>reflect</code> standard package.
 </p>
 
 <p>
-It is also possible to convert a byte slice to a string by using a similar way.
-However, it is more recommended to use the way shown in pattern 1 to do this job.
-</p>
-
-<p>
 Note: when using the just introduced unsafe way to convert a string to a byte slice,
-please make sure not to modify the bytes in the result byte slice if the string still survives.
+please make sure not to modify the bytes in the result byte slice if the string still survives
+(for demonstrating, the above example violates this principle).
 And it is recommended to never modify the bytes in the result byte slice.
 </p>
+
+It is also possible to convert a byte slice to a string in a similar way,
+which is a bit safer (but some slower) than the way shown in pattern 1.
+
+<pre class="line-numbers"><code class="language-go">func ByteSlice2String(bs []byte) (str string) {
+	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	strHdr.Data = sliceHdr.Data
+	strHdr.Len = sliceHdr.Len
+	return
+}
+</code></pre>
+
+<p>
+Similarly, please make sure not to modify the bytes in the argument byte slice if the result string still survives.
+</p>
+
+BTW, let's view a bad example which voilates the principle of pattern 3
+(the example is borrowed from one slack comment posted by Bryan C. Mills):
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"reflect"
+	"unsafe"
+)
+
+func Example_Bad() *byte {
+	var str = "godoc"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	pbyte := (*byte)(unsafe.Pointer(hdr.Data + 2))
+	return pbyte // *pbyte == 'd'
+}
+
+func main() {
+	fmt.Println(string(*Example_Bad()))
+}
+</code></pre>
+
+Two correct implementations:
+
+<pre class="line-numbers"><code class="language-go">func Example_Good1() *byte {
+	var str = "godoc"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	pbyte := (*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(hdr.Data)) + 2))
+	return pbyte
+}
+
+// Works since Go 1.17.
+func Example_Good2() *byte {
+	var str = "godoc"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	pbyte := (*byte)(unsafe.Add(unsafe.Pointer(hdr.Data), 2))
+	return pbyte
+}
+</code></pre>
+
+<p>
+Tricky? Yes.
+</p>
+
 
 </div>
 
@@ -1087,9 +1143,10 @@ for you code depending on the unsafe mechanism.
 
 <p>
 In the end, it is worth mentioning that a dynamic analysis compiler option
-<code>-gcflags=all=-d=checkptr</code> is supported since Go Toolchain 1.14.
+<code>-gcflags=all=-d=checkptr</code> is supported since Go Toolchain 1.14
+(it is recommended to use this option on Windows with Go Toolchain 1.15+).
 When this option is used, some (but not all) incorrect unsafe pointer uses will be detected at run time.
-Once such an incorrect use is detected, a panic will occur. (However, it is not recommended to use this option on Windows now.)
+Once such an incorrect use is detected, a panic will occur.
 Thanks to Matthew Dempsky for implementing this <a href="https://github.com/golang/go/issues/22218">great feature</a>!
 </p>
 
