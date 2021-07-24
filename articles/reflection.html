@@ -697,11 +697,38 @@ func main() {
 </code></pre>
 
 <p>
+The method <code>reflect.Value.IsZero</code> was introduced in Go 1.13.
+It is used to check whether or not the underlying value of a <code>reflect.Value</code> value is a zero value.
 </p>
 
 <p>
-Since Go 1.13, we can use the method <code>reflect.Value.IsZero</code> to
-check whether or not the underlying value of a <code>reflect.Value</code> value is a zero value.
+Since Go 1.17, <a href="container.html#slice-to-array-pointer">a slice may be converted to an array pointer</a>.
+However, such a conversion might panic if the length of the pointer base array type is too large.
+The method <code>reflect.Value.CanConvert(T reflect.Type)</code> introduced in Go 1.17 is used to check whether or not a conversion will success.
+</a>
+
+An example using the <code>CanConvert</code> method:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	s := reflect.ValueOf([]int{1, 2, 3, 4, 5})
+	ts := s.Type()
+	t1 := reflect.TypeOf(&[5]int{})
+	t2 := reflect.TypeOf(&[6]int{})
+	fmt.Println(ts.ConvertibleTo(t1)) // true
+	fmt.Println(ts.ConvertibleTo(t2)) // true
+	fmt.Println(s.CanConvert(t1))     // true
+	fmt.Println(s.CanConvert(t2))     // false
+}
+</code></pre>
+
+<p>
 </p>
 
 <a class="anchor" id="deep-equal"></a>
