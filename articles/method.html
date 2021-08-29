@@ -105,9 +105,11 @@ func (ss StringSet) Remove(key string) {
 type Book struct {
 	pages int
 }
+
 func (b Book) Pages() int {
 	return b.pages
 }
+
 func (b *Book) SetPages(pages int) {
 	b.pages = pages
 }
@@ -188,9 +190,11 @@ import "fmt"
 type Book struct {
 	pages int
 }
+
 func (b Book) Pages() int {
 	return b.pages
 }
+
 func (b *Book) SetPages(pages int) {
 	b.pages = pages
 }
@@ -232,12 +236,12 @@ For each method declared for value receiver type <code>T</code>,
 a corresponding method with the same name will be
 implicitly declared by compiler for type <code>*T</code>.
 By the example above, the <code>Pages</code> method is declared for type <code>Book</code>,
-so compilers will implicitly declare a method with the same name <code>Pages</code>
+so a method with the same name <code>Pages</code> is implicitly declared
 for type <code>*Book</code>. The same method name contains one line of code,
-which is a call to the implicit function <code>Book.Pages</code> introduced above.
+which is a call to the corresponding explicitly declared method:
 
 <pre class="line-numbers"><code class="language-go">func (b *Book) Pages() int {
-	return Book.Pages(*b)
+	return (*b).Pages()
 }
 </code></pre>
 
@@ -614,6 +618,56 @@ func main() {
 	fmt.Println(books) // [{500} {456} {789}]
 }
 </code></pre>
+</div>
+
+<a class="anchor" id="implicit-method-evaluation"></a>
+<h3>A Value of an Implicit Method Is Always Evaluated to a Value of the Corresponding Explicit Method</h3>
+
+<div>
+
+When a value of an implicit method is evaluated, it will be evaluated to
+the method value which is called in the implicit method definition body.
+
+Use the explicit and implicit <code>Pages</code> methods mentioned above to demostrate.
+In the following code, the method value <code>p.Pages</code> is evaluated to <code>(*p).Pages</code>,
+that is why the call <code>g()</code> prints <code>123</code>.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+func (b Book) Pages() int {
+	return b.pages
+}
+
+// This method is implicitly declared.
+/*
+func (b *Book) Pages() int {
+	return (*b).Pages()
+}
+*/
+
+func (b *Book) Pages2() int {
+	return (*b).Pages()
+}
+
+func main() {
+	var b = Book{pages: 123}
+	var f = b.Pages
+	var p = &b
+	var g = p.Pages
+	var h = p.Pages2
+	b.pages = 789
+	fmt.Println(f()) // 123
+	fmt.Println(g()) // 123
+	fmt.Println(h()) // 789
+}
+</code></pre>
+
 </div>
 
 <h3>Should a Method Be Declared With Pointer Receiver or Value Receiver?</h3>
