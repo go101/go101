@@ -621,16 +621,20 @@ func main() {
 </div>
 
 <a class="anchor" id="implicit-method-evaluation"></a>
-<h3>A Value of an Implicit Method Is Always Evaluated to a Value of the Corresponding Explicit Method</h3>
+<h3>Evaluation of Implicit Method Value</h3>
 
 <div>
 
-When a value of an implicit method is evaluated, it will be evaluated to
-the method value which is called in the implicit method definition body.
+When an implicit method value is evaluated, the method receiver will be evaluated and saved
+with the value of the method receiver at the time the evaluation happens.
 
-Use the explicit and implicit <code>Pages</code> methods mentioned above to demostrate.
-In the following code, the method value <code>p.Pages</code> is evaluated to <code>(*p).Pages</code>,
-that is why the call <code>g()</code> prints <code>123</code>.
+In the following code, <code>p</code> in the method value <code>p.Pages</code> is evaluated to <code>(*p).Pages</code>,
+which then evaluate <code>*p</code> to the current <code>b</code> value, which is <code>Book{pages: 123}</code>. This
+receiver is saved and use in later calls, that is why the call <code>g()</code> prints <code>123</code>.
+
+For <code>p.Pages2</code>, the receiver <code>p</code> is evaluated to <code>&amp;b</code>, this is a copy of pointer
+to <code>b</code>, thus any changes to <code>b</code> will also affect this copied receiver, that is why the call
+<code>h()</code> prints <code>789</code>.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -643,13 +647,6 @@ type Book struct {
 func (b Book) Pages() int {
 	return b.pages
 }
-
-// This method is implicitly declared.
-/*
-func (b *Book) Pages() int {
-	return (*b).Pages()
-}
-*/
 
 func (b *Book) Pages2() int {
 	return (*b).Pages()
