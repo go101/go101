@@ -359,65 +359,39 @@ For example:
 <pre class="line-numbers"><code class="language-go">package main
 
 type A struct {
-	x int
+	FieldX int
 }
+
 func (a A) MethodA() {}
 
 type B struct {
-	A
+	*A
 }
+
 type C struct {
 	B
 }
 
 func main() {
-	var c C
+	var c = &C{B: B{A: &A{FieldX: 5}}}
 
 	// The following 4 lines are equivalent.
-	_ = c.B.A.x
-	_ = c.B.x
-	_ = c.A.x
-	_ = c.x // x is called a promoted field of type C
+	_ = c.B.A.FieldX
+	_ = c.B.FieldX
+	_ = c.A.FieldX // A is a promoted field of C
+	_ = c.FieldX   // FieldX is a promoted field
 
 	// The following 4 lines are equivalent.
 	c.B.A.MethodA()
 	c.B.MethodA()
 	c.A.MethodA()
-	c.MethodA()
+	c.MethodA() // MethodA is a promoted method of C
 }
 </code></pre>
 
 <p>
-This is why the expression <code>gaga.Name</code> is legal
-in the example in the last section.
+This is why the expression <code>gaga.Name</code> is legal in the example in the last section.
 For it is just the shorthand of <code>gaga.Person.Name</code>.
-<code>Name</code> is called a promoted field of type <code>Singer</code>.
-</p>
-
-As any embedding type must be a struct type,
-and the article <a href="struct.html#use-pointer-as-struct">structs in Go</a>
-has mentioned that the field of an addressable struct value
-can be selected through the pointers of the struct value,
-so the following code is also legal in Go.
-<pre class="line-numbers"><code class="language-go">func main() {
-	var c C
-	pc = &c
-
-	// The following 4 lines are equivalent.
-	fmt.Println(pc.B.A.x)
-	fmt.Println(pc.B.x)
-	fmt.Println(pc.A.x)
-	fmt.Println(pc.x)
-
-	// The following 4 lines are equivalent.
-	pc.B.A.MethodA()
-	pc.B.MethodA()
-	pc.A.MethodA()
-	pc.MethodA()
-}
-</code></pre>
-
-<p>
 </p>
 
 <p>
@@ -425,12 +399,16 @@ Similarly, the selector <code>gaga.PrintName</code> can be viewed as
 a shorthand of <code>gaga.Person.PrintName</code>.
 But, it is also okay if we think it is not a shorthand.
 After all, the type <code>Singer</code> really has a <code>PrintName</code>
-method, though the method is declared implicitly
-(please read the section after next for details).
+method, though the method is declared implicitly (please read the section after next for details).
 For the similar reason, the selector <code>(&amp;gaga).PrintName</code>
 and <code>(&amp;gaga).SetAge</code> can also be viewed as, or not as,
 shorthands of <code>(&amp;gaga.Person).PrintName</code> and
 <code>(&amp;gaga.Person).SetAge</code>.
+</p>
+
+<p>
+<code>Name</code> is called a promoted field of type <code>Singer</code>.
+<code>PrintName</code> is called a promoted method of type <code>Singer</code>.
 </p>
 
 <p>
@@ -441,8 +419,8 @@ Please read <a href="method.html#call">method calls</a> for details.
 </p>
 
 <p>
-In the above examples, <code>c.B.A.x</code> is called the full form
-of selectors <code>c.x</code>, <code>c.B.x</code> and <code>c.A.x</code>.
+In the above examples, <code>c.B.A.FieldX</code> is called the full form
+of selectors <code>c.FieldX</code>, <code>c.B.FieldX</code> and <code>c.A.FieldX</code>.
 Similarly, <code>c.B.A.MethodA</code> is called the full form of selectors
 <code>c.MethodA</code>, <code>c.B.MethodA</code> and <code>c.A.MethodA</code>.
 </p>
@@ -687,28 +665,20 @@ Simply speaking,
 </li>
 </ul>
 
-The following methods are implicitly declared by compilers
+The following (promoted) methods are implicitly declared by compilers
 for type <code>Singer</code> and type <code>*Singer</code>.
 
-<pre class="line-numbers"><code class="language-go">func (s Singer) PrintName() {
-	s.Person.PrintName()
-	// Compilers will make an optimization here, so
-	// that only the Person part of the argument
-	// passed to the parameter s is copied.
-}
-
-func (s *Singer) PrintName() {
-	(*s).Person.PrintName()
-}
-
-func (s *Singer) SetAge(age int) {
-	(&s.Person).SetAge(age)
-	// <=> (&((*s).Person)).SetAge(age)
-}
+<pre class="line-numbers"><code class="language-go">// Note: these declarations are not legal Go syntax.
+// They are shown here just for explaination purpose.
+// They indicate how implicit method values are
+// evaluated (see the next section for more).
+func (s Singer) PrintName = s.Person.PrintName
+func (s *Singer) PrintName = (*s).Person.PrintName
+func (s *Singer) SetAge = (&(*s).Person).SetAge
 </code></pre>
 
 <p>
-The implicit methods can also be called promoted methods.
+The right parts are the corresponding full form selectors.
 </p>
 
 <p>
@@ -718,6 +688,7 @@ and non-defined pointer types whose base types are non-defined struct types.
 But through type embedding, such non-defined types can also own methods.
 </p>
 
+<!--
 Here is another example to show which implicit methods are declared.
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -785,6 +756,7 @@ The result:
 
 <p>
 </p>
+-->
 
 <p>
 If a struct type embeds a type which implements an interface type
@@ -845,46 +817,84 @@ type Z X
 
 </div>
 
-<a class="anchor" id="implicit-method-evaluation"></a>
-<h3>Evaluation of an Implicit Promoted Method Value</h3>
+<a class="anchor" id="method-value-evaluation"></a>
+<h3>Normnalization and Evaluation of Promoted Method Values</h3>
 
 <div>
 
 <p>
-When a value of an implicit promoted method is evaluated, the method receiver will be evaluated
-to the current value of the receiver of the promoted method.
+Assume <code>v.m</code> is a legal promoted method value expression,
+compilers will normalize it as the result of changing implicit address taking
+and pointer dereference operations into explicit ones in the corresponding
+full form selector of <code>v.m</code>.
 </p>
 
-For example, in the following code, the method value <code>s.Age</code> is evaluated to <code>(*s.Person).Age</code>,
-the receiver <code>*s.Person</code> is saved and use in later calls, that is why the call <code>f()</code> always prints <code>26</code>.
+<p>
+The same as any other <a href="method.html#method-value-evaluation">method value evaluation</a>,
+for a normalized method value expression <code>v.m</code>,
+at run time, when the method value <code>v.m</code> is evaluated,
+the receiver argument <code>v</code> is evaluated and
+a copy of the evaluation result is saved and used in later calls to the method value.
+</p>
+
+For example, in the following code
+<ul>
+<li>
+	the full form selector of the promoted method expression <code>s.M1</code>
+	is <code>s.T.X.M1</code>. After changing the implicit address taking and
+	pointer dereference operations in it, it becomes <code>(*s.T).X.M1</code>.
+	At run time, the receiver argument <code>(*s.T).X</code> is evaluated
+	and a copy of the evaluation result is saved and used in later calls to the promoted method value.
+	The the evaluation result is <code>1</code>,
+	that is why the call <code>f()</code> always prints <code>1</code>.
+</li>
+<li>
+	the full form selector of the promoted method expression <code>s.M2</code>
+	is <code>s.T.X.M2</code>. After changing the implicit address taking and
+	pointer dereference operations in it, it becomes <code>(&(*s.T).X).M2</code>.
+	At run time, the receiver argument <code>&(*s.T).X</code> is evaluated
+	and a copy of the evaluation result is saved and used in later calls to the promoted method value.
+	The evaluation result is the address of the field <code>s.X</code> (a.k.a. <code>(*s.T).X</code>).
+	Any change of the value <code>s.X</code> will be reflected through the dereference of the address,
+	but the changes of the value <code>s.T</code> have no effects on the evaluation result,
+	that is why the two <code>g()</code> calls both print <code>2</code>.
+</li>
+</ul>
 
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
-type Person struct {
-	age  int
+type X int
+
+func (x X) M1() {
+	fmt.Println(x)
 }
 
-func (p Person) Age() int{
-	return p.age
+func (x *X) M2() {
+	fmt.Println(*x)
 }
 
-type Singer struct {
-	*Person
-}
+type T struct { X }
+
+type S struct { *T }
 
 func main() {
-	var p = Person{age: 26}
-	var s = Singer{Person: &p}
-	var f = s.Age
-	p.age = 35
-	fmt.Println(f()) // 26
-	s.Person = nil
-	fmt.Println(f()) // 26
-	_ = s.Age        // panic
+	var t = &T{X: 1}
+	var s = S{T: t}
+	var f = s.M1 // <=> (*s.T).X.M1
+	var g = s.M2 // <=> (&(*s.T).X).M2
+	s.X = 2
+	f() // 1
+	g() // 2
+	s.T = &T{X: 3}
+	f() // 1
+	g() // 2
 }
 </code></pre>
+
+<p>
+</p>
 
 </div>
 
