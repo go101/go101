@@ -2233,11 +2233,37 @@ if s != nil {
 </code></pre>
 
 <p>
+</p>
+
 Before Go Toolchain 1.15, for some common cases, the "append" ways are
 <a href="https://github.com/go101/go101/wiki/How-to-efficiently-clone-a-slice%3F">much more efficient than</a>
 the "make+copy" way. However, since version 1.15, the "make+copy" way has been specially optimized by the
 official Go compiler so that this way becomes always more efficient than the "append" ways.
-</p>
+But please note that, the optimization only works if the cloned slice presents as a pure or
+qualified identifier in code and the <code>make</code> call only take two arguments.
+For example, it only works for the first case in the following code:
+
+<pre class="disable-line-numbers111"><code class="language-go">	// case 1:
+	var s = make{[]byte, 10000)
+	y = make([]T, len(s)) // works
+	copy(y, s)
+
+	// case 2:
+	var s = make{[]byte, 10000)
+	y = make([]T, len(s), len(s)) // not work
+	copy(y, s)
+
+	// case 3:
+	var a = [1][]byte{s}
+	y = make([]T, len(a[0])) // not work
+	copy(y, a[0])
+
+	// case 4:
+	type T struct {x []byte}
+	var t = T{x: s}
+	y = make([]T, len(t.x)) // not work
+	copy(y, t.x)
+</code></pre>
 
 </div>
 
