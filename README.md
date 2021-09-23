@@ -7,7 +7,8 @@ It tries to help gophers gain a deep and thorough understanding of Go.
 This book also collects many details of Go and in Go programming.
 The book is expected to be helpful for both beginner and experienced Go programmers.
 
-To get latest changes of Go 101, please follow the official twitter account: [@go100and1](https://twitter.com/go100and1).
+To get latest changes of Go 101, please follow the official twitter account [@go100and1](https://twitter.com/go100and1)
+and join [the Go 101 Slack space](https://go-101.slack.com).
 
 ### Install, Update, and Read Locally
 
