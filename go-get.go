@@ -42,6 +42,16 @@ var gogetInfos = map[string]GoGetInfo{
 		GoGetSourceRepo: "go101/golds",
 		GoDocWebsite:    "https://pkg.go.dev/",
 	},
+	"ebooktool": {
+		RootPackage:     "go101.org/ebooktool",
+		GoGetSourceRepo: "go101/ebooktool",
+		GoDocWebsite:    "https://pkg.go.dev/",
+	},
+	"nstd": {
+		RootPackage:     "go101.org/nstd",
+		GoGetSourceRepo: "go101/nstd",
+		GoDocWebsite:    "https://pkg.go.dev/",
+	},
 }
 
 func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, rootPkg, subPkg string) {

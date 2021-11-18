@@ -51,7 +51,7 @@ Index:
 	Operator related details:
 	<ul class="index">
 	<li>
-		<a class="index" href="#some-operator-precedence">The precedence of the increment operator <code>++</code> and the decrement <code>--</code> is lower than the dereference operator <code>*</code> and the address-taken operator <code>&amp;</code>, which are lower than the property selection operator <code>.</code> in selectors.</a>
+		<a class="index" href="#some-operator-precedence">The precedence of the increment operator <code>++</code> and the decrement <code>--</code> is lower than the dereference operator <code>*</code> and the address-taking operator <code>&amp;</code>, which are lower than the property selection operator <code>.</code> in selectors.</a>
 	</li>
 	<li>
 		<a class="index" href="#type-deduction-in-bit-shift">The type deduction rule for the left untyped operand of a bit-shift operation depends on whether or not the right operand is a constant.</a>
@@ -654,7 +654,7 @@ func main() {
 </div>
 
 <a class="anchor" id="some-operator-precedence"></a>
-<h3>The precedence of the increment operator <code>++</code> and the decrement <code>--</code> is lower than the dereference operator <code>*</code> and the address-taken operator <code>&amp;</code>, which are lower than the property selection operator <code>.</code> in selectors.</h3>
+<h3>The precedence of the increment operator <code>++</code> and the decrement <code>--</code> is lower than the dereference operator <code>*</code> and the address-taking operator <code>&amp;</code>, which are lower than the property selection operator <code>.</code> in selectors.</h3>
 
 <div>
 For example:
@@ -1958,8 +1958,9 @@ So the call might return <code>true</code> even if the two pointers are not equa
 </p>
 
 <p>
-The third difference is the result of a <code>DeepEqual</code> call may be not
-correct if the compared two arguments are in the same cyclic reference chain.
+The third difference is the result of a <code>DeepEqual</code> call might return
+<code>true</code> if both of its arguments are in cyclic reference chains
+(to avoid infinite looping in the call).
 </p>
 
 <p>
@@ -1989,11 +1990,13 @@ func main() {
 	fmt.Println(reflect.DeepEqual(&z, &y)) // true
 	fmt.Println(&z == &y)                  // false
 
-	type T struct{p *T}
-	t := &T{&T{nil}}
-	t.p.p = t // form a cyclic reference chain.
-	fmt.Println(reflect.DeepEqual(t, t.p)) // true
-	fmt.Println(t == t.p)                  // false
+	type Node struct{peer *Node}
+	var q, r, s Node
+	q.peer = &q // form a cyclic reference chain
+	r.peer = &s // form a cyclic reference chain
+	s.peer = &r
+	println(reflect.DeepEqual(&q, &r)) // true
+	fmt.Println(q == r)                // false
 
 	var f1, f2 func() = nil, func(){}
 	fmt.Println(reflect.DeepEqual(f1, f1)) // true
