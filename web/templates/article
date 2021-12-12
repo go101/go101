@@ -4,21 +4,21 @@
 		<meta charset="utf-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<meta name="description" content="">
+		<meta name="description" content="Golang online books, articles, tools, etc.">
 		<meta name="author" content="">
 		<link rel="icon" href="/static/go101/images/101-v1.ico">
 		<link rel="apple-touch-icon" sizes="152x152" href="/static/go101/images/iphone-v1.jpeg">
 	
-		<title>{{.Title}} - Go 101: an online Go programming book + knowledge base</title>
+		<title>{{- if .Title -}}{{.Title}} - {{- end -}}Go 101</title>
 
 		{{- if eq .Theme "light" -}}
 		<link href="/static/bootstrap/v4.5.0/css/bootstrap.min.css" rel="stylesheet">
-		<link href="/static/go101/css/v99-light.css" rel="stylesheet">
+		<link href="/static/go101/css/v991-light.css" rel="stylesheet">
 		<link href="/static/prism/2020-08-03-light/prism.css" rel="stylesheet">
 		<script src="/static/prism/2020-08-03-light/prism.js"></script>
 		{{- else -}}
 		<link href="/static/bootstrap/v4.0.3-dark/css/bootstrap.min.css" rel="stylesheet">
-		<link href="/static/go101/css/v99-dark.css" rel="stylesheet">
+		<link href="/static/go101/css/v991-dark.css" rel="stylesheet">
 		<link href="/static/prism/2020-08-03-dark/prism.css" rel="stylesheet">
 		<script src="/static/prism/2020-08-03-dark/prism.js"></script>
 		{{- end -}}
@@ -37,15 +37,21 @@
 	<body>
 		<div class="container">
 
-		{{ call .Value "top-bar" true  }}
+		{{ with .Article -}}
+		{{- if eq .Group "website" -}}
+		
+			{{- template "body" . -}}
+			
+		{{- else -}}
 
-		{{- template "navbar" . -}}
+			{{- template "navbar" . -}}
 
-		{{- template "content" .Article -}}
+			{{- template "body" . -}}
 
-		{{- template "bottom" .Article -}}
-
-		{{/*- template "navbar" . -*/}}
+			{{- template "promotions" . -}}
+		
+		{{- end -}}
+		{{- end }}
 
 		</div>
 	</body>
@@ -53,99 +59,90 @@
 	
 {{- define "navbar" -}}
 
-{{- with .Article -}}
+{{- $is_fundamentals := (eq .Group "fundamentals") -}}
+{{- $is_optimizations := (eq .Group "optimizations") -}}
+{{- $is_details_and_tips := (eq .Group "details-and-tips") -}}
+{{- $is_quizzes := (eq .Group "quizzes") -}}
 
-{{- $is_details := and . (eq .FilenameWithoutExt "details") -}}
-{{- $is_faq := and . (eq .FilenameWithoutExt "unofficial-faq") -}}
-{{- $is_tips := and . (eq .FilenameWithoutExt "tips") -}}
-{{- $is_quizzes := and . (eq .FilenameWithoutExt "quizzes") -}}
-{{- $is_tools := and . (eq .FilenameWithoutExt "tools") -}}
+{{- $is_index_page := (eq .FilenameWithoutExt "101") -}}
+
 
 <div class="row nav-bar-with-borders">
-	{{- if eq .FilenameWithoutExt "101" -}}
-	<div class="col-xs-6 col-sm-3 nav-item-active">
-		The Book
+	<div class="col-xs-6 col-sm-4 nav-item-inactive">
+		<a href="/">Home</a>
+	</div>
+	
+	{{- if and $is_fundamentals $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		Go 101
 	</div>
 	{{- else -}}
-	<div class="col-xs-6 col-sm-3 nav-item-inactive">
-		<a href="/article/101.html">The Book</a>
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_fundamentals -}} in {{- end -}} active">
+		<a href="/article/101.html">Go 101</a>
 	</div>
 	{{- end -}}
-
-	{{- if $is_details -}}
-	<div class="col-xs-6 col-sm-3 nav-item-active">Go Details 101</div>
+	
+	{{- if and $is_quizzes $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		Go Quizzes 101
+	</div>
 	{{- else -}}
-	<div class="col-xs-6 col-sm-3 nav-item-inactive"><a href="/article/details.html">Go Details 101</a></div>
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_quizzes -}} in {{- end -}} active">
+		<a href="/quizzes/101.html">Go Quizzes 101</a>
+	</div>
 	{{- end -}}
-
-	{{- if $is_faq -}}
-	<div class="col-xs-6 col-sm-3 nav-item-active">Go FAQ 101</div>
+	
+	{{- if and $is_details_and_tips $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		Go Details &amp; Tips 101
+	</div>
 	{{- else -}}
-	<div class="col-xs-6 col-sm-3 nav-item-inactive"><a href="/article/unofficial-faq.html">Go FAQ 101</a></div>
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_details_and_tips -}} in {{- end -}} active">
+		<a href="/details-and-tips/101.html">Go Details &amp; Tips 101</a>
+	</div>
 	{{- end -}}
-
-	{{- if $is_tips -}}
-	<div class="col-xs-6 col-sm-3 nav-item-active">Go Tips 101</div>
+	
+	{{- if and $is_optimizations $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		Go Optimizations 101
+	</div>
 	{{- else -}}
-	<div class="col-xs-6 col-sm-3 nav-item-inactive"><a href="/article/tips.html">Go Tips 101</a></div>
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_optimizations -}} in {{- end -}} active">
+		<a href="/optimizations/101.html">Go Optimizations 101</a>
+	</div>
 	{{- end -}}
+	
+	<div class="col-xs-6 col-sm-4 nav-item-inactive" style="color: #ccc;">Go Practices 101</div>
 
-	<div class="col-xs-6 col-sm-3 nav-item-inactive"><a href="https://github.com/go101/go101/wiki">Go 101 Wiki</a></div>
-
-	<div class="col-xs-6 col-sm-3 nav-item-inactive" style="color: #ccc;">Go Practice 101</div>
-
-	{{- if $is_tools -}}
-	<div class="col-xs-6 col-sm-3 nav-item-active">Go 101 Tools</div>
-	{{- else -}}
-	<div class="col-xs-6 col-sm-3 nav-item-inactive"><a href="/article/tools.html">Go 101 Tools</a></div>
-	{{- end -}}
-
-	{{- if $is_quizzes -}}
-	<div class="col-xs-6 col-sm-3 nav-item-active">Go Quizzes 101</div>
-	{{- else -}}
-	<div class="col-xs-6 col-sm-3 nav-item-inactive"><a href="/article/quizzes.html">Go Quizzes 101</a></div>
-	{{- end -}}
 </div>
-
-	{{- if (and (call $.Value "top-bar") (not $is_tools) (ne .FilenameWithoutExt "tool-golds")) -}}
-<div class="alert alert-warning text-center"><small>
-<b><span class="new-text"><sup>new!</sup></span> <a href="/article/tool-golds.html">Golds</a></b> -
-a Go local docs server (and code reader) showing type implementation relations.
-</small></div>
-<p>
-</p>
-	{{- end -}}
-
-{{- end -}}
-
-{{ call .Value "top-bar" false  }}
-
-{{- end -}}
-
-
-
-
-{{ define "content" }}
-
-{{- $.Title }}
-
-{{ $.Content -}}
 
 {{ end }}
 
 
 
 
-{{ define "bottom" }}
+{{ define "body" }}
 
-{{- $is_details := and . (eq .FilenameWithoutExt "details") -}}
-{{- $is_faq := and . (eq .FilenameWithoutExt "unofficial-faq") -}}
-{{- $is_tips := and . (eq .FilenameWithoutExt "tips") -}}
-{{- $is_quizzes := and . (eq .FilenameWithoutExt "quizzes") -}}
-{{- $is_tools := and . (gt .FilenameWithoutExt "tool") (lt .FilenameWithoutExt "tool~") -}}
-{{- $is_book := not (or $is_quizzes $is_tools) -}}
+{{ if .Title }}{{ .Title }}{{ end }}
 
-{{ if (and $is_book (ne $.FilenameWithoutExt "101")) -}}
+{{ .Content -}}
+
+{{ end }}
+
+
+
+
+{{ define "promotions" }}
+
+{{- $is_fundamentals := (eq .Group "fundamentals") -}}
+{{- $is_optimizations := (eq .Group "optimizations") -}}
+{{- $is_details_and_tips := (eq .Group "details-and-tips") -}}
+{{- $is_quizzes := (eq .Group "quizzes") -}}
+
+{{- $not_index_page := (ne .FilenameWithoutExt "101") -}}
+
+
+{{ if and $not_index_page .Index -}}
 
 <hr>
 
@@ -155,7 +152,7 @@ a Go local docs server (and code reader) showing type implementation relations.
 
 <hr>
 
-<div class="alert alert-success"><small>
+<div id="contact" class="alert alert-success"><small>
 
 <p>
 The <b><i>Go 101</i></b> project is hosted on
@@ -176,9 +173,11 @@ or join <a href="https://join.slack.com/t/go-101/shared_invite/zt-y2pvwg00-Oz7lD
 
 <div class="alert alert-warning"><small>
 
-<div>
-{{- if or true (ne $.FilenameWithoutExt "101") -}}
 
+{{ if $not_index_page -}}
+<div id="ebooks">
+
+	{{- if $is_fundamentals }}
 The digital versions of this book are available at the following places:
 <ul>
 <li>
@@ -198,14 +197,57 @@ The digital versions of this book are available at the following places:
 	including pdf, epub and azw3 formats.
 </li>
 </ul>
-{{ end -}}
+	{{ end -}}
 
-{{- if false }}
-If you would like to, you can support the book and the website by
-making a donation through Paypal (<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=PJWNSMCJ8XLX8&source=url">$5</a>, <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=EK54M5NSXVFLL&source=url">$9</a>, <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Z7NNPZN28Z6FL&source=url">$15</a>, or <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3VLHQW5VAVCUY&source=url">$25</a>) or buying Tapir a coffee (<a href="https://ko-fi.com/go_101" target="_blank">way 1</a> and <a href="https://www.buymeacoffee.com/go101" target="_blank">way 2</a>).
-{{ end -}}
+	{{- if $is_optimizations }}
+The digital versions of this book are available at the following places:
+<ul>
+<li>
+	<a href="https://leanpub.com/go101">Leanpub store</a>,
+	<i>$7.99+</i>, Leanpub gets 20%, Tapir gets 80%.
+</li>
+<li>
+	<a href="https://books.apple.com/us/book/id1459984231">Apple Books store</a>,
+	<i>$7.99</i>, Apple gets 30%, Tapir gets 70%.
+</li>
+<li>
+	<a href="https://www.amazon.com/dp/B07Q3HWZ98">Amazon Kindle store</a>,
+	<i>$7.99</i>, Amazon gets 30%, Tapir gets 70%.
+</li>
+</ul>
+	{{ end -}}
+
+	{{- if $is_details_and_tips }}
+The digital versions of this book are available at the following places:
+<ul>
+<li>
+	<a href="https://leanpub.com/go101">Leanpub store</a>,
+	<i>$3.99+</i>, Leanpub gets 20%, Tapir gets 80%.
+</li>
+<li>
+	<a href="https://books.apple.com/us/book/id1459984231">Apple Books store</a>,
+	<i>$3.99</i>, Apple gets 30%, Tapir gets 70%.
+</li>
+<li>
+	<a href="https://www.amazon.com/dp/B07Q3HWZ98">Amazon Kindle store</a>,
+	<i>$3.99</i>, Amazon gets 30%, Tapir gets 70%.
+</li>
+</ul>
+	{{ end -}}
 
 </div>
+{{ end -}}
+
+
+{{- if false }}
+
+<div>
+If you would like to, you can support the book and the website by
+making a donation through Paypal (<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=PJWNSMCJ8XLX8&source=url">$5</a>, <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=EK54M5NSXVFLL&source=url">$9</a>, <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Z7NNPZN28Z6FL&source=url">$15</a>, or <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3VLHQW5VAVCUY&source=url">$25</a>) or buying Tapir a coffee (<a href="https://ko-fi.com/go_101" target="_blank">way 1</a> and <a href="https://www.buymeacoffee.com/go101" target="_blank">way 2</a>).
+</div>
+
+{{ end -}}
+
 
 {{- if false }}
 <div class="text-center" style="padding: 6px; font-size: small;">
@@ -218,8 +260,8 @@ making a donation through Paypal (<a href="https://www.paypal.com/cgi-bin/webscr
 
 <div>
 
-Tapir, the author of Go 101, has spent 4+ years on writing the Go 101 book
-and maintaining the go101.org website.
+Tapir, the author of Go 101, has been on writing the Go 101 series books
+and maintaining the go101.org website since 2016 July.
 New contents will continue being added to the book and the website from time to time.
 Tapir is also an indie game developer.
 You can also support Go 101 by playing <a href="https://www.tapirgames.com">Tapir's games</a>
@@ -249,11 +291,11 @@ and cryptocurrencies are welcome too:
 
 </small></div>
 
-{{ if (and $is_book (ne $.FilenameWithoutExt "101")) -}}
+{{ if and $not_index_page .Index -}}
 
 <hr>
 Index:
-{{ $.Index }}
+{{ .Index }}
 
 {{ end }}
 

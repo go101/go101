@@ -1,0 +1,82 @@
+
+<h1>defer 1</h1>
+
+<div id="question">
+
+What does the following program print?
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func bar() (r int) {
+	defer func() {
+		r += 4
+		if recover() != nil {
+			r += 8
+		}
+	}()
+	
+	var f func()
+	defer f()
+	f = func() {
+		r += 2
+	}
+
+	return 1
+}
+
+func main() {
+	println(bar())
+}
+</code></pre>
+</div>
+
+
+
+<input type="radio" id="choiceA" name="choice">
+<input type="radio" id="choiceB" name="choice">
+<input type="radio" id="choiceC" name="choice">
+<input type="radio" id="choiceD" name="choice">
+
+<div id="choices">
+<p>Choices:</p>
+
+<ul style="list-style-type:none;">
+<li>
+<label for="choiceA">1</label>
+</li>
+<li>
+<label for="choiceB">7</label>
+</li>
+<li>
+<label for="choiceC">12</label>
+</li>
+<li>
+<label for="choiceD">13</label>
+</li>
+</ul>
+
+</div>
+
+<div id="answer">
+<p>Answer: 13</p>
+
+<p>Run it on <a href="https://go.dev/play/p/DV4k3pVhS4k" target="_blank">Go play</a>.</p>
+
+<p>Key points:</p>
+<ul>
+<li>
+Line 12: when the call <code>f()</code> is pushed to the defer call stack,
+<code>f</code> is evaluated as nil. Calling a nil function produces a panic.
+But the panic doesn't happen at the push time.
+Instead, it will panic at the execution time later during the exiting phase of the <code>bar()</code> call.
+</li>
+<li>
+Line 13-15: the assignment to <code>f</code> has not any impacts on the execution effect.
+In other words, this assignment is actually a no-op.
+</li>
+<li>
+Line 4-9: a defer call could modify the named return result of its containing function (here the <code>bar</code> function).
+</li>
+</ul>
+</div>
+

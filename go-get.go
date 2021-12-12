@@ -77,18 +77,23 @@ func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, root
 
 	info, exists := gogetInfos[rootPkg]
 	if !exists {
-		http.Redirect(w, r, "/article/101.html", http.StatusNotFound)
+		if subPkg == "" {
+			if rootPkg == "" {
+				rootPkg = "index.html"
+			}
+			go101.serveGroupItem(w, r, "website", rootPkg)
+		} else {
+			http.Redirect(w, r, "/", http.StatusNotFound)
+		}
 		return
 	}
 
 	item := rootPkg
 	if subPkg != "" {
-		item += "/" + subPkg + version
-	} else {
-		item += version
+		item += "/" + subPkg
 	}
 
-	page, isLocal := go101.gogetPages.Get(item), go101.IsLocalServer()
+	page, isLocal := go101.gogetPages.Get(item, version), go101.IsLocalServer()
 	if page == nil {
 		info.GoGetSourceRepo = "https://github.com/" + info.GoGetSourceRepo
 		if info.GoDocWebsite != "" {
@@ -110,7 +115,7 @@ func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, root
 		}
 
 		if !isLocal {
-			go101.articlePages.Set(item, page)
+			go101.gogetPages.Set(item, version, page)
 		}
 	}
 

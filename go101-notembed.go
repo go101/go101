@@ -8,6 +8,10 @@ import "html/template"
 var staticFilesHandler = staticFilesHandler_NonEmbedding
 var resFilesHandler = resFilesHandler_NonEmbedding
 
+func collectPageGroups() map[string]*PageGroup {
+	return collectPageGroups_NonEmbedding()
+}
+
 func loadArticleFile(file string) ([]byte, error) {
 	return loadArticleFile_NonEmbedding(file)
 }

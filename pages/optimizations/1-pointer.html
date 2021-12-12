@@ -1,0 +1,245 @@
+
+<h1>Pointers</h1>
+
+<h2>Avoid unnecessary nil array pointer checks in a loop</h2>
+
+<p>There are some flaws in the current official standard Go compiler implementation (v1.17).
+One of them is <a href="https://github.com/golang/go/issues/41666">some nil array pointer checks are not moved out of loops</a>.
+Here is an example to show this flaw.</p>
+
+<pre><code class="language-Go">// unnecessary-checks.go
+package pointers
+
+import &quot;testing&quot;
+
+const N = 1000
+var a [N]int
+
+//go:noinline
+func g0(a *[N]int) {
+	for i := range a {
+		a[i] = i // line 12
+	}
+}
+
+//go:noinline
+func g1(a *[N]int) {
+	_ = *a // line 18
+	for i := range a {
+		a[i] = i // line 20
+	}
+}
+
+func Benchmark_g0(b *testing.B) {
+	for i := 0; i &lt; b.N; i++ { g0(&amp;a) }
+}
+
+func Benchmark_g1(b *testing.B) {
+	for i := 0; i &lt; b.N; i++ { g1(&amp;a) }
+}
+</code></pre>
+
+<p>Let's run the benchmarks with the <code>-S</code> compiler opition, the following outputs are got (uninterested texts are omitted):</p>
+
+<pre><code>$ go test -bench=. -gcflags=-S unnecessary-checks.go
+...
+0x0004 00004 (unnecessary-checks.go:12)	TESTB	AL, (AX)
+0x0006 00006 (unnecessary-checks.go:12)	MOVQ	CX, (AX)(CX*8)
+...
+0x0000 00000 (unnecessary-checks.go:18)	TESTB	AL, (AX)
+0x0002 00002 (unnecessary-checks.go:18)	XORL	CX, CX
+0x0004 00004 (unnecessary-checks.go:19)	JMP	13
+0x0006 00006 (unnecessary-checks.go:20)	MOVQ	CX, (AX)(CX*8)
+...
+Benchmark_g0-4  517.6 ns/op
+Benchmark_g1-4  398.1 ns/op
+</code></pre>
+
+<p>From the outputs, we could find that the <code>g1</code> implementation is more performant than the <code>g0</code> implementation,
+even if the <code>g1</code> implementation contains one more code line (line 18).
+Why? The question is answered by the outputted assembly instructions.
+In the <code>g0</code> implementation, the <code>TESTB</code> instruction is generated within the loop, whereas in the <code>g1</code> implementation, the <code>TESTB</code> instruction is generated out of the loop.
+The <code>TESTB</code> instruction is used to check whether or not the argument <code>a</code> is a nil pointer.
+For this specified case, checking once is enough.
+The one more code line avoids the flaw in the compiler implementation.</p>
+
+<p>There is a third implementation which is as performant as the <code>g1</code> implementation.
+The third implementation uses a slice derived from the array pointer argument.</p>
+
+<pre><code class="language-Go">//go:noinline
+func g2(x *[N]int) {
+	a := x[:]
+	for i := range a {
+		a[i] = i
+	}
+}
+</code></pre>
+
+<p>Please note that the flaw might be fixed in future compiler versions.</p>
+
+<p>And please note that, if the three implementation functions are inline-able, the benchmark results will change much. That is the reson why the <code>//go:noinline</code> compiler directives are used here.
+However, we should know that, up to Go toolchain v1.17, the <code>//go:noinline</code> compiler directives are actaully unnecesary here, because <a href="8-function.html#inline-conditions">a function containing a <code>for-range</code> loop is not inline-able</a>.</p>
+
+<h3>The case in which an array pointer is a struct field</h3>
+
+<p>For the cases in which an array pointer is a struct field, things are a little complex.
+The <code>_ = *t.a</code> line in the following code is useless to avoid the compiler flaw.
+For example, in the following code, the performance differene between the <code>f1</code> function and the <code>f0</code> function is small.
+(In fact, the <code>f1</code> function might be even slower, if a <code>NOP</code> instruction is generated within its loop.)</p>
+
+<pre><code class="language-Go">type T struct {
+	a *[N]int
+}
+
+//go:noinline
+func f0(t *T) {
+	for i := range t.a {
+		t.a[i] = i
+	}
+}
+
+//go:noinline
+func f1(t *T) {
+	_ = *t.a
+	for i := range t.a {
+		t.a[i] = i
+	}
+}
+</code></pre>
+
+<p>To move the nil array pointer checks out of the loop, we should copy the <code>t.a</code> field to a local variable, then adopt the trick introduced above:</p>
+
+<pre><code class="language-Go">//go:noinline
+func f3(t *T) {
+	a := t.a
+	_ = *a
+	for i := range a {
+		a[i] = i
+	}
+}
+</code></pre>
+
+<p>Or simpily derive a slice from the array pointer field:</p>
+
+<pre><code class="language-Go">//go:noinline
+func f4(t *T) {
+	a := t.a[:]
+	for i := range a {
+		a[i] = i
+	}
+}
+</code></pre>
+
+<p>The benchmark results:</p>
+
+<pre><code>Benchmark_f0-4  622.9 ns/op
+Benchmark_f1-4  637.4 ns/op
+Benchmark_f2-4  511.3 ns/op
+Benchmark_f3-4  390.1 ns/op
+Benchmark_f4-4  387.6 ns/op
+
+</code></pre>
+
+<p>The results verify our previous conclusions.</p>
+
+<p>Note, the <code>f2</code> function mentioned in the benchmark results is declared as</p>
+
+<pre><code class="language-Go">//go:noinline
+func f2(t *T) {
+	a := t.a
+	for i := range a {
+		a[i] = i
+	}
+}
+</code></pre>
+
+<p>The <code>f2</code> implementation is not fast as the <code>f3</code> and <code>f4</code> implementations, but it is faster than the <code>f0</code> and <code>f1</code> implementations. However, that is <a href="2-struct.html#avoid-accessing-fields-in-loops">another story</a>.</p>
+
+<p>If the elements of an array pointer field are not modified (only read) in the loop, then the <code>f1</code> way is as performant as the <code>f3</code> and <code>f4</code> way.</p>
+
+<p>Personally, for most cases, I think should try to use the slice way (the <code>f4</code> way) to get the best performance,
+because generally slices are optimized better than arrays by the official standard Go compiler.</p>
+
+<h2 id="avoid-unnecessary-dereferences">Avoid unnecessary point dereferences in a loop</h2>
+
+<p>Sometimes, the current official standard Go compiler (v1.17) is <a href="https://github.com/golang/go/issues/49785">not smart enough to generate assembly instructions in the most optimized way</a>. We have to write the code in another way to get the best performance. For example, in the following code, the <code>f</code> function is must less performant than the <code>g</code> function.</p>
+
+<pre><code class="language-Go">// avoid-indirects_test.go
+package pointers
+
+import &quot;testing&quot;
+
+func f(sum *int, s []int) {
+	for _, v := range s { // line 7
+		*sum += v // line 8
+	}
+}
+
+func g(sum *int, s []int) {
+	var n = 0
+	for _, v := range s { // line 14
+		n += v // line 15
+	}
+	*sum = n
+}
+
+var s = make([]int, 1024)
+var r int
+
+func Benchmark_f(b *testing.B) {
+	for i := 0; i &lt; b.N; i++ {
+		f(&amp;r, s)
+	}
+}
+
+func Benchmark_g(b *testing.B) {
+	for i := 0; i &lt; b.N; i++ {
+		g(&amp;r, s)
+	}
+}
+</code></pre>
+
+<p>The benchmark results (uninterested texts are omitted):</p>
+
+<pre><code>$ go test -bench=. -gcflags=-S avoid-indirects_test.go
+...
+0x0009 00009 (avoid-indirects_test.go:8)	MOVQ	(AX), SI
+0x000c 00012 (avoid-indirects_test.go:8)	ADDQ	(BX)(DX*8), SI
+0x0010 00016 (avoid-indirects_test.go:8)	MOVQ	SI, (AX)
+0x0013 00019 (avoid-indirects_test.go:7)	INCQ	DX
+0x0016 00022 (avoid-indirects_test.go:7)	CMPQ	CX, DX
+0x0019 00025 (avoid-indirects_test.go:7)	JGT	9
+...
+0x000b 00011 (avoid-indirects_test.go:14)	MOVQ	(BX)(DX*8), DI
+0x000f 00015 (avoid-indirects_test.go:14)	INCQ	DX
+0x0012 00018 (avoid-indirects_test.go:15)	ADDQ	DI, SI
+0x0015 00021 (avoid-indirects_test.go:14)	CMPQ	CX, DX
+0x0018 00024 (avoid-indirects_test.go:14)	JGT	11
+...
+Benchmark_f-4  3024 ns/op
+Benchmark_g-4   566.6 ns/op
+</code></pre>
+
+<p>The outputted assembly instructions show the pointer <code>sum</code> is dereferenced within the loop in the <code>f</code> function.
+A dereference operation is a memory operation.
+For the <code>g</code> function, the dereference operations happen out of the loop,
+and the instructions generated for the loop only process registers.
+It is much faster to let CPU instructions process registers than process memory,
+which is why the <code>g</code> function is much more performant than the <code>f</code> function.</p>
+
+<p>Another performant implementation for this specified case is to move the pointer parameter out of the function body:</p>
+
+<pre><code class="language-Go">func h(s []int) int {
+	var n = 0
+	for _, v := range s {
+		n += v
+	}
+	return n
+}
+
+func use_h(s []int) {
+	var sum = new(int)
+	*sum = h(s)
+	...
+}
+</code></pre>

@@ -5,6 +5,7 @@ package main
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -16,43 +17,65 @@ import (
 	"time"
 )
 
-//go:embed web articles/*.html
-//go:embed articles/res/*.png
-//go:embed articles/res/*.jpg
+//go:embed web
+//go:embed pages
 var allFiles embed.FS
 
-var staticFilesHandler, resFilesHandler = func() (http.Handler, http.Handler) {
+var staticFilesHandler = func() http.Handler {
 	if wdIsGo101ProjectRoot {
-		return staticFilesHandler_NonEmbedding, resFilesHandler_NonEmbedding
+		return staticFilesHandler_NonEmbedding
 	}
 
 	staticFiles, err := fs.Sub(allFiles, path.Join("web", "static"))
 	if err != nil {
 		panic(fmt.Sprintf("construct static file system error: %s", err))
 	}
-	resFiles, err := fs.Sub(allFiles, path.Join("articles", "res"))
-	if err != nil {
-		panic(fmt.Sprintf("construct res file system error: %s", err))
-	}
 
-	//paths1 := printFS("static files", staticFiles)
-	//paths2 := printFS("res files", resFiles)
-	//for _, path := range paths1 {
-	//	openFileInFS(staticFiles, path)
-	//}
-	//for _, path := range paths2 {
-	//	openFileInFS(resFiles, path)
-	//}
-
-	return http.FileServer(http.FS(staticFiles)), http.FileServer(http.FS(resFiles))
+	return http.FileServer(http.FS(staticFiles))
 }()
 
-func loadArticleFile(file string) ([]byte, error) {
+func collectPageGroups() map[string]*PageGroup {
 	if wdIsGo101ProjectRoot {
-		return loadArticleFile_NonEmbedding(file)
+		return collectPageGroups_NonEmbedding()
 	}
 
-	content, err := allFiles.ReadFile(path.Join("articles", file))
+	entries, err := fs.ReadDir(allFiles, "pages")
+	if err != nil {
+		panic("collect page groups (embedding) error: " + err.Error())
+	}
+
+	pageGroups := make(map[string]*PageGroup, len(entries))
+
+	for _, e := range entries {
+		if e.IsDir() {
+			group, handler := e.Name(), dummyHandler
+			resFiles, err := fs.Sub(allFiles, path.Join("pages", e.Name(), "res"))
+			if err == nil {
+				var urlGroup string
+				// For history reason, fundamentals pages uses "/article/xxx" URLs.
+				if group == "fundamentals" {
+					urlGroup = "/article"
+				} else if group != "website" {
+					urlGroup = "/" + group
+				}
+				handler = http.StripPrefix(urlGroup+"/res/", http.FileServer(http.FS(resFiles)))
+			} else if !errors.Is(err, os.ErrNotExist) {
+				log.Println(err)
+			}
+
+			pageGroups[group] = &PageGroup{resHandler: handler}
+		}
+	}
+
+	return pageGroups
+}
+
+func loadArticleFile(group, file string) ([]byte, error) {
+	if wdIsGo101ProjectRoot {
+		return loadArticleFile_NonEmbedding(group, file)
+	}
+
+	content, err := allFiles.ReadFile(path.Join("pages", group, file))
 	if err != nil {
 		return nil, err
 	}

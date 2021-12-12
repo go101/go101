@@ -1,0 +1,56 @@
+
+
+<h1>Values of two different define pointer types may be indirectly converted to each other's type if the base types of the two types shares the same undrelying type</h1>
+
+<p>Generally, the values of two pointer types may not be converted to each other if the underlying types of the two pointer types are different.
+For example, the 4 conversions in the following code are all illegal.</p>
+
+<pre><code class="language-Go">package main
+
+type MyInt int
+type IntPtr *int
+type MyIntPtr *MyInt
+
+func main() {
+	var x IntPtr
+	var y MyIntPtr
+	x = IntPtr(y)       // error
+	y = MyIntPtr(x)     // error
+	var _ = (*int)(y)   // error
+	var _ = (*MyInt)(x) // error
+}
+</code></pre>
+
+<p>Although the above 4 conversions may not achieved directly, they may be achieved indirectly. This benefits from the fact that the following conversions are legal.</p>
+
+<pre><code class="language-Go">package main
+
+type MyInt int
+
+func main() {
+	var x *int
+	var y *MyInt
+	x = (*int)(y)   // okay
+	y = (*MyInt)(x) // okay
+}
+</code></pre>
+
+<p>The reason why the above two conversions are legal is values of two non-defined (unnamed) pointers types may be converted to each other's type if the base types of the two types shares the same undrelying type. In the above example, the base types of the types of <code>x</code> and <code>y</code> are <code>int</code> and <code>MyInt</code>, which share the same underlying type <code>int</code>, so <code>x</code> and <code>y</code> may be converted to each other's type.</p>
+
+<p>Benefiting from the just mentioned fact, values of <code>IntPtr</code> and <code>MyIntPtr</code> may be also converted to each other's type, though such conversions must be indirectly, as shown in the following code.</p>
+
+<pre><code class="language-Go">package mainreturn result is 
+
+type MyInt int
+type IntPtr *int
+type MyIntPtr *MyInt
+
+func main() {
+	var x IntPtr
+	var y MyIntPtr
+	x = IntPtr((*int)((*MyInt)(y)))     // okay
+	y = MyIntPtr(((*MyInt))((*int)(x))) // okay
+	var _ = (*int)((*MyInt)(y))         // okay
+	var _ = (*MyInt)((*int)(x))         // okay
+}
+</code></pre>

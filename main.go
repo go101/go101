@@ -14,6 +14,7 @@ import (
 var portFlag = flag.String("port", "55555", "server port")
 var genFlag = flag.Bool("gen", false, "HTML generation mode?")
 var themeFlag = flag.String("theme", "dark", "theme (dark | light), dark defaultly")
+var nobFlag = flag.Bool("nob", false, "not open browswer?")
 
 func main() {
 	log.SetFlags(0)
@@ -45,9 +46,11 @@ Retry:
 
 	genMode, rootURL := *genFlag, fmt.Sprintf("http://localhost:%v/", addr.Port)
 	if !genMode && !isAppEngine {
-		err = openBrowser(rootURL)
-		if err != nil {
-			log.Println(err)
+		if !*nobFlag {
+			err = openBrowser(rootURL)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 
 		go updateGo101()
