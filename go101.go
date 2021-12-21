@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
+	//"errors"
 	"go/build"
 	"html/template"
 	"io/ioutil"
@@ -213,7 +213,7 @@ func retrieveArticleContent(group, file string) (Article, error) {
 func retrieveIndexContent(group string) template.HTML {
 	page101, err := retrieveArticleContent(group, "101.html")
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if os.IsNotExist(err) { // errors.Is(err, os.ErrNotExist) {
 			return ""
 		}
 		panic(err)
@@ -256,7 +256,7 @@ var (
 
 func disableArticleLink(htmlContent template.HTML, page string) (r template.HTML) {
 	content := []byte(htmlContent)
-	aStart := []byte(`<a class="index" href="` + page + `">`)
+	aStart := []byte(`<a class="index" href="` + page)
 	i := bytes.Index(content, aStart)
 	if i >= 0 {
 		content := content[i:]
@@ -358,15 +358,15 @@ func collectPageGroups_NonEmbedding() map[string]*PageGroup {
 			group, handler := e.Name(), dummyHandler
 			resPath := filepath.Join(rootPath, "pages", group, "res")
 			if _, err := os.Stat(resPath); err == nil {
-				var urlGroup string
+				var urlPrefix string
 				// For history reason, fundamentals pages uses "/article/xxx" URLs.
 				if group == "fundamentals" {
-					urlGroup = "/article"
+					urlPrefix = "/article"
 				} else if group != "website" {
-					urlGroup = "/" + group
+					urlPrefix = "/" + group
 				}
-				handler = http.StripPrefix(urlGroup+"/res/", http.FileServer(http.Dir(resPath)))
-			} else if !errors.Is(err, os.ErrNotExist) {
+				handler = http.StripPrefix(urlPrefix+"/res/", http.FileServer(http.Dir(resPath)))
+			} else if !os.IsNotExist(err) { // !errors.Is(err, os.ErrNotExist) {
 				log.Println(err)
 			}
 

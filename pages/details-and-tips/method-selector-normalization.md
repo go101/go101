@@ -5,7 +5,7 @@
 <p>For example, in the following program, <code>t1.M1</code> is a simplified form of <code>(*t1).M1</code>,
 and <code>t2.M2</code> is a simplified form of <code>(&amp;t2).M2</code>. At compile time, the compiler will normalize the simplified forms to their original full form.</p>
 
-<p>The program prints <code>0</code> and <code>9</code>, because the modification to <code>t1.X</code> has no effects on the evaluation result of <code>*t1</code> in evaluating <code>(*t1).M1</code>.</p>
+<p>The following program prints <code>0</code> and <code>9</code>, because the modification to <code>t1.X</code> has no effects on the evaluation result of <code>*t1</code> during evaluating <code>(*t1).M1</code>.</p>
 
 <pre><code class="language-Go">package main
 

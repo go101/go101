@@ -32,6 +32,7 @@ func genStaticFiles(rootURL string) {
 		log.Fatal(err)
 	}
 
+	// load from http server
 	loadFile := func(uri string) []byte {
 		fullURL := rootURL + uri
 
@@ -52,6 +53,7 @@ func genStaticFiles(rootURL string) {
 		return content
 	}
 
+	// read from OS file system
 	readFile := func(path string) []byte {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -123,7 +125,7 @@ func genStaticFiles(rootURL string) {
 
 	files := make(map[string][]byte, 128)
 
-	files["index.html"] = readFile(fullPath("web", "index.html"))
+	files["index.html"] = loadFile("")
 
 	{
 		dir := fullPath("web", "static")
@@ -137,30 +139,60 @@ func genStaticFiles(rootURL string) {
 		}
 	}
 
-	{
-		dir := fullPath("pages", "fundamentals", "res")
-		filenames, _ := readFolder(dir)
-		for _, f := range filenames {
-			if strings.HasSuffix(f, ".png") || strings.HasSuffix(f, ".jpg") {
-				name, err := filepath.Rel(dir, f)
-				if err != nil {
-					log.Fatalf("filepath.Rel(%s, %s) error: %s", dir, f, err)
+	collectPageGroupFiles := func(group, urlPrefix string, collectRes bool) {
+		if collectRes {
+			dir := fullPath("pages", group, "res")
+			filenames, _ := readFolder(dir)
+			for _, f := range filenames {
+				if strings.HasSuffix(f, ".png") || strings.HasSuffix(f, ".jpg") {
+					name, err := filepath.Rel(dir, f)
+					if err != nil {
+						log.Fatalf("filepath.Rel(%s, %s) error: %s", dir, f, err)
+					}
+					files[urlPrefix+"res/"+name] = readFile(f)
 				}
-				files["article/res/"+name] = readFile(f)
+			}
+		}
+
+		{
+			dir := fullPath("pages", group)
+			filenames, _ := readFolder(dir)
+			for _, f := range filenames {
+				if strings.HasSuffix(f, ".html") {
+					name, err := filepath.Rel(dir, f)
+					if err != nil {
+						log.Fatalf("filepath.Rel(%s, %s) error: %s", dir, f, err)
+					}
+					files[urlPrefix+name] = loadFile(urlPrefix + name)
+				}
 			}
 		}
 	}
 
 	{
-		dir := fullPath("pages", "fundamentals")
-		filenames, _ := readFolder(dir)
-		for _, f := range filenames {
-			if strings.HasSuffix(f, ".html") {
-				name, err := filepath.Rel(dir, f)
-				if err != nil {
-					log.Fatalf("filepath.Rel(%s, %s) error: %s", dir, f, err)
+		infos, err := ioutil.ReadDir(fullPath("pages"))
+		if err != nil {
+			panic("collect page groups error: " + err.Error())
+		}
+
+		for _, e := range infos {
+			if e.IsDir() {
+				group := e.Name()
+
+				var urlPrefix string
+				if group == "fundamentals" {
+					// For history reason, fundamentals pages use "/article/xxx" URLs.
+					urlPrefix = "article/"
+				} else if group != "website" {
+					urlPrefix = group + "/"
 				}
-				files["article/"+name] = loadFile("article/" + name)
+
+				var collectRes bool
+				if _, err := os.Stat(fullPath("pages", group, "res")); err == nil {
+					collectRes = true
+				}
+
+				collectPageGroupFiles(group, urlPrefix, collectRes)
 			}
 		}
 	}

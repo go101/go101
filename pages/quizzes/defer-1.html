@@ -7,25 +7,26 @@ What does the following program print?
 
 <pre class="line-numbers"><code class="language-go">package main
 
-func bar() (r int) {
-	defer func() {
-		r += 4
-		if recover() != nil {
-			r += 8
-		}
-	}()
-	
-	var f func()
-	defer f()
-	f = func() {
-		r += 2
-	}
+type Foo struct {
+	v int
+}
 
-	return 1
+func NewFoo(n *int) Foo {
+	print(*n)
+	return Foo{}
+}
+
+func (Foo) Bar(n *int) {
+	print(*n)
 }
 
 func main() {
-	println(bar())
+	var x = 1
+	var p = &x
+	defer NewFoo(p).Bar(p)
+	x = 2
+	p = new(int)
+	NewFoo(p)
 }
 </code></pre>
 </div>
@@ -41,42 +42,68 @@ func main() {
 <p>Choices:</p>
 
 <ul style="list-style-type:none;">
-<li>
-<label for="choiceA">1</label>
-</li>
-<li>
-<label for="choiceB">7</label>
-</li>
-<li>
-<label for="choiceC">12</label>
-</li>
-<li>
-<label for="choiceD">13</label>
-</li>
+<li><label for="choiceA">
+	100
+</label></li>
+<li><label for="choiceB">
+	102
+</label></li>
+<li><label for="choiceC">
+	022
+</label></li>
+<li><label for="choiceD">
+	011
+</label></li>
 </ul>
 
 </div>
 
 <div id="answer">
-<p>Answer: 13</p>
+<p>Answer: 102</p>
 
-<p>Run it on <a href="https://go.dev/play/p/DV4k3pVhS4k" target="_blank">Go play</a>.</p>
+<p>Run it on <a href="https://go.dev/play/p/WfuL8NQ4HKA" target="_blank">Go play</a>.</p>
 
 <p>Key points:</p>
 <ul>
 <li>
-Line 12: when the call <code>f()</code> is pushed to the defer call stack,
-<code>f</code> is evaluated as nil. Calling a nil function produces a panic.
-But the panic doesn't happen at the push time.
-Instead, it will panic at the execution time later during the exiting phase of the <code>bar()</code> call.
+	When a function call is pushed into the deferred call stack,
+	the called function value and all the arguments are evaluated.
+	The evaluated values will be used when the call is executed later.
 </li>
 <li>
-Line 13-15: the assignment to <code>f</code> has not any impacts on the execution effect.
-In other words, this assignment is actually a no-op.
+	So, at line 19, when the deferred call <code>Bar</code> is pushed into the deferred call stack,
+	its arguments <code>NewFoo(p)</code> (as the receiver argument) and <code>p</code> are evaluated.
+	In evaluating <code>NewFoo(p)</code>, <code>1</code> is printed.
 </li>
 <li>
-Line 4-9: a defer call could modify the named return result of its containing function (here the <code>bar</code> function).
+	The later modification at line 21 doesn't affect the evaluation result at line 19,
+	which means the argument passed to the <code>Bar</code> function call is still a pointer to the variable <code>x</code>.
 </li>
 </ul>
+
+<p>
+A similar quiz:
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type T int
+
+func (t T) M(n int) T {
+	print(n)
+	return t
+}
+
+func main() {
+	var t T
+	defer t.M(1).M(2)
+	t.M(3).M(4)
+}
+</code></pre>
+
+<p>
+The above quiz program prints <code>1342</code>.
+</p>
+
 </div>
 
