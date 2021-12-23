@@ -33,7 +33,7 @@ Generally, the more memory blocks are allocated on heap, the bigger pressure is 
 
 <p>As heap allocations are much more expensive, so in Go code benchmark results, only heap memory allocations contribute to the allocation metrics. But please note that allocating on stack still has a cost, though it is often comparatively much smaller.</p>
 
-<p>The escape analysis module of a Go compiler could detect some value parts will be only used by one goroutine and try to let those value parts allocated on stack at run time if certain extra conditions are satisified. Stack memory allocations and escape analysis will be explained with more details in the next chapter.</p>
+<p>The escape analysis module of a Go compiler could detect some value parts will be only used by one goroutine and try to let those value parts allocated on stack at run time if certain extra conditions are satisfied. Stack memory allocations and escape analysis will be explained with more details in the next chapter.</p>
 
 <h2>Memory allocation scenarios</h2>
 
@@ -41,7 +41,7 @@ Generally, the more memory blocks are allocated on heap, the bigger pressure is 
 
 <ul>
 <li>declare variables</li>
-<li>call the buitlin <code>new</code> function.</li>
+<li>call the builtin <code>new</code> function.</li>
 <li>call the builtin <code>make</code> function.</li>
 <li>modify slices and maps with composite literals.</li>
 <li>convert integers to strings.</li>
@@ -60,7 +60,7 @@ These optimizations will be introduced later in this book.</p>
 <h2>Memory wasting caused by allocated memory blocks larger than needed</h2>
 
 <p>The sizes of different memory blocks might be different. But they are not arbitrary.
-In the official standard Go runtime implemenetation, for memory blocks allocated on heap,</p>
+In the official standard Go runtime implementation, for memory blocks allocated on heap,</p>
 
 <ul>
 <li><a href="https://github.com/golang/go/blob/master/src/runtime/sizeclasses.go">some memory block size classes</a> (no more than 32768 bytes) are predefined. As of the official standard Go compiler v1.17, the smallest size classes are 8, 16, 24, 32, 48, 64, 80 and 96 bytes.</li>
@@ -70,7 +70,7 @@ In the official standard Go runtime implemenetation, for memory blocks allocated
 <p>So,</p>
 
 <ul>
-<li>to allocate a (heap) memory block for the value which size is in the range <code>[33, 48]</code>, the size of the memory block is genernal (must be at least) 48. In other words, there might be up to 15 bytes wasted (if the value size is 33).</li>
+<li>to allocate a (heap) memory block for the value which size is in the range <code>[33, 48]</code>, the size of the memory block is general (must be at least) 48. In other words, there might be up to 15 bytes wasted (if the value size is 33).</li>
 <li>to create a byte slice with 32769 elements on heap, the size of the memory block carrying the elements of the slice is 40960 (32768 + 8192, 5 memory pages). In other words, 8191 bytes are wasted.</li>
 </ul>
 
@@ -142,7 +142,7 @@ And 44 (15 + 15 + 14) bytes are wasted during executing the <code>Concat</code> 
 
 <p>In the above example, the results of the <code>string(s)</code> conversions are used temporarily in the string concatenation operation.
 By the current official standard Go compiler/runtime implementation (v1.17), the string bytes are allocated on heap (see below sections for details).
-After the concatenation is done, the memory blocks carring the string bytes become into memory garbage and will be collected eventually later.</p>
+After the concatenation is done, the memory blocks carrying the string bytes become into memory garbage and will be collected eventually later.</p>
 
 <h2>Reduce memory allocations and save memory</h2>
 
@@ -153,9 +153,9 @@ So if we run Go programs on cloud servers, the more memory is saved by the Go pr
 
 <p>So generally we should try to reduce memory allocations and save memory in programming.</p>
 
-<h2>Avoid unnecessay allocations by allocating enough in advance</h2>
+<h2>Avoid unnecessary allocations by allocating enough in advance</h2>
 
-<p>We often use the built-in <code>append</code> funciton to push some slice elements.
+<p>We often use the built-in <code>append</code> function to push some slice elements.
 In the statement <code>r = append(s, elements...)</code>,
 if the capacity of <code>s</code> is not large enough to hold all appended elements,
 Go runtime will allocate a new memory block to hold all the elements of the result slice <code>r</code>.</p>
@@ -165,7 +165,7 @@ it is best to ensure that the base slice has a large enough capacity,
 to avoid several unnecessary allocations in the whole pushing process.</p>
 
 <p>For example, to merge some slices into one, the following shown
-<code>MergeWithTwoLoops</code> implmentation is more efficient than the <code>MergeWithOneLoop</code> implementation,
+<code>MergeWithTwoLoops</code> implementation is more efficient than the <code>MergeWithOneLoop</code> implementation,
 because the former one makes less allocations and copys less values.</p>
 
 <pre><code class="language-Go">package allocations
@@ -368,7 +368,7 @@ Benchmark_FilterNoAllocations-4   903.3 ns/op    0 B/op  0 allocs/op
 <h2>Save memory and reduce allocations by combining memory blocks</h2>
 
 <p>Sometimes, we could allocate one large memory block to carry many value parts instead of allocating a small memory block for each value part.
-Doing this will reduce many memory allocations, so less CPU time is consumed and GC presure is relieved to some extend.
+Doing this will reduce many memory allocations, so less CPU time is consumed and GC pressure is relieved to some extend.
 Sometimes, doing this could decrease memory wasting, but this is not always true.</p>
 
 <p>Let's view an example:</p>
@@ -420,7 +420,7 @@ func Benchmark_CreateBooksOnManySmallBlocks(b *testing.B) {
 </code></pre>
 
 <p>Please note that the <code>type _ int</code> lines to prevent the containing functions from being inline-able
-(as of the official standard Go compiler v1.17. Function inlining will talked in detail in a later chapter).</p>
+(as of the official standard Go compiler v1.17. Function inlining will be talked in detail in a later chapter).</p>
 
 <p>Run the benchmarks, we get:</p>
 
@@ -428,7 +428,7 @@ func Benchmark_CreateBooksOnManySmallBlocks(b *testing.B) {
 Benchmark_CreateOnManySmallBlocks-4  18017 ns/op  5696 B/op  101 allocs/op
 </code></pre>
 
-<p>From the results, we could get that allocating many small value parts on one large momory block:</p>
+<p>From the results, we could get that allocating many small value parts on one large memory block:</p>
 
 <ul>
 <li>spends much less CPU time.</li>
@@ -443,7 +443,7 @@ The size of the <code>Book</code> type is 40 bytes (on 64-bit architectures), wh
 
 <p>In fact, the second conclusion is only right under certain conditions.
 Specifically, the conclusion is not right when the value N is in the range from 820 to 852.
-In particular, when N == 820, the benchmark results show allocating many small value parts on one large momory block consumes 3.5% more memory.</p>
+In particular, when N == 820, the benchmark results show allocating many small value parts on one large memory block consumes 3.5% more memory.</p>
 
 <pre><code>Benchmark_CreateOnOneLargeBlock-4     30491 ns/op  47744 B/op    2 allocs/op
 Benchmark_CreateOnManySmallBlocks-4  145204 ns/op  46144 B/op  821 allocs/op
@@ -452,13 +452,13 @@ Benchmark_CreateOnManySmallBlocks-4  145204 ns/op  46144 B/op  821 allocs/op
 <p>Why does the <code>CreateBooksOnOneLargeBlock</code> function consume more memory?
 Because it needs to allocate a memory block with size as 32800 (820 * 40), which is larger than the largest small memory block class 32768. So the memory block needs 5 memory pages, which total size is 40960 (8192 * 5). In other words, 8160 (40960 - 32800) bytes are wasted.</p>
 
-<p>Despite it sometimes wastes more memory, generally speaking, allocating many small value parts on one large memory block is comparative better than allocating each of them on a seperated memory block. This is especially true when the life times of the small value parts are almost the same, in which case allocating many small value parts on one large memory block could often effectively avoid memory fragmentation.</p>
+<p>Despite it sometimes wastes more memory, generally speaking, allocating many small value parts on one large memory block is comparative better than allocating each of them on a separated memory block. This is especially true when the life times of the small value parts are almost the same, in which case allocating many small value parts on one large memory block could often effectively avoid memory fragmentation.</p>
 
 <h2>Use value cache pool to avoid some allocations</h2>
 
 <p>Sometimes, we need to frequently allocate values of a specified type for temporary uses from time to time. It is a good idea to reuse allocated values to avoid a large quantity of allocations.
 For example, there are many non-player characters (NPC) in RTS games.
-A large quantity of NPCs will be spawned and desstroyed from time to time in a game session.
+A large quantity of NPCs will be spawned and destroyed from time to time in a game session.
 The related code is like</p>
 
 <pre><code class="language-Go">type NPC struct {
@@ -485,7 +485,7 @@ func releaseNPC(npc *NPC) {
 }
 </code></pre>
 
-<p>As Go supports automiatic GC, the <code>releaseNPC</code> function may do nothing.
+<p>As Go supports automatic GC, the <code>releaseNPC</code> function may do nothing.
 However, such implementation will lead to a large quantity of allocations in game playing.
 We could instead use a cache pool to reduce allocations, like the code shown below.</p>
 
@@ -522,7 +522,7 @@ then concurrency synchronizations are not necessary in the implementation.</p>
 <p>We could also set a max size for the pool to avoid the pool occupies too much memory.</p>
 
 <p>The standard <code>sync</code> package provides a <code>Pool</code> type to provide the similar functionality
-with several design differnces:</p>
+with several design differences:</p>
 
 <ul>
 <li>a free object in the a <code>sync.Pool</code> will be automatically garbage collected if it is found to be unused in two successive garbage collection cycles. This means the max size of a <code>sync.Pool</code> is dynamic and depends on the demand at run time.</li>

@@ -141,7 +141,7 @@
 ### 1.10.g (2018/Jun/02)
 
 * published [About Go 101](https://go101.org/article/101-about.html).
-* published [Acknowledgements](https://go101.org/article/acknowledgements.html).
+* published [Acknowledgments](https://go101.org/article/acknowledgements.html).
 * updated [license](LICENSE).
 
 ### 1.10.f (2018/May/15)
