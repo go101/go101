@@ -167,8 +167,9 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, gr
 }
 
 var H1, _H1 = []byte("<h1>"), []byte("</h1>")
+var H2, _H2 = []byte("<h2>"), []byte("</h2>")
 
-const MaxTitleLen = 128
+const MaxTitleLen = 256
 
 var TagSigns = [2]rune{'<', '>'}
 
@@ -185,26 +186,36 @@ func retrieveArticleContent(group, file string) (Article, error) {
 	article.FilenameWithoutExt = strings.TrimSuffix(file, ".html")
 
 	// retrieve titles
-	j, i := -1, bytes.Index([]byte(article.Content), H1)
-	if i >= 0 {
-		i += len(H1)
-		j = bytes.Index(bytesWithLength([]byte(article.Content[i:]), MaxTitleLen), _H1)
-		if j >= 0 {
-			article.Title = article.Content[i-len(H1) : i+j+len(_H1)]
-			article.Content = article.Content[i+j+len(_H1):]
-			k, s := 0, make([]rune, 0, MaxTitleLen)
-			for _, r := range article.Title {
-				if r == TagSigns[k] {
-					k = (k + 1) & 1
-				} else if k == 0 {
-					s = append(s, r)
-				}
-			}
-			article.TitleWithoutTags = string(s)
+	splitTitleContent := func(startTag, endTag []byte) (int, int) {
+		j, i := -1, bytes.Index(content, startTag)
+		if i >= 0 {
+			i += len(startTag)
+			j = bytes.Index(bytesWithLength(content[i:], MaxTitleLen), endTag)
 		}
+		if j < 0 {
+			return -1, 0
+		}
+		return i - len(startTag), i + j + len(endTag)
 	}
-	if j < 0 {
+
+	titleStart, contentStart := splitTitleContent(H1, _H1)
+	if titleStart < 0 {
+		titleStart, contentStart = splitTitleContent(H2, _H2)
+	}
+	if titleStart < 0 {
 		//log.Println("retrieveTitlesForArticle failed:", group, file)
+	} else {
+		article.Title = article.Content[titleStart:contentStart]
+		article.Content = article.Content[contentStart:]
+		k, s := 0, make([]rune, 0, MaxTitleLen)
+		for _, r := range article.Title {
+			if r == TagSigns[k] {
+				k = (k + 1) & 1
+			} else if k == 0 {
+				s = append(s, r)
+			}
+		}
+		article.TitleWithoutTags = string(s)
 	}
 
 	return article, nil
