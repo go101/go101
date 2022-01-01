@@ -7,7 +7,11 @@ It tries to help gophers gain a deep and thorough understanding of Go.
 This book also collects many details of Go and in Go programming.
 The book is expected to be helpful for both beginner and experienced Go programmers.
 
-To get latest changes of Go 101, please follow the official twitter account [@go100and1](https://twitter.com/go100and1)
+This book is one book in **Go 101** book series. The series include some other books:
+* [Go Optimizations 101](https://go101.org/optimizations/101.html) provides some code performance optimization tricks, tips, and suggestions.
+* [Go Details & Tips 101](https://go101.org/details-and-tips/101.html) collects many details and provides several tips in Go programming. 
+
+To get latest news of Go 101 books, please follow the official twitter account [@go100and1](https://twitter.com/go100and1)
 and join [the Go 101 Slack space](https://go-101.slack.com).
 
 ### Install, Update, and Read Locally
