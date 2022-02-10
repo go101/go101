@@ -74,7 +74,7 @@
 * Go 1.13 ready.
 * add two situations in the article [How to Gracefully Close Channels](https://go101.org/article/channel-closing.html).
 * [the "named type" and "unnamed type" terminologies](https://go101.org/article/type-system-overview.html#unnamed-type) are added back,
-  but they are eqivalent to "defined type" and "non-defined type" now.
+  but they are equivalent to "defined type" and "non-defined type" now.
 
 ### 1.12.d (2019/May/18)
 
