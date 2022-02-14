@@ -4,6 +4,7 @@ import "testing"
 
 type S struct{ a, b, c, d, e int }
 
+//go:noinline
 func sum_UseSecondIterationVar(s []S) int {
 	var sum int
 	for _, v := range s {
@@ -14,6 +15,7 @@ func sum_UseSecondIterationVar(s []S) int {
 	return sum
 }
 
+//go:noinline
 func sum_OneIterationVar_Index(s []S) int {
 	var sum int
 	for i := range s {
@@ -24,6 +26,7 @@ func sum_OneIterationVar_Index(s []S) int {
 	return sum
 }
 
+//go:noinline
 func sum_OneIterationVar_Ptr(s []S) int {
 	var sum int
 	for i := range s {

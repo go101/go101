@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	//"errors"
+	"time"
 	"net/http"
 )
 
@@ -31,6 +31,17 @@ func genStaticFiles(rootURL string) {
 		}
 		log.Fatal(err)
 	}
+	
+	// md -> html
+	func(mdGroups ...string) {
+		for _, group := range mdGroups {
+			dir := fullPath("pages", group)
+			_, err := runShellCommand(time.Minute/2, dir, "ebooktool", "-md2htmls")
+			if err != nil {
+				log.Fatalln("ebooktool failed to execute in dirrectory", dir)
+			}
+		}
+	}("blog")
 
 	// load from http server
 	loadFile := func(uri string) []byte {

@@ -12,6 +12,7 @@ func buildArray() [N]int {
 	return a
 }
 
+//go:noinline
 func Sum_RangeArray(a [N]int) (r int) {
 	for _, v := range a {
 		r += v
@@ -19,6 +20,7 @@ func Sum_RangeArray(a [N]int) (r int) {
 	return
 }
 
+//go:noinline
 func Sum_RangeArrayPtr1(a *[N]int) (r int) {
 	for _, v := range *a {
 		r += v
@@ -26,6 +28,7 @@ func Sum_RangeArrayPtr1(a *[N]int) (r int) {
 	return
 }
 
+//go:noinline
 func Sum_RangeArrayPtr2(a *[N]int) (r int) {
 	for _, v := range a {
 		r += v
@@ -33,6 +36,7 @@ func Sum_RangeArrayPtr2(a *[N]int) (r int) {
 	return
 }
 
+//go:noinline
 func Sum_RangeSlice(a []int) (r int) {
 	for _, v := range a {
 		r += v

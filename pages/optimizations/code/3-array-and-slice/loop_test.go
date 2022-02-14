@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+//go:noinline
 func sum_forrange1(s []int) int {
 	var n = 0
 	for i := range s {
@@ -12,6 +13,7 @@ func sum_forrange1(s []int) int {
 	return n
 }
 
+//go:noinline
 func sum_forrange2(s []int) int {
 	var n = 0
 	for _, v := range s {

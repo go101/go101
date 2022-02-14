@@ -1,0 +1,152 @@
+
+<h1>slice 2</h1>
+
+<div id="question">
+
+What does the following program print?
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var x = []string{"A", "B", "C"}
+
+	for i, s := range x {
+		print(i, s, ",")
+		x[i+1] = "M"
+		x = append(x, "Z")
+		x[i+1] = "Z"
+	}
+}
+</code></pre>
+</div>
+
+
+<input type="radio" id="choiceA" name="choice">
+<input type="radio" id="choiceB" name="choice">
+<input type="radio" id="choiceC" name="choice">
+<input type="radio" id="choiceD" name="choice">
+<input type="radio" id="choiceE" name="choice">
+<input type="radio" id="choiceF" name="choice">
+<input type="radio" id="choiceG" name="choice">
+
+<div id="choices">
+<p>Choices:</p>
+
+<ul style="list-style-type:none;">
+<li><label for="choiceA">
+	0A,1B,2C,
+</label></li>
+<li><label for="choiceB">
+	0A,1Z,2Z,
+</label></li>
+<li><label for="choiceC">
+	0A,1M,2M,
+</label></li>
+<li><label for="choiceD">
+	0A,1M,2C,
+</label></li>
+<li><label for="choiceE">
+	0A,1Z,2M,
+</label></li>
+<li><label for="choiceF">
+	0A,1M,2Z,
+</label></li>
+<li><label for="choiceG">
+	(infinite loop)
+</label></li>
+</ul>
+
+</div>
+
+<div id="answer">
+<p>Answer: 0A,1M,2C,</p>
+
+<p>Run it on <a href="https://go.dev/play/p/NHHstfnADmP" target="_blank">Go play</a>.</p>
+
+<p>Key points:</p>
+<ul>
+<li>
+	Ranging over a container iterates the elements of a copy of the container.
+	The evaluation of the copy happens before executing the loop,
+	so the length and capacity of the copy are never changed.
+</li>
+<li>
+	A slice references its elements on a backing array.
+	So a copy of a slice shares the same elements (and the backing array) with the slice.
+</li>
+<li>
+	The assignment <code>x[i+1] = "M"</code> in the first loop step modifies the second element of
+	the initial slice <code>x</code> and the copy of the initial slice <code>x</code>.
+</li>
+<li>
+	If the free element slots of the first argument slice of an <code>append</code> call are
+	insufficient to hold all the appended elements, the <code>append</code> call will create
+	a new backing array to hold all the elements of the first argument slice and the appended elements.
+	So, at the end of the first loop step, the backing array of the slice <code>x</code> is changed.
+	However, the change doesn't affect the slice copy used in the element iteration.
+	All subsequent element modifications apply to the new backing array, so they have no effects on
+	the copy used in the element iteration.
+</li>
+</ul>
+
+<p>
+This above quiz is extended from <a href="https://twitter.com/val_deleplace/status/1476907441459798055">one of Valentin Deleplace's quizzes</a>. The following is the original quiz.
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var x = []string{"A", "B", "C"}
+
+	for i, s := range x {
+		print(i, s, " ")
+		x = append(x, "Z")
+		x[i+1] = "Z"
+	}
+}
+</code></pre>
+
+<p>
+The original quiz prints <code>0A,1B,2C,</code>, because the ranged container is
+a copy of the initial <code>x</code>, and elements of the copy are never changed.
+</p>
+
+<p>
+The following is <a href="https://twitter.com/val_deleplace/status/1476239147601997828">another quiz</a> made by Valentin Deleplace (with a bit modification).
+</p>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var y = []string{"A", "B", "C", "D"}
+	var x = y[:3]
+
+	for i, s := range x {
+		print(i, s, ",")
+		x = append(x, "Z")
+		x[i+1] = "Z"
+	}
+}
+</code></pre>
+
+<p>
+The other quiz prints <code>0A,1Z,2C,</code>. It is similar to the above extened quiz.
+Key points:
+</p>
+
+<ul>
+<li>
+	The first <code>append</code> call doesn't create a new backing array,
+	so the assignment <code>x[i+1] = "Z"</code> in the first loop has effect
+	on the iniital slice <code>x</code> (and its copy used in the element iteration).
+</li>
+<li>
+	The second <code>append</code> call creates a new backing array,
+	so subsequent <code>x[i+1] = "Z"</code> assignments have no effects
+	on the iniital slice <code>x</code> (and its copy used in the element iteration).
+</li>
+</ul>
+
+</div>
+
+

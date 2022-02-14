@@ -5,10 +5,12 @@ import "testing"
 var s = "1234567890abcdef" // len(s) == 16
 var r string
 
+//go:noinline
 func Concat_WithPlus(a, b, c, d string) string {
 	return a + b + c + d
 }
 
+//go:noinline
 func Concat_WithBytes(ss ...string) string {
 	var n = 0
 	for _, s := range ss {

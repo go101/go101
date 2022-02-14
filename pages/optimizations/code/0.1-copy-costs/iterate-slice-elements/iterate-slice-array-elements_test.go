@@ -4,6 +4,7 @@ import "testing"
 
 type Element [10]int64
 
+//go:noinline
 func Sum_PlainForLoop(s []Element) (r int64) {
 	for i := 0; i < len(s); i++ {
 		r += s[i][0]
@@ -11,6 +12,7 @@ func Sum_PlainForLoop(s []Element) (r int64) {
 	return
 }
 
+//go:noinline
 func Sum_OneIterationVar(s []Element) (r int64) {
 	for i := range s {
 		r += s[i][0]
@@ -18,6 +20,7 @@ func Sum_OneIterationVar(s []Element) (r int64) {
 	return
 }
 
+//go:noinline
 func Sum_UseSecondIterationVar(s []Element) (r int64) {
 	for _, v := range s {
 		r += v[0]
