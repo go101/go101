@@ -915,9 +915,9 @@ the <code>reflect</code> standard package are declared with type
 </p>
 
 <p>
-We convert a pointer to a string to a <code>*reflect.StringHeader</code> pointer value,
+We can convert a string pointer to a <code>*reflect.StringHeader</code> pointer value,
 so that we can manipulate the internal of the string.
-The same, we can convert a pointer to a slice to a <code>*reflect.SliceHeader</code> pointer value,
+The same, we can convert a slice pointer to a <code>*reflect.SliceHeader</code> pointer value,
 so that we can manipulate the internal of the slice.
 </p>
 
@@ -985,8 +985,8 @@ https://groups.google.com/forum/#!topic/golang-nuts/MgIP2KvEAaU
 In general,
 we should only get a <code>*reflect.StringHeader</code> pointer value from an actual (already existed) string,
 or get a <code>*reflect.SliceHeader</code> pointer value from an actual (already existed) slice.
-We shouldn't do the contrary, such as creating a string from a <code>StringHeader</code>,
-or creating a slice from a <code>SliceHeader</code>.
+We shouldn't do the contrary, such as creating a string from a new allocated <code>StringHeader</code>,
+or creating a slice from a new allocated <code>SliceHeader</code>.
 For example, the following code is dangerous.
 
 <pre class="line-numbers"><code class="language-go">var hdr reflect.StringHeader
@@ -1000,9 +1000,9 @@ s := *(*string)(unsafe.Pointer(&hdr)) // dangerous!
 <p>
 </p>
 
-The following is an example which shows how to convert a string to to a byte slice,
+The following is an example which shows how to convert a string to a byte slice,
 by using the unsafe way.
-Different from the safe conversion from a string to to a byte slice,
+Different from the safe conversion from a string to a byte slice,
 the unsafe way doesn't allocate a new underlying byte sequence
 for the result slice in each conversion.
 
@@ -1049,8 +1049,8 @@ at least for the official standard compiler.)</i>
 <p>
 <a href="https://golang.org/pkg/reflect/#SliceHeader">The docs</a>
 of the <code>SliceHeader</code> and <code>StringHeader</code> types in the
-<code>reflect</code> standard package are similar.
-The docs says the representations of the two struct types may change in a later release.
+<code>reflect</code> standard package are similar in that
+they say the representations of the two struct types may change in a later release.
 So the above example may become invalid even if the unsafe rules keep unchanged.
 Fortunately, the current two available Go compilers (the standard Go compiler and the gccgo compiler)
 both recognize the representations of the two types declared
@@ -1061,7 +1061,6 @@ in the <code>reflect</code> standard package.
 Note: when using the just introduced unsafe way to convert a string to a byte slice,
 please make sure not to modify the bytes in the result byte slice if the string still survives
 (for demonstrating, the above example violates this principle).
-And it is recommended to never modify the bytes in the result byte slice.
 </p>
 
 It is also possible to convert a byte slice to a string in a similar way,
@@ -1132,7 +1131,7 @@ Tricky? Yes.
 <h3>Final Words</h3>
 
 <p>
-From the above content, we know that, for some cases,
+From the above contents, we know that, for some cases,
 the unsafe mechanism can help us write more efficient Go code.
 However, it is very easy to introduce some subtle bugs which have
 very low possibilities to produce when using the unsafe mechanism.

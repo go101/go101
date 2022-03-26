@@ -36,6 +36,10 @@ We can also declare custom type aliases (see below).
 Except <a href="string.html">string types</a>,
 Go 101 article series will not try to explain more on other basic types.
 </p>
+
+<p>
+The 17 built-in basic types are predeclared types.
+</p>
 </div>
 
 <h3>Concept: Composite Types</h3>
@@ -59,9 +63,9 @@ Go supports the following composite types:
 </div>
 
 <div>
-Non-defined composite types may be denoted by their respective type literals.
-Following are some literal representation examples of all kinds of non-defined composite types
-(non-defined types will be explained below).
+Unnamed composite types may be denoted by their respective type literals.
+Following are some literal representation examples of all kinds of unnamed composite types
+(name and unnamed types will be explained below).
 <pre class="line-numbers"><code class="language-go">// Assume T is an arbitrary type and Tkey is
 // a type supporting comparison (== and !=).
 
@@ -118,7 +122,7 @@ So, up to now (Go 1.17), Go has 26 kinds of types.
 initially called <b>type declaration</b>, was the only type declaration way before Go 1.9.
 Since Go 1.9, type definition has become one of two forms of type declarations.
 The new form is called <b>type alias declaration</b>,
-which will be introduced in the next section.)
+which will be introduced in a section below.)
 </i></p>
 
 <div>
@@ -137,13 +141,17 @@ type (
 <p>
 New type names must be identifiers.
 But please note that, type names declared at package level can't be <a href="packages-and-imports.html#init"><code>init</code></a>.
-(This is the same for the following introduced type alias names.)
+This is the same for the following introduced type alias names.
 </p>
 
 <p>
 The second type declaration in the above example includes two type specifications.
 If a type declaration contains more than one type specification,
 the type specifications must be enclosed within a pair of <code>()</code>.
+</p>
+
+<p>
+Each type specification produces a distict defined type.
 </p>
 
 <div>
@@ -167,51 +175,17 @@ Note,
 </ul>
 </div>
 
-
-
-<!--
-Type definition can be viewed as type copying.
-<ul>
-<li>
-	The new type will copy the value memory layout of the source type.
-</li>
-<li>
-	If the source type is an interface type,
-	the new type, also an interface type, will have the same method set as the source type.
-</li>
-<li>
-	If the source type is a struct type,
-	the new type will also copy all the fields of the source type.
-</li>
-<li>
-	If the source type is a struct type,
-	then the new type will obtain the methods defined, either explicitly or implicitly,
-	for the types embedded in the source struct type.
-</li>
-<li>
-	The new type will not obtain the methods directly defined for the source type.
-</li>
-</ul>
-
-<p>
-The new defined type and the source type are two different types,
-even if their values share the same memory layout.
-In other words, the new defined type is not an alias of the source type.
-</p>
-
--->
-
 Some type definition examples:
-<pre class="line-numbers"><code class="language-go">// The following new defined and source types
-// are all basic types.
+<pre class="line-numbers"><code class="language-go">// The following new defined and source types are all
+// basic types. The source types are all predeclared.
 type (
 	MyInt int
 	Age   int
 	Text  string
 )
 
-// The following new defined and source types are
-// all composite types.
+// The following new defined and source types are all
+// composite types. The source types are all unnamed.
 type IntPtr *int
 type Book struct{author, title string; pages int}
 type Convert func(in0 int, in1 bool)(out0 int, out1 string)
@@ -226,26 +200,83 @@ func f() {
 	type Reader interface{Read([]byte) int}
 }
 </code></pre>
+
+<p>
+Please note that,
+from Go 1.9 to Go 1.17, the Go specification ever thought predeclared
+built-in types are defined types.
+But since Go 1.18, the Go specificaiton clarifies that
+predeclared built-in types are not defined types.
+</p>
+</div>
+
+<a class="anchor" id="generic-type"></a>
+<h3>Concept: Custom Generic Types and Instantiated Types</h3>
+
+<div>
+<p>
+Since Go 1.18, Go has supported custom generic types (and functions).
+A generic type must be instantiated to be used as value types.
+</p>
+
+<p>
+A generic type is a defined type and its instantiated types are named types
+(named types are explained in the next section).
+</p>
+
+<p>
+The other two important concepts in custom generics are constarints and type parameters.
+</p>
+
+<p>
+This book doesn't talk about custom generics in detail.
+Please read the <a href="https://go101.org/generics/101.html">Go Generics 101</a> book
+on how to declare and use generic types and functions.
+</p>
+
+</div>
+
+<a class="anchor" id="named-type"></a>
+<h3>Concept: Named Types vs. Unnamed Types</h3>
+
+<div>
+
+<p>
+Before Go 1.9, the terminology <b>named type</b> is defined accurately in Go specification.
+A named type was defined as a type that is represented by an identifier.
+Along with the custom type alias feature introduced in Go 1.9 (see the next section),
+the <b>named type</b> terminology was ever removed from Go specification
+and it was replaced by the <b>defined type</b> terminology.
+Since Go 1.18, along with the introduction of custom generics,
+the <b>named type</b> terminology has been added back to Go specification.
+</p>
+
+A named type may be
+
+<ul>
+<li>
+	a predeclared type;
+</li>
+<li>
+	a defined type;
+</li>
+<li>
+	an instantiated type (of a generic type);
+</li>
+<li>
+	a type parameter type.
+</li>
+</ul>
+
+<p>
+Other types are called unnamed types.
+An unnamed type must be a composite type (not vice versa).
+</p>
+
 </div>
 
 <a class="anchor" id="type-alias"></a>
 <h3>Syntax: Type Alias Declarations</h3>
-
-<p><i>
-(<b>Type alias declaration</b> is one new kind of type declarations added since Go 1.9.)
-</i></p>
-
-<!--
-aliases should not be called as types:
-https://github.com/golang/go/issues/31243#issuecomment-481021726
--->
-
-<p>
-As above mentioned, there are only two built-in type aliases in Go,
-<code>byte</code> (alias of <code>uint8</code>) and
-<code>rune</code> (alias of <code>int32</code>).
-They are the only two type aliases before Go 1.9.
-</p>
 
 <div>
 Since Go 1.9, we can declare custom type aliases by using the following syntax.
@@ -290,103 +321,12 @@ So, similarly, aliases <code>table</code> and <code>Table</code> also denote the
 </p>
 
 <p>
-Note, although aliases <code>table</code> and <code>Table</code> denote the same type,
-<code>Table</code> is exported so it can be used by other packages
-but this does not apply to <code>table</code>.
+Note, although a type alias always has a name, it might denote an unnamed type.
+For example, the <code>table</code> and <code>Table</code> aliases both
+denote the same unnamed type <code>map[string]int</code>. 
 </p>
-
-<p>
-Type alias declarations are useful in refactoring some large Go projects,
-they are not intended for general purpose uses.
-We should use type definition declarations in general programming.
-</p>
-</div>
-
-<a class="anchor" id="non-defined-type"></a>
-<h3>Concept: Defined Types vs. Non-Defined Types</h3>
-
-<p>
-A defined type is a type defined in a type definition.
-</p>
-
-<p>
-All basic types are defined. A non-defined type must be a composite type.
-</p>
-
-<div>
-In the following example. type alias <code>C</code> and type literal
-<code>[]string</code> both represent the same non-defined types,
-but type <code>A</code> and type alias <code>B</code> both represent the same defined type.
-<pre class="line-numbers"><code class="language-go">type A []string
-type B = A
-type C = []string
-</code></pre>
 
 </div>
-
-<a class="anchor" id="unnamed-type"></a>
-<h3>Concept: Named Types vs. Unnamed Types</h3>
-
-<div>
-<p>
-Before Go 1.9, the terminology <b>'named type'</b> is defined accurately in Go specification.
-A named type was defined as a type that is represented by an identifier.
-Along with the type alias feature introduced in Go 1.9,
-this <b>'named type'</b> terminology is removed from Go specification as well,
-for it may cause some confusions in explaining and understanding some Go concepts.
-For example, some type names might denote unnamed types (such as the alias <code>C</code>,
-which is shown in the last section, and denotes an unnamed type <code>[]string</code>).
-</p>
-
-To avoid causing such confusions, since Go 1.9,
-a new terminology <b>defined type</b> is introduced in place of <b>named type</b>.
-However, this change brings 
-<a href="https://github.com/golang/example/tree/master/gotypes#named-types">some embarrassing situations</a>,
-and causes <a href="https://github.com/golang/go/issues/32496">some inconveniences</a>
-in <a href="https://github.com/golang/go/issues/22005">explaining some concepts</a>.
-To avoid these new problems, Go 101 articles try to follow several principles:
-<ul>
-<li>
-	An alias will never be called a <b>type</b>, though we may say it denotes/represents a type.
-</li>
-<li>
-	The terminology <b>named type</b> is viewed as an exact equivalence of <b>defined type</b>.
-	(And <b>unnamed type</b> exactly means <b>non-defined type</b>.)
-	In other words, when it says "a type alias <code>T</code> is a named type",
-	it actually means the type represented by the alias <code>T</code> is a named type.
-	If <code>T</code> represents an unnamed type, we should never say <code>T</code> is a named type,
-	even if the alias <code>T</code> itself has a name.
-</li>
-<li>
-	When we mention a type name, it might be the name of a defined type or the name of a type alias.
-</li>
-</ul>
-</div>
-
-<!--
-<div>
-In Go,
-<ul>
-<li>
-	if a type has a name, which must be an identifier, and the identifier is not
-	the blank identifier <code>_</code>, then this type is called a named type.
-	All basic types are named types.
-	A declared type is also a named type (if its identifier is not the blank identifier).
-</li>
-<li>
-	if a type can't be represented by a pure identifier,
-	then the type is an unnamed type.
-	The composite types denoted by their respective type literals are all unnamed types.
-</li>
-</ul>
-
-<p>
-An unnamed type must be a composite type,
-It is not true vice versa,
-for a composite type may be a defined type.
-</p>
-</div>
--->
 
 <a class="anchor" id="underlying-type"></a>
 <h3>Concept: Underlying Types</h3>
@@ -396,10 +336,11 @@ In Go, each type has an underlying type. Rules:
 <ul>
 <li>for built-in types, the respective underlying types are themselves.</li>
 <li>for the <code>Pointer</code> type defined in the <code>unsafe</code> standard code package,
-	its underlying type is itself. (At least we can think so. In fact, the underlying type
+	its underlying type is itself (at least we can think so. In fact, the underlying type
 	of the <code>unsafe.Pointer</code> type is not well documented. We can also think
-	the underlying type is <code>*T</code>, where <code>T</code> represents an arbitrary type.)</li>
-<li>the underlying type of a non-defined type, which must be a composite type, is itself.</li>
+	the underlying type is <code>*T</code>, where <code>T</code> represents an arbitrary type).
+	<code>unsafe.Pointer</code> is also viewed as a built-in type.</li>
+<li>the underlying type of an unnamed type, which must be a composite type, is itself.</li>
 <li>in a type declaration, the newly declared type and the source type have the same underlying type.</li>
 </ul>
 
@@ -418,7 +359,7 @@ type (
 )
 
 // The underlying types of []Age, Ages, and AgeSlice
-// are all the non-defined type []Age.
+// are all the unnamed type []Age.
 type Ages AgeSlice
 </code></pre>
 
@@ -427,7 +368,7 @@ type Ages AgeSlice
 
 <p>
 How can an underlying type be traced given a user declared type?
-The rule is, when a built-in basic type or a non-defined type is met, the tracing should be stopped.
+The rule is, when a built-in basic type or an unnamed type is met, the tracing should be stopped.
 Take the type declarations shown above as examples, let's trace their underlying types.
 </p>
 
@@ -606,7 +547,7 @@ Please read <a href="function.html">functions in Go</a> for more details
 on function types and function values.
 </p>
 
-<h3>Concept: Method and Method Set of a Type</h3>
+<h3>Concept: Methods and Method Set of a Type</h3>
 
 <p>
 In Go, some types can have <a href="method.html">methods</a>.
@@ -749,7 +690,7 @@ Compilers forbid comparing two values of incomparable types.
 </p>
 
 <p>
-Note, incomparable types are also called as incomparable types in many articles.
+Note, incomparable types are also called as uncomparable types in many articles.
 </p>
 
 <p>
@@ -785,9 +726,10 @@ Please read the following listed articles for details:
 <h3>Fact: Generics in Go</h3>
 
 <p>
-Up until now (Go 1.17), the generic functionalities in Go are limited to built-in types and functions.
-Custom generics are still in draft phase now.
-Please read <a href="generic.html">generics in Go</a> for details.
+Before Go 1.18, the generic functionalities in Go were limited to built-in types and functions.
+Since Go 1.18, custom generics has already been supported.
+Please read the <a href="generic.html">generics in Go</a> article for built-in generics
+and the <a href="https://go101.org/generics/101.html">Go Generics 101</a> book for custom generics.
 </p>
 
 

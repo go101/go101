@@ -24,13 +24,13 @@ func main() {
 	type P = *bool
 	type M = map[int]int
 	var x struct {
-		string // a defined non-pointer type
-		error  // a defined interface type
-		*int   // a non-defined pointer type
-		P      // an alias of a non-defined pointer type
-		M      // an alias of a non-defined type
+		string // a named non-pointer type
+		error  // a named interface type
+		*int   // an unnamed pointer type
+		P      // an alias of an unnamed pointer type
+		M      // an alias of an unnamed type
 
-		http.Header // a defined map type
+		http.Header // a named map type
 	}
 	x.string = "Go"
 	x.error = nil
@@ -83,7 +83,7 @@ Here, the article tries to provide more accurate descriptions.
 <ul>
 <li>
 	A type name <code>T</code> can be embedded as an embedded field
-	unless <code>T</code> denotes a defined pointer type or a pointer type
+	unless <code>T</code> denotes a named pointer type or a pointer type
 	which base type is either a pointer or an interface type.
 </li>
 <li>
@@ -126,7 +126,7 @@ The above rules for which types can be embedded are some over-restricted and unn
 which makes it some hard to describe them clearly in brief.
 It looks they are intended to avoid types without methods being embedded.
 However, at the same time, they also already allow many types without methods to be embedded,
-such as built-in basic types and aliases of many non-defined types.
+such as built-in basic types and aliases of many unnamed types.
 There is <a href="https://github.com/golang/go/issues/24062">a proposal</a> trying to simplify the rules but it was declined.
 The rule specified in the proposal is quite simple and doesn't do any harm:
 <b>if a type can provide an unqualified name, then the type can be embedded</b>.
@@ -155,13 +155,13 @@ int
 AliasPP          // base type is a pointer type
 *Encoder         // base type is an interface type
 *AliasPtr        // base type is a pointer type
-IntPtr           // defined pointer type
+IntPtr           // named pointer type
 *IntPtr          // base type is a pointer type
-*chan int        // base type is a non-defined type
-struct {age int} // non-defined non-pointer type
-map[string]int   // non-defined non-pointer type
-[]int64          // non-defined non-pointer type
-func()           // non-defined non-pointer type
+*chan int        // base type is an unmaed type
+struct {age int} // unnamed non-pointer type
+map[string]int   // unnamed non-pointer type
+[]int64          // unnamed non-pointer type
+func()           // unnamed non-pointer type
 </code></pre>
 
 <p>
@@ -171,7 +171,7 @@ func()           // non-defined non-pointer type
 No two fields are allowed to have the same name in a struct,
 there are no exceptions for anonymous struct fields.
 By the embedded field naming rules,
-a non-defined pointer type can't be embedded along with its base type
+an unnamed pointer type can't be embedded along with its base type
 in the same struct type.
 For example, <code>int</code> and <code>*int</code> can't be embedded in the same struct type.
 </p>
@@ -464,7 +464,7 @@ we say the first method is overridden by the other one.
 </p>
 
 For example, assume <code>A</code>, <code>B</code> and <code>C</code>
-are three <a href="type-system-overview.html#non-defined-type">defined types</a>.
+are three <a href="type-system-overview.html#type-definition">defined types</a>.
 
 <pre class="line-numbers"><code class="language-go">type A struct {
 	x string
@@ -639,7 +639,7 @@ and the embedding is legal,
 	for each method of the embedded type <code>T</code>,
 	if the selectors to that method neither collide with nor are shadowed
 	by other selectors, then compilers will implicitly declare
-	a corresponding method with the same prototype
+	a corresponding method with the same specificaiton
 	for the embedding struct type <code>S</code>.
 	And consequently, compilers will also
 	<a href="method.html#implicit-pointer-methods">implicitly declare
@@ -649,7 +649,7 @@ and the embedding is legal,
 	for each method of the pointer type <code>*T</code>,
 	if the selectors to that method neither collide with nor are shadowed
 	by other selectors, then compilers will implicitly declare
-	a corresponding method with the same prototype for the pointer type <code>*S</code>.
+	a corresponding method with the same specificaiton for the pointer type <code>*S</code>.
 </li>
 </ul>
 
@@ -683,9 +683,9 @@ The right parts are the corresponding full form selectors.
 
 <p>
 From the article <a href="method.html">methods in Go</a>,
-we know that we can't explicitly declare methods for non-defined struct types
-and non-defined pointer types whose base types are non-defined struct types.
-But through type embedding, such non-defined types can also own methods.
+we know that we can't explicitly declare methods for unnamed struct types
+and unnamed pointer types whose base types are unnamed struct types.
+But through type embedding, such unnamed types can also own methods.
 </p>
 
 <!--
@@ -903,7 +903,7 @@ func main() {
 <p>
 Not only can struct types embed other types, but also can interface types,
 but interface types can only embed interface types.
-Please read <a href="interface.html#embedding">interfaces in Go</a> for details.
+Please read <a href="interface.html">interfaces in Go</a> for details.
 </p>
 
 <!--
@@ -928,7 +928,7 @@ For example,
 <div>
 In the end, let's view an interesting example.
 The example program will dead loop and stack overflow.
-If you have understood the above content and
+If you have understood the above contents and
 <a href="interface.html#polymorphism">polymorphism</a> and type embedding,
 it is easy to understand why it will dead loop.
 

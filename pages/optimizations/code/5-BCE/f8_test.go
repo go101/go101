@@ -26,7 +26,7 @@ func f8x(s []byte) {
 }
 
 //go:noinline
-func f8y1(s []byte) {
+func f8y(s []byte) {
 	var n byte
 	for i := 0; i < len(s)-3; i += 4 {
 		s2 := s[i:]
@@ -38,11 +38,12 @@ func f8y1(s []byte) {
 	}
 }
 
+//go:noinline
 func f8y2(s []byte) {
 	var n byte
 	for i := 0; i < len(s)-3; i += 4 {
-		s2 := s[i : i+4]
-		s2[3] = n // Found IsInBounds
+		s2 := s[i : i+4] // Found IsInBounds
+		s2[3] = n
 		s2[2] = n
 		s2[1] = n
 		s2[0] = n
@@ -50,11 +51,12 @@ func f8y2(s []byte) {
 	}
 }
 
+//go:noinline
 func f8y3(s []byte) {
 	var n byte
 	for i := 0; i < len(s)-3; i += 4 {
-		s2 := s[i : i+4 : i+4]
-		s2[3] = n // Found IsInBounds
+		s2 := s[i : i+4 : i+4] // Found IsInBounds
+		s2[3] = n
 		s2[2] = n
 		s2[1] = n
 		s2[0] = n
@@ -84,11 +86,11 @@ func Benchmark_f8x(b *testing.B) {
 	}
 }
 
-func Benchmark_f8y1(b *testing.B) {
+func Benchmark_f8y(b *testing.B) {
 	ss := ss
 	for i := 0; i < b.N; i++ {
 		for _, s := range ss {
-			f8y1(s)
+			f8y(s)
 		}
 	}
 }
@@ -119,3 +121,5 @@ func Benchmark_f8z(b *testing.B) {
 		}
 	}
 }
+
+

@@ -11,7 +11,7 @@ func f9a(n int) []int {
 	buf := make([]int, n+1)
 	k := 0
 	for i := 0; i <= n; i++ {
-		buf[i] = k
+		buf[i] = k // Found IsInBounds
 		k++
 	}
 	return buf

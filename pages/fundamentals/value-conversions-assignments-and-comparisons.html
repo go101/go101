@@ -1,8 +1,11 @@
 ﻿<h1>Value Conversion, Assignment and Comparison Rules in Go</h1>
 
 <p>
-This article will list all the value comparison,
-conversion and comparison rules in Go.
+This article will list all the value comparison, conversion and comparison rules in Go.
+Please note that type parameter types (used frequently in custom generics) are deliberately ignored
+in the descriptions of conversion, assignability and comparison rules.
+In other words, this book doesn't consider the situations in which
+<a href="https://go101.org/generics/101.html">custom generics</a> are involved.
 </p>
 
 <a class="anchor" id="conversion"></a>
@@ -66,15 +69,15 @@ Given a non-interface value <code>x</code> and a non-interface type <code>T</cod
 	then <code>x</code> can be explicitly converted to <code>T</code>.
 </li>
 <li>
-	if either <code>Tx</code> or <code>T</code> is a <a href="type-system-overview.html#non-defined-type">non-defined type</a>
+	if either <code>Tx</code> or <code>T</code> is a <a href="type-system-overview.html#named-type">unnamed type</a>
 	and their underlying types are identical (considering struct tags),
 	then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
 </li>
 <li>
 	if <code>Tx</code> and <code>T</code> have different underlying types,
-	but both <code>Tx</code> and <code>T</code> are non-defined pointer types
+	but both <code>Tx</code> and <code>T</code> are unnamed pointer types
 	and their base types share the same underlying type (ignoring struct tags),
-	then <code>x</code> can (and must) be explicitly converted to <code>T</code>.
+	then <code>x</code> can be explicitly converted to <code>T</code>.
 </li>
 </ul>
 </div>
@@ -92,12 +95,14 @@ func main() {
 	// the same underlying type: []int
 	type IntSlice []int
 	type MySlice  []int
+	type Foo = struct{n int `foo`}
+	type Bar = struct{n int `bar`}
 
 	var s  = []int{}
 	var is = IntSlice{}
 	var ms = MySlice{}
-	var x struct{n int `foo`}
-	var y struct{n int `bar`}
+	var x map[Bar]Foo
+	var y map[Foo]Bar
 
 	// The two implicit conversions both doesn't work.
 	/*
@@ -108,8 +113,8 @@ func main() {
 	// Must use explicit conversions here.
 	is = IntSlice(ms)
 	ms = MySlice(is)
-	x = struct{n int `foo`}(y)
-	y = struct{n int `bar`}(x)
+	x = map[Bar]Foo(y)
+	y = map[Foo]Bar(x)
 
 	// Implicit conversions are okay here.
 	s = is
@@ -132,7 +137,7 @@ func main() {
 
 	var pi = new(int)  // the type of pi is *int
 	// ip and pi have the same underlying type,
-	// and the type of pi is non-defined, so
+	// and the type of pi is unnamed, so
 	// the implicit conversion works.
 	var ip IntPtr = pi
 
@@ -166,7 +171,7 @@ func main() {
 	Given a channel value <code>x</code>, assume its type <code>Tx</code> is a
 	bidirectional channel type, <code>T</code> is also a channel type (bidirectional or not).
 	If <code>Tx</code> and <code>T</code> have the identical element type,
-	and either <code>Tx</code> or <code>T</code> is a non-defined type,
+	and either <code>Tx</code> or <code>T</code> is an unnamed type,
 	then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
 </div>
 
