@@ -36,8 +36,7 @@ for another example on package-level variable initialization orders.
 When a package is loaded at run time, Go runtime
 will try to initialize uninitialized package-level variables
 which have no dependencies on uninitialized variables,
-by their declaration order.
-The process might be applied (looped) several times,
+by their declaration order,
 until no variables are initialized in such a process.
 For a successfully compiled Go program, there should be
 no uninitialized variables after all such processes end.
@@ -48,25 +47,54 @@ Package-level variables appearing as blank identifiers are
 treated like any other variables in the initialization process.
 </p>
 
-For example, the following program should print <code>yzxw</code>.
+For example, in the following program,
+variable <code>a</code> depends <code>b</code>,
+and variables <code>c</code> and <code>_</code> depend on <code>a</code>.
+So
 <ol>
 <li>
-	In the first run of above described process, <code>y</code> and <code>z</code>
-	are the only two uninitialized variables which have no dependencies on
-	uninitialized variables, so they are initialized by their declaration order.
+	The first initialized variable is <code>b</code>,
+	which is the first package-level variable without dependencies on other package-level variables.
 </li>
 <li>
-	In the second run of above described process, <code>x</code>
-	is the only uninitialized variable which has no dependencies
-	on uninitialized variables, so it is initialized.
+	The second initialized variable is <code>a</code>.
+	After <code>b</code> is initialized,
+	<code>a</code> is the first package-level variable
+	without dependencies on uninitialized package-level variables.
 </li>
 <li>
-	In the third run of above described process, <code>w</code>
-	is the only uninitialized variable which has no dependencies
-	on uninitialized variables, so it is initialized.
+	The third and fourth initialized variables are <code>_</code> and <code>c</code>.
+	After <code>a</code> and <code>b</code> are initialized,
+	<code>_</code> and <code>c</code> both don't depend on uninitialized package-level variables.
 </li>
 </ol>
 
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+var (
+	_ = f()
+	a = b / 2
+	b = 6
+	c = f()
+)
+
+func f() int {
+	a++
+	return a
+}
+
+func main() {
+	fmt.Println(a, b, c) // 5 6 5
+}
+</code></pre>
+
+<p>
+The above program prints <code>5 6 5</code>.
+</p>
+
+<!--
 <pre class="line-numbers"><code class="language-go">package main
 
 var (
@@ -91,6 +119,7 @@ func main() {
 <a href="https://github.com/golang/go/issues/22326">didn't implement the rule correctly</a>.
 If the above program is compiled with the standard Go compiler version 1.12, it will print <code>zxwy</code>.)
 </p>
+-->
 
 <!--
 https://github.com/golang/go/issues/31292
@@ -155,6 +184,12 @@ func (T) ab() []int { return []int{a, b} }
 <p>
 </p>
 
+<p>
+Please note that, Go specification doesn't compulsively specify the compilation order of the source files
+in a package, so try not to put some package-level variables into different source files in a package
+if there are complicate dependency relations between those variables; otherwise a variable might be
+initialzied to different values by different Go compilers.
+</p>
 
 </div>
 
