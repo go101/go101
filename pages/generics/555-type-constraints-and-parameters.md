@@ -18,26 +18,22 @@ Since Go 1.18, value types in Go could be categorized in two categories:
 * ordinary types: the types not declared in type parameter lists.
   Before Go 1.18, there are only ordinary types.
 
-A constraint has some proprties:
+Type parameter lists will be explained in detail in a later section.
 
-* type set, which might finite (probably empty) or infinite.
-* specific type sets, which is always finite (probably empty).
-* core type. A constraint may have at most one core type.
-
-The type set property defines the set of permissible type arguments for the respective type parameters of the constraint. The latter two control the behaviors/operations supported by values of type parameters of the constraint. The three properties will be explained below in detail.
-
-As mentioned in the previous chapter, type constraints are actually interface types.
-In order to let interface types be competent at the constraint role,
+As mentioned in the previous chapter, type constraints are actually
+[interface types](https://go101.org/article/interface.html).
+In order to let interface types be competent to act as the constraint role,
 Go 1.18 enhances the expressiveness of interface types by supporting several new notations.
 
 ## Enhanced interface syntax 
 
 Some new notations are introduced into Go to make it is possible to use interface types as constraints.
 
-* The `~T` form, where `T` is a type literal (denoting unnamed type) or type name.
+* The `~T` form, where `T` is a type literal or type name.
   `T` must denote a non-interface type whose underlying type is itself
   (so `T` may not be a type parameter, which is explained below).
-  The form denotes a type set, which include all types whose underlying type is `T`.
+  The form denotes a type set, which include all types whose
+  [underlying type](https://go101.org/article/type-system-overview.html#underlying-type) is `T`.
   The `~T` form is called a tilde form or type tilde in this book
   (or underlying term and approximation type elsewhere).
 * The `T1 | T2 | ... | Tn` form, which is called a union of terms (or type/term union in this book).
@@ -66,17 +62,22 @@ map[int]int | []int | [16]int | any
 chan struct{} | ~struct{x int}
 ```
 
-We know that an interface type may specify arbitrary number of method specifications (method elements, one kind of interface elements),
-and before Go 1.18, an interface type may only embed interface type names.
-Since Go 1.18, an interface type may embed the following items (type elements, the other kind of interface elements):
+We know that, before Go 1.18, an interface type may embed
+
+* arbitrary number of method specifications (method elements, one kind of interface elements);
+* arbitrary number of type names (type elements, the other kind of interface elements),
+  but the type names must denote interface types.
+
+Go 1.18 relaxed the limitaitons of type elements, so that now an interface type
+may embed the following type elements:
 
 * any type literals or type names, whether or not they denote interface types, but they must not denote type parameters.
 * tilde forms.
 * term unions.
 
-The orders of interface elements are not important.
+The orders of interface elements embedded in an interface type are not important.
 
-The following is a code example with some interface type declarations,
+The following code snippet shows some interface type declarations,
 in which the interface type literals in the declarations of `N` and `O`
 are only legal since Go 1.18.
 
@@ -140,6 +141,9 @@ type O interface {
 We could view a single type literal, type name or tilde form as a term union with only one term.
 So simply speaking, since Go 118, an interface type may specify some methods and embed some term unions.
 
+An interface type without any embedding elements is called an empty interface.
+For example, the predeclared `any` type alias denotes an empty interface type.
+
 ## Type sets and method sets
 
 Before Go 1.18, an interface type is defined as a method set.
@@ -148,18 +152,18 @@ A type set only consists of non-interface types.
 
 * The type set of a non-interface type literal or type name only contains the type denoted by the type literal or type name.
 * As just mentioned above, the type set of a tilde form `~T` is the set of types whose underlying types are `T`. In theory, this is an infinite set.
-* The type set of a method specification is the set of types whose method sets include the specified method.
+* The type set of a method specification is the set of non-interface types whose method sets include the method specification.
   In theory, this is an infinite set.
 * The type set of the empty interface is the set of all non-interface types.
   In theory, this is an infinite set.
 * The type set of a union of terms `T1 | T2 | ... | Tn` is the union of the type sets of the terms.
 * The type set of a non-empty interface is the intersection of the type sets of its interface elements.
 
-An interface type without any embedding elements is called an empty interface.
-The predeclared `any` type is an empty interface type.
-The type set of an empty interface type contains all types.
+As the type set of an empty interface type contains all non-interface types.
+It is a super set of any type set.
 
-Two constraints are equivalent to each other if their type sets are equal.
+By the current specification,
+two unnamed constraints are equivalent to each other if their type sets are equal.
 
 Given the types declared in the following code snippet,
 for each interface type, its type set is shown in its preceding comment.
@@ -204,8 +208,8 @@ type V interface {[]byte; any}
 // Bytes and MyString.
 type W interface {T; U}
 
-// Z <=> any. So all non-interface types are
-// contained in the type set of Z.
+// Z <=> any. Z is a blank interface. Its
+// type set contains all interface types.
 type Z interface {~[]byte | ~string | any}
 ```
 
@@ -214,6 +218,8 @@ either explicitly or implicitly (Go compilers will
 [insert some missing semicolons as needed in compilations](https://go101.org/article/line-break-rules.html)).
 The following interface type literals are equivalent to each other.
 The type set of the interface type denoted by them is empty.
+The interface type and the underlying type of the type `S`
+shown in the above code snippet are actually identical.
 
 ```Go
 interface {~string; string; M();}

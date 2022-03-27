@@ -1,0 +1,225 @@
+<p id="f-666-custom-generic-types-md"></p>
+<h1>More about generic types</h1>
+
+<p>##</p>
+
+<p>type List[T any] struct {
+	next *List[T]
+	val  T
+}</p>
+
+<h2>[]~B is not supported</h2>
+
+<h2>Currently (Go 1.18), aliases to non-fully instantiated types are not supported now.</h2>
+
+<p>For example, in the following code, the lines of declaring <code>A</code> and <code>B</code> don't compile.</p>
+
+<pre><code class="language-Go">type T[X, Y any] func(X) Y
+
+type A[X] = T[X, string] // syntax error
+
+type B[X, Y, Z any] = T[X, Y] // error: generic type cannot be alias
+
+type D = T[int, string] // okay, for T[int, string] is instantiated.
+</code></pre>
+
+<p>Aliases to custom generic types might be supported in Go 1.19: <a href="https://github.com/golang/go/issues/46477">https://github.com/golang/go/issues/46477</a></p>
+
+<p>type C[X, Y any] struct{}
+type C3 = C[int, int] // okay</p>
+
+<pre><code>package main
+
+type G[T any] struct{
+	m T
+}
+
+func (g G[T]) M() T {
+	return g.m
+}
+
+func main() {
+	type Alias = G[bool]
+	_ = Alias.M // okay
+	Alias.M(Alias{true})
+	
+	type Defined G[bool]
+	_ = Defined.M // error: Defined.M undefined
+}
+</code></pre>
+
+<h2>Generic interface types</h2>
+
+<pre><code class="language-Go">type C[X any] interface {
+	*X
+	Double() X
+}
+
+func foo[D C[T], T any](v D) T {
+	return v.Double()
+}
+</code></pre>
+
+<h2>Anonymous type parameters</h2>
+
+<p>In the following generic type declaration,
+the only type parameter is useless at all.</p>
+
+<pre><code class="language-Go">type Int[_ any] int
+</code></pre>
+
+<p>The pattern is not totally useless.</p>
+
+<pre><code class="language-Go">
+</code></pre>
+
+<h2>A generic type may be not defined as a type parameter</h2>
+
+<pre><code class="language-Go">type P[T any] T // error
+type P[T any] [2]T // okay
+</code></pre>
+
+<h2>The method set of a constraint is not calculated compeletely for some cases</h2>
+
+<p>The Go specification states:</p>
+
+<blockquote>
+<p>The method set of an interface type is the intersection of the method sets of each type in the interface's type set.</p>
+</blockquote>
+
+<p>However, currently (Go toolchain 1.18), only the methods explicitly specified in interface types are calculated. For example, in the code, the method set of the constraint should contain both <code>Foo</code> and <code>Bar</code>,
+and the code should compile okay, but it doesn't (as of Go toolchain 1.18).</p>
+
+<pre><code class="language-Go">package main
+
+type S struct{}
+
+func (S) Bar() {}
+
+type C interface {
+	S
+	Foo()
+}
+
+func foobar[T C](v T) {
+	v.Foo() // okay
+	v.Bar() // v.Bar undefined
+}
+
+func main() {}
+</code></pre>
+
+<p>This restriction is planed to be removed in Go toochain 1.19.</p>
+
+<p>The related issue: <a href="https://github.com/golang/go/issues/51183">https://github.com/golang/go/issues/51183</a></p>
+
+<h2>No ways to specific a field set for a constraint</h2>
+
+<p>We know that an interface type may specify a method set.
+But up to now (Go 1.18), it could not specify a (struct) field set.</p>
+
+<p>The restriction might be lifted from future Go versions.</p>
+
+<p>There is a proposal for this: <a href="https://github.com/golang/go/issues/51259">https://github.com/golang/go/issues/51259</a></p>
+
+<h2>No ways to use common fields of the type set of a constraint if the constraint has not a core (struct) type</h2>
+
+<p>Currently (Go 1.18), even if all types in the type set of a constraint
+are structs and they share some common fields, the common fields still
+could not be used if the structs don't share the identical underlying type.</p>
+
+<p>For example, the generic functions in the following example all fail to compile.</p>
+
+<pre><code class="language-Go">package main
+
+type S1 struct {
+	X int
+}
+
+type S2 struct {
+	X int `json:X`
+}
+
+type S3 struct {
+	X int
+	Z bool
+}
+
+type S4 struct {
+	S1
+}
+
+func F12[T S1 | S2](v T) {
+	_ = v.X // error: v.x undefined
+}
+
+func F13[T S1 | S3](v T) {
+	_ = v.X // error: v.x undefined
+}
+
+func F14[T S1 | S4](v T) {
+	_ = v.X // error: v.x undefined
+}
+
+func main() {}
+</code></pre>
+
+<p>There is a proposal to remove this limit: <a href="https://github.com/golang/go/issues/48522">https://github.com/golang/go/issues/48522</a></p>
+
+<p>Temp walkaround: through explicitly specified methods</p>
+
+<p><a href="https://github.com/golang/go/issues/50417">https://github.com/golang/go/issues/50417</a>
+field accesses through type parameters will be disabled for Go 1.18.
+<a href="https://github.com/golang/go/issues/51576">https://github.com/golang/go/issues/51576</a>
+<a href="https://github.com/golang/go/issues/50233">https://github.com/golang/go/issues/50233</a></p>
+
+<h2>No ways to define a type parameter which only accepts certain interface type arguments</h2>
+
+<h2>Embedding type parameters</h2>
+
+<p>Embedding a type parameter, or a pointer to a type parameter, as
+an unnamed field in a struct/interface type is not permitted. Similarly
+embedding a type parameter in an interface type is not permitted.
+Whether these will ever be permitted is unclear at present.</p>
+
+<p><a href="https://github.com/golang/go/issues/49030">https://github.com/golang/go/issues/49030</a></p>
+
+<p><a href="https://github.com/golang/go/issues/24062">https://github.com/golang/go/issues/24062</a></p>
+
+<h2>Custom generic type instantiations are not inconsistent with built-in generic types</h2>
+
+<p>My personal opinion</p>
+
+<p>===========================================================</p>
+
+<h2>Instantiate</h2>
+
+<p>inconsistent with built-in generics</p>
+
+<p>each instantiated type is named type.</p>
+
+<p>Two instantiated types are identical if their defined types and all type arguments are identical.</p>
+
+<pre><code class="language-Go">func f[A, B any](x A) B {
+	type C []B // type declarations inside generic functions are not currently supported
+	return any(x).(B)
+}
+</code></pre>
+
+<pre><code class="language-Go">// could not be instantiated.
+func F[X chan Y, Y [2]X]() {}
+
+type S[T []T] struct{}
+
+type P[T *T,] struct{}
+</code></pre>
+
+<pre><code class="language-Go">// could be instantiated.
+func F[X ~chan Y, Y ~[2]X]() {}
+
+type S[T ~[]T] struct{}
+
+type P[T ~*T,] struct{}
+</code></pre>
+
+<h2>No ways to declare a constraint which is only satisfied by interface types.</h2>

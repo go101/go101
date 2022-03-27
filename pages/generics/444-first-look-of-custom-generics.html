@@ -1,0 +1,340 @@
+<p id="f-444-first-look-of-custom-generics-md"></p>
+<h1>First Look of Custom Generics</h1>
+
+<p>In the custom generics world, a type may be declared as a generic type,
+and a function may be declared as generic function.
+In addition, generic types are defined types, so they may have methods.</p>
+
+<p>The declaration of a generic type, generic function, or method of generic types
+contains a type parameter list part, which is the main difference from
+the declaration of an ordinary type, function, or method.</p>
+
+<h2>A generic type example</h2>
+
+<p>Firstly, let's view an example to show how generic types look like.
+It might be not a perfect example, but it does show the usefulness of custom generic types.</p>
+
+<pre><code class="language-Go">package main
+
+import &quot;sync&quot;
+
+type Lockable[T any] struct {
+	sync.Mutex
+	Data T
+}
+
+func main() {
+	var n Lockable[uint32]
+	n.Lock()
+	n.Data++
+	n.Unlock()
+	
+	var f Lockable[float64]
+	f.Lock()
+	f.Data += 1.23
+	f.Unlock()
+	
+	var b Lockable[bool]
+	b.Lock()
+	b.Data = !b.Data
+	b.Unlock()
+	
+	var bs Lockable[[]byte]
+	bs.Lock()
+	bs.Data = append(bs.Data, &quot;Go&quot;...)
+	bs.Unlock()
+}
+</code></pre>
+
+<p>In the above example, <code>Lockable</code> is a generic type.
+Comparing to non-generic types, there is an extra part, a type parameter list,
+in the declaration (specification, more precisely speaking) of a generic type.
+Here, the type parameter list of the <code>Lockable</code> generic type is <code>[T any]</code>.</p>
+
+<p>A type parameter list may contain one and more type parameter declarations
+which are enclosed in square brackets as a whole and seperated by commas.
+Each parameter declaration is composed of a type parameter name and a (type) constraint.
+For the above example, <code>T</code> is the type parameter name and <code>any</code> is the constraint of <code>T</code>.</p>
+
+<p>Please note that <code>any</code> is a new predeclared identifier introduced in Go 1.18.
+It is an alias of the blank interface type <code>interface{}</code>.
+We should have known that all types implements the blank interface type.</p>
+
+<p>We could view constraints as types of (type parameter) types.
+All type constraints are actually interface types.
+Constraints are the core of custom generics and
+will be explained in detail in the next chapter.</p>
+
+<p><code>T</code> denotes a type parameter type.
+Its scope begins after the name of the declared generic type
+and ends at the end of the specification of the generic type.
+Here it is used as the type of the <code>Data</code> field.</p>
+
+<p>Since Go 1.18, a value type is either an ordinary type or a type parameter type.
+Before Go 1.18, all the types are ordinary types.</p>
+
+<p>A generic type is a <a href="https://go101.org/article/type-system-overview.html#type-definition">defiend type</a>.
+It must be instantiated to be used as value types.
+The notation <code>Lockable[uint32]</code> is called an instantiated type (of the generic type <code>Lockable</code>).
+In the notation, <code>[uint32]</code> is called type argument list and <code>uint32</code> is called a type argument,
+which is passed to the corresponding <code>T</code> type parameter.
+That means the type of the <code>Data</code> field of the instantiated type <code>Lockable[uint32]</code> is <code>uint32</code>.</p>
+
+<p>A type arguments must implement the constraint of its correspondng type parameter.
+The constraint <code>any</code> is the loosest constraint, any value type could be passed to the <code>T</code> type parameter.
+The other type arguments used in the above example are: <code>float64</code>, <code>bool</code> and <code>[]byte</code>.</p>
+
+<p>Every instantiated type is a <a href="https://go101.org/article/type-system-overview.html#named-type">named type</a>.
+For example, <code>Lockable[uint32]</code> and <code>Lockable[[]byte]</code> are both named types.</p>
+
+<p>The above example shows how custom generics avoid code repetitions for type declarations.
+Without custom generics, several struct types are needed to be declared,
+like the following code shows.</p>
+
+<pre><code class="language-Go">package main
+
+import &quot;sync&quot;
+
+type LockableUint32 struct {
+	sync.Mutex
+	Data uint32
+}
+
+type LockableFloat64 struct {
+	sync.Mutex
+	Data float64
+}
+
+type LockableBool struct {
+	sync.Mutex
+	Data bool
+}
+
+type LockableBytes struct {
+	sync.Mutex
+	Data []byte
+}
+
+func main() {
+	var n LockableUint32
+	n.Lock()
+	n.Data++
+	n.Unlock()
+	
+	var f LockableFloat64
+	f.Lock()
+	f.Data += 1.23
+	f.Unlock()
+	
+	var b LockableBool
+	b.Lock()
+	b.Data = !b.Data
+	b.Unlock()
+	
+	var bs LockableBytes
+	bs.Lock()
+	bs.Data = append(bs.Data, &quot;Go&quot;...)
+	bs.Unlock()
+}
+</code></pre>
+
+<p>The non-generic code contains many code repetitions,
+which could be avoided by using the generic type demostrated above.</p>
+
+<h2>An example of a method of a generic type</h2>
+
+<p>Some people might not appreciate the implementation of the above generic type.
+Instead, they prefer to use a different implementation as the following code shows.
+Comparing with the <code>Lockable</code> implementation in the last section, the new one
+hides the struct fields from outside package users of the generic type.</p>
+
+<pre><code class="language-Go">package main
+
+import &quot;sync&quot;
+
+type Lockable[T any] struct {
+	mu sync.Mutex
+	data T
+}
+
+func (l *Lockable[T]) Do(f func(*T)) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	f(&amp;l.data)
+}
+
+func main() {
+	var n Lockable[uint32]
+	n.Do(func(v *uint32) {
+		*v++
+	})
+	
+	var f Lockable[float64]
+	f.Do(func(v *float64) {
+		*v += 1.23
+	})
+	
+	var b Lockable[bool]
+	b.Do(func(v *bool) {
+		*v = !*v
+	})
+	
+	var bs Lockable[[]byte]
+	bs.Do(func(v *[]byte) {
+		*v = append(*v, &quot;Go&quot;...)
+	})
+}
+</code></pre>
+
+<p>In the above code, a method <code>Do</code> is declared for the generic base type <code>Lockable</code>.
+Here, the receiver type is a pointer type, which base type is the generic type <code>Lockable</code>.
+Different from method declarations for ordinary base types,
+there is a type parameter list part
+following the receiver generic type name <code>Lockable</code> in the receiver part.
+Here, the type parameter list is <code>[T]</code>.</p>
+
+<p>The type parameter list in a method declaration for a generic base type
+is actually a duplication of the type parameter list specified
+in the generic receiver base type specificaiton. To make code clean,
+type parameter constraints are (and must be) ommitted from the list.
+That is why here the type parameter list is <code>[T]</code>, instead of <code>[T any]</code>.</p>
+
+<p>The scope of the type parameter <code>T</code> is the whole method declaration
+(as of Go 1.18. It might <a href="https://github.com/golang/go/issues/51503">be adjusted a little in later Go versions</a>).
+Here, <code>T</code> is used in a value parameter type, <code>func(*T)</code>.</p>
+
+<ul>
+<li>The type of its method <code>Do</code> of the instantiated type <code>Lockable[uint32]</code> is <code>func(f func(*uint32))</code>.</li>
+<li>The type of its method <code>Do</code> of the instantiated type <code>Lockable[float64]</code> is <code>func(f func(*float64))</code>.</li>
+<li>The type of its method <code>Do</code> of the instantiated type <code>Lockable[bool]</code> is <code>func(f func(*bool))</code>.</li>
+<li>The type of its method <code>Do</code> of the instantiated type <code>Lockable[[]byte]</code> is <code>func(f func(*[]byte))</code>.</li>
+</ul>
+
+<p>Please note that, the type parameter names used in a method declaration for a generic base type
+are not required to be the same as the corresponding ones used in the generic type specificaiton.
+For example, the above method declaration is equivalent to the following rewritten one.</p>
+
+<pre><code class="language-Go">func (l *Lockable[Foo]) Do(f func(*Foo)) {
+	...
+}
+</code></pre>
+
+<p>Though, it is a bad practice not to keep the corresponding type parameter names the same.</p>
+
+<h2>A generic function example</h2>
+
+<p>Now, let's view an example of how to declare and use generic (non-method) functions.</p>
+
+<pre><code class="language-Go">package main
+
+// NoDiff checks whether or not a collection
+// of values are all identical.
+func NoDiff[V comparable](vs ...V) bool {
+	if len(vs) == 0 {
+		return true
+	}
+	
+	v := vs[0]
+	for _, x := range vs[1:] {
+		if v != x {
+			return false
+		}
+	}
+	return true
+}
+
+func main() {
+	var NoDiffString = NoDiff[string]
+	println(NoDiff(&quot;Go&quot;, &quot;Go&quot;, &quot;Go&quot;)) // true
+	println(NoDiffString(&quot;Go&quot;, &quot;go&quot;)) // false
+	
+	println(NoDiff(123, 123, 123, 123)) // true
+	println(NoDiff[int](123, 123, 789)) // false
+	
+	type A = [2]int
+	println(NoDiff(A{}, A{}, A{}))     // true
+	println(NoDiff(A{}, A{}, A{1, 2})) // false
+	
+	println(NoDiff(new(int)))           // true
+	println(NoDiff(new(int), new(int))) // false
+
+	println(NoDiff[bool]())   // true
+
+	// _ = NoDiff() // error: cannot infer V
+	
+	// error: *** does not implement comparable
+	// _ = NoDiff([]int{}, []int{})
+	// _ = NoDiff(map[string]int{})
+	// _ = NoDiff(any(1), any(1))
+}
+</code></pre>
+
+<p>In the above example, <code>NoDiff</code> is a generic function.
+Different from non-generic functions, and similar to generic types,
+there is an extra part, a type parameter list, in the declaration of a generic function.
+Here, the type parameter list of the <code>NoDiff</code> generic function is <code>[V comparable]</code>, in which
+<code>V</code> is the type parameter name and <code>comparable</code> is the constraint of <code>V</code>.</p>
+
+<p><code>comparable</code> is new predeclared identifier introduced in Go 1.18.
+It denotes an interface that is implemented by all comparable types.
+It will be explained with more details in the next chapter.</p>
+
+<p>The scope of the type parameter name <code>V</code> is the whole function declaration
+excluding the function name part
+(as of Go 1.18. It might be adjusted a little in later Go versions).
+Here, <code>V</code> is used as the variadic (value) parameter type.</p>
+
+<p>The notations <code>NoDiff[string]</code>, <code>NoDiff[int]</code> and <code>NoDiff[bool]</code> are called instantiated functions (of the generic function <code>NoDiff</code>).
+Similar to instantiated types, in the notations, <code>[string]</code>, <code>[int]</code> and <code>[bool]</code> are called type argument lists.
+In the lists, <code>string</code>, <code>int</code> and <code>bool</code> are called type arguments, all of which are passed to the <code>V</code> type parameter.</p>
+
+<p>The whole type argument list may be totally omitted from an instantiated function expression
+if all the type arguments could be inferred from the value arguments.
+That is why some calls to the <code>NoDiff</code> generic function have no type argument lists in the above example.</p>
+
+<ul>
+<li>In the call <code>NoDiff(&quot;Go&quot;, &quot;Go&quot;, &quot;Go&quot;)</code>, the type argument is inferred as <code>string</code>, the default type of the value arguments.</li>
+<li>In the call <code>NoDiff(123, 123, 123, 123)</code>, the type argument is inferred as <code>int</code>, the default type of the value arguments.</li>
+<li>In the two calls with <code>A{}</code> and <code>A{1, 2}</code> as value arguments, the type argument is inferred as <code>[2]int</code>, the type of the value arguments.</li>
+<li>In the two calls with <code>new(int)</code> as value arguments, the type argument is inferred as <code>*int</code>, the type of the value arguments.</li>
+</ul>
+
+<p>Please note that all of these type arguments implement the <code>comparable</code> interface.
+Incomparable types, such as <code>[]int</code> and <code>map[string]int</code> may not be passed as type arguments
+of calls to the <code>NoDiff</code> generic function.
+And please note that, although <code>any</code> is a comparable (value) type, it doesn't implement <code>comprable</code>, so it is also not an eligible type argument.
+This will be talked about in detail in the next chapter.</p>
+
+<p>The above example shows how generics avoid code repetitions for function declarations.
+Without custom generics, we need to declare a function for each type argument used in the example.
+The bodies of these function declarations would be almost the same.</p>
+
+<h2>Generic functions could be viewed as simplified forms of methods of generic types</h2>
+
+<p>The generic function shown in the above section could be viewed as a simplified
+form of a method of a generic type, as shown in the following code.</p>
+
+<pre><code class="language-Go">package main
+
+type NoDiff[V comparable] struct{}
+
+func (nd NoDiff[V]) Do(vs ...V) bool {
+	... // same as the body of the above generic function
+}
+
+func main() {
+	var NoDiffString = NoDiff[string]{}.Do
+	println(NoDiffString(&quot;Go&quot;, &quot;go&quot;)) // false
+	
+	println(NoDiff[int]{}.Do(123, 123, 789)) // false
+	
+	println(NoDiff[*int]{}.Do(new(int))) // true
+}
+</code></pre>
+
+<p>In the above code, <code>NoDiff[string]{}.Do</code>, <code>NoDiff[int]{}.Do</code>
+and <code>NoDiff[*int]{}.Do</code> are three method values of different
+instantiated types.</p>
+
+<p>We could view a generic type as a type parameter space,
+and view all of its methods as some functions sharing the same type parameter space.</p>
