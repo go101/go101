@@ -33,15 +33,13 @@ func genStaticFiles(rootURL string) {
 	}
 	
 	// md -> html
-	func(mdGroups ...string) {
-		for _, group := range mdGroups {
-			dir := fullPath("pages", group)
-			_, err := runShellCommand(time.Minute/2, dir, "ebooktool", "-md2htmls")
-			if err != nil {
-				log.Fatalln("ebooktool failed to execute in dirrectory", dir)
-			}
+	md2htmls := func(group string) {
+		dir := fullPath("pages", group)
+		_, err := runShellCommand(time.Minute/2, dir, "ebooktool", "-md2htmls")
+		if err != nil {
+			log.Fatalln("ebooktool failed to execute in dirrectory", dir)
 		}
-	}("blog")
+	}
 
 	// load from http server
 	loadFile := func(uri string) []byte {
@@ -164,6 +162,8 @@ func genStaticFiles(rootURL string) {
 				}
 			}
 		}
+		
+		md2htmls(group)
 
 		{
 			dir := fullPath("pages", group)

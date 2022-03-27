@@ -1,4 +1,4 @@
-# Constraints and type parameters
+# Constraints and Type Parameters
 
 A constraint means a type constraint, it is used to constrained some type parameters.
 We could view constraints as types of types.
@@ -12,7 +12,7 @@ A type parameter is a type which is declared in a type parameter list
 and could be used in a generic type specificaiton or a generic function/method declaration.
 Each type parameter is a distinct named type.
 
-Since Go 1.18, types in Go could be categorized in two categories:
+Since Go 1.18, value types in Go could be categorized in two categories:
 
 * type parameter types: the types declared in type parameter lists.
 * ordinary types: the types not declared in type parameter lists.

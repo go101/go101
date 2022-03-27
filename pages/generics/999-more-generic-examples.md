@@ -106,6 +106,7 @@ func main() {
 
 ##
 
+```Go
 type Copyable[T any] interface {
 
 	Copy() T
@@ -125,6 +126,7 @@ func copySlice[T Copyable[T]](s []T) []T {
 	return s2
 
 }
+```
 
 ## Examples:
 
@@ -140,3 +142,6 @@ An example which is some involuted.
   * simplfy code generation
     * MyList, MyTree, ...
     * byte slice and string
+
+
+https://github.com/golang/go/issues/51909

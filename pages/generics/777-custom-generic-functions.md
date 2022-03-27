@@ -225,6 +225,7 @@ https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-param
 
 https://gophers.slack.com/archives/C88U9BFDZ/p1647950715616299
 
+```Go
 // ConvertSlice converts each element of the slice
 // as to the type To by doing a dynamic type conversion.
 // Any elements of as that don't implement To will be
@@ -238,6 +239,7 @@ func ConvertSlice[To, From any](as []From) []To {
 	}
 	return bs
 }
+```
 
 ##
 
@@ -322,9 +324,11 @@ The restriction might be removed in future Go versions, or not, I'm nor sure.
 
 https://github.com/golang/go/issues/50937
 
+```Go
 func Real[T complex64](s T) float32 {
 	return real(s)
 }
+```
 
 
 ## An element index operation require the container operand's specific types may not include maps and non-maps at the same time

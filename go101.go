@@ -66,7 +66,8 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "article":
 		// for history reason, fundamentals pages use "article/xxx" URLs
 		go101.serveGroupItem(w, r, "fundamentals", item)
-	case "optimizations", "details-and-tips", "quizzes", "apps-and-libs", "blog":
+	case "optimizations", "details-and-tips", "quizzes", "generics",
+		"apps-and-libs", "blog":
 		go101.serveGroupItem(w, r, group, item)
 	}
 }
