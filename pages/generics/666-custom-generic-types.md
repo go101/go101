@@ -132,6 +132,15 @@ The restriction might be lifted from future Go versions.
 
 There is a proposal for this: https://github.com/golang/go/issues/51259
 
+```Go
+type I interface{ ~[]struct{ A, b int } | ~[]struct{ A, x int } }
+func Print[T I](v T) {
+	fmt.Println(v[0].A) // ✅ Works
+}
+```
+
+https://github.com/golang/go/issues/51977
+
 ## No ways to use common fields of the type set of a constraint if the constraint has not a core (struct) type
 
 Currently (Go 1.18), even if all types in the type set of a constraint

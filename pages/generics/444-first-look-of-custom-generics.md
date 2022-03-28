@@ -53,13 +53,17 @@ in the declaration (specification, more precisely speaking) of a generic type.
 Here, the type parameter list of the `Lockable` generic type is `[T any]`.
 
 A type parameter list may contain one and more type parameter declarations
-which are enclosed in square brackets as a whole and seperated by commas.
+which are enclosed in square brackets as a whole and separated by commas.
 Each parameter declaration is composed of a type parameter name and a (type) constraint.
 For the above example, `T` is the type parameter name and `any` is the constraint of `T`.
 
 Please note that `any` is a new predeclared identifier introduced in Go 1.18.
 It is an alias of the blank interface type `interface{}`.
 We should have known that all types implements the blank interface type.
+
+_(Note, generally, Go 101 books don't say a type alias is a type.
+They just say a type alias denotes a type.
+But for convenience, the Go Generics 101 book often says `any` is a type.)_
 
 We could view constraints as types of (type parameter) types.
 All type constraints are actually interface types.
@@ -81,7 +85,7 @@ In the notation, `[uint32]` is called type argument list and `uint32` is called 
 which is passed to the corresponding `T` type parameter.
 That means the type of the `Data` field of the instantiated type `Lockable[uint32]` is `uint32`.
 
-A type arguments must implement the constraint of its correspondng type parameter.
+A type arguments must implement the constraint of its corresponding type parameter.
 The constraint `any` is the loosest constraint, any value type could be passed to the `T` type parameter.
 The other type arguments used in the above example are: `float64`, `bool` and `[]byte`.
 
@@ -141,7 +145,7 @@ func main() {
 ```
 
 The non-generic code contains many code repetitions,
-which could be avoided by using the generic type demostrated above.
+which could be avoided by using the generic type demonstrated above.
 
 ## An example of a method of a generic type
 
@@ -198,8 +202,8 @@ Here, the type parameter list is `[T]`.
 
 The type parameter list in a method declaration for a generic base type
 is actually a duplication of the type parameter list specified
-in the generic receiver base type specificaiton. To make code clean,
-type parameter constraints are (and must be) ommitted from the list.
+in the generic receiver base type specification. To make code clean,
+type parameter constraints are (and must be) omitted from the list.
 That is why here the type parameter list is `[T]`, instead of `[T any]`.
 
 The scope of the type parameter `T` is the whole method declaration
@@ -212,7 +216,7 @@ Here, `T` is used in a value parameter type, `func(*T)`.
 * The type of its method `Do` of the instantiated type `Lockable[[]byte]` is `func(f func(*[]byte))`.
 
 Please note that, the type parameter names used in a method declaration for a generic base type
-are not required to be the same as the corresponding ones used in the generic type specificaiton.
+are not required to be the same as the corresponding ones used in the generic type specification.
 For example, the above method declaration is equivalent to the following rewritten one.
 
 ```Go

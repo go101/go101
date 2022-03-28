@@ -13,9 +13,9 @@ The content in this book includes:
 * current implementation/design restrictions
 
 A reader needs to be familiar with Go general programming to read this book.
-In particular, readers of this book should be familar with
+In particular, readers of this book should be familiar with
 [Go type system](https://go101.org/article/type-system-overview.html),
-including Go built-in gennerics, which and Go custom generics are two different systems.
+including Go built-in generics, which and Go custom generics are two different systems.
 
 Currently, the book mainly focuses on the syntax of, and concepts in, custom generics.
 More practical examples will be provided when I get more experiences of using custom generics.
@@ -24,7 +24,7 @@ More practical examples will be provided when I get more experiences of using cu
 <!--
 https://github.com/golang/proposal/blob/master/design/generics-implementation-dictionaries-go1.18.md
 
-
+* show some basic interfeace type argument examples
 
 * ~T is called underlying term
 

@@ -6,9 +6,9 @@ or in other words, to increase code reusability.
 
 For some situations, custom generics could also lead to cleaner code and simpler APIs.
 
-For some situations, custom geneircs could also improve code execution performance.
+For some situations, custom generics could also improve code execution performance.
 
-Before version 1.18, for many Go programmers, the lack of custom generics caused pains in Go progrmaming under some situations.
+Before version 1.18, for many Go programmers, the lack of custom generics caused pains in Go programming under some situations.
 
 Indeed, the pains caused by the lack of custom generics were alleviated to a certain extend by the following facts.
 
@@ -17,7 +17,7 @@ Indeed, the pains caused by the lack of custom generics were alleviated to a cer
 * Repetitive code could be generated automatically by using some tools (such as the `//go:generate` comment directive supported by the official Go toolchain).
 
 However, the pains are still there for some use cases.
-The demand for custom generics becomed stronger and stronger.
+The demand for custom generics became stronger and stronger.
 In the end, the Go core team decided to support custom generics in Go.
 
 For all sorts of reasons, including considerations of syntax/semantics backward compatibility and implementation difficulties, the Go core team settled down on [the type parameters proposal](https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md) to implement custom generics.
@@ -29,8 +29,8 @@ https://dl.acm.org/doi/pdf/10.1145/3428217
 
 The first Go version supporting custom generics is 1.18 (the current latest version).
 
-The type parameters proposal tries to solve many code resue problems, but not all.
-And please note that, not all the features mentioned in the parameters proposal have been implemented yet currently (Go toolchain version 1.18). The custom generics design and implementation will continue to evolve and get improved in future Go versions. And please note that the propsoal is the sky of Go custom generics.
+The type parameters proposal tries to solve many code reuse problems, but not all.
+And please note that, not all the features mentioned in the parameters proposal have been implemented yet currently (Go toolchain version 1.18). The custom generics design and implementation will continue to evolve and get improved in future Go versions. And please note that the proposal is not the sky of Go custom generics.
 
 Despite the restrictions (temporary or permanent ones) in the Go custom generics design and implementation, I believe Go custom generics will be used widely in future Go programming.
 

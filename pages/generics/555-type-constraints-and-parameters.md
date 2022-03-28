@@ -9,7 +9,7 @@ If we say types are value templates (and values are type instances),
 then constraints are type templates (and types are constraint instances).
 
 A type parameter is a type which is declared in a type parameter list
-and could be used in a generic type specificaiton or a generic function/method declaration.
+and could be used in a generic type specification or a generic function/method declaration.
 Each type parameter is a distinct named type.
 
 Since Go 1.18, value types in Go could be categorized in two categories:
@@ -68,7 +68,7 @@ We know that, before Go 1.18, an interface type may embed
 * arbitrary number of type names (type elements, the other kind of interface elements),
   but the type names must denote interface types.
 
-Go 1.18 relaxed the limitaitons of type elements, so that now an interface type
+Go 1.18 relaxed the limitations of type elements, so that now an interface type
 may embed the following type elements:
 
 * any type literals or type names, whether or not they denote interface types, but they must not denote type parameters.
@@ -154,7 +154,7 @@ A type set only consists of non-interface types.
 * As just mentioned above, the type set of a tilde form `~T` is the set of types whose underlying types are `T`. In theory, this is an infinite set.
 * The type set of a method specification is the set of non-interface types whose method sets include the method specification.
   In theory, this is an infinite set.
-* The type set of the empty interface is the set of all non-interface types.
+* The type set of an empty interface is the set of all non-interface types.
   In theory, this is an infinite set.
 * The type set of a union of terms `T1 | T2 | ... | Tn` is the union of the type sets of the terms.
 * The type set of a non-empty interface is the intersection of the type sets of its interface elements.
@@ -178,7 +178,7 @@ func (MyString) M() {}
 func (Bytes) M() {}
 func (Blank) M() {}
 
-// The type set of P only contians one type:
+// The type set of P only contains one type:
 // []byte.
 type P interface {[]byte}
 
@@ -213,7 +213,7 @@ type W interface {T; U}
 type Z interface {~[]byte | ~string | any}
 ```
 
-Please note that interface elements are seperated with semicolon (`;`),
+Please note that interface elements are separated with semicolon (`;`),
 either explicitly or implicitly (Go compilers will
 [insert some missing semicolons as needed in compilations](https://go101.org/article/line-break-rules.html)).
 The following interface type literals are equivalent to each other.
@@ -235,32 +235,27 @@ If the type set of a type `X` is a subset of an interface type `Y`,
 we say `X` implements (or satisfies) `Y`.
 Here, `X` may be an interface type or a non-interface type.
 
-All types implement the predeclared `any` type.
+Because the type set of an empty interface type is a super set of the type sets of any types,
+all types implement an empty interface type.
 
 In the above example,
 
-* the interface type `S`, whose type set is empty, implements any interface types.
-* all types implement the interface type `Z`, which is identical to the predeclared `any` type.
+* the interface type `S`, whose type set is empty, implements all interface types.
+* all types implement the interface type `Z`, which is actually a blank interface type.
 
-When a type argument is passed to a type parameter,
-the type argument must implements (or satisfies) the constraint of the type parameter.
-In other words, type sets are used to check the validity of type arguments.
+The list of methods specified by an interface type is called the method set of the interface type.
+If an interface type `X` implements another interface type `Y`, then the method set of `X` must be a super set of `Y`.
 
-The list of methods specified by an interface is called the method set of the interface.
-If an interface type `X` implements another interface type `Y`, then 
-
-* the method set of `X` must be a superset of `Y`, and
-* the type set of `X` must be a subset of `Y`.
-
-Interfaces whose type sets can be defined entirely by a method set (may be empty)
-are called basic interfaces.
-Go versions before 1.18 only support basic interfaces.
+Interface types whose type sets can be defined entirely by a method set (may be empty)
+are called basic interface types.
+Before 1.18, Go only supports basic interface types.
 Basic interfaces may be used as either value types or type constraints,
 but non-basic interfaces may only be used as type constraints (as of Go 1.18).
 
 In the above examples, `L`, `M`, `U`, `Z` and `any` are basic types.
 
-In the following code, the declaration lines for `x` and `y` both compile okay, but the line for `z` fails to compile.
+In the following code, the declaration lines for `x` and `y` both compile okay,
+but the line declaring `z` fails to compile.
 
 ```Go
 var x any
@@ -270,10 +265,10 @@ var y interface {M()}
 var z interface {~[]byte}
 ```
 
-Using no-baisc interface types as value types might be supported in later Go versions.
+Using non-basic interface types as value types might be supported in future Go versions.
 
 BTW, currently (Go 1.18), there is an unintended restriction: non-basic interface types may not be aliased.
-For example, the following type alais declarations are illegal:
+For example, the following type alias declarations are illegal:
 
 ```Go
 type C[T any] interface{~int; M() T}
@@ -289,14 +284,15 @@ type Ca = any
 type Cb = interface{M1(); M2() int}
 ```
 
-The unintended restriction will [be removed in Go 1.19](https://github.com/golang/go/issues/51616).
+The unintended restriction [will be removed in Go 1.19](https://github.com/golang/go/issues/51616).
 
 ## More about the predeclared `comparable` constraint
 
 As aforementioned, besides `any`, Go 1.18 introduces another new predeclared identifier `comparable`,
 which denotes an interface type that is implemented by all comparable types.
 
-The `comparable` interface could be embedded in other interface types to filter out incomprable types from their type sets.
+The `comparable` interface type could be embedded in other interface types
+to filter out incomparable types from their type sets.
 For example, the type set of the following declared constraint `C` contains only one type: `string`.
 
 ```Go
@@ -307,7 +303,7 @@ type C interface {
 ```
 
 Currently (Go 1.18), the `comparable` interface is treated as a non-basic interface type.
-So, now, it may only be used as type parameter constraints, not as the type of values.
+So, now, it may only be used as type parameter constraints, not as value types.
 The following code is illegal:
 
 ```Go
@@ -321,7 +317,7 @@ so `comparable` undoubtedly implements `any`, and not vice versa.
 On the other hand, starting from Go 1.0, all basic interface types are treated as comparable types.
 The blank interface type `any` is not an exception.
 So it looks that `any` (as a value type) should satisfy (implement) the `comparable` constraint.
-This is odd.
+This is quite odd.
 
 After deliberation, Go core team believe that
 [it is a design flaw](https://github.com/golang/go/issues/50646#issuecomment-1023706545)
@@ -329,16 +325,13 @@ to treat all interface types as comparable types and it is a pity that
 the `comparable` type has not been supported since Go 1.0 to avoid this flaw.
 
 Go core team try to make up for this flaw in Go custom generics age.
-So they decided that `any` (as a value type) doesn't satisfy (implement) the `comparable` constraint.
-A consequence of this decision is that there is not an interface type
-(as a value type) satisfying the `comparable` constraint,
-[which causes diffculties to some code designs](https://github.com/golang/go/issues/51257).
+So they decided that all basic interface types don't satisfy (implement) the `comparable` constraint.
+A consequence of this decision is [it causes diffculties to some code designs](https://github.com/golang/go/issues/51257).
 
 To avoid the consequence, a proposal has been made to
-[permit using `comparable` as a value type](https://github.com/golang/go/issues/51338).
+[permit using `comparable` as value types](https://github.com/golang/go/issues/51338).
 Whether or not it should be accepted is still under discuss.
 It could be accepted in as earlier as Go 1.19.
-That means the consequence exists in Go 1.18 for sure.
 
 Another benefit brought by the proposal is that it provides a way to
 ensure some interface comparisons will never panic.
@@ -369,14 +362,14 @@ var _ = foo([]int{}, []int{}) // fails to compile
 The above has mentioned that a union term may not be a type parameter. There are two other restrictions.
 
 The first is an implementation specific restriction: a term union with more than one term cannot contain the predeclared identifier `comparable` or interfaces that have methods. 
-For example, the following term unions are all illegal (as of Go toolchain 1.18):
+For example, the following term unions are both illegal (as of Go toolchain 1.18):
 
 ```Go
-[]byte | comprable
+[]byte | comparable
 string | error
 ```
 
-Another restriction is that the type sets of all non-interface type terms in a term union must have intersections.
+Another restriction is that the type sets of all non-interface type terms in a term union must have  no intersections.
 Interface type terms have no this restriction, but the current implementation (Go toolchain 1.18) disallows identical interface type terms. For example, in the following code snippet, the term unions in the first two type declarations fail to compile, but the last two compile okay.
 
 ```Go
@@ -399,100 +392,12 @@ type _ interface {
 
 The four term unions in the above code snippet are equivalent to each other in logic,
 which means this restriction is not very reasonable.
-So it might be removed in later Go versions, of become stricter to defeat the walkaround.
+So it might be removed in later Go versions, of become stricter to defeat the workaround.
 
 <!--
 https://github.com/golang/go/issues/51607
 https://github.com/golang/go/issues/45346#issuecomment-862505803
 -->
-
-## The specific type set (possibly empty) and the core type (possibly non-existing) of a constraint
-
-The two properties of a constraint control the behaviors/operations supported by values of type parameters of the constraint.
-In other words, the two properties are used to check the validity of code in function/method bodies.
-
-In calcualting the specific type set of a constriant,
-the following interface elements are called unspecified elements and are ignored:
-
-* method elements.
-* type literals or type names which denote the empty interface.
-* type unions which contain an empty interface term.
-
-The specific type sets of other specified elements are described below.
-
-* The specific type set of a non-interface type literal or type name only contains the type denoted by the type literal or type name.
-* The specific type set of a tilde form `~T` only contains `T`.
-* The type set of a union of terms `T1 | T2 | ... | Tn`,
-  where every `Tx` is not an empty interface type term,
-  is the union of the specific type sets of the terms.
-
-The specific type set of a constraint is the intersection of the specific type sets of its specified elements.
-
-The specific type set of a basic interface is always empty.
-
-A constraint has a core type if its specific type set is not empty and
-
-1. all specific types of the constraint have the same underlying type.
-1. or all specific types are channel types with an identical element type `E`
-   and all directional channels have the same direction.
-
-For the first case, the core type of the constraint is the same underlying type.
-
-For the second case, the core type of the constraint is the type `chan<- E` or `<-chan E`,
-depending on the direction of the directional channels.
-
-For other cases, the constraint has not a core type.
-
-In the following code snippet, the type set, the specific type set
-and the core type of each constraint are listed in the comment
-of that constraint. Only the types presenting in the code are listed.
-
-```Go
-type Age int
-type Num int
-
-func (Age) M() {}
-
-// Type set:       Age
-// Specific types: Age
-// Core type:      int
-type _ interface{Age}
-
-// Type set:       Age, Num
-// Specific types: Age, Num
-// Core type:      int
-type _ interface{Age | Num}
-
-// Type set:       int, Age, Num
-// Specific types: int
-// Core type:      int
-type _ interface{~int}
-
-// Type set:       (empty)
-// Specific types: Num
-// Core type:      int
-type _ interface{Num; M()}
-
-// Type set:       int, bool
-// Specific types: int, bool
-// Core type:      (no core type)
-type _ interface{int | bool}
-
-// Type set:       Age
-// Specific types: Age
-// Core type:      int
-type _ interface{Age | bool; ~int | string; M()}
-
-// Type set:       <-chan int, chan<- int
-// Specific types: <-chan int, chan<- int
-// Core type:      (no core type)
-type _ interface{<-chan int | chan<- int}
-
-// Type set:       chan int, chan<- int
-// Specific types: chan int, chan<- int
-// Core type:      chan<- int
-type _ interface{chan int | chan<- int}
-```
 
 ## Type parameter lists
 
@@ -502,31 +407,31 @@ and generic function declarations.
 
 A type parameter list contains at least one type parameter declaration
 and is enclosed in square brackets.
-Each parameter declaration is composed of a name portion and a constraint portion
+Each parameter declaration is composed of a name part and a constraint part
 (we can think the constraints are implicit in method declarations for generic base types).
-Parameter declarations are comma-seperated in a type parameter list.
+Parameter declarations are comma-separated in a type parameter list.
 
 In a type parameter list, all type parameter names must be present.
 They may be the blank identifier `_` (called blank name).
 All non-blank names in a type parameter list must be unique.
 
-Similar to value parameter lists, if the constraint portions of
+Similar to value parameter lists, if the constraints of
 some successive type parameter declarations in a type parameter list are identical,
 then these type parameter declarations could share a common
-constraint portion in the type parameter list.
+constraint part in the type parameter list.
 For example, the following two type parameter lists are equivalent.
 
 ```Go
-[A any, B any, _ comparable, _ comparable]
-[A, B any, _, _ comparable]
+[A any, B any, X comparable, _ comparable]
+[A, B any, X, _ comparable]
 ```
 
-If the end `]` token of a type parameter list is put on a new line,
-then a comma is required (by [Go line break rules](https://go101.org/article/line-break-rules.html))
-to follow the last constraint in the type parameter list;
-otherwise, the comma is optional.
+Similar to value parameter lists, if the right `]` token in a type parameter list
+and the last constraint in the list are at the same line, an optional comma is allowed
+to be inserted between them.
+[The comma is required](https://go101.org/article/line-break-rules.html#commas) if the two are not at the same line.
 
-In the following code, the beginning lines are legal, the ending lines are not.
+For example, in the following code, the beginning lines are legal, the ending lines are not.
 
 ```Go
 // Legal ones:
@@ -552,7 +457,7 @@ Variadic type parameters are not supported.
 
 ## Simplified constraint form
 
-In a type parametr list, if a constraint only contains one element
+In a type parameter list, if a constraint only contains one element
 and that element is a type element,
 then the enclosing `interface{}` may be omitted for convenience.
 For example, the following two type parameter lists are equivalent.
@@ -583,7 +488,7 @@ type G[T *int] struct{}
 
 It depends on what the `int` identifier denotes.
 If it denotes a type (very possible, not absolutely),
-then compilers will think the code declares a generic type.
+then compilers should think the code declares a generic type.
 If it denotes a constant (it is possible), then compilers
 will treat `T *int` as a multiplication expression and
 think the code declares an ordinary array type.
@@ -592,16 +497,16 @@ It is possible for compilers to distinguish what the `int` identifier denotes,
 but there are some costs to achieve this. To avoid the costs,
 compilers always treat the `int` identifier as a value expression
 and think the above declaration is an ordinary array type declaration.
-So the above declaration line will fail to compile if
-either `T` or `int` is undefined or couldn't denote an integer constant.
+So the above declaration line will fail to compile
+if `T` or `int` don't denote integer constants.
 
 Then how to declare a generic type with a single type parameter with `*int` as the constraint?
-There are two ways to accomplish thiis:
+There are two ways to accomplish this:
 
 1. use the full constraint form, or
 1. let a comma follow the simplified constraint form.
 
-The two ways are shown in the following code:
+The two ways are shown in the following code snippet:
 
 ```Go
 // Assume int is a predeclared type.
@@ -610,7 +515,7 @@ type G[T *int,] struct{}
 ```
 
 The two ways shown above are also helpful for
-some other special cases which might cause parsing ambiguities.
+some other special cases which might also cause parsing ambiguities.
 For example,
 
 ```Go
@@ -633,7 +538,7 @@ type C5[T *int|bool] struct{}
 
 As of Go toolchain 1.18, inserting a comma after the presumed constraint `*int|bool` doesn't work
 (It is [a bug](https://github.com/golang/go/issues/51488)
-in Go toolcain 1,18 and will be fixed in Go toolchain 1.19).
+in Go toolchain 1.18 and will be fixed in Go toolchain 1.19).
 
 Now, we could use full constraint form or exchange the places of `*int` and `bool` to make it compile okay.
 
@@ -646,11 +551,11 @@ type C5[T bool|*int] struct{}
 On the other hand, the following two weird generic type declarations are both legal.
 
 ```Go
-// "make" is a declard type parameter.
+// "make" is a declared type parameter.
 // Its constraint is interface{chan int}.
 type PtrToChan[make (chan int)] *make
 
-// "new" is a declard type parameter.
+// "new" is a declared type parameter.
 // Its constraint is interface{[3]float64}.
 type Matrix33[new ([3]float64)] [3]new
 ```
@@ -672,12 +577,12 @@ Since Go 1.18, named types include
 * instantiated types of generic types.
 * type parameter types (the types declared in type parameter lists).
 
-Two type parameters are never identical.
+Two different type parameters are never identical.
 
 The type of a type parameter is a constraint, a.k.a an interface type.
 This means the underlying type of a type parameter type is an interface type.
 However, this doesn't mean a type parameter behaves like an interface type.
-Its values may not be type asserted and box non-interface values.
+Its values may not box non-interface values and be type asserted (as of Go 1.18).
 
 In fact, a type parameter is just a placeholder for the types in its type set.
 So it generally behaves as (the common traits of) the types in its type set in many situations.
@@ -686,13 +591,13 @@ As the underlying type of a type parameter type is not the type parameter type i
 the tilde form `~T` is illegal if `T` is type parameter.
 So the following type parameter list is illegal.
 Because, as mentioned above, the type in a tilde form mustn't be an interface type
-and its underlying type must be itself. Here the both conditions are not satisfied.
+and its underlying type must be itself. Here the both of the conditions are not satisfied.
 
 ```Go
 [A int, B ~A] // error
 ```
 
-For the same reason, the following generic type declarations is also illegal.
+For the same reason, the following generic type declaration is also illegal.
 
 ```Go
 type C[T int] interface {
@@ -707,7 +612,7 @@ It is a type literal, so its underlying type is itself, whether or not `T` is a 
 The following type parameter list is legal.
 
 ```Go
-[A int, B ~*A] // okay
+[A int, B *A] // okay
 ```
 
 For the same reason, the following type parameter lists are also legal.
@@ -730,12 +635,12 @@ The type parameter `E` is used in the constraint of the type parameter `S`,
 Please note,
 
 * as mentioned in the last section, although `E` is a type parameter type, `[]E` is an ordinary (slice) type.
-* the undrelying type of `S` is `interface{~[]E}`, not `[]E`.
-* the undrelying type of `E` is `interface{int}`, not `int`.
+* the underlying type of `S` is `interface{~[]E}`, not `[]E`.
+* the underlying type of `E` is `interface{int}`, not `int`.
 
 For ordinary function and method declarations, a (value) parameter/result name
 is allowed to be the same as a parameter/result type name.
-For example, the following funciton and method declarations are valid.
+For example, the following function and method declarations are all valid.
 
 ```Go
 type C int
@@ -758,46 +663,46 @@ type C any
 func foo1[C C]() {}    // error: C redeclared
 func foo2[T C](T T) {} // error: T redeclared
 
-type G[E any] struct{x E}
-func (E G[E]) Bar1() {} // error: E redeclared
-func (v G[G]) Bar2() {} // error: G is not a generic type
+type G[G any] struct{x G} // okay
+func (E G[E]) Bar1() {}   // error: E redeclared
+func (v G[G]) Bar2() {}   // error: G is not a generic type
 ```
 
-The `Bar2` method declaraiton might become legal
-[since a later Go version](https://github.com/golang/go/issues/51503).
+The `Bar2` method declaration might become legal
+[since a future Go version](https://github.com/golang/go/issues/51503).
 
 <!--
 https://github.com/golang/go/issues/51503
 -->
 
-## Generic type/function instantiations and type argument inference
+## Generic type/function instantiations
 
-(need interface argument examples ...)
-
-Generic types must be instantiated to be used as types of values.
-Generic functions must be instantiated to be called or used as function values.
+Generic types must be instantiated to be used as types of values, and
+generic functions must be instantiated to be called or used as function values.
 
 A generic function (type) is instantiated by substituting a type argument list
 for the type parameter list of its declaration (specification).
-The lengths of the type argument is the same the type parameter list.
-We say each type argument is passed to the corresponding type parameter.
-A type argument must be a non-generic typem and it is valid only if
+The lengths of the type argument is the same as the type parameter list.
+Each type argument is passed to the corresponding type parameter.
+A type argument must be a non-interface type or a basic interface type
+and it is valid only if
 it satisfies the constraint of its corresponding type parameter.
 
-Instantiated functions are non-generic functions. 
-Instantiated types are non-generic named types.
+Instantiated functions are non-generic functions.
+Instantiated types are named value types.
 
 Same as type parameter lists, a type argument list is also enclosed in square brackets
-and type arguments are also comma-seperated in the type argument list.
+and type arguments are also comma-separated in the type argument list.
+The comma insertion rule for type argument lists is also the same as type parameter lists.
 
 Two type argument lists are identical if their lengths are equal and all of their corresponding types are identical.
-Two instantiated types are identical if they are instantiated from the same generic type and with the same type argument lists.
+Two instantiated types are identical if they are instantiated from the same generic type and with the same type argument list.
 
 In the following program, the generic type `Data` is instantiated four times.
 Three of the four instantiations have the same type argument list
-(please note that the predeclared `byte` is an alais of the predeclared `uint8` type).
-The type `W` is a defined type, which underlying type is `Z`, which is the type of the variable `x`.
-
+(please note that the predeclared `byte` is an alias of the predeclared `uint8` type).
+So the type of variable `x`, the type denoted by alias `Z`, and the underlying type of
+the defined type `W` are the same type.
 
 ```Go
 package main
@@ -818,19 +723,39 @@ type Y = Data[int32, bool, string]
 type Z = Data[int64, uint8, [8]uint8]
 type W Data[int64, byte, [8]byte]
 
-// type T = Data[int64, uint8, []uint8] // fails to compile
+// The following line fails to compile because
+// []uint8 doesn't satisfy the comparable constraint.
+// type T = Data[int64, uint8, []uint8] // error
 
 func main() {
 	println(reflect.TypeOf(x) == reflect.TypeOf(Z{})) // true
 	println(reflect.TypeOf(x) == reflect.TypeOf(Y{})) // false
-	println(reflect.TypeOf(x) == reflect.TypeOf(W{})) // false
 	fmt.Printf("%T\n", x)   // main.Data[int64,uint8,[8]uint8]
 	fmt.Printf("%T\n", Z{}) // main.Data[int64,uint8,[8]uint8]
-	fmt.Printf("%T\n", W{}) // main.W
 }
 ```
 
-The following is an example using instantiated functions.
+Basic interface types may be used as type arguments,
+as long as they implement the constraints of their corresponding type parameters.
+For example, the following code compiles okay.
+
+```Go
+package main
+
+func cot[T any](x T) {}
+
+func main() {
+	cot(123)
+	cot(true)
+	
+	var x, y interface{} = 123, true
+	cot(x) // okay
+	cot(y) // okay
+}
+```
+
+The following is an example using some instantiated functions
+of a generic function.
 
 ```Go
 package main
@@ -855,140 +780,247 @@ func Max[S ~[]E, E Ordered](vs S) E {
 	return r
 }
 
+type Age int
+var ages = []Age{99, 12, 55, 67, 32, 3}
+
+var langs = []string {"C", "Go", "C++"}
+
 func main() {
-	{
-		type MyInt int
-		var values = []MyInt {99, 12, 55, 67, 32, 3}
-		var maxInt = Max[[]MyInt, MyInt]
-		var x = maxInt(values)
-		var y = Max[[]MyInt, MyInt](values)
-		println(x, y) // 99 99
-	}
-	{
-		var values = []string {"C", "Go", "C++"}
-		var maxString = Max[[]string, string]
-		var x = maxString(values)
-		var y = Max[[]string, string](values)
-		println(x, y) // Go Go
-	}
+	var maxAge = Max[[]Age, Age]
+	println(maxAge(ages)) // 99
 	
-	// var _ = Max[[]bool, bool] // doesn't compile
+	var maxStr = Max[[]string, string]
+	println(maxStr(langs)) // Go
 }
 ```
 
-In the above example, the generic function `Max` is instantiated four times.
-The instantiations result in two different non-generic functions.
+In the above example, the generic function `Max` is instantiated twice.
 
-Benefiting from great type inference support,
+* The first instantiation `Max[[]Age, Age]` results a `func([]Age] Age` function value.
+* The second one, `Max[[]string, string]`, results a `func([]string) string` function value.
 
-* a type argument list may be partial (but may not be empty),
-as long as all type arguments could be inferred from the partial type argument list.
-In a partial type argument list, left argument are kept and right ones are omitted.
-* For a call to an instantiated function, the type argument list could be even totally omitted,
-as long as all type arguments could be inferred from the value parameters of the call.
+## Type argument inferences for generic function instantiations
 
-For example, the instantiations in the last example may be simplified as the following code shows.
+In the generic function example shown in the last section,
+the two function instantiations are called full form instantiations,
+in which all type arguments are presented in their containing type argument lists.
+Go supports type inferences for generic function instantiations,
+which means a type argument list may be partial or even be omitted totally,
+as long as the missing type arguments could be inferred from value parameters
+and present type arguments.
+
+For example, the `main` function of the last example in the last section could be rewritten as
 
 ```Go
 func main() {
-	{
-		type MyInt int
-		var values = []MyInt {99, 12, 55, 67, 32, 3}
-		var maxInt = Max[[]MyInt] // the 2nd arg is omitted
-		var x = maxInt(values)
-		var y = Max(values) // the argument list is omitted
-		println(x, y) // 99 99
-	}
-	{
-		var values = []string {"C", "Go", "C++"}
-		var maxString = Max[[]string] // the 2nd arg is omitted
-		var x = maxString(values)
-		var y = Max(values) // the argument list is omitted
-		println(x, y) // Go Go
-	}
+	var maxAge = Max[[]Age] // partial argument list
+	println(maxAge(ages)) // 99
+	
+	var maxStr = Max[[]string] // partial argument list
+	println(maxStr(langs)) // Go
 }
 ```
 
-In the above code snippet,
+A partial type argument list must be a prefix of the full argument list.
+In the above code, the second arguments are both omitted,
+because they could be inferred from the first ones.
 
-* the second type arguments for the type parameter `E` could be inferred from the partical
-  type argument lists `[[]MyInt]` and `[[]string]`. They are inferred as the element types of
-  the first type arguments, `MyInt` and `string`.
-* the first type arguments for the type parameter `S` could be inferred from the value argument types
-  `[]MyInt` and `[]string`. They are inferred as the value argument types.
-  The consequently, the second type arguments could be inferred from the first type arguments.
+If an instantiated function is called directly and some suffix type arguments
+could be inferred from the value argument types, then the type argument list
+could be also partial or even be omitted totally.
+For example, the `main` function could be also rewritten as
+
+```Go
+func main() {
+	println(Max(ages))  // 99
+	println(Max(langs)) // Go
+}
+```
+
+The new implementation of the `main` function shows that the calls of
+generics functions could be as clean as ordinary functions (at least sometimes),
+even if generics function declarations are more verbose.
+
+Please note that, type argument lists may be omitted totally but may not be blank.
+The following code is illegal.
+
+```Go
+func main() {
+	println(Max[](ages))  // syntax error
+	println(Max[](langs)) // syntax error
+}
+```
+
+The inferred type arguments in a type argument list must be a suffix of the type argument list.
+For example, the following code fails to compile.
+
+```Go
+package main
+
+func foo[A, B, C any](v B) {}
+
+func main() {
+	// error: cannot use _ as value or type
+	foo[int, _, bool]("Go")
+}
+```
+
+Type arguments could be inferred from element types, field types,
+parameter types and result types of value argument types.
+For example,
+
+```Go
+package main
+
+func luk[E any](v struct{x E}) {}
+func kit[E any](v []E) {} 
+func wet[E any](v func() E) {}
+
+func main() {
+	luk(struct{x int}{123})        // okay
+	kit([]string{"go", "c"})       // okay
+	wet(func() bool {return true}) // okay
+}
+```
 
 If the type set of the constraint of a type parameter contains only one type
 and the type parameter is used as a value parameter type in a generic function,
 then compilers will attempt to infer the type of an untyped value argument
 passed to the value parameter as that only one type. If the attempt fails,
 then that untyped value argument is viewed as invalid.
-For example, in the following program, the first two function calls
-in the `main` function compile okay, but the last two fail to compile.
+
+For example, in the following program, only the first function call compiles.
 
 ```Go
 package main
 
 func foo[T int](x T) {}
-func bar[T ~float64](x T) {}
+func bar[T ~int](x T) {}
 
 func main() {
-	foo(1)          // okay
-	bar[float64](1) // okay
-	
-	foo(1.23) // error
-	bar(1)    // error
+	// The default type of 1.0 is float64.
+
+	foo(1.0)  // okay
+	foo(1.23) // error: cannot use 1.23 as int
+
+	bar(1.0) // error: float64 does not implement ~int
+	bar(1.2) // error: float64 does not implement ~int
 }
 ```
 
-## Restrictions in the current type argument inference design and implementation
-
-Currrenty (Go 1.18), inferring type parameters of generic types from value literals is supported limitedly.
-For example, in the following code snippet, the declaration line for variable `x` is valid,
-but the declaration line for variable `y` is invalid.
+Sometimes, the inference process might be more complicate.
+For example, the following code compiles okay.
+The type of the instantiated function is `func([]Ints, Ints)`.
+A `[]int` value argument is [allowed to be passed](https://go101.org/article/value-conversions-assignments-and-comparisons.html) to an `Ints` value parameter,
+which is why the code compiles okay.
 
 ```Go
-type Set[E comparable] map[E]struct{}
+func pat[P ~[]T, T any](x P, y T) bool { return true }
 
-// compiles okay
-var x = Set[int16]{123: struct{}{}, 789: struct{}{}}
+type Ints []int
+var vs = []Ints{}
+var v = []int{}
 
-// cannot use generic type Set[E comparable] without instantiation.
-var y = Set{int16(123): struct{}{}, int16(789): struct{}{}}
+var _ = pat[[]Ints, Ints](vs, v) // okay
 ```
+
+But both of the following two calls don't compile.
+The reason is the missing type arguments are inferred from value arguments,
+so the second type arguments are inferred as `[]int`
+and the first type arguments are (or are inferred as) `[]Ints`.
+The two type arguments together don't satisfy the type parameter list.
+
+```Go
+// error: []Ints does not implement ~[][]int
+var _ = pat[[]Ints](vs, v)
+var _ = pat(vs, v)
+```
+
+Please read Go specification for [the detailed type argument inference rules](https://go.dev/ref/spec#Type_inference).
 
 <!--
-https://github.com/golang/go/issues/50484
-https://github.com/golang/go/issues/41176
+https://github.com/golang/go/issues/51139
 -->
 
-```Go
-func foo[A, B, C any](v B) {}
+## Restrictions of type argument inferences
 
-var _ = foo[int, _, bool]("Go") // error: cannot use _ as value or type
+Currrently (Go 1.18), inferring type arguments of instantiated types from value literals is not supported. That means the type argument list in a generic type instantiation must be always in full forms.
+
+For example, in the following code snippet, the declaration line for variable `y` is invalid,
+even if it is possible to infer the type argument as `int16`.
+
+```Go
+type Set[E comparable] map[E]bool
+
+// compiles okay
+var x = Set[int16]{123: false, 789: true}
+
+// error: cannot use generic type without instantiation.
+var y = Set{int16(123): false, int16(789): true}
 ```
 
-Currently (Go 1.18), too-complicated type argument inference is not supported.
+Another example:
+
+```Go
+import "sync"
+
+type Lockable[T any] struct {
+	sync.Mutex
+	Data T
+}
+
+// compiles okay
+var a = Lockable[float64]{Data: 1.23}
+
+// error: cannot use generic type without instantiation
+var b = Lockable{Data: float64(1.23)}
+```
+
+It is not clear whether or not [type argument inferences
+for generic type instantiations](https://github.com/golang/go/issues/50482)
+will be supported in future Go versions.
 
 <!--
 https://github.com/golang/go/issues/50482
 -->
 
-It looks value arguments are scanned firstly, 
+Currently (Go toolchain 1.18), there is still improvement room for the current type argument inference implementation of the standard Go compiler.
+For example, the following program fails to compile.
 
 ```Go
-func Append[S ~[]T, T any](s S, x ...T) S { /* implementation of append */ return s }
+package main
 
-func _() {
-        type MyPtr *int
-        var x []MyPtr
-        _ = append(x, new(int))  // built-in append: ok
-        _ = Append(x, new(int))  // okay
-        _ = Append[[]MyPtr](x, new(int))         // []MyPtr does not implement ~[]*int
-        _ = Append[[]MyPtr, MyPtr](x, new(int))  // []MyPtr does not implement ~[]*int
+type Getter[T any] interface {
+	Get() T
+}
+
+type Age[T uint8 | int16] struct {
+	n T
+}
+
+func (a Age[T]) Get() T {
+	return a.n
+}
+
+func handle[T any](g Getter[T]) {}
+
+func main() {
+	var age = Age[int16]{256}
+
+	// error: type Age[int16] of age does not
+	//        match Getter[T] (cannot infer T)
+	handle(age)
+	
+	// This verbose way works.
+	var x Getter[int16] = age
+	handle(x) // okay
 }
 ```
 
+The above program [might compile okay](https://github.com/golang/go/issues/41176)
+by using a future version of the standard Go compiler.
+
 <!--
-https://github.com/golang/go/issues/51139
+https://github.com/golang/go/issues/50484
+https://github.com/golang/go/issues/41176
 -->
