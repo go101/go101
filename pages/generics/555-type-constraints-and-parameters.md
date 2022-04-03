@@ -12,12 +12,6 @@ A type parameter is a type which is declared in a type parameter list
 and could be used in a generic type specification or a generic function/method declaration.
 Each type parameter is a distinct named type.
 
-Since Go 1.18, value types in Go could be categorized in two categories:
-
-* type parameter types: the types declared in type parameter lists.
-* ordinary types: the types not declared in type parameter lists.
-  Before Go 1.18, there are only ordinary types.
-
 Type parameter lists will be explained in detail in a later section.
 
 As mentioned in the previous chapter, type constraints are actually
@@ -39,8 +33,8 @@ Some new notations are introduced into Go to make it is possible to use interfac
 * The `T1 | T2 | ... | Tn` form, which is called a union of terms (or type/term union in this book).
   Each `Tx` term is a tilde form, type literal, or type name,
   and it may not denote a type parameter.
-  There are some restrictions of using union terms.
-  These restrictions will be described in a section below.
+  There are some requirements for union terms.
+  These requirements will be described in a section below.
 
 Note that, a type literal always denotes an unnamed type,
 whereas a type name may denote a named type or unnamed type.
@@ -267,25 +261,6 @@ var z interface {~[]byte}
 
 Using non-basic interface types as value types might be supported in future Go versions.
 
-BTW, currently (Go 1.18), there is an unintended restriction: non-basic interface types may not be aliased.
-For example, the following type alias declarations are illegal:
-
-```Go
-type C[T any] interface{~int; M() T}
-type C1 = C[bool]
-type C2 = comparable
-type C3 = interface {~[]byte | ~string}
-```
-
-Whereas the following ones are legal:
-
-```Go
-type Ca = any
-type Cb = interface{M1(); M2() int}
-```
-
-The unintended restriction [will be removed in Go 1.19](https://github.com/golang/go/issues/51616).
-
 ## More about the predeclared `comparable` constraint
 
 As aforementioned, besides `any`, Go 1.18 introduces another new predeclared identifier `comparable`,
@@ -357,11 +332,11 @@ func foo(x, y comparable) bool {
 var _ = foo([]int{}, []int{}) // fails to compile
 ```
 
-## Some restrictions of using union terms
+## More requirements for union terms
 
-The above has mentioned that a union term may not be a type parameter. There are two other restrictions.
+The above has mentioned that a union term may not be a type parameter. There are two other requirements for union terms.
 
-The first is an implementation specific restriction: a term union with more than one term cannot contain the predeclared identifier `comparable` or interfaces that have methods. 
+The first is an implementation specific requirement: a term union with more than one term cannot contain the predeclared identifier `comparable` or interfaces that have methods. 
 For example, the following term unions are both illegal (as of Go toolchain 1.18):
 
 ```Go
@@ -369,7 +344,10 @@ For example, the following term unions are both illegal (as of Go toolchain 1.18
 string | error
 ```
 
-Another restriction is that the type sets of all non-interface type terms in a term union must have  no intersections.
+To make descriptions simple, this book will view the predeclared `comparable` interface type
+as an interface type having a method (but not view it as a basic interface type).
+
+Another requirement (restriction) is that the type sets of all non-interface type terms in a term union must have no intersections.
 Interface type terms have no this restriction, but the current implementation (Go toolchain 1.18) disallows identical interface type terms. For example, in the following code snippet, the term unions in the first two type declarations fail to compile, but the last two compile okay.
 
 ```Go
@@ -392,7 +370,8 @@ type _ interface {
 
 The four term unions in the above code snippet are equivalent to each other in logic,
 which means this restriction is not very reasonable.
-So it might be removed in later Go versions, of become stricter to defeat the workaround.
+So it might be removed in later Go versions
+(or as earlier as 1.18.x), or become stricter to defeat the workaround.
 
 <!--
 https://github.com/golang/go/issues/51607
@@ -409,6 +388,7 @@ A type parameter list contains at least one type parameter declaration
 and is enclosed in square brackets.
 Each parameter declaration is composed of a name part and a constraint part
 (we can think the constraints are implicit in method declarations for generic base types).
+The name represents a type parameter constrained by the constraint. 
 Parameter declarations are comma-separated in a type parameter list.
 
 In a type parameter list, all type parameter names must be present.
@@ -454,6 +434,9 @@ _, _ comparable]
 ```
 
 Variadic type parameters are not supported.
+
+When the type set of a type parameter is mentioned, it means
+the type set of the constraint of the type parameter.
 
 ## Simplified constraint form
 
@@ -605,7 +588,7 @@ type C[T int] interface {
 }
 ```
 
-## Composite type literals containing type parameters are ordinary types
+## Composite type literals (unnamed types) containing type parameters are ordinary types
 
 For example, `*T` is always an ordinary (pointer) type.
 It is a type literal, so its underlying type is itself, whether or not `T` is a type parameter.
@@ -675,352 +658,46 @@ The `Bar2` method declaration might become legal
 https://github.com/golang/go/issues/51503
 -->
 
-## Generic type/function instantiations
+## More about generic type and function declarations
 
-Generic types must be instantiated to be used as types of values, and
-generic functions must be instantiated to be called or used as function values.
+We have seen a generic type declaraton and some generic function declarations in the last chapter.
+Different from ordinary type and function declarations, each of the generic ones has a
+type parameter list part.
 
-A generic function (type) is instantiated by substituting a type argument list
-for the type parameter list of its declaration (specification).
-The lengths of the type argument is the same as the type parameter list.
-Each type argument is passed to the corresponding type parameter.
-A type argument must be a non-interface type or a basic interface type
-and it is valid only if
-it satisfies the constraint of its corresponding type parameter.
+This book doesn't plan to further talk about generic type and function declartion syntax.
 
-Instantiated functions are non-generic functions.
-Instantiated types are named value types.
+The source type part of a generic type declaration must be an ordinary type.
+So it might be
 
-Same as type parameter lists, a type argument list is also enclosed in square brackets
-and type arguments are also comma-separated in the type argument list.
-The comma insertion rule for type argument lists is also the same as type parameter lists.
+* a composite type literal. As mentioned above, a composite type literal always represents an ordinary type.
+* a type name which denotes an ordinary type.
+* an instantiated type. Type instantiations will be explained in detail in the next chapter.
+  For now, we only need to know each instantiated type is a named ordinary type.
 
-Two type argument lists are identical if their lengths are equal and all of their corresponding types are identical.
-Two instantiated types are identical if they are instantiated from the same generic type and with the same type argument list.
-
-In the following program, the generic type `Data` is instantiated four times.
-Three of the four instantiations have the same type argument list
-(please note that the predeclared `byte` is an alias of the predeclared `uint8` type).
-So the type of variable `x`, the type denoted by alias `Z`, and the underlying type of
-the defined type `W` are the same type.
+The following code showns some generic type delcarations with all sorts of source types.
+All of these declarations are valid.
 
 ```Go
-package main
-
-import (
-	"fmt"	
-	"reflect"
+// The source types are ordinary type names.
+type (
+	Fake1[T any] int
+	Fake2[_ any] []bool
 )
 
-type Data[A int64 | int32, B byte | bool, C comparable] struct {
-	a A
-	b B
-	c C
+// The source type is an unnamed type (composite type).
+type MyData [A any, B ~bool, C comparable] struct {
+	x A
+	y B
+	z C
 }
 
-var x = Data[int64, byte, [8]byte]{1<<62, 255, [8]byte{}}
-type Y = Data[int32, bool, string]
-type Z = Data[int64, uint8, [8]uint8]
-type W Data[int64, byte, [8]byte]
-
-// The following line fails to compile because
-// []uint8 doesn't satisfy the comparable constraint.
-// type T = Data[int64, uint8, []uint8] // error
-
-func main() {
-	println(reflect.TypeOf(x) == reflect.TypeOf(Z{})) // true
-	println(reflect.TypeOf(x) == reflect.TypeOf(Y{})) // false
-	fmt.Printf("%T\n", x)   // main.Data[int64,uint8,[8]uint8]
-	fmt.Printf("%T\n", Z{}) // main.Data[int64,uint8,[8]uint8]
-}
+// The source type is an instantiated type.
+type YourData[C comparable] MyData[string, bool, C]
 ```
 
-Basic interface types may be used as type arguments,
-as long as they implement the constraints of their corresponding type parameters.
-For example, the following code compiles okay.
+Type parameters may not be used as the soruce types in generic type declarations.
+The following code doesn't compile.
 
 ```Go
-package main
-
-func cot[T any](x T) {}
-
-func main() {
-	cot(123)
-	cot(true)
-	
-	var x, y interface{} = 123, true
-	cot(x) // okay
-	cot(y) // okay
-}
+type G[T any] T // error
 ```
-
-The following is an example using some instantiated functions
-of a generic function.
-
-```Go
-package main
-
-type Ordered interface {
-	~int | ~uint | ~int8 | ~uint8 | ~int16 | ~uint16 |
-	~int32 | ~uint32 | ~int64 | ~uint64 | ~uintptr |
-	~float32 | ~float64 | ~string
-}
-
-func Max[S ~[]E, E Ordered](vs S) E {
-	if len(vs) == 0 {
-		panic("no elements")
-	}
-	
-	var r = vs[0]
-	for i := range vs[1:] {
-		if vs[i] > r {
-			r = vs[i]
-		}
-	}
-	return r
-}
-
-type Age int
-var ages = []Age{99, 12, 55, 67, 32, 3}
-
-var langs = []string {"C", "Go", "C++"}
-
-func main() {
-	var maxAge = Max[[]Age, Age]
-	println(maxAge(ages)) // 99
-	
-	var maxStr = Max[[]string, string]
-	println(maxStr(langs)) // Go
-}
-```
-
-In the above example, the generic function `Max` is instantiated twice.
-
-* The first instantiation `Max[[]Age, Age]` results a `func([]Age] Age` function value.
-* The second one, `Max[[]string, string]`, results a `func([]string) string` function value.
-
-## Type argument inferences for generic function instantiations
-
-In the generic function example shown in the last section,
-the two function instantiations are called full form instantiations,
-in which all type arguments are presented in their containing type argument lists.
-Go supports type inferences for generic function instantiations,
-which means a type argument list may be partial or even be omitted totally,
-as long as the missing type arguments could be inferred from value parameters
-and present type arguments.
-
-For example, the `main` function of the last example in the last section could be rewritten as
-
-```Go
-func main() {
-	var maxAge = Max[[]Age] // partial argument list
-	println(maxAge(ages)) // 99
-	
-	var maxStr = Max[[]string] // partial argument list
-	println(maxStr(langs)) // Go
-}
-```
-
-A partial type argument list must be a prefix of the full argument list.
-In the above code, the second arguments are both omitted,
-because they could be inferred from the first ones.
-
-If an instantiated function is called directly and some suffix type arguments
-could be inferred from the value argument types, then the type argument list
-could be also partial or even be omitted totally.
-For example, the `main` function could be also rewritten as
-
-```Go
-func main() {
-	println(Max(ages))  // 99
-	println(Max(langs)) // Go
-}
-```
-
-The new implementation of the `main` function shows that the calls of
-generics functions could be as clean as ordinary functions (at least sometimes),
-even if generics function declarations are more verbose.
-
-Please note that, type argument lists may be omitted totally but may not be blank.
-The following code is illegal.
-
-```Go
-func main() {
-	println(Max[](ages))  // syntax error
-	println(Max[](langs)) // syntax error
-}
-```
-
-The inferred type arguments in a type argument list must be a suffix of the type argument list.
-For example, the following code fails to compile.
-
-```Go
-package main
-
-func foo[A, B, C any](v B) {}
-
-func main() {
-	// error: cannot use _ as value or type
-	foo[int, _, bool]("Go")
-}
-```
-
-Type arguments could be inferred from element types, field types,
-parameter types and result types of value argument types.
-For example,
-
-```Go
-package main
-
-func luk[E any](v struct{x E}) {}
-func kit[E any](v []E) {} 
-func wet[E any](v func() E) {}
-
-func main() {
-	luk(struct{x int}{123})        // okay
-	kit([]string{"go", "c"})       // okay
-	wet(func() bool {return true}) // okay
-}
-```
-
-If the type set of the constraint of a type parameter contains only one type
-and the type parameter is used as a value parameter type in a generic function,
-then compilers will attempt to infer the type of an untyped value argument
-passed to the value parameter as that only one type. If the attempt fails,
-then that untyped value argument is viewed as invalid.
-
-For example, in the following program, only the first function call compiles.
-
-```Go
-package main
-
-func foo[T int](x T) {}
-func bar[T ~int](x T) {}
-
-func main() {
-	// The default type of 1.0 is float64.
-
-	foo(1.0)  // okay
-	foo(1.23) // error: cannot use 1.23 as int
-
-	bar(1.0) // error: float64 does not implement ~int
-	bar(1.2) // error: float64 does not implement ~int
-}
-```
-
-Sometimes, the inference process might be more complicate.
-For example, the following code compiles okay.
-The type of the instantiated function is `func([]Ints, Ints)`.
-A `[]int` value argument is [allowed to be passed](https://go101.org/article/value-conversions-assignments-and-comparisons.html) to an `Ints` value parameter,
-which is why the code compiles okay.
-
-```Go
-func pat[P ~[]T, T any](x P, y T) bool { return true }
-
-type Ints []int
-var vs = []Ints{}
-var v = []int{}
-
-var _ = pat[[]Ints, Ints](vs, v) // okay
-```
-
-But both of the following two calls don't compile.
-The reason is the missing type arguments are inferred from value arguments,
-so the second type arguments are inferred as `[]int`
-and the first type arguments are (or are inferred as) `[]Ints`.
-The two type arguments together don't satisfy the type parameter list.
-
-```Go
-// error: []Ints does not implement ~[][]int
-var _ = pat[[]Ints](vs, v)
-var _ = pat(vs, v)
-```
-
-Please read Go specification for [the detailed type argument inference rules](https://go.dev/ref/spec#Type_inference).
-
-<!--
-https://github.com/golang/go/issues/51139
--->
-
-## Restrictions of type argument inferences
-
-Currrently (Go 1.18), inferring type arguments of instantiated types from value literals is not supported. That means the type argument list in a generic type instantiation must be always in full forms.
-
-For example, in the following code snippet, the declaration line for variable `y` is invalid,
-even if it is possible to infer the type argument as `int16`.
-
-```Go
-type Set[E comparable] map[E]bool
-
-// compiles okay
-var x = Set[int16]{123: false, 789: true}
-
-// error: cannot use generic type without instantiation.
-var y = Set{int16(123): false, int16(789): true}
-```
-
-Another example:
-
-```Go
-import "sync"
-
-type Lockable[T any] struct {
-	sync.Mutex
-	Data T
-}
-
-// compiles okay
-var a = Lockable[float64]{Data: 1.23}
-
-// error: cannot use generic type without instantiation
-var b = Lockable{Data: float64(1.23)}
-```
-
-It is not clear whether or not [type argument inferences
-for generic type instantiations](https://github.com/golang/go/issues/50482)
-will be supported in future Go versions.
-
-<!--
-https://github.com/golang/go/issues/50482
--->
-
-Currently (Go toolchain 1.18), there is still improvement room for the current type argument inference implementation of the standard Go compiler.
-For example, the following program fails to compile.
-
-```Go
-package main
-
-type Getter[T any] interface {
-	Get() T
-}
-
-type Age[T uint8 | int16] struct {
-	n T
-}
-
-func (a Age[T]) Get() T {
-	return a.n
-}
-
-func handle[T any](g Getter[T]) {}
-
-func main() {
-	var age = Age[int16]{256}
-
-	// error: type Age[int16] of age does not
-	//        match Getter[T] (cannot infer T)
-	handle(age)
-	
-	// This verbose way works.
-	var x Getter[int16] = age
-	handle(x) // okay
-}
-```
-
-The above program [might compile okay](https://github.com/golang/go/issues/41176)
-by using a future version of the standard Go compiler.
-
-<!--
-https://github.com/golang/go/issues/50484
-https://github.com/golang/go/issues/41176
--->

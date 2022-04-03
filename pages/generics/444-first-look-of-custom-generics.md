@@ -75,21 +75,25 @@ Its scope begins after the name of the declared generic type
 and ends at the end of the specification of the generic type.
 Here it is used as the type of the `Data` field.
 
-Since Go 1.18, a value type is either an ordinary type or a type parameter type.
-Before Go 1.18, all the types are ordinary types.
+Since Go 1.18, value types fall into two categories:
+
+1. type parameter types
+1. ordinary types
+
+Before Go 1.18, all values types are ordinary types.
 
 A generic type is a [defiend type](https://go101.org/article/type-system-overview.html#type-definition).
 It must be instantiated to be used as value types.
 The notation `Lockable[uint32]` is called an instantiated type (of the generic type `Lockable`).
-In the notation, `[uint32]` is called type argument list and `uint32` is called a type argument,
+In the notation, `[uint32]` is called a type argument list and `uint32` is called a type argument,
 which is passed to the corresponding `T` type parameter.
 That means the type of the `Data` field of the instantiated type `Lockable[uint32]` is `uint32`.
 
-A type arguments must implement the constraint of its corresponding type parameter.
+A type argument must implement the constraint of its corresponding type parameter.
 The constraint `any` is the loosest constraint, any value type could be passed to the `T` type parameter.
 The other type arguments used in the above example are: `float64`, `bool` and `[]byte`.
 
-Every instantiated type is a [named type](https://go101.org/article/type-system-overview.html#named-type).
+Every instantiated type is a [named type](https://go101.org/article/type-system-overview.html#named-type) and an ordinary type.
 For example, `Lockable[uint32]` and `Lockable[[]byte]` are both named types.
 
 The above example shows how custom generics avoid code repetitions for type declarations.
@@ -227,6 +231,15 @@ func (l *Lockable[Foo]) Do(f func(*Foo)) {
 
 Though, it is a bad practice not to keep the corresponding type parameter names the same.
 
+BTW, the name of a type parameter may even be the blank identifier `_`
+if it is used (this is also true for the type parameters in generic type
+and function declarations). For example,
+
+```Go
+func (l *Lockable[_]) DoNothing() {
+}
+```
+
 ## A generic function example
 
 Now, let's view an example of how to declare and use generic (non-method) functions.
@@ -344,6 +357,10 @@ instantiated types.
 
 We could view a generic type as a type parameter space,
 and view all of its methods as some functions sharing the same type parameter space.
+
+To make descriptions simple, sometimes, methods of generic types
+are also called as generic functions in this book.
+
 
 
 

@@ -1,5 +1,5 @@
 
-
+todo: use these example in examples in previous chapters
 
 ## Zero value
 
@@ -30,8 +30,16 @@ func Abs[T Number](x T) T {
 }
 ```
 
+## List
+
+type List[T any] struct {
+	next *List[T]
+	val  T
+}
+
 ## Free list
 
+Use above List
 
 
 ## 
@@ -128,6 +136,19 @@ func copySlice[T Copyable[T]](s []T) []T {
 }
 ```
 
+## Generic interface types
+
+```Go
+type C[X any] interface {
+	*X
+	Double() X
+}
+
+func foo[D C[T], T any](v D) T {
+	return v.Double()
+}
+```
+
 ## Examples:
 
 atomic
@@ -145,3 +166,7 @@ An example which is some involuted.
 
 
 https://github.com/golang/go/issues/51909
+
+https://github.com/golang/go/issues/51820 https://play.golang.com/p/gI6IhikKPJR
+
+

@@ -1,37 +1,87 @@
 
-# More About generic functions and methods of generic types
 
+# Operations On Values of Type Parameter Types
 
+This chapter will talk about which operations on values of type parameters
+are valid and which are invalid in generic function bodies.
 
-## The type of a value used in a generic function must be either a specified type parameter, or a specified ordinary type
+Within a generic function body,
+if an operation on a value of a type parameter is valid, then it must be
+valid for values of every type in the type set of the constraint of the type parameter.
+In the current custom generic design and implementation (Go 1.18),
+it is not always vice versa.
+Some extra requirements must be met to make the operation valid.
+
+Currently, there are many such restrictions. Some of them are temporary
+and might be removed from future Go versions, some are permanent.
+The temporary ones are mainly caused by implementation workload,
+so they need some time and efforts to be removed eventually.
+The permanent ones are caused by the custom generics design principles.
+
+The following contents of this chapter will list these restrictions.
+Some facts and related concepts will also be listed.
+
+## The core type of a type
+
+A non-interface type always has a core type, which
+is the underlying type of the non-interface type.
+Generally, we don't care about such case in using custom generics.
+
+An interface type might have a core type or not.
+
+1. Generally speaking, if all types in the type set of then interface type (a constraint)
+share an identical core type, then the identical core type is also the core type of
+the interface type.
+1. If the types in the type set of then interface type don't share an identical core type
+but they are all channel types with identical element type `E`, and all directional channels
+in them have the same direction, then the core type of the interface type is
+the directional channel type `chan<- E` or `<-chan E` depending on the direction of the directional channels present.
+1. For cases other than the above two, the interface type has not a core type.
+
+Many operations require the constraint of a type parameter has a core type.
+
+## The type of a value used in a generic function must be a specified type
+
+As mentioned in a previous chapter, since Go 1.18,
+value types in Go could be categorized in two categories:
+
+* type parameter types: the types declared in type parameter lists.
+* ordinary types: the value types not declared in type parameter lists.
+  Before Go 1.18, there are only ordinary types.
 
 Go custom generics are not implemented as simple code text templates.
 This is a principal differece from code generation. 
 Every expression used in a generic function must have a specified type,
 which is either an ordinary type, or a type parameter.
 
-For example, in the following code snippet, the functions `foo` and `bar` both compile okay,
-but the function `dot` fails to compile. The reason is simple:
+For example, in the following code snippet,
+only the function `dot` doesn't compile.
+the other ones compile okay,
+The reason is simple:
 
 * in the function `foo`, the type of `x` is `T`, which is a type parameter.
-  Certainly, in uses if the function, `x` might be instantiated as `int` or `string`,
+  Certainly, in uses of the function, `x` might be instantiated as `int` or `string`,
   but which doesn't change the fact that, from the view of compilers,
   its type is a type parameter.
-* in the function `bar`, the type of `x[1]` is a specified ordinary type, `int`.
-* in the function `dot`, the type of `x[1]` might be `int` or `string`.
-  In the function, there is only one type parameter, `T`, which is surely not the type of `x[1]`.
+* in the function `bar`, the type of `c[i]` is a type parameter, `E`.
+* in the function `win`, the type of `x[1]` is a specified ordinary type, `int`.
+* in the function `dot`, the type of `x[1]` might be `int` or `string` (two different ordinary types).
 
 ```Go
-func foo[T int|string](x T) {
+func foo[T int | string](x T) {
 	_ = x // okay
 }
 
-func bar[T [2]int|[8]int](x T) {
+func bar[T []E, E any](c T, i int) () {
+	_ = c[i] // okay
+}
+
+func win[T ~[2]int | ~[8]int](x T) {
 	_ = x[1] // okay
 }
 
-func dot[T [2]int|[2]string](x T) {
-	_ = x[1] // error: invalid operation: cannot index x
+func dot[T [2]int | [2]string](x T) {
+	_ = x[1] // error: invalid operation
 }
 ```
 
@@ -54,7 +104,7 @@ func mud[T *int32|*int64](x T) {
 ```
 
 The same, in the following code snippet, only the function `box` fails to compile,
-all the others compile okay.
+the other two compile okay.
 
 ```Go
 func box[T chan int | chan byte](c T) {
@@ -67,87 +117,14 @@ func sed[T chan E, E int | byte](c T) {
 }
 
 type Ch <-chan int
-func win[T chan int | Ch](c T) {
+func cat[T chan int | Ch](c T) {
 	_ = <-c // okay
 }
-
-func cat[T []E, E any](c T, i int) () {
-	_ = c[i] // okay
-}
 ```
 
-The rule talked about in this section is just a general rule.
-For some operations, some extra restrictions might be applied.
-Often, the extra restrictions are core types and specific types related.
+The rule talked about in this section is unlikely to be changed in future Go versions.
 
 
-
-## Type declarations inside generic functions are not allowed now (Go 1.18)
-
-```Go
-func foo[T any]() {
-	type MyByte byte // error
-}
-
-type T[_ any] struct{}
-
-func (T[_]) bar() {
-	type MyInt int // error
-}
-```
-
-https://golang.org/issue/47631
-
-## Type parameters of constraints with empty type sets
-
-could not be instantiated, but it compiles okay.
-
-## const types can't be type parameter
-
-func f[P int]() {
-	const y P = 5 // 
-}
-
-func g[P int]() {
-	const _ = P(5) // 
-}
-
-https://github.com/golang/go/issues/50202#issuecomment-1033369747
-
-Converting a constant to a type parameter yields a non-constant value of
-the argument pased to the type parameter.
-
-```Go
-package main
-
-const S = "Go"
-
-func f() byte {
-	return 64 << len(string(S)) >> len(string(S))
-}
-
-func g[T string]() byte {
-	return 64 << len(T(S)) >> len(T(S))
-}
-
-func main() {
-	println(f(), g())
-}
-```
-
-## local type declarations in generic code don't work
-
-https://github.com/golang/go/issues/47631
-
-## no generic method, use alternative
-
-https://github.com/golang/go/issues/49085
-
-https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md#methods-may-not-take-additional-type-arguments
-
-
-This will make code even more cubersome.
-And make `reflect.Method` ...
 
 ## Type parameters act
 
@@ -185,6 +162,9 @@ func Convert[From, To any](in []From, f func(From) To) []To {
 	return out
 }
 ```
+
+
+Conversions involving type parameters must be performed explicitly.
 
 ```Go
 func foo[T int](x *T) *int {
@@ -628,10 +608,5 @@ Not sure whether or not the restriction will be lifted in future Go versions.
 https://github.com/golang/go/issues/50285 inference from results (not a good idea, and may not be get supported for ever)
 
 -->
-
-## Compile-time type switch
-
-https://github.com/golang/go/issues/45380#issuecomment-1074153465
-
 
 

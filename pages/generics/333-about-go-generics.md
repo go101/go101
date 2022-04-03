@@ -4,9 +4,11 @@
 The main purpose of custom generics is to avoid code repetitions,
 or in other words, to increase code reusability.
 
-For some situations, custom generics could also lead to cleaner code and simpler APIs.
+For some situations, generics could also lead to cleaner code and simpler APIs
+(not always).
 
-For some situations, custom generics could also improve code execution performance.
+For some situations, generics could also improve code execution performance
+(again not always).
 
 Before version 1.18, for many Go programmers, the lack of custom generics caused pains in Go programming under some situations.
 
@@ -16,7 +18,7 @@ Indeed, the pains caused by the lack of custom generics were alleviated to a cer
 * Go supports reflection well (through interfaces and the `reflect` standard package).
 * Repetitive code could be generated automatically by using some tools (such as the `//go:generate` comment directive supported by the official Go toolchain).
 
-However, the pains are still there for some use cases.
+However, the pains are still there for many use cases.
 The demand for custom generics became stronger and stronger.
 In the end, the Go core team decided to support custom generics in Go.
 
@@ -32,5 +34,9 @@ The first Go version supporting custom generics is 1.18 (the current latest vers
 The type parameters proposal tries to solve many code reuse problems, but not all.
 And please note that, not all the features mentioned in the parameters proposal have been implemented yet currently (Go toolchain version 1.18). The custom generics design and implementation will continue to evolve and get improved in future Go versions. And please note that the proposal is not the sky of Go custom generics.
 
-Despite the restrictions (temporary or permanent ones) in the Go custom generics design and implementation, I believe Go custom generics will be used widely in future Go programming.
+Despite the restrictions (temporary or permanent ones) in the current Go custom generics design and implementation,
+I also have found there are some details which are handled gracefully and beautifully in the implementation.
+
+Although Go custom generics couldn't solve all code reuse problems,
+personally, I believe Go custom generics will be used widely in future Go programming.
 

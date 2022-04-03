@@ -1,16 +1,17 @@
-**[Go 101 in Leanpub store](https://leanpub.com/go101)** | **[Go 101 in Apple Books store](https://itunes.apple.com/us/book/id1459984231)** | **[Go 101 in Kindle store](https://www.amazon.com/dp/B07Q3HWZ98)** | **[eBooks](https://github.com/go101/go101/releases)** | **[update history](UPDATES.md)** | **[wiki](https://github.com/go101/go101/wiki)**
+**[Go 101 in Leanpub store](https://leanpub.com/go101)** | **[Go 101 in Apple Books store](https://itunes.apple.com/us/book/id1459984231)** | **[Go 101 in Kindle store](https://www.amazon.com/dp/B07Q3HWZ98)** | **[eBooks](https://github.com/go101/go101/releases)** | **[Blog](https://go101.org/blog/101.html)** | **[wiki](https://github.com/go101/go101/wiki)**
 
 ----
 
-<b>[Go 101](https://go101.org)</b> is a book focusing on Go syntax/semantics and all kinds of runtime related things.
-It tries to help gophers gain a deep and thorough understanding of Go.
-This book also collects many details of Go and in Go programming.
-The book is expected to be helpful for both beginner and experienced Go programmers.
+<b>[Go 101](https://go101.org)</b> is a series of books on Go programming.
+Currently, the following books are avaliable:
 
-This book is the first one in the **Go 101** book series. The series include more books now:
-* [Go Optimizations 101](https://go101.org/optimizations/101.html) provides some code performance optimization tricks, tips, and suggestions.
-* [Go Details & Tips 101](https://go101.org/details-and-tips/101.html) collects many details and provides several tips in Go programming.
-* More on [Go101.org]((https://go101.org) website.
+* [Go (Fundamentals) 101](https://go101.org/article/101.html), which focuses on Go syntax/semantics (except custom generics related) and all kinds of runtime related things.
+* [Go Generics 101](https://go101.org/generics/101.html), which explains Go custom generics in detail.
+* [Go Optimizations 101](https://go101.org/optimizations/101.html), which provides some code performance optimization tricks, tips, and suggestions.
+* [Go Details & Tips 101](https://go101.org/details-and-tips/101.html), which collects many details and provides several tips in Go programming.
+
+These books are expected to help gophers gain a deep and thorough understanding of Go
+and it is helpful for both beginner and experienced Go programmers.
 
 To get latest news of Go 101 books, please follow the official twitter account [@go100and1](https://twitter.com/go100and1)
 and join [the Go 101 Slack space](https://go-101.slack.com).
@@ -61,6 +62,7 @@ Options:
 ```
 
 ### Contributing
+
 Welcome to improve Go 101 by:
 * Submitting corrections for all kinds of mistakes, such as typos, grammar errors, wording inaccuracies, description flaws, code bugs and broken links.
 * Suggesting interesting Go related contents.
