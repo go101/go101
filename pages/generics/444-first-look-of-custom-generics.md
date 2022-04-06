@@ -320,7 +320,7 @@ That is why some calls to the `NoDiff` generic function have no type argument li
 Please note that all of these type arguments implement the `comparable` interface.
 Incomparable types, such as `[]int` and `map[string]int` may not be passed as type arguments
 of calls to the `NoDiff` generic function.
-And please note that, although `any` is a comparable (value) type, it doesn't implement `comprable`, so it is also not an eligible type argument.
+And please note that, although `any` is a comparable (value) type, it doesn't implement `comparable`, so it is also not an eligible type argument.
 This will be talked about in detail in the next chapter.
 
 The above example shows how generics avoid code repetitions for function declarations.
@@ -360,8 +360,4 @@ and view all of its methods as some functions sharing the same type parameter sp
 
 To make descriptions simple, sometimes, methods of generic types
 are also called as generic functions in this book.
-
-
-
-
 

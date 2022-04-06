@@ -1,5 +1,5 @@
 
-## Acknowledgments
+# Acknowledgments
 
 Firstly, thanks to the whole Go community. An active and responsive community guarantees the completion this book.
 
@@ -19,8 +19,10 @@ Thanks to the authors of the following open source software and libraries used i
 * calibre, https://calibre-ebook.com/
 * GIMP, https://www.gimp.org
 
+<!--
 Thanks the gophers who ever reported mistakes in this book or made corrections for this book:
 etc.
+-->
 
 
 

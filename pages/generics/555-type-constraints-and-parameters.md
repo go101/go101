@@ -153,8 +153,7 @@ A type set only consists of non-interface types.
 * The type set of a union of terms `T1 | T2 | ... | Tn` is the union of the type sets of the terms.
 * The type set of a non-empty interface is the intersection of the type sets of its interface elements.
 
-As the type set of an empty interface type contains all non-interface types.
-It is a super set of any type set.
+As the type set of an empty interface type (for example, the predeclared `any`) contains all non-interface types.
 
 By the current specification,
 two unnamed constraints are equivalent to each other if their type sets are equal.
@@ -259,7 +258,7 @@ var y interface {M()}
 var z interface {~[]byte}
 ```
 
-Using non-basic interface types as value types might be supported in future Go versions.
+Whether or not supporting non-basic interface types as value types in future Go versions in unclear now.
 
 ## More about the predeclared `comparable` constraint
 
@@ -347,16 +346,11 @@ string | error
 To make descriptions simple, this book will view the predeclared `comparable` interface type
 as an interface type having a method (but not view it as a basic interface type).
 
-Another requirement (restriction) is that the type sets of all non-interface type terms in a term union must have no intersections.
-Interface type terms have no this restriction, but the current implementation (Go toolchain 1.18) disallows identical interface type terms. For example, in the following code snippet, the term unions in the first two type declarations fail to compile, but the last two compile okay.
+Another requirement (restriction) is that the type sets of all non-interface type terms in a term union must have no intersections. For example, in the following code snippet, the term unions in the first two declaration fails to compile, but the last two compile okay.
 
 ```Go
 type _ interface {
 	int | ~int // error
-}
-
-type _ interface {
-	interface{int} | interface{int} | interface{~int} // error
 }
 
 type _ interface {
@@ -435,8 +429,9 @@ _, _ comparable]
 
 Variadic type parameters are not supported.
 
-When the type set of a type parameter is mentioned, it means
-the type set of the constraint of the type parameter.
+To make descriptions simple, the type set of the constraint of a type parameter
+is also called the type set of the type parameter and type set of a value of
+the type parameter in this book.
 
 ## Simplified constraint form
 
@@ -551,6 +546,7 @@ https://github.com/golang/go/issues/49485
 https://github.com/golang/go/issues/51488
 -->
 
+{#type-parameters-are-interfaces}
 ## Each type parameter is a distinct named type and its underlying type is an interface type
 
 Since Go 1.18, named types include
@@ -660,11 +656,11 @@ https://github.com/golang/go/issues/51503
 
 ## More about generic type and function declarations
 
-We have seen a generic type declaraton and some generic function declarations in the last chapter.
+We have seen a generic type declaration and some generic function declarations in the last chapter.
 Different from ordinary type and function declarations, each of the generic ones has a
 type parameter list part.
 
-This book doesn't plan to further talk about generic type and function declartion syntax.
+This book doesn't plan to further talk about generic type and function declaration syntax.
 
 The source type part of a generic type declaration must be an ordinary type.
 So it might be
@@ -674,7 +670,7 @@ So it might be
 * an instantiated type. Type instantiations will be explained in detail in the next chapter.
   For now, we only need to know each instantiated type is a named ordinary type.
 
-The following code showns some generic type delcarations with all sorts of source types.
+The following code shows some generic type declarations with all sorts of source types.
 All of these declarations are valid.
 
 ```Go
@@ -695,9 +691,10 @@ type MyData [A any, B ~bool, C comparable] struct {
 type YourData[C comparable] MyData[string, bool, C]
 ```
 
-Type parameters may not be used as the soruce types in generic type declarations.
-The following code doesn't compile.
+Type parameters may not be used as the source types in generic type declarations.
+For example, the following code doesn't compile.
 
 ```Go
 type G[T any] T // error
 ```
+

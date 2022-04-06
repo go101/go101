@@ -1,5 +1,5 @@
 
-# Generic instantiations and type argument inferences
+# Generic Instantiations and Type Argument Inferences
 
 In the last two chapters, we have used several instantiations of generic types and functions.
 Here, this chapter makes a formal introduction for instantiated types and functions.
@@ -253,7 +253,7 @@ https://github.com/golang/go/issues/51139
 
 ## Type argument inferences don't work for generic type instantiations
 
-Currrently (Go 1.18), inferring type arguments of instantiated types from value literals is not supported. That means the type argument list in a generic type instantiation must be always in full forms.
+Currently (Go 1.18), inferring type arguments of instantiated types from value literals is not supported. That means the type argument list in a generic type instantiation must be always in full forms.
 
 For example, in the following code snippet, the declaration line for variable `y` is invalid,
 even if it is possible to infer the type argument as `int16`.
@@ -435,3 +435,31 @@ func main() {
 	md.Strings["Go"] = struct{}{}
 }
 ```
+
+## About the instantiation syntax inconsistency between custom generics and built-in generics
+
+From previous contents, we could find that the instantiation syntax of Go custom generics
+is inconsistent with Go built-in generics.
+
+```Go
+type TreeMap[K comparable, V any] struct {
+	// ... // internal implementation
+}
+
+func MyNew[T any]() *T {
+	return new(T)
+}
+
+// The manners of two instantiations differ.
+var _ map[string]int
+var _ TreeMap[string, int]
+
+// The manners of two instantiations differ.
+var _ = new(bool)
+var _ = MyNew[bool]()
+```
+
+Personally, I think the inconsistency increases the load of cognition burden in Go programming.
+On the other hand, I admit that it is hard (or even impossible) to make the syntax consistent.
+It is a pity that Go didn't support custom generics from the start.
+

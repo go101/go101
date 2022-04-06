@@ -1,0 +1,324 @@
+<p id="f-888-the-status-quo-of-Go-custom-generics-md"></p>
+<h1>The Status Quo of Go Custom Generics</h1>
+
+<p>The previous chapters explain the basic knowledge about Go custom generics.
+This chapter will list some missing features in the current design and
+implementation of Go custom generics.</p>
+
+<h2>Type declarations inside generic functions are not currently supported</h2>
+
+<p>Currently (Go 1.18), local type declarations are not allowed in generic functions.
+For example, in the following code, the ordinary function <code>f</code> compiles okay,
+but the generic function <code>g</code> doesn't.</p>
+
+<pre><code class="language-Go">func f() {
+	type _ int // okay
+}
+
+func g[T any]() {
+	type _ int // error
+}
+
+type T[_ any] struct{}
+
+func (T[_]) m() {
+	type _ int // error
+}
+</code></pre>
+
+<p>This restriction might <a href="https://github.com/golang/go/issues/47631">be removed in future Go versions</a>.</p>
+
+<h2>Generic type aliases are not supported currently</h2>
+
+<p>Currently (Go 1.18), a declared type alias may not have type parameters.
+For example, in the following code, only the alias declaration for <code>A</code> is legal,
+the other alias declarations are all illegal.</p>
+
+<p>The alias <code>A</code> is actually an alias to an ordinary type <code>func(int) string</code>.</p>
+
+<pre><code class="language-Go">type T[X, Y any] func(X) Y
+
+type A = T[int, string] // okay
+
+// generic type cannot be alias
+type B[X any] = T[X, string]   // error
+type C[X, Y, Z any] = T[X, Y]  // error
+type D[X any] = T[int, string] // error
+</code></pre>
+
+<p>Generic type aliases <a href="https://github.com/golang/go/issues/46477">might be supported in future Go versions</a>.</p>
+
+<h2>Aliases to non-basic interface types are not supported currently</h2>
+
+<p>Currently (Go 1.18), there is an unintended restriction: non-basic interface types may not be aliased.
+For example, the following type alias declarations are illegal:</p>
+
+<pre><code class="language-Go">type C[T any] interface{~int; M() T}
+type C1 = C[bool]
+type C2 = comparable
+type C3 = interface {~[]byte | ~string}
+</code></pre>
+
+<p>Whereas the following ones are legal:</p>
+
+<pre><code class="language-Go">type Ca = any
+type Cb = interface{M1(); M2() int}
+</code></pre>
+
+<p>The unintended restriction <a href="https://github.com/golang/go/issues/51616">will be removed since Go 1.19</a>.</p>
+
+<h2>The method set of a constraint is not calculated completely for some cases</h2>
+
+<p>The Go specification states:</p>
+
+<blockquote>
+<p>The method set of an interface type is the intersection of the method sets of each type in the interface's type set.</p>
+</blockquote>
+
+<p>However, currently (Go toolchain 1.18), only the methods explicitly specified in interface types are calculated into method sets. For example, in the following code, the method set of the constraint should contain both <code>Foo</code> and <code>Bar</code>,
+and the code should compile okay, but it doesn't (as of Go toolchain 1.18).</p>
+
+<pre><code class="language-Go">package main
+
+type S struct{}
+
+func (S) Bar() {}
+
+type C interface {
+	S
+	Foo()
+}
+
+func foobar[T C](v T) {
+	v.Foo() // okay
+	v.Bar() // v.Bar undefined
+}
+
+func main() {}
+</code></pre>
+
+<p>This restriction is planed <a href="https://github.com/golang/go/issues/51183">to be removed in future Go toochain versions</a>.</p>
+
+<h2>No ways to specific a field set for a constraint</h2>
+
+<p>We know that an interface type may specify a method set.
+But up to now (Go 1.18), it could not specify a (struct) field set.</p>
+
+<p>There is a proposal for this: <a href="https://github.com/golang/go/issues/51259">https://github.com/golang/go/issues/51259</a>.</p>
+
+<p>The restriction might be lifted from future Go versions.</p>
+
+<h2>No ways to use common fields for a constraint if the constraint has not a core (struct) type</h2>
+
+<p>Currently (Go 1.18), even if all types in the type set of a constraint
+are structs and they share some common fields, the common fields still
+could not be used if the structs don't share the identical underlying type.</p>
+
+<p>For example, the generic functions in the following example all fail to compile.</p>
+
+<pre><code class="language-Go">package main
+
+type S1 struct {
+	X int
+}
+
+type S2 struct {
+	X int `json:X`
+}
+
+type S3 struct {
+	X int
+	Z bool
+}
+
+type S4 struct {
+	S1
+}
+
+func F12[T S1 | S2](v T) {
+	_ = v.X // error: v.x undefined
+}
+
+func F13[T S1 | S3](v T) {
+	_ = v.X // error: v.x undefined
+}
+
+func F14[T S1 | S4](v T) {
+	_ = v.X // error: v.x undefined
+}
+
+func main() {}
+</code></pre>
+
+<p>There is <a href="https://github.com/golang/go/issues/48522">a proposal</a> to remove this limit.
+A temporary (quite verbose) workaround is to specify/declare some getter and setter methods
+for involved constraints and concrete types.</p>
+
+<h2>Fields of values of type parameters are not accessible</h2>
+
+<p>Currently (Go 1.18), even if a type parameter has a core struct type,
+the fields of the core struct type still may not be accessed through
+values of the type parameter.
+For example, the following code doesn't compile.</p>
+
+<pre><code class="language-Go">type S struct{x, y, z int}
+
+func mod[T S](v *T) {
+	v.x = 1 // error: v.x undefined
+}
+</code></pre>
+
+<p>The restriction mentioned in the last section is actually a special case
+of the one described in the current section.</p>
+
+<p>The restriction (described in the current section) was <a href="https://github.com/golang/go/issues/51576">added just before
+Go 1.18 is released</a>.
+It might be removed since a future Go version.</p>
+
+<h2>Type switches on values of type parameters are not supported now</h2>
+
+<p>It has been mentioned that <a href="555-type-constraints-and-parameters.html#type-parameters-are-interfaces">a type parameter is an interface type from semantic view</a>.
+On the other hand, a type parameter has wave-particle duality.
+For some situations, it acts as the types in its type set.</p>
+
+<p>Up to now (Go 1.18), values of type parameters may not be asserted.
+The following two functions both fail to compile.</p>
+
+<pre><code class="language-Go">func tab[T any](x T) {
+	if n, ok := x.(int); ok { // error
+		_ = n
+	}
+}
+
+func kol[T any]() {
+	var x T
+	switch x.(type) { // error
+	case int:
+	case []bool:
+	default:
+	}
+}
+</code></pre>
+
+<p>The following modified versions of the above two functions compile okay:</p>
+
+<pre><code class="language-Go">func tab2[T any](x T) {
+	if n, ok := any(x).(int); ok { // error
+		_ = n
+	}
+}
+
+func kol2[T any]() {
+	var x T
+	switch any(x).(type) { // error
+	case int:
+	case []bool:
+	default:
+	}
+}
+</code></pre>
+
+<p>There is a proposal to use type switches directly on type parameters, like:</p>
+
+<pre><code class="language-Go">func kol3[T any]() {
+	switch T {
+	case int:
+	case []bool:
+	default:
+	}
+}
+</code></pre>
+
+<p>Please subscribe <a href="https://github.com/golang/go/issues/45380">this issue</a> to
+the progress of this problem.</p>
+
+<h2>Generic methods are not supported</h2>
+
+<p>Currently (Go 1.18), for design and implementation difficulties,
+generic methods (not methods of generic types) are
+<a href="https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md#methods-may-not-take-additional-type-arguments">not supported</a>.</p>
+
+<p>For example, the following code are illegal.</p>
+
+<pre><code class="language-Go">import &quot;sync&quot;
+
+type Lock struct {
+	mu sync.Mutex
+}
+
+func (l *Lock) Inc[T ~uint32 | ~uint64](x *T) {
+	l.Lock()
+	defer l.Unlock()
+	*x++
+}
+</code></pre>
+
+<p>How many concrete methods do the <code>Lock</code> type have?
+Infinite! Because there are infinite uint32 and uint64 types.
+This brings much difficulties to make the <code>reflect</code> standard package backwards compatibility.</p>
+
+<p>There is <a href="https://github.com/golang/go/issues/49085">an issue</a> for this.</p>
+
+<h2>There are no ways to construct a constraint which allows assignments involving types of unspecific underlying types</h2>
+
+<p>And there are not such predeclared constraints like the following supposed <code>assignableTo</code> and <code>assignableFrom</code> constraints.</p>
+
+<pre><code class="language-Go">// This function doesn't compile.
+func yex[Tx assignableTo[Ty], Ty assignableFrom[Tx]](x Tx, y Ty) {
+	y = x
+}
+</code></pre>
+
+<h2>There are no ways to construct a constraint which allows conversion involving types of unspecific underlying types</h2>
+
+<p>And there are <a href="https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md#no-way-to-express-convertibility">not such predeclared constraints</a> like the following supposed <code>convertibleTo</code> and <code>convertibleFrom</code> constraints.</p>
+
+<pre><code class="language-Go">// This function doesn't compile.
+func x2y[Tx convertibleTo[Ty], Ty convertibleFrom[Tx],
+		// The second value argument is
+		// for type inference purpose.
+		](xs []Tx, _ Ty) []Ty {
+	if xs == nil {
+		return nil
+	}
+	ys := make([]Ty, len(xs))
+	for i := range xs {
+		ys[i] = Ty(xs[i])
+	}
+	return ys
+}
+
+var bs = []byte{61, 62, 63, 64, 65, 66}
+var ss = x2y(bs, &quot;&quot;)
+var is = x2y(bs, 0)
+var fs = x2y(bs, .0)
+</code></pre>
+
+<p>Currently, there is an ungraceful workaround implementation:</p>
+
+<pre><code class="language-Go">func x2y[Tx any, Ty any](xs []Tx, f func(Tx) Ty) []Ty {
+	if xs == nil {
+		return nil
+	}
+	ys := make([]Ty, len(xs))
+	for i := range xs {
+		ys[i] = f(xs[i])
+	}
+	return ys
+}
+
+var bs = []byte{61, 62, 63, 64, 65, 66}
+var ss = x2y(bs, func(x byte) string {
+	return string(x)
+})
+var is = x2y(bs, func(x byte) int {
+	return int(x)
+})
+var fs = x2y(bs, func(x byte) float64 {
+	return float64(x)
+})
+</code></pre>
+
+<p>The workaround needs a callback function, which
+makes the code much more inefficient,
+though I do admit it has more usage scenarios.</p>
