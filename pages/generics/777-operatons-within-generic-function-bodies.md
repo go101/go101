@@ -412,7 +412,7 @@ Need a core type.
 ```Go
 func f[T []int | map[int]int] (t T, g func(int)) {
 	for _, v := range t { // error
-	g(v)
+		g(v)
 	}
 }
 ```

@@ -267,7 +267,7 @@ which denotes an interface type that is implemented by all comparable types.
 
 The `comparable` interface type could be embedded in other interface types
 to filter out incomparable types from their type sets.
-For example, the type set of the following declared constraint `C` contains only one type: `string`.
+For example, the type set of the following declared constraint `C` contains only one type: `string`, because the other three types in the union are all [incomprarable types](https://go101.org/article/type-system-overview.html#types-not-support-comparison).
 
 ```Go
 type C interface {
