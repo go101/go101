@@ -75,7 +75,7 @@ The unintended restriction [will be removed since Go 1.19](https://github.com/go
 {#embed-type-parameter}
 ## Embedding type parameters in struct types is not allowed now
 
-Due to design and implementation complexities, type parameters are
+Due to design and implementation complexities, currently (Go 1.18), type parameters are
 disallowed to be embedded in either interface types or struct types.
 
 For example, the following type declaration is illegal.
@@ -101,7 +101,8 @@ The Go specification states:
 
 > The method set of an interface type is the intersection of the method sets of each type in the interface's type set.
 
-However, currently (Go toolchain 1.18), only the methods explicitly specified in interface types are calculated into method sets. For example, in the following code, the method set of the constraint should contain both `Foo` and `Bar`,
+However, currently (Go toolchain 1.18), only the methods explicitly specified in interface types are calculated into method sets.
+For example, in the following code, the method set of the constraint should contain both `Foo` and `Bar`,
 and the code should compile okay, but it doesn't (as of Go toolchain 1.18).
 
 ```Go
