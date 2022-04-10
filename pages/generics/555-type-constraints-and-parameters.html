@@ -272,7 +272,7 @@ which denotes an interface type that is implemented by all comparable types.</p>
 
 <p>The <code>comparable</code> interface type could be embedded in other interface types
 to filter out incomparable types from their type sets.
-For example, the type set of the following declared constraint <code>C</code> contains only one type: <code>string</code>.</p>
+For example, the type set of the following declared constraint <code>C</code> contains only one type: <code>string</code>, because the other three types in the union are all <a href="https://go101.org/article/type-system-overview.html#types-not-support-comparison">incomprarable types</a>.</p>
 
 <pre><code class="language-Go">type C interface {
 	comparable
@@ -544,19 +544,29 @@ So it generally behaves as (the common traits of) the types in its type set in m
 
 <p>As the underlying type of a type parameter type is not the type parameter type itself,
 the tilde form <code>~T</code> is illegal if <code>T</code> is type parameter.
-So the following type parameter list is illegal.
-Because, as mentioned above, the type in a tilde form mustn't be an interface type
-and its underlying type must be itself. Here the both of the conditions are not satisfied.</p>
+So the following (equivalent) type parameter lists are illegal,
+because, as mentioned above, the type in a tilde form mustn't be an interface type
+and its underlying type must be itself.
+Here the both of the conditions are not satisfied.</p>
 
-<pre><code class="language-Go">[A int, B ~A] // error
+<pre><code class="language-Go">[A int, B ~A]                       // error
+[A interface{int}, B interface{~A}] // error
 </code></pre>
 
-<p>For the same reason, the following generic type declaration is also illegal.</p>
+<p>As mentioned above, type parameters are also disallowed to be embedded
+as type names and type terms in an interface type.
+The following declarations are also illegal.</p>
 
-<pre><code class="language-Go">type C[T int] interface {
-	~T // error: cannot embed a type parameter
+<pre><code class="language-Go">type Cx[T int] interface {
+	T
+}
+
+type Cy[T int] interface {
+	T | []string
 }
 </code></pre>
+
+<p>In fact, currently (Go 1.18), <a href="888-the-status-quo-of-go-custom-generics.html#embed-type-parameter">type parameters may not be embedded in struct types</a>, too.</p>
 
 <h2>Composite type literals (unnamed types) containing type parameters are ordinary types</h2>
 

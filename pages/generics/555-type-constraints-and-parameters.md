@@ -568,21 +568,31 @@ So it generally behaves as (the common traits of) the types in its type set in m
 
 As the underlying type of a type parameter type is not the type parameter type itself,
 the tilde form `~T` is illegal if `T` is type parameter.
-So the following type parameter list is illegal.
-Because, as mentioned above, the type in a tilde form mustn't be an interface type
-and its underlying type must be itself. Here the both of the conditions are not satisfied.
+So the following (equivalent) type parameter lists are illegal,
+because, as mentioned above, the type in a tilde form mustn't be an interface type
+and its underlying type must be itself.
+Here the both of the conditions are not satisfied.
 
 ```Go
-[A int, B ~A] // error
+[A int, B ~A]                       // error
+[A interface{int}, B interface{~A}] // error
 ```
 
-For the same reason, the following generic type declaration is also illegal.
+As mentioned above, type parameters are also disallowed to be embedded
+as type names and type terms in an interface type.
+The following declarations are also illegal. 
 
 ```Go
-type C[T int] interface {
-	~T // error: cannot embed a type parameter
+type Cx[T int] interface {
+	T
+}
+
+type Cy[T int] interface {
+	T | []string
 }
 ```
+
+In fact, currently (Go 1.18), [type parameters may not be embedded in struct types](888-the-status-quo-of-Go-custom-generics.md#embed-type-parameter), too.
 
 ## Composite type literals (unnamed types) containing type parameters are ordinary types
 

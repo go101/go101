@@ -72,6 +72,29 @@ type Cb = interface{M1(); M2() int}
 
 The unintended restriction [will be removed since Go 1.19](https://github.com/golang/go/issues/51616).
 
+{#embed-type-parameter}
+## Embedding type parameters in struct types is not allowed now
+
+Due to design and implementation complexities, type parameters are
+disallowed to be embedded in either interface types or struct types.
+
+For example, the following type declaration is illegal.
+
+```Go
+type Derived[Base any] struct {
+	Base // error
+	
+	x bool
+}
+```
+
+Please view [this issue](https://github.com/golang/go/issues/43621) for reasons.
+
+<!--
+https://github.com/golang/go/issues/49030
+https://github.com/golang/go/issues/24062
+-->
+
 ## The method set of a constraint is not calculated completely for some cases
 
 The Go specification states:
