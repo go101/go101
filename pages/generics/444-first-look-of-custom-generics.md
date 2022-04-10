@@ -232,7 +232,7 @@ func (l *Lockable[Foo]) Do(f func(*Foo)) {
 Though, it is a bad practice not to keep the corresponding type parameter names the same.
 
 BTW, the name of a type parameter may even be the blank identifier `_`
-if it is used (this is also true for the type parameters in generic type
+if it is not used (this is also true for the type parameters in generic type
 and function declarations). For example,
 
 ```Go

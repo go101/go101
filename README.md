@@ -34,6 +34,7 @@ Server started:
 ```
 
 If you use Go toolchain v1.15-, or you would make some modifications (for contribution, etc.):
+
 ```shell
 ### Install.
 
@@ -60,6 +61,10 @@ Options:
 -port=1234
 -theme=light # or dark (default)
 ```
+
+Some HTML files are generated from their corresponding markdown files.
+If a markdown file is modified, we can run `go run . -gen`
+to synchronize its corresponding HTML file.
 
 ### Contributing
 
