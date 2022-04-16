@@ -1,6 +1,6 @@
 # Constraints and Type Parameters
 
-A constraint means a type constraint, it is used to constrained some type parameters.
+A constraint means a type constraint, it is used to constrain some type parameters.
 We could view constraints as types of types.
 
 The relation between a constraint and a type parameter is like
@@ -176,7 +176,7 @@ func (Blank) M() {}
 type P interface {[]byte}
 
 // The type set of Q contains
-// []bytes, Bytes, and Letters.
+// []byte, Bytes, and Letters.
 type Q interface {~[]byte}
 
 // The type set of R contains only two types:
@@ -547,7 +547,7 @@ https://github.com/golang/go/issues/51488
 -->
 
 {#type-parameters-are-interfaces}
-## Each type parameter is a distinct named type and its underlying type is an interface type
+## Each type parameter is a distinct named type
 
 Since Go 1.18, named types include
 
@@ -559,19 +559,20 @@ Since Go 1.18, named types include
 Two different type parameters are never identical.
 
 The type of a type parameter is a constraint, a.k.a an interface type.
-This means the underlying type of a type parameter type is an interface type.
+This means the underlying type of a type parameter type should be an interface type.
 However, this doesn't mean a type parameter behaves like an interface type.
 Its values may not box non-interface values and be type asserted (as of Go 1.18).
+In fact, it is almost totally meaningless to talk about underlying types of type parameters.
+We just need to know that the underlying type of a type parameter is not itself.
+And we ought to think that two type parameters never share an identical underlying type,
+even if the constraints of the two type parameters are identical.
 
 In fact, a type parameter is just a placeholder for the types in its type set.
-So it generally behaves as (the common traits of) the types in its type set in many situations.
+Generally speaking, it represents a type which owns the common traits of the types in its type set.
 
 As the underlying type of a type parameter type is not the type parameter type itself,
 the tilde form `~T` is illegal if `T` is type parameter.
-So the following (equivalent) type parameter lists are illegal,
-because, as mentioned above, the type in a tilde form mustn't be an interface type
-and its underlying type must be itself.
-Here the both of the conditions are not satisfied.
+So the following (equivalent) type parameter lists are illegal.
 
 ```Go
 [A int, B ~A]                       // error

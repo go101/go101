@@ -112,6 +112,20 @@ func cat[T chan int | Ch](c T) {
 }
 ```
 
+Type parameters may be type asserted to.
+
+```Go
+import "fmt"
+
+func nel[T int | string](v T, x any) {
+	if _, ok := x.(T); ok {
+		fmt.Printf("x is a %T\n", v)
+	} else {
+		fmt.Printf("x is not a %T\n", v)
+	}
+}
+```
+
 This rule [might be relaxed to some extent in future Go versions](https://github.com/golang/go/issues/52129).
 
 ## Type parameters may be not used as types of (local) named constants
@@ -261,7 +275,7 @@ func foo[T ~[]int] () {
 type Ints []int
 
 func bar[T []int | Ints] () {
-	_ = T{}
+	_ = T{} // okay
 }
 
 func ken[T []int | []string] () {
@@ -351,7 +365,7 @@ then all types set of its type set must be all integers.
 ## In a `for-range` loop, the ranged container is required to have a core type
 
 For example, currently (Go 1.18), in the following code, 
-only the last two functions, `dot1` and `dot2` compile okay.
+only the last two functions, `dot1` and `dot2`, compile okay.
 
 ```Go
 func values[T []E | map[int]E, E any](kvs T) []E {
@@ -408,15 +422,6 @@ func dot2[T ~[]int] (v T) {
 }
 ```
 
-Need a core type.
-```Go
-func f[T []int | map[int]int] (t T, g func(int)) {
-	for _, v := range t { // error
-		g(v)
-	}
-}
-```
-
 The restriction is intended. I think its intention is to ensure both of
 the two iteration variables always have a specified type
 (either an ordinary type or a type parameter type).
@@ -429,7 +434,7 @@ I'm not sure whether or not [the restriction will be removed in future Go versio
 In my opinion, the restriction reduces the usefulness of Go custom generics in some extent.
 
 If all possible types are slice and arrays, and their element types are identical,
-we could use plan `for` loops to walk around this restriction.
+we could use plain `for` loops to walk around this restriction.
 
 ```Go
 func cat[T [3]int | [6]int | []int] (v T) {
@@ -745,6 +750,9 @@ is not equivalent to that only type.
 A type parameter has wave-particle duality.
 For some situations, it acts as the types in its type set.
 For some other situations, it acts as a distinct type.
+More specifically, a type parameter acts as a distince type
+(which doesn't share underlying type with any other types)
+when it is used as a component of a composite type.
 
 ## A call to the predeclared `new` or `cap` function has not extra requirements for its argument
 

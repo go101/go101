@@ -11,7 +11,7 @@ generic functions must be instantiated to be called or used as function values.
 
 A generic function (type) is instantiated by substituting a type argument list
 for the type parameter list of its declaration (specification).
-The lengths of the type argument is the same as the type parameter list.
+The lengths of the (full) type argument list is the same as the type parameter list.
 Each type argument is passed to the corresponding type parameter.
 A type argument must be a non-interface type or a basic interface type and it is
 valid only if it satisfies (implements) the constraint of its corresponding type parameter.

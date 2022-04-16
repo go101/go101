@@ -268,7 +268,7 @@ func kol3[T any]() {
 ```
 
 Please subscribe [this issue](https://github.com/golang/go/issues/45380) to
-the progress of this problem.
+follow the progress of this problem.
 
 ## Generic methods are not supported
 
@@ -294,7 +294,7 @@ func (l *Lock) Inc[T ~uint32 | ~uint64](x *T) {
 
 How many concrete methods do the `Lock` type have?
 Infinite! Because there are infinite uint32 and uint64 types.
-This brings much difficulties to make the `reflect` standard package backwards compatibility.
+This brings much difficulties to make the `reflect` standard package keep backwards compatibility.
 
 There is [an issue](https://github.com/golang/go/issues/49085) for this.
 
@@ -362,7 +362,7 @@ var fs = x2y(bs, func(x byte) float64 {
 ```
 
 The workaround needs a callback function, which
-makes the code much more inefficient,
+makes the code much less efficient,
 though I do admit it has more usage scenarios.
 
 
