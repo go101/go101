@@ -541,7 +541,7 @@ By using the official standard Go compiler, in the following program,
 
 * the functions `tup` and `pad` don't compile.
   The reason is values of type `AgePtr` can't be directly converted to `*int`.
-* all the other three functions compile okay, but the `dot` function
+* all the other three generic functions compile okay, but the `dot` function
   should not compile by the above described rule.
   This might be [a bug of the standard compiler, or the rule described in
   the current Go specification needs to an adjustment](https://github.com/golang/go/issues/50815).
@@ -580,6 +580,15 @@ func main() {
 	var _ = dot[AgePtr](x)
 	var _ = tup2(x)
 	var _ = pad2[AgePtr](x)
+}
+```
+
+The fllowing function also fails to compile,
+because `string` values may not be converted to `int`.
+
+```Go
+func eve[X, Y int | string](x X) Y {
+	return Y(x) // error
 }
 ```
 
@@ -753,6 +762,7 @@ For some other situations, it acts as a distinct type.
 More specifically, a type parameter acts as a distinct type
 (which doesn't share underlying type with any other types)
 when it is used as a component of a composite type.
+In the above example. `*T` and `*[2]int` are two different (ordinary) types.
 
 ## A call to the predeclared `new` or `cap` function has not extra requirements for its argument
 

@@ -19,7 +19,7 @@ As mentioned in the previous chapter, type constraints are actually
 In order to let interface types be competent to act as the constraint role,
 Go 1.18 enhances the expressiveness of interface types by supporting several new notations.
 
-## Enhanced interface syntax 
+## Enhanced interface syntax
 
 Some new notations are introduced into Go to make it is possible to use interface types as constraints.
 
@@ -35,6 +35,10 @@ Some new notations are introduced into Go to make it is possible to use interfac
   and it may not denote a type parameter.
   There are some requirements for union terms.
   These requirements will be described in a section below.
+
+<!--
+https://github.com/golang/go/issues/52391
+-->
 
 Note that, a type literal always denotes an unnamed type,
 whereas a type name may denote a named type or unnamed type.

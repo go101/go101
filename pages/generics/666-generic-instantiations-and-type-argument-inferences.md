@@ -463,3 +463,10 @@ Personally, I think the inconsistency increases the load of cognition burden in 
 On the other hand, I admit that it is hard (or even impossible) to make the syntax consistent.
 It is a pity that Go didn't support custom generics from the start.
 
+
+<!--
+
+infer function type parameters from generic interface arguments if necessary
+https://github.com/golang/go/issues/52397
+
+-->
