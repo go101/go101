@@ -53,7 +53,7 @@ in the declaration (specification, more precisely speaking) of a generic type.
 Here, the type parameter list of the `Lockable` generic type is `[T any]`.
 
 A type parameter list may contain one and more type parameter declarations
-which are enclosed in square brackets as a whole and separated by commas.
+which are enclosed in square brackets and separated by commas.
 Each parameter declaration is composed of a type parameter name and a (type) constraint.
 For the above example, `T` is the type parameter name and `any` is the constraint of `T`.
 

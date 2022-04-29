@@ -71,7 +71,7 @@ The element types of strings are viewed as `byte`, so the following code compile
 
 ```Go
 func ele[ByteSeq ~string|~[]byte](x ByteSeq, n int) {
-	_ = x[n]
+	_ = x[n] // okay
 }
 ```
 
@@ -319,7 +319,7 @@ The restriction might be removed in the future Go versions
 (just my hope, in fact I'm not sure on this).
 
 If the type of the index expression is a type parameter,
-then all types set of its type set must be all integers.
+then all types in its type set must be integers.
 The following function compiles okay.
 
 ```Go
@@ -583,7 +583,7 @@ func main() {
 }
 ```
 
-The fllowing function also fails to compile,
+The following function also fails to compile,
 because `string` values may not be converted to `int`.
 
 ```Go
@@ -596,7 +596,7 @@ func eve[X, Y int | string](x X) Y {
 
 Firstly, we should know [the assignment rules for ordinary types/values](https://go101.org/article/value-conversions-assignments-and-comparisons.html).
 
-In the following descriptions, the type of the destination value is called as the destination type, and call the type of the source value is called as the source type.
+In the following descriptions, the type of the destination value is called as the destination type, and the type of the source value is called as the source type.
 
 By the current specification (Go 1.18), for a type parameter involved assignment,
 
@@ -717,7 +717,7 @@ The rule [might be changed](https://github.com/golang/go/issues/50226).
 But honestly speaking, the possibility is very small.
 Personally, I think the current behavior is more logical.
 
-Because of this rule, the following two functions might return different results.
+Because of this rule, the following two functions return different results.
 
 ```Go
 package main
@@ -742,8 +742,8 @@ Again, please read the [strings in Go](https://go101.org/article/string.html) ar
 and [this issue](https://github.com/golang/go/issues/28591)
 for why the two functions return different results.
 
-Please not that, the following function doesn't compile.
-Because the type of `&x` is `*T`, which is a pointer
+Please not that, the following function doesn't compile,
+because the type of `&x` is `*T`, which is a pointer
 to a type parameter, instead of a pointer to an array.
 
 ```Go
@@ -815,7 +815,7 @@ func nub[T Stream | chan int | Queue | <-chan int]() {
 
 By my understanding, this requirement is in order to make subsequent operations
 on the made containers (they are channels in the above example) always legal.
-For example, to prevent make sure a value received from the made
+For example, to make sure a value received from the made
 channel has a specified type (either a type parameter, or an ordinary type).
 
 Personally, I think the requirement is over strict.
@@ -836,7 +836,7 @@ func ted2[T chan<- int | <-chan int](x T) {
 }
 ```
 
-Because of the same requirement, neither of the following three functions compile.
+Because of the same requirement, neither of the following two functions compile.
 
 ```Go
 func zig[T ~[]int | map[int]int](c T) {

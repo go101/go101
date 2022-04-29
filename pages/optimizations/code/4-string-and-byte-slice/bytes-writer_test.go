@@ -23,10 +23,10 @@ func (sw *BytesWriter) WriteString(s string) (int, error) {
 		n := copy(sw.buf, s)
 		n, err = sw.Write(sw.buf[:n])
 		sum += n
+		s = s[n:]
 		if err != nil || n == 0 {
 			break
 		}
-		s = s[n:]
 	}
 	if err == nil && len(s) > 0 {
 		err = io.ErrShortWrite
@@ -47,18 +47,24 @@ var bufw = bufio.NewWriterSize(DummyWriter{}, 512)
 
 func Benchmark_BytesWriter(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		bytesw.WriteString(s)
+		if _, err := bytesw.WriteString(s); err != nil {
+			panic(err)
+		}
 	}
 }
 
 func Benchmark_GeneralWriter(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		w.Write([]byte(s))
+		if _, err := w.Write([]byte(s)); err != nil {
+			panic(err)
+		}
 	}
 }
 
 func Benchmark_BufWriter(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		bufw.WriteString(s)
+		if _, err := bufw.WriteString(s); err != nil {
+			panic(err)
+		}
 	}
 }
