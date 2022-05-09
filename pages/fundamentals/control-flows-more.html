@@ -397,21 +397,23 @@ the smaller one of <code>runtime.NumCPU</code> and <code>runtime.GOMAXPROCS</cod
 <div>
 <p>
 A deferred function call is a function call which follows a <code>defer</code> keyword.
+The <code>defer</code> keyword and the deferred function call together form a defer statement. 
 Like goroutine function calls,
-all the result values of the function call (if the called function returns values)
+all the results of the function call (if the called function has return results)
 must be discarded in the function call statement.
 </p>
 
 <p>
-When a function call is deferred, it is not executed immediately.
-It will be pushed into a defer-call stack maintained by its caller goroutine.
-After a function call <code>fc(...)</code> returns and enters its
-<a href="function-declarations-and-calls.html#exiting-phase">exiting phase</a>,
-all the deferred function calls pushed in the function call (<code>fc...</code>)
-(which has not exited yet) will be executed,
-in first-in, last-out order, that is, the reverse of the order in which they were pushed into the defer-call stack.
+When a defer statement is executed, the deferred function call is not executed immediately.
+Instead, it is pushed into a deferred call queue maintained by its caller goroutine.
+After a function call <code>fc(...)</code> returns (but has not fully existed yet)
+and enters its <a href="function-declarations-and-calls.html#exiting-phase">exiting phase</a>,
+all the deferred function calls pushed into the deferred call queue
+during executing the function call will be removed from the deferred call queue and executed,
+in first-in, last-out order, that is, the reverse of the order
+in which they were pushed into the deferred call queue.
 Once all these deferred calls are executed,
-the function call <code>fc(...)</code> exits.
+the function call <code>fc(...)</code> fully exits.
 </p>
 
 Here is a simple example to show how to use deferred function calls.
@@ -435,19 +437,6 @@ The third line.
 
 <p>
 </p>
-
-In fact, each goroutine maintains two call stacks, the normal-call stack and defer-call stack.
-<ul>
-<li>
-	For two adjacent function calls in the normal-call stack of a goroutine,
-	the later pushed one is called by the earlier pushed one.
-	The earliest function call in the normal-call stack is the entry call
-	of the goroutine.
-</li>
-<li>
-	The function calls in the defer-call stack have no calling relations.
-</li>
-</ul>
 
 Here is another example which is a little more complex.
 The example will print <code>0</code> to <code>9</code>,
@@ -507,26 +496,22 @@ func main() {
 </div>
 
 <a class="anchor" id="argument-evaluation-moment"></a>
-<h3>The Evaluation Moment of the Arguments of Deferred and Goroutine Function Calls</h3>
+<h3>The Evaluation Moment of the Arguments of Deferred Function Calls</h3>
 
 <div>
-The arguments of a deferred function call or a goroutine function call are all
-evaluated at the moment when the function call is invoked.
-<ul>
-<li>
-	For a deferred function call, the invocation moment is the moment
-	when it is pushed into the defer-call stack of its caller goroutine.
-</li>
-<li>
-	For a goroutine function call, the invocation moment is
-	the moment when the corresponding goroutine is created.
-</li>
-</ul>
 
 <p>
-The expressions enclosed within the body of an anonymous function call,
+The arguments of a deferred function call
+are all evaluated at the moment when the corresponding defer statement is executed
+(a.k.a. when the deferred call is pushed into the deferred call queue).
+The evaluation results are used when the deferred call is executed later during
+the existing phase of the surrounding call (the caller of the deferred call).
+</p>
+
+<p>
+The expressions within the body of an anonymous function call,
 whether the call is a general call or a deferred/goroutine call,
-will not be evaluated at the moment when the anonymous function call is invoked.
+are evaluated during the anonymous function call is executed.
 </p>
 
 Here is an example.
@@ -564,7 +549,7 @@ b: 3
 <p>
 The first loop prints <code>i</code> as <code>2</code>, <code>1</code> and <code>0</code> as a sequence.
 The second loop always prints <code>i</code> as <code>3</code>,
-for when the three <code>fmt.Println</code> calls in the deferred anonymous calls are invoked,
+because when the three <code>fmt.Println</code> calls within the anonymous function are invoked,
 the value of the loop variable <code>i</code> has changed to <code>3</code>.
 </p>
 
@@ -593,7 +578,7 @@ or
 <p>
 </p>
 
-The same argument valuation moment rules are for goroutine function calls.
+The same argument valuation moment rules also apply to goroutine function calls.
 The following program will output <code>123 789</code>.
 
 <pre class="line-numbers"><code class="language-go">package main
@@ -661,8 +646,7 @@ to make the current goroutine enter panicking status.
 <p>
 Panicking is another way to make a function return.
 Once a panic occurs in a function call, the function call returns immediately
-and enters its exiting phase. The deferred function calls pushed in the defer-call stack
-will get executed, by their inverse order being pushed.
+and enters its exiting phase.
 </p>
 
 <p>
@@ -672,7 +656,6 @@ so that the current goroutine will enter normal calm status again.
 </p>
 
 <p>
-Before a panicking goroutine exits. the panics in it will not spread to other goroutines.
 If a panicking goroutine exits without being recovered, it will make the whole program crash.
 </p>
 

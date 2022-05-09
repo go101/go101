@@ -5,6 +5,42 @@ import (
 	"fmt"
 )
 
+type A [1024]byte
+
+var a A
+
+func Benchmark_Reset_ArrayPtr(b *testing.B) {
+	var p = &a
+	
+	for i := 0; i < b.N; i++ {
+		for i := range p {
+			p[i] = 0
+		}
+	}
+}
+
+func Benchmark_Reset_ArrayPtr_b(b *testing.B) {
+	var p = &a
+	
+	for i := 0; i < b.N; i++ {
+		*p = A{}
+	}
+}
+
+func Benchmark_Reset_Array_memclr(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for i := range a {
+			a[i] = 0
+		}
+	}
+}
+
+func Benchmark_Reset_Array_assignment(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		a = A{}
+	}
+}
+
 func Benchmark_ResetElements(b *testing.B) {
 	const MaxN = 1024 * 1024 * 32
 	var array [MaxN]byte

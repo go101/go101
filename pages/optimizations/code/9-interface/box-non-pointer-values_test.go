@@ -28,6 +28,14 @@ func Benchmark_BoxInt64(b *testing.B) {
 	}
 }
 
+var f32 float64 = 1.2345
+
+func Benchmark_BoxFloat32(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		r = f32
+	}
+}
+
 var f64 float64 = 1.2345
 
 func Benchmark_BoxFloat64(b *testing.B) {

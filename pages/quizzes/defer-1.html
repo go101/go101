@@ -11,7 +11,7 @@ type Foo struct {
 	v int
 }
 
-func NewFoo(n *int) Foo {
+func MakeFoo(n *int) Foo {
 	print(*n)
 	return Foo{}
 }
@@ -23,10 +23,10 @@ func (Foo) Bar(n *int) {
 func main() {
 	var x = 1
 	var p = &x
-	defer NewFoo(p).Bar(p)
+	defer MakeFoo(p).Bar(p) // line 19
 	x = 2
-	p = new(int)
-	NewFoo(p)
+	p = new(int) // line 21
+	MakeFoo(p)
 }
 </code></pre>
 </div>
@@ -66,17 +66,18 @@ func main() {
 <p>Key points:</p>
 <ul>
 <li>
-	When a function call is pushed into the deferred call stack,
+	When a function call is pushed into the deferred call queue,
 	the called function value and all the arguments are evaluated.
-	The evaluated values will be used when the call is executed later.
+	The evaluated values will be used when the call is executed later
+	in the existing phase of its caller function.
 </li>
 <li>
-	So, at line 19, when the deferred call <code>Bar</code> is pushed into the deferred call stack,
-	its arguments <code>NewFoo(p)</code> (as the receiver argument) and <code>p</code> are evaluated.
-	In evaluating <code>NewFoo(p)</code>, <code>1</code> is printed.
+	So, at line 19, when the deferred call <code>Bar</code> is pushed into the deferred call queue,
+	its arguments <code>MakeFoo(p)</code> (as the receiver argument) and <code>p</code> are evaluated.
+	In evaluating <code>MakeFoo(p)</code>, <code>1</code> is printed.
 </li>
 <li>
-	The later modification at line 21 doesn't affect the evaluation result at line 19,
+	The later modification at line 21 doesn't affect the evaluation results at line 19,
 	which means the argument passed to the <code>Bar</code> function call is still a pointer to the variable <code>x</code>.
 </li>
 </ul>

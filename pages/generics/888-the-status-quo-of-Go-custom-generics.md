@@ -362,7 +362,7 @@ var fs = x2y(bs, func(x byte) float64 {
 ```
 
 The workaround needs a callback function, which
-makes the code much less efficient,
+makes the code verbose and much less efficient,
 though I do admit it has more usage scenarios.
 
 
