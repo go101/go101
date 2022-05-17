@@ -764,7 +764,7 @@ More specifically, a type parameter acts as a distinct type
 when it is used as a component of a composite type.
 In the above example. `*T` and `*[2]int` are two different (ordinary) types.
 
-## A call to the predeclared `new` or `cap` function has not extra requirements for its argument
+## A call to the predeclared `new` function has not extra requirements for its argument
 
 The following function compiles okay.
 
