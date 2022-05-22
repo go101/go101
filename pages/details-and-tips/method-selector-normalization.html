@@ -73,7 +73,7 @@ func main() {
 <p>Please note that, interface method values and method values got through reflection
 will be expanded to the promoted method values with a delay.
 For example, in the following program, the modification to <code>s.T.X</code>
-has effects on the method values got through reflection and interface ways.</p>
+has effects on the return results of the method values got through reflection and interface ways.</p>
 
 <pre><code class="language-Go">package main
 
@@ -106,3 +106,40 @@ func main() {
 </code></pre>
 
 <p>Source: <a href="https://github.com/golang/go/issues/47863">https://github.com/golang/go/issues/47863</a></p>
+
+<p>However, as of Go toolchain 1.18, there is a bug in the official standard
+Go compiler implementation. The compiler will de-virtualize some interface
+method calls at compiler time but the de-virtualizations are made too far
+to be correct. For example, the following program should print <code>2 2</code>,
+but it prints <code>1 2</code>.</p>
+
+<pre><code class="language-Go">package main
+
+type I interface{ M() }
+
+type T struct{
+	x int
+}
+
+func (t T) M() {
+	println(t.x)
+}
+
+func main() {
+	var t = &amp;T{x: 1}
+	var i I = t
+	
+	var f = i.M
+	defer f() // 2 (correct)
+
+	// i.M is de-virtualized as (*t).M as compile time (bug).
+	defer i.M() // 1 (wrong)
+	
+	t.x = 2
+}
+</code></pre>
+
+<p>It is unclear when this bug will be fixed now.</p>
+
+<p>Source: <a href="https://github.com/golang/go/issues/52072">https://github.com/golang/go/issues/52072</a></p>
+
