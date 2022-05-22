@@ -53,7 +53,7 @@ func (go101 *Go101) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		item = tokens[0]
 	}
 
-	switch go101.ConfirmLocalServer(isLocalRequest(r)); group {
+	switch go101.PreHandle(w, r); group {
 	default:
 		go101.ServeGoGetPages(w, r, group, item)
 	case "":
@@ -82,11 +82,13 @@ func (go101 *Go101) serveGroupItem(w http.ResponseWriter, r *http.Request, group
 	}
 }
 
-func (go101 *Go101) ConfirmLocalServer(isLocal bool) {
+func (go101 *Go101) PreHandle(w http.ResponseWriter, r *http.Request) {
 	go101.serverMutex.Lock()
 	defer go101.serverMutex.Unlock()
-	if go101.isLocalServer != isLocal {
-		go101.isLocalServer = isLocal
+
+	localServer := isLocalRequest(r)
+	if go101.isLocalServer != localServer {
+		go101.isLocalServer = localServer
 		if go101.isLocalServer {
 			unloadPageTemplates()      // loaded in one init function
 			go101.articlePages.Clear() // invalidate article caches
@@ -134,7 +136,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, gr
 				"Article":       article,
 				"Title":         article.TitleWithoutTags,
 				"Theme":         go101.theme,
-				"IsLocalServer": isLocal,
+				//"IsLocalServer": isLocal,
 			}
 			t := retrievePageTemplate(Template_Article, !isLocal)
 			var buf bytes.Buffer
