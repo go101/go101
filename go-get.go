@@ -124,5 +124,8 @@ func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, root
 	} else {
 		w.Header().Set("Cache-Control", "max-age=50000") // about 14 hours
 	}
+	w.Header().Set("Vary", "Sec-CH-Prefers-Color-Scheme")
+	w.Header().Set("Accept-CH", "Sec-CH-Prefers-Color-Scheme")
+	w.Header().Set("Critical-CH", "Sec-CH-Prefers-Color-Scheme")
 	w.Write(page)
 }

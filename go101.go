@@ -133,7 +133,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, gr
 			pageParams := map[string]interface{}{
 				"Article":       article,
 				"Title":         article.TitleWithoutTags,
-				"Theme":         go101.theme,
+				"Theme":         go101.selectTheme(r),
 				"IsLocalServer": isLocal,
 			}
 			t := retrievePageTemplate(Template_Article, !isLocal)
@@ -164,7 +164,22 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, gr
 	} else {
 		w.Header().Set("Cache-Control", "max-age=50000") // about 14 hours
 	}
+	w.Header().Set("Vary", "Sec-CH-Prefers-Color-Scheme")
+	w.Header().Set("Accept-CH", "Sec-CH-Prefers-Color-Scheme")
+	w.Header().Set("Critical-CH", "Sec-CH-Prefers-Color-Scheme")
 	w.Write(page)
+}
+
+func (go101 *Go101) selectTheme(r *http.Request) string {
+	userPreferredTheme := r.Header.Get("Sec-CH-Prefers-Color-Scheme")
+	selectedTheme := go101.theme
+	switch userPreferredTheme {
+	case "dark":
+		selectedTheme = "dark"
+	case "light":
+		selectedTheme = "light"
+	}
+	return selectedTheme
 }
 
 var H1, _H1 = []byte("<h1>"), []byte("</h1>")
