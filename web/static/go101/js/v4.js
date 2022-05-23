@@ -59,14 +59,28 @@ $(document).ready(function(){
 		document.cookie = "theme=" + theme  + "; path=/; SameSite=None; Secure"
 	}
 
-	var cookieTheme = "dark"
+	var cookieTheme = ""
 	document.cookie.split(';').forEach(function(el) {
 		let [key, value] = el.split('=')
 		if (key.trim() == "theme") {
 			cookieTheme = value
 		}
 	})
+	if (cookieTheme == "") {
+		const mediaQueryList = window.matchMedia("(prefers-color-scheme: light)")
+		if (mediaQueryList.matches) {
+			cookieTheme = "light"
+		}
+	}
+	if (cookieTheme == "") {
+		cookieTheme = "dark"
+	}
 	swithTheme(cookieTheme)
+
+	var themeSwitch = document.getElementById('theme-switch')
+	if (themeSwitch == null) {
+		return
+	}
 
 	var themeSwitch = document.getElementById('theme-switch')
 	themeSwitch.style.cursor = 'pointer'

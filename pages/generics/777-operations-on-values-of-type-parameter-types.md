@@ -201,7 +201,7 @@ then the identical underlying type is called the core type of the interface type
 but they are all [channel types](https://go101.org/article/channel.html)
 which share an identical element type `E`, and all directional channels in them have the same direction,
 then the core type of the interface type is the directional channel type
-`chan<- E` or `<-chan E` depending on the direction of the directional channels present.
+`chan<- E` or `<-chan E`, depending on the direction of the directional channels present.
 1. For cases other than the above two, the interface type has not a core type.
 
 For example, in the following code, each of the types shown in the first group
@@ -544,7 +544,7 @@ By using the official standard Go compiler, in the following program,
 * all the other three generic functions compile okay, but the `dot` function
   should not compile by the above described rule.
   This might be [a bug of the standard compiler, or the rule described in
-  the current Go specification needs to an adjustment](https://github.com/golang/go/issues/50815).
+  the current Go specification needs a small adjustment](https://github.com/golang/go/issues/50815).
 
 ```Go
 package main
