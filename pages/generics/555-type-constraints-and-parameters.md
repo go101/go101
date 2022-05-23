@@ -350,7 +350,7 @@ string | error
 To make descriptions simple, this book will view the predeclared `comparable` interface type
 as an interface type having a method (but not view it as a basic interface type).
 
-Another requirement (restriction) is that the type sets of all non-interface type terms in a term union must have no intersections. For example, in the following code snippet, the term unions in the first two declaration fails to compile, but the last two compile okay.
+Another requirement (restriction) is that the type sets of all non-interface type terms in a term union must have no intersections. For example, in the following code snippet, the term unions in the first declaration fails to compile, but the last two compile okay.
 
 ```Go
 type _ interface {
