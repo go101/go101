@@ -1,9 +1,9 @@
-<p id="f-1-pointer.md"></p>
+<p id="f-1-pointer-md"></p>
 <h1>Pointers</h1>
 
 <h2>Avoid unnecessary nil array pointer checks in a loop</h2>
 
-<p>There are some flaws in the current official standard Go compiler implementation (v1.17).
+<p>There are some flaws in the current official standard Go compiler implementation (v1.18).
 One of them is <a href="https://github.com/golang/go/issues/41666">some nil array pointer checks are not moved out of loops</a>.
 Here is an example to show this flaw.</p>
 
@@ -57,8 +57,9 @@ Benchmark_g1-4  398.1 ns/op
 
 <p>From the outputs, we could find that the <code>g1</code> implementation is more performant than the <code>g0</code> implementation,
 even if the <code>g1</code> implementation contains one more code line (line 18).
-Why? The question is answered by the outputted assembly instructions.
-In the <code>g0</code> implementation, the <code>TESTB</code> instruction is generated within the loop, whereas in the <code>g1</code> implementation, the <code>TESTB</code> instruction is generated out of the loop.
+Why? The question is answered by the outputted assembly instructions.</p>
+
+<p>In the <code>g0</code> implementation, the <code>TESTB</code> instruction is generated within the loop, whereas in the <code>g1</code> implementation, the <code>TESTB</code> instruction is generated out of the loop.
 The <code>TESTB</code> instruction is used to check whether or not the argument <code>a</code> is a nil pointer.
 For this specified case, checking once is enough.
 The one more code line avoids the flaw in the compiler implementation.</p>
@@ -77,8 +78,10 @@ func g2(x *[N]int) {
 
 <p>Please note that the flaw might be fixed in future compiler versions.</p>
 
-<p>And please note that, if the three implementation functions are inline-able, the benchmark results will change much. That is the reason why the <code>//go:noinline</code> compiler directives are used here.
-However, we should know that, up to Go toolchain v1.17, the <code>//go:noinline</code> compiler directives are actually unnecessary here, because <a href="8-function.html#inline-conditions">a function containing a <code>for-range</code> loop is not inline-able</a>.</p>
+<p>And please note that, if the three implementation functions are inline-able, the benchmark results will change much.
+That is the reason why the <code>//go:noinline</code> compiler directives are used here.
+(Before Go toolchain v1.18, the <code>//go:noinline</code> compiler directives are actually unnecessary here.
+Because Go toolchain v1.18- never inlines a function containing a <code>for-range</code> loop.)</p>
 
 <h3>The case in which an array pointer is a struct field</h3>
 
@@ -137,7 +140,6 @@ Benchmark_f1-4  637.4 ns/op
 Benchmark_f2-4  511.3 ns/op
 Benchmark_f3-4  390.1 ns/op
 Benchmark_f4-4  387.6 ns/op
-
 </code></pre>
 
 <p>The results verify our previous conclusions.</p>
@@ -157,12 +159,12 @@ func f2(t *T) {
 
 <p>If the elements of an array pointer field are not modified (only read) in the loop, then the <code>f1</code> way is as performant as the <code>f3</code> and <code>f4</code> way.</p>
 
-<p>Personally, for most cases, I think should try to use the slice way (the <code>f4</code> way) to get the best performance,
+<p>Personally, for most cases, I think we should try to use the slice way (the <code>f4</code> way) to get the best performance,
 because generally slices are optimized better than arrays by the official standard Go compiler.</p>
 
-<h2 id="avoid-unnecessary-dereferences">Avoid unnecessary point dereferences in a loop</h2>
+<h2 id="avoid-unnecessary-dereferences">Avoid unnecessary pointer dereferences in a loop</h2>
 
-<p>Sometimes, the current official standard Go compiler (v1.17) is <a href="https://github.com/golang/go/issues/49785">not smart enough to generate assembly instructions in the most optimized way</a>. We have to write the code in another way to get the best performance. For example, in the following code, the <code>f</code> function is must less performant than the <code>g</code> function.</p>
+<p>Sometimes, the current official standard Go compiler (v1.18) is <a href="https://github.com/golang/go/issues/49785">not smart enough to generate assembly instructions in the most optimized way</a>. We have to write the code in another way to get the best performance. For example, in the following code, the <code>f</code> function is much less performant than the <code>g</code> function.</p>
 
 <pre><code class="language-Go">// avoid-indirects_test.go
 package pointers

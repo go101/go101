@@ -1,14 +1,15 @@
-<p id="f-6-map.md"></p>
+<p id="f-6-map-md"></p>
 <h1>Maps</h1>
 
 <p>In Go, the capacity of a map is unlimited in theory, it is only limited by available memory.
 That is why the builtin <code>cap</code> function doesn't apply to maps.</p>
 
-<p>In the official standard Go runtime implementation, maps are implemented as hashables internally.
+<p>In the official standard Go runtime implementation, maps are implemented as hashtables internally.
 Each map/hashtable maintains a backing array to store map entries (key-value pairs).
 Along with more and more entries are put into a map,
-the size of the array might be thought as too small to store the current entries,
-so a larger backing array will be allocated and the current entries will be moved to it,
+the size of the backing array might be thought as too small to store more entries,
+thus a new larger backing array will be allocated
+and the current entries (in the old backing array) will be moved to it,
 then the old backing array will be discarded.</p>
 
 <p>In the official standard Go runtime implementation, the backing array of a map will never shrink,
@@ -25,17 +26,17 @@ even if all entries are deleted from the map. This is a form of memory wasting.<
 
 <p>The loop is specially optimized so that its execution is very fast.
 However, please note that, as mentioned above, the backing array of the cleared map doesn't shrink after the loop.
-Then how to release the backing array of the map? Just do:</p>
+Then how to release the backing array of the map? There are two ways:</p>
 
 <pre><code class="language-Go">	aMap = nil
 	// or
 	aMap = map(map[K]V)
 </code></pre>
 
-<p>If the map is not referenced elsewhere, then its backing array will be collected eventually after doing this.</p>
+<p>If the backing array of the map is not referenced elsewhere, then the backing array will be collected eventually after being released.</p>
 
 <p>If there will be many new entries to be put in the map after it is cleared, then the former way is preferred;
-otherwise, the latter way is preferred.</p>
+otherwise, the latter (release) ways are preferred.</p>
 
 <h2><code>aMap[key]++</code> is more efficient than <code>aMap[key] = aMap[key] + 1</code></h2>
 
@@ -93,12 +94,12 @@ So if the key or element type of a map is a string type, then all the entries of
 needs to be scanned in GC cycles.</p>
 
 <p>If we can make sure that the string values used in the entries of a map have a max length
-and the max length is small (or the variance of the string lengths is small),
-then we could use the array type <code>[N]byte</code> to replace the string types
+and the max length is small, then we could use the array type <code>[N]byte</code> to replace the string types
 (where <code>N</code> is the max string length). Doing this will save much garbage collection scanning time
 if the number of the entries in the map is very large.</p>
 
-<p>For example, the entries of <code>mapB</code> contain no pointers, but the (string) keys of <code>mapA</code> contain pointers.
+<p>For example,in the following code,
+the entries of <code>mapB</code> contain no pointers, but the (string) keys of <code>mapA</code> contain pointers.
 So garbage collector will skip <code>mapB</code> during the scan phase of a GC cycle.</p>
 
 <pre><code class="language-Go">	var mapA = make(map[string]int, 1 &lt;&lt; 16)
@@ -107,7 +108,7 @@ So garbage collector will skip <code>mapB</code> during the scan phase of a GC c
 
 <h2>Lower map element modification frequency</h2>
 
-<p>In the previous &quot;strings and byte slices&quot; article, it has been mentioned that
+<p>In the previous &quot;strings and byte slices&quot; chapter, it has been mentioned that
 <a href="4-string-and-byte-slice.html#bytes-2-string-as-map-retrieval-key">a byte-slice-to-string conversion appearing as the index key in a map element retrieval expression
 doesn't allocate</a>,
 but such conversions in L-value map element index expressions will allocate.</p>
@@ -163,9 +164,9 @@ func Benchmark_B(b *testing.B) {
 Benchmark_B-4   1543 ns/op     0 B/op   0 allocs/op
 </code></pre>
 
-<p>Although the <code>B</code> way (pointer element way) is less CPU consuming,
-it is inefficient from garbage collection view.
-It creates many pointers, which increases the burden of pointer scanning in a GC cycle.</p>
+<p>Although the B way (pointer element way) is less CPU consuming,
+it creates many pointers, which increases the burden of pointer scanning in a GC cycle.
+But generally, the B way is more efficient.</p>
 
 <p>We could use an extra counter table (a slice) and let the map record indexes to the table,
 to avoid making many allocations and creating many pointers, as the following code shows:</p>
@@ -199,16 +200,16 @@ Benchmark_C-4   1609 ns/op     0 B/op   0 allocs/op
 </code></pre>
 
 <p>From a short-period view, the C way is as almost performant as the B way,
-But as it doesn't use pointers, it is actually more efficient than the B way in a long-period view.</p>
+But as it uses much less pointers, it is actually more efficient than the B way in a long-period view.</p>
 
 <p>Please note that the above benchmark results show the latter two ways both make zero allocations.
 This is actually not true. It is just that each of latter two benchmark runs makes less than one allocation averagely, which is truncated to zero.
 This is a <a href="https://github.com/golang/go/issues/24631">deliberate design</a> of the benchmark reports in the standard packages.</p>
 
-<h2>Try to grow a map in one stop</h2>
+<h2>Try to grow a map in one step</h2>
 
 <p>If we could predict the max number of entries will be put into a map at coding time,
-we should create the map with the max number as the size,
+we should create the map with the <code>make</code> function and pass the max number as the <code>size</code> argument of the <code>make</code> call,
 to avoid growing the map in multiple steps later.</p>
 
 <h2>Use index tables instead of maps which key types have only a small set of possible values</h2>
@@ -216,7 +217,7 @@ to avoid growing the map in multiple steps later.</p>
 <p>Some programmers like to use a map with bool key to reduce verbose <code>if-else</code> code block uses.
 For example, the following code</p>
 
-<pre><code class="language-Go">	// Within some function.
+<pre><code class="language-Go">	// Within a function ...
 	var condition bool
 	condition = evaluateCondition()
 	...
@@ -240,7 +241,7 @@ For example, the following code</p>
 var boolToInt = map[bool]int{true: 1, false: 0}
 var boolToFunc = map[bool]func(){true: f, false: g}
 
-	// Within a function.
+	// Within a function ...
 	var condition bool
 	condition = evaluateCondition()
 	...
@@ -253,7 +254,7 @@ var boolToFunc = map[bool]func(){true: f, false: g}
 <p>If there are many such identical <code>if-else</code> blocks used in code,
 using maps with bool keys will reduce many boilerplates and make code look much cleaner.
 For most use cases, this is generally good.
-However, as of Go toolchain v1.17, <a href="https://github.com/golang/go/issues/44578">the map way is not very efficient from
+However, as of Go toolchain v1.18, <a href="https://github.com/golang/go/issues/44578">the map way is not very efficient from
 the code execution performance view</a>.
 The following benchmarks show the performance differences.</p>
 
@@ -306,7 +307,8 @@ block way is much more performant than the map-switch way.</p>
 
 <p>For the use cases which require high code performance,
 we can use index tables to reduce <code>if-else</code> boilerplates
-but still keep the simplicity of the map switch way, with the help of a bool-to-int function.
+but still keep the simplicity of the map switch way,
+with the help of a bool-to-int function.
 The following benchmarks show how to use the index table way.</p>
 
 <pre><code class="language-Go">func b2i(b bool) (r int) {
@@ -326,8 +328,8 @@ func Benchmark_IndexTable(b *testing.B) {
 }
 </code></pre>
 
-<p>From the above code, we could find that the uses of the index table way is as simple as
-the map switch way, though it needs to define an extra tiny <code>b2i</code> function.
+<p>From the above code, we could find that the uses of the index table way is as clean as
+the map-switch way, though it needs to define an extra tiny <code>b2i</code> function.
 And from the following benchmark results, we know that the index table way
 is as performant as the <code>if-else</code> block way.</p>
 
