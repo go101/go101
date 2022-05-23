@@ -5,7 +5,7 @@ In the custom generics world, a type may be declared as a generic type,
 and a function may be declared as generic function.
 In addition, generic types are defined types, so they may have methods.
 
-The declaration of a generic type, generic function, or method of generic types
+The declaration of a generic type, generic function, or method of a generic type
 contains a type parameter list part, which is the main difference from
 the declaration of an ordinary type, function, or method.
 

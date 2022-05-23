@@ -133,9 +133,9 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, gr
 		if err == nil {
 			article.Index = disableArticleLink(go101.pageGroups[group].indexContent, file)
 			pageParams := map[string]interface{}{
-				"Article":       article,
-				"Title":         article.TitleWithoutTags,
-				"Theme":         go101.theme,
+				"Article": article,
+				"Title":   article.TitleWithoutTags,
+				"Theme":   go101.theme,
 				//"IsLocalServer": isLocal,
 			}
 			t := retrievePageTemplate(Template_Article, !isLocal)

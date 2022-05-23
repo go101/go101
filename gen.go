@@ -3,11 +3,11 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-	"net/http"
 )
 
 const GeneratedFolderName = "generated"
@@ -31,7 +31,7 @@ func genStaticFiles(rootURL string) {
 		}
 		log.Fatal(err)
 	}
-	
+
 	// md -> html
 	md2htmls := func(group string) {
 		dir := fullPath("pages", group)
@@ -162,7 +162,7 @@ func genStaticFiles(rootURL string) {
 				}
 			}
 		}
-		
+
 		md2htmls(group)
 
 		{
