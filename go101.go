@@ -25,7 +25,7 @@ type Go101 struct {
 	articlePages  Cache
 	gogetPages    Cache
 	serverMutex   sync.Mutex
-	theme         string // default is "dark"
+	theme         string
 }
 
 type PageGroup struct {

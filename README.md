@@ -56,7 +56,7 @@ If it is not opened, please visit http://localhost:55555.
 Options:
 ```
 -port=1234
--theme=light # or dark (default)
+-theme=light # or dark (default is auto)
 ```
 
 Some HTML files are generated from their corresponding markdown files.
