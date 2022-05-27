@@ -171,16 +171,18 @@ package pointers
 
 import &quot;testing&quot;
 
+//go:noinline
 func f(sum *int, s []int) {
-	for _, v := range s { // line 7
-		*sum += v // line 8
+	for _, v := range s { // line 8
+		*sum += v // line 9
 	}
 }
 
+//go:noinline
 func g(sum *int, s []int) {
-	var n = 0
-	for _, v := range s { // line 14
-		n += v // line 15
+	var n = *sum
+	for _, v := range s { // line 16
+		n += v // line 17
 	}
 	*sum = n
 }
@@ -205,18 +207,18 @@ func Benchmark_g(b *testing.B) {
 
 <pre><code>$ go test -bench=. -gcflags=-S avoid-indirects_test.go
 ...
-0x0009 00009 (avoid-indirects_test.go:8)	MOVQ	(AX), SI
-0x000c 00012 (avoid-indirects_test.go:8)	ADDQ	(BX)(DX*8), SI
-0x0010 00016 (avoid-indirects_test.go:8)	MOVQ	SI, (AX)
-0x0013 00019 (avoid-indirects_test.go:7)	INCQ	DX
-0x0016 00022 (avoid-indirects_test.go:7)	CMPQ	CX, DX
-0x0019 00025 (avoid-indirects_test.go:7)	JGT	9
+0x0009 00009 (avoid-indirects_test.go:9)	MOVQ	(AX), SI
+0x000c 00012 (avoid-indirects_test.go:9)	ADDQ	(BX)(DX*8), SI
+0x0010 00016 (avoid-indirects_test.go:9)	MOVQ	SI, (AX)
+0x0013 00019 (avoid-indirects_test.go:8)	INCQ	DX
+0x0016 00022 (avoid-indirects_test.go:8)	CMPQ	CX, DX
+0x0019 00025 (avoid-indirects_test.go:8)	JGT	9
 ...
-0x000b 00011 (avoid-indirects_test.go:14)	MOVQ	(BX)(DX*8), DI
-0x000f 00015 (avoid-indirects_test.go:14)	INCQ	DX
-0x0012 00018 (avoid-indirects_test.go:15)	ADDQ	DI, SI
-0x0015 00021 (avoid-indirects_test.go:14)	CMPQ	CX, DX
-0x0018 00024 (avoid-indirects_test.go:14)	JGT	11
+0x000b 00011 (avoid-indirects_test.go:16)	MOVQ	(BX)(DX*8), DI
+0x000f 00015 (avoid-indirects_test.go:16)	INCQ	DX
+0x0012 00018 (avoid-indirects_test.go:17)	ADDQ	DI, SI
+0x0015 00021 (avoid-indirects_test.go:16)	CMPQ	CX, DX
+0x0018 00024 (avoid-indirects_test.go:16)	JGT	11
 ...
 Benchmark_f-4  3024 ns/op
 Benchmark_g-4   566.6 ns/op
@@ -229,9 +231,29 @@ and the instructions generated for the loop only process registers.
 It is much faster to let CPU instructions process registers than process memory,
 which is why the <code>g</code> function is much more performant than the <code>f</code> function.</p>
 
+<p>This is not a compiler flaw. In fact, the <code>f</code> and <code>g</code> functions are not equivalent
+(though for most use cases in practice, their results are the same).
+For example, if they are called like the following code shows, then they return different results
+(thanks to skeeto@reddit for <a href="https://old.reddit.com/r/golang/comments/uy7weh/use_go_pointer_efficiently_in_some_cases/ia39qwk/">making this correction</a>).</p>
+
+<pre><code class="language-Go">{
+	var s = []int{1, 1, 1}
+	var sum = &amp;s[2]
+	f(sum, s)
+	println(*sum) // 6
+}
+{
+	var s = []int{1, 1, 1}
+	var sum = &amp;s[2]
+	g(sum, s)
+	println(*sum) // 4
+}
+</code></pre>
+
 <p>Another performant implementation for this specified case is to move the pointer parameter out of the function body:</p>
 
-<pre><code class="language-Go">func h(s []int) int {
+<pre><code class="language-Go">//go:noinline
+func h(s []int) int {
 	var n = 0
 	for _, v := range s {
 		n += v
@@ -241,7 +263,7 @@ which is why the <code>g</code> function is much more performant than the <code>
 
 func use_h(s []int) {
 	var sum = new(int)
-	*sum = h(s)
+	*sum += h(s)
 	...
 }
 </code></pre>

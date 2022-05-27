@@ -2,14 +2,14 @@ package pointers
 
 import "testing"
 
-func f(sum *int, s []int) {
+func f(v *int, s []int) {
 	for i := range s {
-		s[i] = *sum
+		s[i] = *v
 	}
 }
 
-func g(sum *int, s []int) {
-	var n = *sum
+func g(v *int, s []int) {
+	var n = *v
 	for i := range s {
 		s[i] = n
 	}

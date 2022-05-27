@@ -56,6 +56,8 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 	https://github.com/golang/go/issues/49206 // type switch
 	https://github.com/golang/go/issues/45380 type switch on type parameters not supported
 	
+	https://github.com/golang/go/issues/53087 produce duplicate type descriptor
+	
 -->
 
 
