@@ -63,4 +63,11 @@ func init() {
 		g(sum, s)
 		println(*sum) // 4
 	}
+
+	{
+		var s = []int{1, 1, 1}
+		var sum = &s[2]
+		*sum = h(s)
+		println(*sum) // 3
+	}
 }
