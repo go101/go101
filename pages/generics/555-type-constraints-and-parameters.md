@@ -206,7 +206,7 @@ type V interface {[]byte; any}
 type W interface {T; U}
 
 // Z <=> any. Z is a blank interface. Its
-// type set contains all interface types.
+// type set contains all non-interface types.
 type Z interface {~[]byte | ~string | any}
 ```
 

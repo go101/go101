@@ -58,6 +58,10 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 	
 	https://github.com/golang/go/issues/53087 produce duplicate type descriptor
 	
+	https://github.com/golang/go/issues/53137 unsafe.Offsetof bug
+	
+	https://github.com/golang/go/issues/53309
+	
 -->
 
 
