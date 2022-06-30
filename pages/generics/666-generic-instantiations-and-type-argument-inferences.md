@@ -469,4 +469,6 @@ It is a pity that Go didn't support custom generics from the start.
 infer function type parameters from generic interface arguments if necessary
 https://github.com/golang/go/issues/52397
 
+https://groups.google.com/g/golang-nuts/c/0yNl0Vz_9jA (there is an issue for this)..
+
 -->

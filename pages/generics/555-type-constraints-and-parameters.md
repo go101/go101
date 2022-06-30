@@ -262,7 +262,7 @@ var y interface {M()}
 var z interface {~[]byte}
 ```
 
-Whether or not supporting non-basic interface types as value types in future Go versions in unclear now.
+Whether or not to support non-basic interface types as value types in future Go versions in unclear now.
 
 ## More about the predeclared `comparable` constraint
 
@@ -647,7 +647,7 @@ As of Go 1.18, the scope of a type parameter of a generic function or a method o
 also include the function/method body and value parameter/result lists.
 Simply speaking, type parameters and value parameters/results are all declared in 
 the top block of the function/method body
-(the scope will [be adjusted a little in Go 1.19](https://github.com/golang/go/issues/52038)).
+(the scope will [be adjusted a little in Go 1.20](https://github.com/golang/go/issues/51503)).
 
 This means the generic function declarations and method declarations for generic types
 in the following code snippet all fail to compile (as of Go 1.18).

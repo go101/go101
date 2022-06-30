@@ -51,7 +51,7 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 	https://github.com/golang/go/issues/51522 miscompilation of comparison between type parameter and interface
 	https://github.com/golang/go/issues/51521 wrong panic message for method call on nil of generic interface type
 
-
+	https://github.com/golang/go/issues/53477
 	https://github.com/golang/go/issues/50681 // compile time type switch
 	https://github.com/golang/go/issues/49206 // type switch
 	https://github.com/golang/go/issues/45380 type switch on type parameters not supported
@@ -61,6 +61,10 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 	https://github.com/golang/go/issues/53137 unsafe.Offsetof bug
 	
 	https://github.com/golang/go/issues/53309
+	
+	https://github.com/golang/go/issues/53419
+	
+	https://github.com/golang/go/issues/52181
 	
 -->
 
