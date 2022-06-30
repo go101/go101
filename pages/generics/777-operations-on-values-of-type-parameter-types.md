@@ -941,7 +941,7 @@ func g[V C](v V) {
 	f1(v) // okay
 	f2(v) // error: V does not implement comparable
 	f3(v) // okay
-	f4(v) // error: V does not implement comparable
+	f4(v) // error: V does not implement int
 }
 ```
 
