@@ -82,7 +82,7 @@ Since Go 1.18, value types fall into two categories:
 
 Before Go 1.18, all values types are ordinary types.
 
-A generic type is a [defiend type](https://go101.org/article/type-system-overview.html#type-definition).
+A generic type is a [defined type](https://go101.org/article/type-system-overview.html#type-definition).
 It must be instantiated to be used as value types.
 The notation `Lockable[uint32]` is called an instantiated type (of the generic type `Lockable`).
 In the notation, `[uint32]` is called a type argument list and `uint32` is called a type argument,
