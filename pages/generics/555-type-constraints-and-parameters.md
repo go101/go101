@@ -21,7 +21,7 @@ Go 1.18 enhances the expressiveness of interface types by supporting several new
 
 ## Enhanced interface syntax
 
-Some new notations are introduced into Go to make it is possible to use interface types as constraints.
+Some new notations are introduced into Go to make it possible to use interface types as constraints.
 
 * The `~T` form, where `T` is a type literal or type name.
   `T` must denote a non-interface type whose underlying type is itself
