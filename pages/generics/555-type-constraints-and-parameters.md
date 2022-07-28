@@ -21,7 +21,7 @@ Go 1.18 enhances the expressiveness of interface types by supporting several new
 
 ## Enhanced interface syntax
 
-Some new notations are introduced into Go to make it is possible to use interface types as constraints.
+Some new notations are introduced into Go to make it possible to use interface types as constraints.
 
 * The `~T` form, where `T` is a type literal or type name.
   `T` must denote a non-interface type whose underlying type is itself
@@ -137,7 +137,7 @@ type O interface {
 ```
 
 We could view a single type literal, type name or tilde form as a term union with only one term.
-So simply speaking, since Go 118, an interface type may specify some methods and embed some term unions.
+So simply speaking, since Go 1.18, an interface type may specify some methods and embed some term unions.
 
 An interface type without any embedding elements is called an empty interface.
 For example, the predeclared `any` type alias denotes an empty interface type.
