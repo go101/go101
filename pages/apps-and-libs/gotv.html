@@ -1,0 +1,124 @@
+<p id="f-gotv-md"></p>
+<h1>GoTV</h1>
+
+<p>GoTV means <strong>Go</strong> <strong>t</strong>oolchain <strong>v</strong>ersion.
+It is a tool used to manage and use multiple coexisting installations of official Go toolchain versions harmoniously and conveniently.</p>
+
+<p>Project page: <a href="https://github.com/go101/gotv">https://github.com/go101/gotv</a></p>
+
+<p>Please follow <a href="https://twitter.com/go100and1">@Go100and1</a> to get the latest news of GoTV
+(and all kinds of Go details/facts/tips/...).</p>
+
+<h2>Installation</h2>
+
+<p>Run</p>
+
+<pre><code>go install go101.org/gotv@latest
+</code></pre>
+
+<p>to install GoTV.</p>
+
+<p>A 1.17+ toolchain version is needed to finish the installtion.
+The toolchain version may be uninstalled after pinning a suitable toolchain verison (see below).</p>
+
+<h2>Usage</h2>
+
+<p>Run <code>gotv</code> without any arguments to show help messages.</p>
+
+<p>Most <code>gotv</code> commands are in the following format:</p>
+
+<pre><code>gotv ToolchainVersion [go-arguments...]
+</code></pre>
+
+<p>During running the first such a command, the Go git repository will be cloned (which needs several minutes to finish).</p>
+
+<p><code>ToolchainVersion</code> might be</p>
+
+<ul>
+<li>a Go release version, such as <code>1.17.13</code>, <code>1.18</code>, <code>1.19rc1</code>,
+which mean the release tags <code>go1.17.13</code>, <code>go1.18</code>, <code>go1.19rc1</code>, respectively,
+in the Go git repository.
+Note: <code>1.N.</code> means the latest release of <code>1.N</code> and <code>1.</code> means the latest Go 1 release verison.</li>
+<li><code>:tip</code>, which means the local latest <code>master</code> branch in the Go git repository.</li>
+<li><code>:1.N</code>, which means the local latest <code>release-branch.go1.N</code> branch in the Go git repository.</li>
+</ul>
+
+<p>Examples:</p>
+
+<pre><code>$ gotv 1.17. version
+[Run]: $HOME/.cache/gotv/tag_go1.17.13/bin/go version
+go version go1.17.13 linux/amd64
+
+$ gotv 1.18.3 version
+[Run]: $HOME/.cache/gotv/tag_go1.18.3/bin/go version
+go version go1.18.3 linux/amd64
+
+$ cat main.go
+package main
+
+const A = 3
+
+func main() {
+	const (
+		A = A + A
+		B
+	)
+	println(A, B)
+}
+
+$ gotv 1.17. run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.17.13/bin/go run main.go
+6 6
+
+$ gotv 1.18.3 run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.18.3/bin/go run main.go
+6 12
+</code></pre>
+
+<p>Other <code>gotv</code> commands:</p>
+
+<pre><code># sync the Go git repository
+gotv fetch-versions
+
+# list all versions seen locally
+gotv list-versions
+
+# build and cache some toolchain versions
+gotv cache-version ToolchainVersion [ToolchainVersion ...]
+
+# uncache some toolchain versions to save disk space
+gotv uncache-version ToolchainVersion [ToolchainVersion ...]
+
+# pin a specified toolchain verison at a stable path
+gotv pin-version ToolchainVersion
+
+# unpin the current pinned toolchain version
+gotv unpin-version
+</code></pre>
+
+<h2>Pin a toolchain verison</h2>
+
+<p>We can use the <code>gotv</code> command to pin a specific toolchain verison to a stable path.
+After adding the stable path to the <code>PATH</code> environment veriable,
+we can use the official <code>go</code> command directly.
+And after doing these, the toolchain versions installed through ways other than GoTV
+may be safely uninstalled.</p>
+
+<p>It is recommanded to pin a 1.17+ version for <a href="https://github.com/golang/go/issues/44505">bootstrap purpose</a>.
+The following example shows how to pin Go toolchain version 1.17.13:</p>
+
+<pre><code>$ gotv pin-version 1.17.
+[Run]: cp -r $HOME/.cache/gotv/tag_go1.17.13 $HOME/.cache/gotv/pinned-toolchain
+
+Please put the following shown pinned toolchain path in
+your PATH environment variable to use go commands directly:
+
+	/home/username/.cache/gotv/pinned-toolchain/bin
+</code></pre>
+
+<p>After the prompted path is added to the PATH environment variable,
+open a new terminal window:</p>
+
+<pre><code>$ go version
+go version go1.17.13 linux/amd64
+</code></pre>
