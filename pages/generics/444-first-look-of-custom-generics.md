@@ -77,8 +77,8 @@ Here it is used as the type of the `Data` field.
 
 Since Go 1.18, value types fall into two categories:
 
-1. type parameter types
-1. ordinary types
+1. type parameter type;
+1. ordinary types.
 
 Before Go 1.18, all values types are ordinary types.
 
@@ -210,8 +210,6 @@ in the generic receiver base type specification. To make code clean,
 type parameter constraints are (and must be) omitted from the list.
 That is why here the type parameter list is `[T]`, instead of `[T any]`.
 
-The scope of the type parameter `T` is the whole method declaration
-(as of Go 1.18. It might [be adjusted a little in later Go versions](https://github.com/golang/go/issues/51503)).
 Here, `T` is used in a value parameter type, `func(*T)`.
 
 * The type of its method `Do` of the instantiated type `Lockable[uint32]` is `func(f func(*uint32))`.
@@ -299,10 +297,7 @@ Here, the type parameter list of the `NoDiff` generic function is `[V comparable
 It denotes an interface that is implemented by all comparable types.
 It will be explained with more details in the next chapter.
 
-The scope of the type parameter name `V` is the whole function declaration
-excluding the function name part
-(as of Go 1.18. It might be adjusted a little in later Go versions).
-Here, `V` is used as the variadic (value) parameter type.
+Here, the type parameter `V` is used as the variadic (value) parameter type.
 
 The notations `NoDiff[string]`, `NoDiff[int]` and `NoDiff[bool]` are called instantiated functions (of the generic function `NoDiff`).
 Similar to instantiated types, in the notations, `[string]`, `[int]` and `[bool]` are called type argument lists.

@@ -73,6 +73,14 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 	
 	https://github.com/golang/go/issues/53883
 	
+	https://github.com/golang/go/issues/54447
+	
+	https://github.com/golang/go/issues/54456
+	
+	https://github.com/golang/go/issues/54535
+	
+	https://github.com/golang/go/issues/54537
+	
 -->
 
 
