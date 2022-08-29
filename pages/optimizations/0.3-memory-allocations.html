@@ -31,7 +31,8 @@ and it will be collected as a whole when the goroutine exits.</p>
 <p>On the other hand, when all the value parts being carried on/by a heap memory block are not used any more (in other words, no alive value part is still referencing the memory block), the memory block will be viewed as garbage and automatically collected eventually, during runtime garbage collection cycles, which might consume certain CPU resources (garbage collection will be talked in detail in a later chapter).
 Generally, the more memory blocks are allocated on heap, the larger pressure is made for garbage collection.</p>
 
-<p>As heap allocations are much more expensive, so in Go code benchmark results, only heap memory allocations contribute to the allocation metrics. But please note that allocating on stack still has a cost, though it is often comparatively much smaller.</p>
+<p>As heap allocations are much more expensive, only heap memory allocations contribute to the allocation metrics in Go code benchmark results.
+But please note that allocating on stack still has a cost, though it is often comparatively much smaller.</p>
 
 <p>The escape analysis module of a Go compiler could detect some value parts will be only used by one goroutine and try to let those value parts allocated on stack at run time if certain extra conditions are satisfied. Stack memory allocations and escape analysis will be explained with more details in the next chapter.</p>
 
@@ -63,8 +64,8 @@ These optimizations will be introduced later in this book.</p>
 In the official standard Go runtime implementation, for memory blocks allocated on heap,</p>
 
 <ul>
-<li><a href="https://github.com/golang/go/blob/master/src/runtime/sizeclasses.go">some memory block size classes</a> (no more than 32768 bytes) are predefined. As of the official standard Go compiler v1.18, the smallest size classes are 8, 16, 24, 32, 48, 64, 80 and 96 bytes.</li>
-<li>For memory blocks larger than 32768 bytes, each of them is always composed of multiple memory pages. The memory page size used by the official standard Go runtime (v1.18) is 8192 bytes.</li>
+<li><a href="https://github.com/golang/go/blob/master/src/runtime/sizeclasses.go">some memory block size classes</a> (no more than 32768 bytes) are predefined. As of the official standard Go compiler v1.19, the smallest size classes are 8, 16, 24, 32, 48, 64, 80 and 96 bytes.</li>
+<li>For memory blocks larger than 32768 bytes, each of them is always composed of multiple memory pages. The memory page size used by the official standard Go runtime (v1.19) is 8192 bytes.</li>
 </ul>
 
 <p>So,</p>
@@ -141,7 +142,7 @@ In the end, 14 bytes are wasted.
 And 44 (15 + 15 + 14) bytes are wasted during executing the <code>Concat</code> function.</p>
 
 <p>In the above example, the results of the <code>string(s)</code> conversions are used temporarily in the string concatenation operation.
-By the current official standard Go compiler/runtime implementation (v1.18), the string bytes are allocated on heap (see below sections for details).
+By the current official standard Go compiler/runtime implementation (v1.19), the string bytes are allocated on heap (see below sections for details).
 After the concatenation is done, the memory blocks carrying the string bytes become into memory garbage and will be collected eventually later.</p>
 
 <h2>Reduce memory allocations and save memory</h2>
@@ -265,7 +266,7 @@ func main() {
 }
 </code></pre>
 
-<p>The outputs (for the official standard Go compiler v1.18):</p>
+<p>The outputs (for the official standard Go compiler v1.19):</p>
 
 <pre><code>Allocate from 0 to 2 (when append slice#0).
 Allocate from 2 to 6 (when append slice#1).
@@ -276,7 +277,7 @@ Allocate from 12 to 24 (when append slice#3).
 <p>From the outputs, we could get that only the last <code>append</code> call doesn't allocate.</p>
 
 <p>In fact, the <code>Merge_TwoLoops</code> function could be faster in theory.
-As of the official standard Go compiler v1.18, the <code>make</code> call in the <code>Merge_TwoLoop</code> function will zero all just created elements, <a href="https://github.com/go101/go101/wiki/Go-is-not-C%2C-so-there-is-not-an-extreme-fast-way-to-merge-slices">which is actually unnecessary</a>. Compiler optimizations in future versions might avoid the zero operation.</p>
+As of the official standard Go compiler v1.19, the <code>make</code> call in the <code>Merge_TwoLoop</code> function will zero all just created elements, <a href="https://github.com/go101/go101/wiki/Go-is-not-C%2C-so-there-is-not-an-extreme-fast-way-to-merge-slices">which is actually unnecessary</a>. Compiler optimizations in future versions might avoid the zero operation.</p>
 
 <p>BTW, the above implementation of the <code>Merge_TwoLoops</code> function has an imperfection.
 It doesn't handle the integer overflowing case.
