@@ -265,7 +265,7 @@ var z interface {~[]byte}
 Whether or not to support non-basic interface types as value types in future Go versions in unclear now.
 
 Note, before Go toolchain 1.19, aliases to non-basic interface types were not supported.
-The following type alias declaraitons [are only legal since Go toolchain 1.19](https://github.com/golang/go/issues/51616).
+The following type alias declarations [are only legal since Go toolchain 1.19](https://github.com/golang/go/issues/51616).
 
 ```Go
 type C[T any] interface{~int; M() T}
@@ -635,9 +635,9 @@ For the same reason, the following type parameter lists are also legal.
 Go specification says:
 
 * The scope of an identifier denoting a type parameter of a function or declared by a method receiver begins after the name of the function and ends at the end of the function body.
-* The scope of an identifier denoting a type parameter of a type begins after the name of the type and ends at the end of the specificaiton of the type.
+* The scope of an identifier denoting a type parameter of a type begins after the name of the type and ends at the end of the specification of the type.
 
-So the following type declaration is valid, even if the use of type parameter `E` is ahead of titshe declaration.
+So the following type declaration is valid, even if the use of type parameter `E` is ahead of its declaration.
 The type parameter `E` is used in the constraint of the type parameter `S`,
 
 ```Go
@@ -661,7 +661,7 @@ type G[G any] struct{x G} // okay
 func (E G[E]) Bar1() {}   // error: E redeclared
 ```
 
-The following `Bar2` method delcaration should compile okay, but it doesn't now (Go toolchain 1.19). This is [a bug which will be fixed in Go toolchain 1.20](https://github.com/golang/go/issues/51503).
+The following `Bar2` method declaration should compile okay, but it doesn't now (Go toolchain 1.19). This is [a bug which will be fixed in Go toolchain 1.20](https://github.com/golang/go/issues/51503).
 
 ```Go
 type G[G any] struct{x G} // okay
