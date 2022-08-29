@@ -26,9 +26,10 @@ func Benchmark_BoolField(b *testing.B) {
 	}
 }
 
+var x = struct{ n int32 }{255}
 func Benchmark_SmallInt32Field(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		r = struct{ n int32 }{255}
+		r = x
 	}
 }
 

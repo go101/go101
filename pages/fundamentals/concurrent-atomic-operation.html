@@ -13,7 +13,7 @@ atomic functions provided in the <code>sync/atomic</code> standard package.
 </p>
 
 <a class="anchor" id="overview"></a>
-<h3>Overview of Atomic Operations Provided in Go</h3>
+<h3>Overview of Atomic Operations Provided Before Go 1.19-</h3>
 
 <div>
 
@@ -55,26 +55,75 @@ func CompareAndSwapPointer(addr *unsafe.Pointer,
 
 <p>
 There is not an <code>AddPointer</code> function for pointers,
-as Go pointers don't support arithmetic operations.
+as Go (safe) pointers don't support arithmetic operations.
 </p>
 
-The <code>sync/atomic</code> standard package also provides a type <code>Value</code>.
-Its corresponding pointer type <code>*Value</code> has two methods, <code>Load</code> and <code>Store</code>.
-A <code>Value</code> value can be used to atomically load and store values of any type.
-<pre class="line-numbers"><code class="language-go">func (v *Value) Load() (x interface{})
-func (v *Value) Store(x interface{})
+The <code>sync/atomic</code> standard package also provides a type <code>Value</code>,
+which corresponding pointer type <code>*Value</code> has four methods
+(listed below, the later two were introduced by Go 1.17).
+We may use these methods to do atomic operations for values of any type.
+
+<pre class="line-numbers"><code class="language-go">func (*Value) Load() (x interface{})
+func (*Value) Store(x interface{})
+func (*Value) Swap(new interface{}) (old interface{})
+func (*Value) CompareAndSwap(old, new interface{}) (swapped bool)
+</code></pre>
+
+</div>
+
+<a class="anchor" id="overview-1.19"></a>
+<h3>Overview of New Atomic Operations Provided since Go 1.19</h3>
+
+<div>
+
+<p>
+Go 1.19 introduced several types, each of which owns a set of atomic operation methods,
+to achieve the same effects made by the package-level functions listed in the last section.
+</p>
+
+<p>
+Among these types, <code>Int32</code>, <code>Int64</code>, <code>Uint32</code>,
+<code>Uint64</code> and <code>Uintptr</code> are for integer atomic operations.
+The methods of the <code>atomic.Int32</code> type are listed below.
+The methods of the other four types present in the similar way.
+</p>
+
+<pre class="line-numbers"><code class="language-go">func (*Int32) Add(delta int32) (new int32)
+func (*Int32) Load() int32
+func (*Int32) Store(val int32)
+func (*Int32) Swap(new int32) (old int32)
+func (*Int32) CompareAndSwap(old, new int32) (swapped bool)
 </code></pre>
 
 <p>
-The remaining of this article shows some examples on how to use the atomic operations provided in Go.
+Since Go 1.18, Go has already supported custom generics.
+And some standard packages started to adopt custom generics since Go 1.19.
+The <code>sync/atomic</code> package is one of these packages.
+The <code>Pointer[T any]</code> type introudced in this package by Go 1.19 is a generic type.
+Its methods are listed below.
 </p>
+
+<pre class="line-numbers"><code class="language-go">(*Pointer[T]) Load() *T
+(*Pointer[T]) Store(val *T)
+(*Pointer[T]) Swap(new *T) (old *T)
+(*Pointer[T]) CompareAndSwap(old, new *T) (swapped bool)
+</code></pre>
+
+<p>
+Go 1.19 also introduced a <code>Bool</code> type to do boolean atomic operations.
+</p>
+
 </div>
 
 <a class="anchor" id="integer"></a>
 <h3>Atomic Operations for Integers</h3>
 
 <div>
-The following example shows how to do the <code>add</code> atomic operation
+<p>
+The remaining of this article shows some examples on how to use the atomic operations provided in Go.
+</p>
+
+The following example shows how to do the <code>Add</code> atomic operation
 on an <code>int32</code> value by using the <code>AddInt32</code> function.
 In this example, 1000 new concurrent goroutines are created by the main goroutine.
 Each of the new created goroutine increases the integer <code>n</code> by one.
@@ -106,12 +155,44 @@ func main() {
 </code></pre>
 
 <p>
+If the statement <code>atomic.AddInt32(&amp;n, 1)</code> is replaced with <code>n++</code>,
+then the output might be not <code>1000</code>.
 </p>
 
-The <code>StoreT</code> and <code>LoadT</code> atomic functions are often used
+The following code re-implements the above program by using the <code>atomic.Int32</code> type and its methods (since Go 1.19).
+This code looks a bit tidier.
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"sync"
+	"sync/atomic"
+)
+
+func main() {
+	var n atomic.Int32
+	var wg sync.WaitGroup
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
+		go func() {
+			n.Add(1)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	fmt.Println(n.Load()) // 1000
+}
+</code></pre>
+
+<p>
+</p>
+
+The <code>StoreT</code> and <code>LoadT</code> atomic functions/methods are often used
 to implement the setter and getter methods of (the corresponding pointer type of)
 a type if the values of the type need to be used concurrently.
-For example,
+For example, the function version:
 
 <pre class="line-numbers"><code class="language-go">type Page struct {
 	views uint32
@@ -123,6 +204,21 @@ func (page *Page) SetViews(n uint32) {
 
 func (page *Page) Views() uint32 {
 	return atomic.LoadUint32(&page.views)
+}
+</code></pre>
+
+And the type+methods version (since Go 1.19):
+
+<pre class="line-numbers"><code class="language-go">type Page struct {
+	views atomic.Uint32
+}
+
+func (page *Page) SetViews(n uint32) {
+	page.views.Store(n)
+}
+
+func (page *Page) Views() uint32 {
+	return page.views.Load()
 }
 </code></pre>
 
@@ -242,13 +338,39 @@ func main() {
 }
 </code></pre>
 
+The following is the corresponding type+methods version (since Go 1.19):
+
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"sync/atomic"
+)
+
+func main() {
+	var n atomic.Int64
+	n.Store(123)
+	var old = n.Swap(789)
+	fmt.Println(n.Load(), old) // 789 123
+	swapped := n.CompareAndSwap(123, 456)
+	fmt.Println(swapped)  // false
+	fmt.Println(n.Load()) // 789
+	swapped = n.CompareAndSwap(789, 456)
+	fmt.Println(swapped)  // true
+	fmt.Println(n.Load()) // 456
+}
+</code></pre>
+
 <p>
 </p>
 
 <p>
-Please note, up to now (Go 1.18), atomic operations for 64-bit words,
-a.k.a., int64 and uint64 values,
+Please note, up to now (Go 1.19), atomic operations for 64-bit words,
+a.k.a. int64 and uint64 values,
 require the 64-bit words must be 8-byte aligned in memory.
+For Go 1.19 introduced atomic method operations, this requirement is always satisfied,
+either on 32-bit or 64-bit architectures,
+but this is not true for atomic function operations on 32-bit architectures.
 Please read <a href="memory-layout.html">memory layout</a> for details.
 </p>
 
@@ -282,9 +404,9 @@ import (
 )
 
 type T struct {x int}
-var pT *T
 
 func main() {
+	var pT *T
 	var unsafePPT = (*unsafe.Pointer)(unsafe.Pointer(&pT))
 	var ta, tb = T{1}, T{2}
 	// store
@@ -312,10 +434,11 @@ func main() {
 <p>
 Yes, it is quite verbose to use the pointer atomic functions.
 In fact, not only are the uses verbose, they are also not protected by
-<a href="https://golang.org/doc/go1compat">the Go 1 compatibility guidelines</a>,
+<a href="https://golang.org/doc/go1compat">Go 1 compatibility guidelines</a>,
 for these uses require to import the <code>unsafe</code> standard package.
 </p>
 
+<!--
 <p>
 Personally, I think the possibility is small that the legal pointer value
 atomic operations used in the above example will become illegal later.
@@ -330,6 +453,49 @@ in the above example, you can use the atomic operations introduced in the next
 section for pointers, though the to be introduced operations are less
 efficient than the ones introduced in the current section.
 </p>
+-->
+
+<p>
+On the contrary, the code will be much simpler and cleaner if
+we use the Go 1.19 introduced generic <code>Pointer</code> type and its methods
+to do atomic pointer operations, as the following code shows.
+</p>
+
+<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"sync/atomic"
+)
+
+type T struct {x int}
+
+func main() {
+	var pT atomic.Pointer[T]
+	var ta, tb = T{1}, T{2}
+	// store
+	pT.Store(&ta)
+	fmt.Println(pT.Load()) // &{1}
+	// load
+	pa1 := pT.Load()
+	fmt.Println(pa1 == &ta) // true
+	// swap
+	pa2 := pT.Swap(&tb)
+	fmt.Println(pa2 == &ta) // true
+	fmt.Println(pT.Load())  // &{2}
+	// compare and swap
+	b := pT.CompareAndSwap(&ta, &tb)
+	fmt.Println(b) // false
+	b = pT.CompareAndSwap(&tb, &ta)
+	fmt.Println(b) // true
+}
+</code></pre>
+
+<p>
+More importantly, the implementation using the generic <code>Pointer</code> type
+is protected by Go 1 compatibility guidelines.
+</p>
+
 </div>
 
 <a class="anchor" id="arbitrary"></a>

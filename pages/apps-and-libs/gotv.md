@@ -20,7 +20,7 @@ go install go101.org/gotv@latest
 to install GoTV.
 
 A 1.17+ toolchain version is needed to finish the installation.
-The toolchain version may be uninstalled after pinning a suitable toolchain verison (see below).
+The toolchain version may be uninstalled after pinning a suitable toolchain version (see below).
 
 ## Usage
 
@@ -39,7 +39,7 @@ During running the first such a command, the Go git repository will be cloned (w
 * a Go release version, such as `1.17.13`, `1.18`, `1.19rc1`,
   which mean the release tags `go1.17.13`, `go1.18`, `go1.19rc1`, respectively,
   in the Go git repository.
-  Note: `1.N.` means the latest release of `1.N` and `1.` means the latest Go 1 release verison.
+  Note: `1.N.` means the latest release of `1.N` and `1.` means the latest Go 1 release version.
 * `:tip`, which means the local latest `master` branch in the Go git repository.
 * `:1.N`, which means the local latest `release-branch.go1.N` branch in the Go git repository.
 
@@ -91,16 +91,16 @@ gotv cache-version ToolchainVersion [ToolchainVersion ...]
 # uncache some toolchain versions to save disk space
 gotv uncache-version ToolchainVersion [ToolchainVersion ...]
 
-# pin a specified toolchain verison at a stable path
+# pin a specified toolchain version at a stable path
 gotv pin-version ToolchainVersion
 
 # unpin the current pinned toolchain version
 gotv unpin-version
 ```
 
-## Pin a toolchain verison
+## Pin a toolchain version
 
-We can use the `gotv` command to pin a specific toolchain verison to a stable path.
+We can use the `gotv` command to pin a specific toolchain version to a stable path.
 After adding the stable path to the `PATH` environment veriable,
 we can use the official `go` command directly.
 And after doing these, the toolchain versions installed through ways other than GoTV
@@ -126,6 +126,25 @@ open a new terminal window:
 $ go version
 go version go1.17.13 linux/amd64
 ```
+
+## Set a bootstrap toolchain version
+
+To build a toolchain verision, another already built toolchain version is needed to be used in the building process.
+The other toolchain version is called the bootstrap version.
+
+Some facts:
+
+* Toolchain versions <= 1.12.17 are unable to be built with toochain versions >= 1.16;
+* Toolchain versions <= 1.5.4 are uanable to be built with toolchain versions >= 1.6;
+* It is planned to [require a 1.17+ toolchain version to build 1.20+ toolchain versions](https://github.com/golang/go/issues/44505);
+* It is proposed to [require a 1.20+ toolchain verison to build 1.22+ toolchain verisons](https://github.com/golang/go/issues/54265).
+
+Currently, GoTV uses the toolchain set in the `PATH` environment variable as the bootstrap version by default.
+If `GOROOT_BOOTSTRAP` environment variable is set, the its value will be used.
+
+
+
+
 
 
 

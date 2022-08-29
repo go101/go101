@@ -617,33 +617,37 @@ for the <code>sync.Cond</code> type</a> to get how to use <code>sync.Cond</code>
 
 <div>
 <p>
-None of Go's official documentation mentions what memory order guarantees
-are made by the atomic synchronization technique.
-However, in the implementation of the standard Go compiler,
-there are exactly some memory order guarantees made by atomic operations.
-The standard packages rely extensively on the guarantees provided by atomic operations.
+Since Go 1.19, the Go 1 memory model documentation formally specifies that
+all atomic operations executed in Go programs behave as though executed in some sequentially consistent order.
+If the effect of an atomic operation A is observed by atomic operation B, then A is synchronized before B.
 </p>
 
-The following program always prints <code>1</code>,
-if it compiles with the standard Go compiler 1.18.
+By the descriptions, in the following code, the atomic write operation on the variable <code>b</code>
+is guaranteed to happen before the atomic read operation with result <code>1</code> on the same variable.
+Consequently, the write operation on the variable <code>a</code> is also guaranteed to happen before
+the read operation on the same variable.
+So the following program is guaranteed to print <code>1</code>.
+
 <pre class="line-numbers"><code class="language-go">package main
 
-import "fmt"
-import "sync/atomic"
-import "runtime"
+import (
+	"fmt"
+	"runtime"
+	"sync/atomic"
+)
 
 func main() {
 	var a, b int32 = 0, 0
 
 	go func() {
-		atomic.StoreInt32(&a, 1)
+		a = 2
 		atomic.StoreInt32(&b, 1)
 	}()
 
 	for {
 		if n := atomic.LoadInt32(&b); n == 1 {
-			// The following line always prints 1.
-			fmt.Println(atomic.LoadInt32(&a))
+			// The following line always prints 2.
+			fmt.Println(a)
 			break
 		}
 		runtime.Gosched()
@@ -652,25 +656,26 @@ func main() {
 </code></pre>
 
 <p>
-Here, the main goroutine will always observe that the modification
-of <code>a</code> ends before the modification of <code>b</code>.
-However, the guarantees made by atomic operations are never
-written down in the Go specification and any other official Go documentation.
-If you want to write cross-compiler and cross-compiler-version compatible Go code,
-the safe advice is,
-<b>don't rely on atomic to guarantee memory orderings in general Go programming</b>.
-There is <a href="https://github.com/golang/go/issues/5045">an issue</a>
-on how these guarantees should be written down.
-But, up to now (Go 1.18), the decision has not been made yet.
-</p>
-
-<p>
 Please read <a href="concurrent-atomic-operation.html">this article</a>
 to get how to do atomic operations.
 </p>
 </div>
 
+
+
+<a class="anchor" id="finalizer"></a>
+<h4>Finalizers related order guarantees</h4>
+
+<div>
+A call to <code>runtime.SetFinalizer(x, f)</code> happens before the finalization call <code>f(x)</code>. 
+</div>
+
+
+
 <!--
+
+ToDo: about the outcomes of data races.
+
 
 https://groups.google.com/forum/#!topic/golang-nuts/j1NcF0O6ouw
 

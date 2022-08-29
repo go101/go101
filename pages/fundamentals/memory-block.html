@@ -113,14 +113,16 @@ In Go, memory blocks may be allocated but not limited at following situations:
 For every Go program compiled by the official standard Go compiler, at run time,
 each goroutine will maintain a stack, which is a memory segment.
 It acts as a memory pool for some memory blocks to be allocated from/on.
-The initial stack size of each goroutine is small (2KiB bytes).
-The stack will grow and shrink as needed in goroutine running.
+Before Go Toolchain 1.19, the initial size of a stack is always 2KiB.
+Since Go Toolchain 1.19, the initial size is <a href="https://docs.google.com/document/d/1YDlGIdVTPnmUiTAavlZxBI1d9pwGQgZT7IKFKlIXohQ">adaptive</a>.
+The stack of a goroutine will grow and shrink as needed in goroutine running.
+The minimum stack size is 2KiB.
 </p>
 
 <p><i>
 (Please note, there is a global limit of stack size each goroutine may reach.
 If a goroutine exceeds the limit while growing its stack, the program crashes.
-As of Go 1.18, the default maximum stack size
+As of Go Toolchain 1.19, the default maximum stack size
 is 1 GB on 64-bit systems, and 250 MB on 32-bit systems.
 We can call the <code>SetMaxStack</code> function in the
 <code>runtime/debug</code> standard package to change the size.
@@ -255,7 +257,8 @@ A memory block created by calling <code>new</code> function may be allocated on 
 This is different to C++.
 </p>
 
-When the size of a goroutine stack changes, a new memory segment will be allocated for the stack.
+When the size of a goroutine stack changes (for stack growth or shrinkage),
+a new memory segment will be allocated for the stack.
 So the memory blocks allocated on the stack will very likely be moved, or their addresses will change.
 Consequently, the pointers, which must be also allocated on the stack,
 referencing these memory blocks also need to be modified accordingly.
@@ -278,7 +281,7 @@ func main(){
 </code></pre>
 
 <p>
-We will find that the two printed addresses are different (as of the standard Go compiler v1.18).
+We will find that the two printed addresses are different (as of the standard Go compiler v1.19).
 </p>
 
 <!--p>
@@ -411,7 +414,7 @@ func main() {
 
 <div>
 <p>
-The current standard Go compiler (version 1.18) uses
+The current standard Go compiler (version 1.19) uses
 a concurrent, tri-color, mark-sweep garbage collector.
 Here this article will only make a simple explanation for the algorithm.
 </p>
@@ -422,33 +425,25 @@ In the mark phase, the collector (a group of goroutines actually) uses the tri-c
 which memory blocks are unused.
 </p>
 
-The following quote is taken from <a href="https://blog.golang.org/go15gc">a Go blog article</a>,
-in which an <b><i>objects</i></b> is either value parts or memory blocks.
+The following quote is taken from <a href="https://blog.golang.org/go15gc">a Go blog article</a>
+and is modified a bit to make it clearer.
 
 <blockquote style="margin-top:0px;margin-bottom:0px;">
 <small>
-	At the start of a GC cycle all objects are white.
+	At the start of a GC cycle all heap memory blocks are white.
 	The GC visits all roots, which are objects directly accessible by the application
 	such as globals and things on the stack, and colors these grey.
 	The GC then chooses a grey object, blackens it, and then scans it for pointers to other objects.
-	When this scan finds a pointer to a white object, it turns that object grey.
+	When this scan finds a pointer to a white memory block, it turns that object grey.
 	This process repeats until there are no more grey objects.
-	At this point, white objects are known to be unreachable and can be reused.
+	At this point, white (heap) memory blocks are known to be unreachable and can be reused.
 </small>
 </blockquote>
 
-<!--
-<p>
-There is a stop-the-world phase in garbage collecting. All goroutines must be paused in this phase.
-After many improvements from version to version,
-since v1.8, the collector makes typical worst-case stop-the-world duration less than 100μs (0.1 millisecond).
-This generally removes noticeable lags at run time.
-</p>
--->
 
 <p><i>
-About why the algorithm uses three colors instead of two colors, please search "write barrier golang" for details.
-Here only provides two references: <a href="https://github.com/golang/proposal/blob/master/design/17503-eliminate-rescan.md">eliminate STW stack re-scanning</a> and <a href="https://golang.org/src/runtime/mbarrier.go">mbarrier.go</a>.
+(About why the algorithm uses three colors instead of two colors, please search "write barrier golang" for details.
+Here only provides two references: <a href="https://github.com/golang/proposal/blob/master/design/17503-eliminate-rescan.md">eliminate STW stack re-scanning</a> and <a href="https://golang.org/src/runtime/mbarrier.go">mbarrier.go</a>.)
 </i></p>
 
 <p>
@@ -456,20 +451,58 @@ In the sweep phase, the marked unused memory blocks will be collected.
 </p>
 
 <p>
+An unused memory block may not be released to OS immediately after it is collected,
+so that it can be reused for new some value parts.
+Don't worry, the official Go runtime is much less memory greedy than most Java runtimes.
+</p>
+
+<p>
 The GC algorithm is a non-compacting one, so it will not move memory blocks to rearrange them.
 </p>
+
+
 </div>
 
 <a class="anchor" id="when-to-collect"></a>
-<h3>When Will an Unused Memory Block Be Collected?</h3>
+<h3>When Will a New Garbage Collection Process Start?</h3>
 
 <div>
 
+<p>
+Garbage collection processes will consume much CPU resources and some memory resources.
+So there is not always a garbage collection process in running.
+A new garbage collection process will be only triggered when some run-time metrics reach certain conditions.
+How the conditions are defined is a garbage collection pacer problem.
+</p>
+
+
+The garbage collection pacer implementation of the official standard Go runtime is still being improved from version to version.
+So it is hard to describe the implementation precisely and keep the descriptions up-to-date at the same time.
+Here, I just list some reference articles on this topic:
+
+<ul>
+<li>
+	About <a href="https://golang.org/pkg/runtime/#hdr-Environment_Variables">the <code>GOGC</code> and <code>GOMEMLIMIT</code> environment variables</a> (note that the <code>GOMEMLIMIT</code> environment variable is only supported since Go 1.19).
+</li>
+<li>
+	<a href="https://go.dev/doc/gc-guide">A Guide to the Go Garbage Collector</a>.
+</li>
+<li>
+	<a href="https://github.com/golang/proposal/blob/master/design/44167-gc-pacer-redesign.md">GC Pacer Redesign</a>.
+</li>
+<li>
+	The "Garbage Collection" chapter of my <a href="https://go101.org/optimizations/101.html">Go Optimizations 101</a> book (it is a paid book).
+</li>
+</ul>
+
+
+
+<!--
 Unused heap memory blocks are viewed as garbage by Go runtime and will be collected to reuse or release memory.
 The garbage collector is not always running. It will start when a threshold is satisfied.
 So an unused memory block may be not collected immediately when it becomes unused.
 Instead, it will be collected eventually.
-Currently (Go Toolchain 1.18), the threshold is controlled by
+Currently (Go Toolchain 1.19), the threshold is controlled by 
 <a href="https://golang.org/pkg/runtime/#hdr-Environment_Variables">GOGC environment variable</a>:
 <blockquote style="margin-top:0px;margin-bottom:0px;">
 <small>
@@ -489,23 +522,36 @@ A negative percentage disables automatic garbage collection.
 </p>
 
 <p>
+Go Toolchain 1.19 introduced a new scheduling strategy:
+the <a href="https://go.dev/doc/gc-guide#Memory_limit">memory limit</a> strategy.
+The strategy may be configured may be configured either via the <code>GOMEMLIMIT</code> environment variable
+or through the <a href="https://golang.org/pkg/runtime/debug/#SetMemoryLimit">runtime/debug.SetMemoryLimit</a> function. 
+This memory limit sets a maximum on the total amount of memory that the Go runtime should use.
+In other words, if the total amount of memory Go runtime uses surpasses the limit,
+a new garbage collection process will start.
+The limit is soft, a Go program will not exit when this limit is exceeded.
+The default value of the memory limit is <code>math.MaxInt64</code>,
+which effectively disables this strategy.
+Please note that, setting a not-large-enough value for the limit may cause the garbage collector to run frequently.
+The official runtime implementation tries to limit the CPU usage of the garbage collector to less than 50%
+when such situations happen.
+</p>
+
+<p>
 A garbage collection process can also be started manually by calling the
 <a href="https://golang.org/pkg/runtime/#GC">runtime.GC</a> function.
 </p>
 
 <p>
-One more thing needs to note is, for the current official Go runtime (v1.18),
+One more thing need to note: for the current official Go runtime (v1.19),
 <a href="https://github.com/golang/go/blob/895b7c85addfffe19b66d8ca71c31799d6e55990/src/runtime/proc.go#L4481-L4486">a
 new garbage collection process will start automatically if garbage collection has not run for two minutes</a>.
 </p>
 
 <p>
-The garbage collection strategies might change in later official Go runtime versions.
+None of the current supported garbage collection scheduling strategies are good enough to handle all use scenarios,
+So more ones might be supported in later official Go runtime versions.
 </p>
 
-<p>
-An unused memory block may not be released to OS immediately after it is collected,
-so that it can be reused for new some value parts.
-Don't worry, the official Go runtime is much less memory greedy than most Java runtimes.
-</p>
+-->
 </div>
