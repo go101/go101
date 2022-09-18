@@ -140,7 +140,7 @@ Some facts:
 * It is proposed to [require a 1.20+ toolchain verison to build 1.22+ toolchain verisons](https://github.com/golang/go/issues/54265).
 
 Currently, GoTV uses the toolchain set in the `PATH` environment variable as the bootstrap version by default.
-If `GOROOT_BOOTSTRAP` environment variable is set, the its value will be used.
+If `GOROOT_BOOTSTRAP` environment variable is set, then its value will be used.
 
 
 

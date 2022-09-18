@@ -27,7 +27,7 @@ func (T[_]) m() {
 }
 ```
 
-This restriction might [be removed in future Go versions](https://github.com/golang/go/issues/47631).
+This restriction will [be removed from Go 1.20](https://github.com/golang/go/issues/47631).
 
 
 ## Generic type aliases are not supported currently
