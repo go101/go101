@@ -112,21 +112,36 @@ func cat[T chan int | Ch](c T) {
 }
 ```
 
-Type parameters may be type asserted to.
+This rule [might be relaxed to some extent in future Go versions](https://github.com/golang/go/issues/52129).
+
+## Type parameters may be type asserted to
+
+As a type parameter is a specified type, it may be type asserted to.
+The following code compiles, even if there are duplicate `case` type expressions
+at run time in the `type-switch` code block within the `wua` function.
 
 ```Go
 import "fmt"
 
-func nel[T int | string](v T, x any) {
-	if _, ok := x.(T); ok {
+func nel[T int | string](x any) {
+	if v, ok := x.(T); ok {
 		fmt.Printf("x is a %T\n", v)
 	} else {
 		fmt.Printf("x is not a %T\n", v)
 	}
 }
-```
 
-This rule [might be relaxed to some extent in future Go versions](https://github.com/golang/go/issues/52129).
+func wua[T int | string](x any) {
+	switch v := x.(type) {
+	case T:
+		fmt.Println(v)
+	case int:
+		fmt.Println("int")
+	case string:
+		fmt.Println("string")
+	}
+}
+```
 
 ## Type parameters may be not used as types of (local) named constants
 
@@ -520,6 +535,15 @@ func voc[V ~[]byte | ~[]rune](x string) V {
 }
 ```
 
+But the following function fails to compile,
+because `string` values may not be converted to `int`.
+
+```Go
+func eve[X, Y int | string](x X) Y {
+	return Y(x) // error
+}
+```
+
 The following function doesn't compile, even if the conversion in it
 is valid for all possible type arguments.
 The reason is `[]T` is an ordinary type, not a type parameter,
@@ -527,10 +551,8 @@ and its underlying type is itself.
 There is not a rule which allows converting values from `[]T` to `string`.
 
 ```Go
-func mud[T byte|rune](x []T) string {
-	// error: cannot convert x (variable of type []T)
-	//        to type string
-	return string(x)
+func jon[T byte](x Bytes) []T {
+	return []T(x) // error
 }
 ```
 
@@ -583,14 +605,7 @@ func main() {
 }
 ```
 
-The following function also fails to compile,
-because `string` values may not be converted to `int`.
 
-```Go
-func eve[X, Y int | string](x X) Y {
-	return Y(x) // error
-}
-```
 
 ## Type parameter involved assignments
 

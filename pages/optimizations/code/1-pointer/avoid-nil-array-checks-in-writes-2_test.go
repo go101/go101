@@ -22,15 +22,15 @@ func g0(a *[N]int) {
 	}
 }
 
-func Benchmark_g1(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		g1(&a)
-	}
-}
-
 func Benchmark_g0(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		g0(&a)
+	}
+}
+
+func Benchmark_g1(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		g1(&a)
 	}
 }
 

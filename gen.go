@@ -35,9 +35,9 @@ func genStaticFiles(rootURL string) {
 	// md -> html
 	md2htmls := func(group string) {
 		dir := fullPath("pages", group)
-		_, err := runShellCommand(time.Minute/2, dir, "ebooktool", "-md2htmls")
+		outputs, err := runShellCommand(time.Minute/2, dir, "ebooktool", "-md2htmls")
 		if err != nil {
-			log.Fatalln("ebooktool failed to execute in dirrectory", dir)
+			log.Fatalf("ebooktool failed to execute in directory: %s.\n%s", dir, outputs)
 		}
 	}
 

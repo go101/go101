@@ -136,15 +136,23 @@
 		<a href="/quizzes/101.html"><small>Go Quizzes 101</small></a>
 	</div>
 	{{- end -}}
-	
+
 	<div class="col-xs-6 col-sm-4 nav-item-inactive" style="color: #777;"><small>Go HowTo 101</small></div>
 	
 	<div class="col-xs-6 col-sm-4 nav-item-inactive" style="color: #777;"><small>Go Practices 101</small></div>
 	
 	<div class="col-xs-6 col-sm-4 nav-item-inactive" style="color: #777;"><small>Go Agg 101</small></div>
 	
-	<div class="col-xs-6 col-sm-4 nav-item-inactive" style="color: #777;"><small>Go 101 Blog</small></div>
-	
+	{{- if and $is_blog $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		<small>Go 101 Blog</small>
+	</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_blog -}} in {{- end -}} active">
+		<a href="/blog/101.html"><small>Go 101 Blog</small></a>
+	</div>
+	{{- end -}}
+
 	{{- if and $is_apps_and_libs $is_index_page -}}
 	<div class="col-xs-6 col-sm-4 nav-item-active">
 		<small>Go 101 Apps &amp; Libs</small>
@@ -198,9 +206,12 @@ in the Leanpub book store.
 {{- $is_blog := (eq .Group "blog") -}}
 
 {{- $not_index_page := (ne .FilenameWithoutExt "101") -}}
+{{- $is_book_page := (or (lt (len .FilenameWithoutExt) 4) (ne (slice .FilenameWithoutExt 0 4) "100-")) -}}
+{{- $show_index := (and $not_index_page $is_book_page) -}}
+{{- $show_bookstore_links := (and $not_index_page) -}}
 
 
-{{ if and $not_index_page .Index -}}
+{{ if and $show_index .Index -}}
 
 <hr>
 
@@ -232,7 +243,7 @@ or join <a href="https://join.slack.com/t/go-101/shared_invite/zt-y2pvwg00-Oz7lD
 <div class="alert alert-warning"><small>
 
 
-{{ if $not_index_page -}}
+{{ if $show_bookstore_links -}}
 <div id="ebooks">
 
 	{{- if $is_fundamentals }}
@@ -380,7 +391,7 @@ and cryptocurrencies are welcome too:
 
 </small></div>
 
-{{ if and $not_index_page .Index -}}
+{{ if and $show_index .Index -}}
 
 <hr>
 Index:

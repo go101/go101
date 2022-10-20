@@ -1,0 +1,296 @@
+<p id="f-2022-08-22-some-undocumented-changes-in-Go-1-18-and-1-19-md"></p>
+<h1>Some Undocumented Changes in Go 1.18 and 1.19</h1>
+
+<p>When a new Go version is released, the changes in this version are generally
+listed the release notes of the version.
+However, occasionally, some changes were missing in the release notes.</p>
+
+<p>This article lists several missing changes in Go <a href="https://go.dev/doc/go1.18">1.18</a> and <a href="https://go.dev/doc/go1.19">1.19</a> release notes.</p>
+
+<h2>GoTv</h2>
+
+<p>We use <a href="https://go101.org/apps-and-libs/gotv.html">GoTV</a> to demonstrate the missing changes in this article.
+GoTV (Go Toolchain Version) is a tool used to manage and
+use multiple coexisting installations of official Go toolchain versions
+harmoniously and conveniently.</p>
+
+<p>If you haven't, you may install GoTV by running</p>
+
+<pre><code>go install go101.org/gotv@latest
+</code></pre>
+
+<p>then run the following commands to install the latest releases of Go 1.17,
+Go 1.18 and Go 1.19 toolchains.</p>
+
+<pre><code>gotv 1.17. version
+gotv 1.18. version
+gotv 1.19. version
+</code></pre>
+
+<p>The first execution of the <code>gotv</code> command needs to pull the Go language project,
+so it might need several minutes to finish.</p>
+
+<h3>The definition of the terminology &quot;slice of bytes&quot; is clarified</h3>
+
+<p>Go specification states &quot;a non-constant value <code>x</code> can be converted to type <code>T</code>
+if <code>x</code> is a string and <code>T</code> is a slice of bytes, and vice versa&quot;.</p>
+
+<p>But what is a slice of bytes? There are two interpretations:</p>
+
+<ol>
+<li>any type whose underlying type is <code>[]byte</code>.</li>
+<li>any slice type whose element type's underlying type is <code>byte</code>.</li>
+</ol>
+
+<p>Before Go 1.18, the official standard Go compiler sometimes adopted
+the first interpretation, sometimes adopted the second interpretation.
+Since Go 1.18, the official standard Go compiler always adopts
+the second interpretation.
+And Go 1.19 formally admitted the 1.18+ implementation is correct.</p>
+
+<p>For example, the official standard Go compiler 1.17 thinks
+the function <code>f</code> in the following code is valid
+but thinks the function <code>g</code> is invalid.</p>
+
+<pre><code class="language-Go">package main
+
+type T byte
+
+//go:noinline
+func f(s string) []T {
+	return []T(s)
+}
+
+//go:noinline
+func g(x []T) string {
+	return string(x) // error (line 12)
+}
+
+func main() {
+	_ = f(&quot;Go&quot;)
+	_ = g([]T{71, 111})
+}
+</code></pre>
+
+<p>Since Go toolchain 1.18, both of the two functions compile okay.
+The followings are the outputs of the official standard
+Go compiler 1.17 and 1.18 for the above program.</p>
+
+<pre><code>$ gotv 1.17. run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.17.13/bin/go run main.go
+# command-line-arguments
+./main.go:12:15: cannot use &lt;node SPTR&gt; (type *T) as type *byte in argument to runtime.slicebytetostring
+
+$ gotv 1.18. run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.18.7/bin/go main main.go
+</code></pre>
+
+<p>The official standard Go compiler 1.17 sometimes views <code>[]T</code> as a &quot;slice of bytes&quot;
+(in the function <code>f</code>), sometimes doesn't (in the function <code>g</code>).
+If the <code>type T byte</code> type definition is changed into a type alias declaration <code>type T = byte</code> ,
+then the function <code>g</code> is also viewed as valid by the official standard Go compiler 1.17.</p>
+
+<p>The same situation happened for &quot;slices of runes&quot; (or &quot;rune slice&quot;).</p>
+
+<p>Note, up to now (Go 1.19), the <code>reflect</code> standard package has not been updated accordingly.
+For example, the following program prints two <code>false</code>, but should print two <code>true</code> instead.</p>
+
+<pre><code class="language-Go">package main
+
+import &quot;reflect&quot;
+
+type T byte
+
+func main() {
+	var s string
+	var x []T
+	var sType = reflect.TypeOf(s)
+	var xType = reflect.TypeOf(x)
+	println(sType.ConvertibleTo(xType))
+	println(xType.ConvertibleTo(sType))
+}
+</code></pre>
+
+<p>References:</p>
+
+<ul>
+<li><a href="https://github.com/golang/go/issues/23536">https://github.com/golang/go/issues/23536</a></li>
+<li><a href="https://github.com/golang/go/issues/23814">https://github.com/golang/go/issues/23814</a></li>
+<li><a href="https://github.com/golang/go/issues/53523">https://github.com/golang/go/issues/53523</a></li>
+</ul>
+
+<h3>A subtle detail in local constant declarations</h3>
+
+<p>What should the following program print?</p>
+
+<pre><code class="language-Go">package main
+
+func main() {
+	const (
+		iota = iota
+		Y
+	)
+	println(Y)
+}
+</code></pre>
+
+<p>Some gophers think it should print <code>1</code>, which is actually the answer of
+the official standard Go compiler 1.17.13-.
+However, since the official standard Go compiler 1.18, the answer is <code>0</code>.
+The followings are the outputs with different compiler versions:</p>
+
+<pre><code>$ gotv 1.17. run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.17.13/bin/go run main.go
+1
+
+$ gotv 1.18. run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.18.7/bin/go run main.go
+0
+</code></pre>
+
+<p>Which answer is correct?</p>
+
+<p>The Go specification says:</p>
+
+<blockquote>
+<p>Within a parenthesized const declaration list the expression list may be omitted from any but the first ConstSpec. Such an empty list is equivalent to the textual substitution of the first preceding non-empty expression list and its type if any. Omitting the list of expressions is therefore equivalent to repeating the previous list.</p>
+</blockquote>
+
+<p>The description states the 1.18+ answer is correct, because the above program
+is equivalent to</p>
+
+<pre><code class="language-Go">package main
+
+func main() {
+	const (
+		iota = iota
+		Y    = iota
+	)
+	println(Y)
+}
+</code></pre>
+
+<p>The last <code>iota</code> is the local declared <code>iota</code>, which value is <code>0</code>.</p>
+
+<p>Go 1.19 confirmed it was a bug in 1.17.13- versions.</p>
+
+<p>Ref: <a href="https://github.com/golang/go/issues/49157">https://github.com/golang/go/issues/49157</a></p>
+
+<h3>A long-time type alias related bug was fixed</h3>
+
+<p>With the introduction of type alias in Go 1.8, a comparison bug was also introduced.</p>
+
+<p>The following program should print <code>false</code>, but it prints <code>true</code>
+when using the official standard Go compiler from version 1.8 to 1.17.13.</p>
+
+<pre><code class="language-Go">package main
+
+type T struct{}
+type S = T
+
+type A = struct{ T }
+type B = struct{ S }
+
+func main() {
+	var a A
+	var b B
+	println(interface{}(b) == interface{}(a)) 
+}
+</code></pre>
+
+<p>The type aliases <code>A</code> and <code>B</code> denote different types (with different field names),
+which is why the comparison should result <code>false</code>.</p>
+
+<p>The bug was fixed in Go 1.18.</p>
+
+<p>The followings are the outputs with different compiler versions:</p>
+
+<pre><code>$ gotv 1.17. run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.17.13/bin/go run main.go
+true
+
+$ gotv 1.18. run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.18.7/bin/go run main.go
+false
+</code></pre>
+
+<p>Ref: <a href="https://github.com/golang/go/issues/24721">https://github.com/golang/go/issues/24721</a></p>
+
+<h3>The &quot;named type&quot; terminology came back to Go specification</h3>
+
+<p>With the introduction of type alias in Go 1.8, the &quot;named type&quot; terminology
+was removed from Go specification. A new terminology &quot;defined type&quot; was
+introduced to fill in the gaps caused by the removal of &quot;named type&quot;.
+However, <a href="https://github.com/golang/go/issues/35091">this made many old Go tutorials and articles become obsolete
+and brought several other drawbacks</a>.</p>
+
+<p>With the introduction of custom generics,
+the &quot;named type&quot; terminology came back since Go 1.18,
+which is helpful to clearly explain <a href="https://go101.org/article/value-conversions-assignments-and-comparisons.html">many conversion and assignment rules</a> in Go.</p>
+
+<p>Now, a named type may be</p>
+
+<ul>
+<li>a predeclared type;</li>
+<li>a defined (non-custom-generic) type;</li>
+<li>an instantiated type (of a generic type);</li>
+<li>a type parameter type (used in custom generics).</li>
+</ul>
+
+<p>Note, a type alias of an unnamed type is not a named type.</p>
+
+<h3>Goexit signals may cancel already happened (recoverable) panics</h3>
+
+<p>Should the following program crash for panicking or exit normally?</p>
+
+<pre><code class="language-Go">package main
+
+import &quot;runtime&quot;
+
+func main() {
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		defer runtime.Goexit()
+		panic(&quot;bye&quot;)
+	}()
+	&lt;-c
+}
+</code></pre>
+
+<p>Before Go 1.19, there was not a clear answer.
+Some gophers think it should crash, for the <code>&quot;bye&quot;</code> panic is never recovered.
+But in the implementation of the official standard Go runtime,
+a Goexit signal will cancel already happened (recoverable) panics in the current goroutine.
+So, with the official standard compiler, the above program will exit normally.
+<a href="https://github.com/golang/go/issues/35378">The behavior was decided as correct in Go 1.19</a>.</p>
+
+<p>In my personal opinion, Goexit signals should not cancel panics,
+so the above program should crash instead.
+But I respect the final decision of the Go core team.</p>
+
+<p>The final decision makes <code>runtime.Goexit</code> calls act as super <code>recover</code> calls.
+For example, the following two goroutine functions behave the same.</p>
+
+<pre><code class="language-Go">func goroutine1() {
+	defer runtime.Goexit()
+	panic(1)
+}
+
+func goroutine2() {
+	defer func() {
+		recover()
+	}()
+	panic(1)
+}
+</code></pre>
+
+<p>The official Go documentation explains the panic/recover mechanism so simply
+that there are still several other details which don't get covered,
+which is why the Go 101 book includes
+<a href="https://go101.org/article/panic-and-recover-more.html">a special article to explain the panic/recover mechanism in detail</a>.</p>
+
+<h3>Compiler and runtime changes</h3>
+
+<p>There are also some undocumented small compiler and runtime optimizations made in recent Go toolchain versions.
+Some of the small optimizations are mentioned in the <a href="https://go101.org/optimizations/101.html">Go Optimizations 101</a> book.</p>
