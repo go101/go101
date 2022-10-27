@@ -29,7 +29,7 @@ func Compare(a, b string) int {
 When comparing two unequal strings, the implementation will perform two comparison operations.
 Whereas a perfect implementation only needs one,
 just like the implementation of [bytes.Compare] shown below,
-in which [bytealg.Compare] is impplemented using assembly code
+in which [bytealg.Compare] is implemented using assembly code
 on most architectures.
 
 ```Go
