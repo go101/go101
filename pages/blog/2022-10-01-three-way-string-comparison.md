@@ -39,14 +39,14 @@ func Compare(a, b []byte) int {
 ```
 
 The `strings.Compare` implementation is comparatively inefficent.
-Specifically, it is less efficent when the two string operands are not equai.
+Specifically, it is less efficent when the two string operands are not equal but their lengths are equal.
 
 [strings.Compare]: https://github.com/golang/go/blob/go1.19/src/strings/compare.go#L7-L28
 [bytes.Compare]: https://github.com/golang/go/blob/go1.19/src/bytes/bytes.go#L23-L28
 [bytealg.Compare]: https://github.com/golang/go/blob/go1.19/src/internal/bytealg/compare_native.go#L12
 
 Benchmark code constantly shows `strings.Compare` uses 2x CPU time of `bytes.Compare`
-when comparing unequal strings.
+when comparing unequal same-length byte sequences (we view both strings and byte slices as byte sequences here).
 
 The internal comment for the current `strings.Compare` implementation
 is some interesting. The comment suggests that we should not use
@@ -59,6 +59,10 @@ Personally, I doubt such optimizations are feasible to make for any use case.
 So I think the `strings.Compare` should be implemented efficiently,
 to avoid breaking user expectations.
 
+
+_(This is one of the dozens of facts mentioned in the [Go Optimizations 101] book.)_
+
+[Go Optimizations 101]: https://go101.org/optimizations/101.html
 
 
 
