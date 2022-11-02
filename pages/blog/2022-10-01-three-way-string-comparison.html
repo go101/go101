@@ -1,7 +1,7 @@
 <p id="f-2022-10-01-three-way-string-comparison-md"></p>
 <h1>No Safe Efficient Ways to Do Three-way String Comparisons in Go</h1>
 
-<p>Three-way string comparison is <a href="https://sourcegraph.com/search?q=context:global+switch+strings.Compare+lang:Go+&amp;patternType=literal">widely used</a> in programming.
+<p>Three-way string comparison is widely used in programming (<a href="https://sourcegraph.com/search?q=context:global+switch+strings.Compare+lang:Go+&amp;patternType=literal">proof 1</a> and <a href="https://sourcegraph.com/search?q=context:global+strings.Compare+lang:Go&amp;patternType=standard">proof 2</a>).
 But up to now (Go 1.19), the <a href="https://github.com/golang/go/blob/go1.19/src/strings/compare.go#L7-L28">strings.Compare</a> function in the standard library
 is (intentionally) implemented with a non-opitimized way:</p>
 
@@ -42,13 +42,16 @@ when comparing unequal same-length byte sequences (we view both strings and byte
 
 <p>The internal comment for the current <code>strings.Compare</code> implementation
 is some interesting. The comment suggests that we should not use
-<code>strings.Compare</code> in Go at all, but no alternative efficient ways are available now yet.
+<code>strings.Compare</code> in Go at all, but no alternative efficient ways are available now yet
+(ironically, this function is used in <a href="https://github.com/golang/go/blob/go1.19/src/cmd/go/internal/modindex/read.go#L822">Go toolchain code</a> and recommended by <a href="https://github.com/golang/go/blob/go1.19/src/sort/search.go#L88-L99">a standard library function</a>).
 It mentions that the compiler should make special optimizations to automatically
 convert the code using comparision operators into internal optimized three-way comparisons if possible.
 However, such compiler optimizations have never been made,
 and there are no plans to make such optimizations yet as far as I know.
-Personally, I doubt such optimizations are feasible to make for any use case.
-So I think the <code>strings.Compare</code> should be implemented efficiently,
+Personally, I doubt such optimizations are feasible to be made for any use case.
+So I think <a href="https://github.com/golang/go/issues/50167">the <code>strings.Compare</code> should be implemented efficiently</a>,
 to avoid breaking user expectations.</p>
 
 <p><em>(This is one of the dozens of facts mentioned in the <a href="https://go101.org/optimizations/101.html">Go Optimizations 101</a> book.)</em></p>
+
+<p>Discussions on <a href="https://old.reddit.com/r/programming/comments/ycz0va/no_safe_efficient_ways_to_do_threeway_string/">reddit</a> and <a href="https://news.ycombinator.com/item?id=33316402">HN</a>.</p>
