@@ -258,7 +258,7 @@ in array and slice composite literals. In an array or slice composite literal,
 </ul>
 
 <p>
-The keys in a map literal can be absent, they can be non-constants.
+The keys of entries in a map literal must not be absent, they can be non-constants.
 </p>
 
 <pre class="line-numbers"><code class="language-go">var a uint = 1
@@ -1512,6 +1512,39 @@ func main() {
 	var _ = P(w)         // okay
 
 	var _ = (*[4]int)(z) // will panic
+}
+</code></pre>
+
+</div>
+
+<a class="anchor" id="slice-to-array"></a>
+<h3>Convert Slice to Array</h3>
+
+<!--
+https://github.com/golang/go/issues/46505
+-->
+
+<div>
+<p>
+Since Go 1.20, a slice may be converted to an array.
+In such a conversion, if the length of the array type
+is larger than the length of the slice, a panic occurs.
+</p>
+
+An example:
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var s = []int{0, 1, 2, 3}
+	var a = [3]int(s[1:])
+	s[2] = 9
+	fmt.Println(s) // [0 1 9 3]
+	fmt.Println(a) // [1 2 3]
+	
+	_ = [3]int(s[:2]) // panic
 }
 </code></pre>
 

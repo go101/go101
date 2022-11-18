@@ -224,13 +224,31 @@ The two functions introduced in Go 1.17 are:
 </li>
 <li>
 	<code>func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType</code>.
-	This function is used to derive a slice with the specified length from a safe pointer.
+	This function is used to derive a slice with the specified length from a safe pointer,
+	where <code>ArbitraryType</code> is the element type of the result slice.
 </li>
 </ul>
 
-The two functions introduced in Go 1.17 have certain dangerousness.
-They need to be used with caution. This following is an example
-which uses the two functions.
+Go 1.20 further introduces three more functions:
+<ul>
+<li>
+	<code>func String(ptr *byte, len IntegerType) string</code>.
+	This function is used to derive a string with the specified length from a safe <code>byte</code> pointer.
+</li>
+<li>
+	<code>func StringData(str string) *byte</code>.
+	This function is used to get the pointer to the underlying byte sequence of a string.
+	Please note, don't pass empty strings as arguments to this function.
+</li>
+<li>
+	<code>func SliceData(slice []ArbitraryType) *ArbitraryType</code>.
+	This function is used to get the pointer to the underlying element sequence of a slice.
+</li>
+</ul>
+
+These functions introduced since Go 1.17 have certain dangerousness.
+They need to be used with caution.
+This following is an example using the two functions introduced in Go 1.17.
 
 <pre class="line-numbers"><code class="language-go">package main
 
@@ -254,9 +272,9 @@ func main() {
 	t := unsafe.Slice((*int)(nil), 0)
 	fmt.Println(t == nil) // true
 
-	// The two calls are bad uses of the two
-	// functions. They make the results
-	// reference unknown memory blocks.
+	// The following two calls are dangerous.
+	// They make the results reference
+	// unknown memory blocks.
 	_ = unsafe.Add(up9, 7 * eleSize)
 	_ = unsafe.Slice(p9, 8)
 }
@@ -268,6 +286,27 @@ https://github.com/golang/go/issues/46742
 
 <p>
 </p>
+
+The following two functions may be used to do conversions between strings and byte slices, in type unsafe manners.
+Comparing with type safe manners, the type unsafe manners don't duplicate underlying byte sequences of strings and byte slices,
+so they are more performant.
+
+<pre class="line-numbers"><code class="language-go">import "unsafe"
+
+func String2ByteSlice(str string) []byte {
+	if str == "" {
+		return nil
+	}
+	return unsafe.Slice(unsafe.StringData(str), len(str))
+}
+
+func ByteSlice2String(bs []byte) string {
+	if len(bs) == 0 {
+		return ""
+	}
+	return unsafe.String(unsafe.SliceData(bs), len(bs))
+}
+</code></pre>
 
 </div>
 
@@ -569,15 +608,29 @@ func main() {
 	fmt.Printf("%s\n", ms)  // [C C++ Go]
 	// ss := ([]string)(ms) // compiling error
 	ss := *(*[]string)(unsafe.Pointer(&ms))
-	ss[1] = "Rust"
-	fmt.Printf("%s\n", ms) // [C Rust Go]
+	ss[1] = "Zig"
+	fmt.Printf("%s\n", ms) // [C Zig Go]
 	// ms = []MyString(ss) // compiling error
 	ms = *(*[]MyString)(unsafe.Pointer(&ss))
+	
+	// Since Go 1.17, we may also use the
+	// unsafe.Slice function to do the conversions.
+	ss = unsafe.Slice((*string)(&ms[0]), len(ms))
+	ms = unsafe.Slice((*MyString)(&ss[0]), len(ms))
+}
+</code></pre>
+
+By the way, since Go 1.17, we may also use the <code>unsafe.Slice</code> function to do the conversions:
+
+<pre class="line-numbers"><code class="language-go">func main() {
+	...
+	
+	ss = unsafe.Slice((*string)(&ms[0]), len(ms))
+	ms = unsafe.Slice((*MyString)(&ss[0]), len(ss))
 }
 </code></pre>
 
 <p>
-Note: since Go 1.17, we may also use <code>unsafe.Slice((*string)(&amp;ms[0]), len(ms))</code> to do the conversion.
 </p>
 
 A practice by using the pattern is to convert a byte slice, which will not be used after the conversion, to a string,
@@ -597,7 +650,8 @@ and <a href="value-part.html#internal-definitions">their internal structures</a>
 so the conversion is valid (for main stream Go compilers).
 However, despite the implementation may be safely used in standard packages now,
 it is not recommended to be used in general user code.
-In user code, we should try to use another implementation provided at the end of the current article.
+Since Go 1.20, in general user code, we should try to use the implementation,
+which uses the <code>unsafe.String</code> function, mentioned above in this article.
 </p>
 
 The converse, converting a string to a byte slice in the similar way, is invalid,
@@ -1047,24 +1101,13 @@ at least for the official standard compiler.)</i>
 </p>
 
 <p>
-<a href="https://golang.org/pkg/reflect/#SliceHeader">The docs</a>
-of the <code>SliceHeader</code> and <code>StringHeader</code> types in the
-<code>reflect</code> standard package are similar in that
-they say the representations of the two struct types may change in a later release.
-So the above example may become invalid even if the unsafe rules keep unchanged.
-Fortunately, the current two available Go compilers (the standard Go compiler and the gccgo compiler)
-both recognize the representations of the two types declared
-in the <code>reflect</code> standard package.
-</p>
-
-<p>
-Note: when using the just introduced unsafe way to convert a string to a byte slice,
+Note, when using the just introduced unsafe way to convert a string to a byte slice,
 please make sure not to modify the bytes in the result byte slice if the string still survives
-(for demonstrating, the above example violates this principle).
+(for demonstration purpose, the above example violates this principle).
 </p>
 
 It is also possible to convert a byte slice to a string in a similar way,
-which is a bit safer (but some slower) than the way shown in pattern 1.
+which is a bit safer (but a bit slower) than the way shown in pattern 1.
 
 <pre class="line-numbers"><code class="language-go">func ByteSlice2String(bs []byte) (str string) {
 	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
@@ -1125,9 +1168,22 @@ func Example_Good2() *byte {
 Tricky? Yes.
 </p>
 
+
 <p>
-Note, the <code>reflect.SliceHeader</code> and <code>reflect.StringHeader</code> types might
-<a href="https://github.com/golang/go/issues/53079">be deprecated</a> in Go 1.20.
+<a href="https://golang.org/pkg/reflect/#SliceHeader">The docs</a>
+of the <code>SliceHeader</code> and <code>StringHeader</code> types in the
+<code>reflect</code> standard package are similar in that
+they say the representations of the two struct types may change in a later release.
+So the above valid examples using the two types may become invalid even if the unsafe rules keep unchanged.
+Fortunately, at present (Go 1.19), the two available mainstream Go compilers (the standard Go compiler and the gccgo compiler)
+both recognize the representations of the two types declared in the <code>reflect</code> standard package.
+</p>
+
+<p>
+The Go core development team also realized that the two types are inconvenient and error-prone,
+so the two types have been deprecated since Go 1.20. 
+Instead, we should try to use the <code>unsafe.String</code>, <code>unsafe.StringData</code>,
+<code>unsafe.Slice</code> and <code>unsafe.SliceData</code> functions described earlier in this article.
 </p>
 
 </div>

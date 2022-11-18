@@ -661,7 +661,7 @@ type G[G any] struct{x G} // okay
 func (E G[E]) Bar1() {}   // error: E redeclared
 ```
 
-The following `Bar2` method declaration should compile okay, but it doesn't now (Go toolchain 1.19). This is [a bug which will be fixed in Go toolchain 1.20](https://github.com/golang/go/issues/51503).
+The following `Bar2` method declaration should compile okay, but it doesn't now (Go toolchain 1.19). This is [a bug which will be fixed in Go toolchain 1.21](https://github.com/golang/go/issues/51503).
 
 ```Go
 type G[G any] struct{x G} // okay

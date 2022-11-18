@@ -563,8 +563,8 @@ By using the official standard Go compiler, in the following program,
 
 * the functions `tup` and `pad` don't compile.
   The reason is values of type `AgePtr` can't be directly converted to `*int`.
-* all the other three generic functions compile okay, but the `dot` function
-  should not compile by the above described rule.
+* all the other three generic functions compile okay。
+  However, the `dot` function should not compile by the above described rule.
   This might be [a bug of the standard compiler, or the rule described in
   the current Go specification needs a small adjustment](https://github.com/golang/go/issues/50815).
 
