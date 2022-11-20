@@ -105,8 +105,8 @@ func main() {
 
 In the above example, the generic function `Max` is instantiated twice.
 
-* The first instantiation `Max[[]Age, Age]` results a `func([]Age] Age` function value.
-* The second one, `Max[[]string, string]`, results a `func([]string) string` function value.
+* The first instantiation `Max[[]Age, Age]` results in a `func([]Age] Age` function value.
+* The second one, `Max[[]string, string]`, results in a `func([]string) string` function value.
 
 ## Type argument inferences for generic function instantiations
 
