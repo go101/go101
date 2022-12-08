@@ -112,7 +112,7 @@ import "fmt"
 import "math/rand"
 
 func main() {
-	fmt.Printf("Next pseudo-random number is always %v.\n", rand.Uint32())
+	fmt.Printf("Next pseudo-random number is %v.\n", rand.Uint32())
 }
 </code></pre>
 
@@ -146,11 +146,12 @@ Some explanations:
 </ul>
 
 The above program will always output:
-<pre class="output"><code>Next pseudo-random number is always 2596996162.
+<pre class="output"><code>Next pseudo-random number is 2596996162.
 </code></pre>
 
 <p>
-If we expect the above program to produce a different random number at each run,
+Before Go 1.20,
+if we expect the above program to produce a different random number at each run,
 we should set a different seed by calling the <code>rand.Seed</code> function
 when the program just starts.
 </p>
@@ -172,7 +173,7 @@ import (
 )
 
 func main() {
-	 // Set the random seed.
+	// Set the random seed (only needed before Go 1.20).
 	rand.Seed(time.Now().UnixNano())
 	fmt.Printf("Next pseudo-random number is %v.\n", rand.Uint32())
 }
@@ -194,7 +195,8 @@ Some explanations:
 	The method call <code>aTime.UnixNano()</code> returns the number of nanoseconds
 	elapsed since January 1, 1970 UTC to the time denoted by <code>aTime</code>.
 	The return result is a value of type <code>int64</code>,
-	which is the parameter type of the <code>rand.Seed</code> function.
+	which is also the parameter type of the <code>rand.Seed</code> function
+	(note: the <code>rand.Seed</code> function has been deprecated since Go 1.20).
 	Methods are special functions. We can learn methods in the article
 	<a href="method.html">methods in Go</a> for details later.
 </li>
@@ -641,10 +643,9 @@ func main() {
 	random.Seed(time.Now().UnixNano())
 	format.Print("A random number: ", random.Uint32(), "\n")
 
-	// The following two lines fail to compile,
+	// The following line fails to compile,
 	// for "rand" is not identified.
 	/*
-	rand.Seed(time.Now().UnixNano())
 	fmt.Print("A random number: ", rand.Uint32(), "\n")
 	*/
 }
