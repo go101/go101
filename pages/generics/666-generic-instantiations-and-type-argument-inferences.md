@@ -12,9 +12,19 @@ generic functions must be instantiated to be called or used as function values.
 A generic function (type) is instantiated by substituting a type argument list
 for the type parameter list of its declaration (specification).
 The lengths of the (full) type argument list is the same as the type parameter list.
-Each type argument is passed to the corresponding type parameter.
-A type argument must be a non-interface type or a basic interface type and it is
-valid only if it satisfies (implements) the constraint of its corresponding type parameter.
+Each type argument corresponds a type parameter and is passed to that type parameter.
+Assume the constraint of the corresponding type parameter of a type argument is `C`,
+then the type argument must be
+
+* either an ordinary type (a non-interface type or a basic interface type)
+  which [satisfies][satisfies] (but is not required to implement) `C`;
+* or a type parameter which [implements] `C` if the instantiation
+  is within a containing generic function declaration or type specification.
+  The type parameter is declared by the containing generic function
+  declaration or type specification.
+
+[satisfies]: 555-type-constraints-and-parameters.md#implementation-vs-satisfaction
+[implements]: 555-type-constraints-and-parameters.md#type-sets-and-implementations
 
 Instantiated functions are non-generic functions.
 Instantiated types are named ordinary value types.
@@ -23,8 +33,11 @@ Same as type parameter lists, a type argument list is also enclosed in square br
 and type arguments are also comma-separated in the type argument list.
 The comma insertion rule for type argument lists is also the same as type parameter lists.
 
-Two type argument lists are identical if their lengths are equal and all of their corresponding types are identical.
-Two instantiated types are identical if they are instantiated from the same generic type and with the same type argument list.
+Two type argument lists are identical if the lengths of their full forms are equal and all of their corresponding argument types are identical.
+Two instantiated types are identical if they are instantiated from the same generic type and with the same full-from type argument list.
+
+As indicated several times in the above descriptions, a type argument list might be partial.
+Please read the following "type argument inferences" section for details.
 
 In the following program, the generic type `Data` is instantiated four times.
 Three of the four instantiations have the same type argument list
@@ -108,15 +121,17 @@ In the above example, the generic function `Max` is instantiated twice.
 * The first instantiation `Max[[]Age, Age]` results in a `func([]Age] Age` function value.
 * The second one, `Max[[]string, string]`, results in a `func([]string) string` function value.
 
+{#type-argument-inferences}
 ## Type argument inferences for generic function instantiations
 
 In the generic function example shown in the last section,
 the two function instantiations are called full form instantiations,
 in which all type arguments are presented in their containing type argument lists.
 Go supports type inferences for generic function instantiations,
-which means a type argument list may be partial or even be omitted totally,
+which means the type argument list of an instantiated function
+may be partial or even be omitted totally,
 as long as the missing type arguments could be inferred from value parameters
-and present type arguments.
+and presented type arguments.
 
 For example, the `main` function of the last example in the last section could be rewritten as
 
@@ -146,7 +161,7 @@ func main() {
 }
 ```
 
-The new implementation of the `main` function shows that the calls of
+The rewritten `main` function shows that the calls to
 generics functions could be as clean as ordinary functions (at least sometimes),
 even if generics function declarations are more verbose.
 
@@ -207,7 +222,8 @@ func foo[T int](x T) {}
 func bar[T ~int](x T) {}
 
 func main() {
-	// The default type of 1.0 is float64.
+	// The default type of 1.0 is float64, but
+	// 1.0 is also representable as integer values.
 
 	foo(1.0)  // okay
 	foo(1.23) // error: cannot use 1.23 as int
@@ -253,7 +269,8 @@ https://github.com/golang/go/issues/51139
 
 ## Type argument inferences don't work for generic type instantiations
 
-Currently (Go 1.19), inferring type arguments of instantiated types from value literals is not supported. That means the type argument list in a generic type instantiation must be always in full forms.
+Currently (Go 1.19), inferring type arguments of instantiated types from value literals is not supported.
+That means the type argument list of a generic type instantiation must be always in full form.
 
 For example, in the following code snippet, the declaration line for variable `y` is invalid,
 even if it is possible to infer the type argument as `int16`.
@@ -328,59 +345,112 @@ https://github.com/golang/go/issues/41176
 
 -->
 
-## Pass basic interface types as type arguments
+## Differences between passing type parameters and ordinary types as type arguments
 
-The above has mentioned that a basic interface type may be used as a type argument
-and passed to a type parameter if the basic interface type satisfies (implements)
-the constraint of the type parameter.
-The following code shows such an example.
+The above has mentioned that,
+
+* when an ordinary type is used as a type argument, the ordinary type
+  is only required to [satisfy][satisfies] the constraint of the corresponding
+  type parameter. This is a change made in Go 1.20.
+* when a type parameter is used as a type argument, the type parameter
+  is required to [implement][implements] the constraint of the corresponding
+  type parameter.
+
+For example, since Go 1.20, all instantiations in the following program are valid
+(they are invalid before Go 1.20).
+None of the type arguments, which are all ordinary types,
+implement the `comparable` constraints, but they all satisfy the constraints.
 
 ```Go
 package main
 
-type Base[T any] []T
+type Base[T comparable] []T
 
 type _ Base[any]
 type _ Base[error]
+type _ Base[[2]any]
+type _ Base[struct{x any}]
 
-func Gf[T any](x T) {}
+func Gf[T comparable](x T) {}
 
 var _ = Gf[any]
 var _ = Gf[error]
+var _ = Gf[[2]any]
+var _ = Gf[struct{x any}]
 
 func main() {
 	Gf[any](123)
-	Gf[any](true)
 	Gf[error](nil)
+	Gf[[2]any]([2]any{})
+	Gf[struct{x any}](struct{x any}{})
 }
 ```
 
-## Pass type parameters as type arguments
-
-Same as ordinary types, if the constraint of a type parameter satisfies (implements)
-the constraint of another type parameter, the the former may be used as type arguments
-and passed to the latter.
-For example, the following code is valid.
+On the other hand, all the instantiations in the following program are invalid.
+All the type arguments are type parameters, and none of them implement
+the `comparable` constraints, which is why they are all invliad type arguments.
 
 ```Go
-func Foo[T any](x T) {}
+package main
 
-func Bar[V comparable, E error](x V, y E)() {
-	var _ = Foo[V] // okay
-	var _ = Foo[E] // okay
-	
-	// Use implicit type arguments.
-	Foo(x) // okay
-	Foo(y) // okay
+type Base[T comparable] []T
+
+func Gf[T comparable](x T) {}
+
+func vut[T any]() {
+	_ = Gf[T]     // T does not implement comparable
+	var _ Base[T] // T does not implement comparable
 }
+
+func law[T struct{x any}]() {
+	_ = Gf[T]     // T does not implement comparable
+	var _ Base[T] // T does not implement comparable
+}
+
+func pod[T [2]any]() {
+	_ = Gf[T]     // T does not implement comparable
+	var _ Base[T] // T does not implement comparable
+}
+
+func main() {}
 ```
 
+All the type arguments used in the following program are valid.
+They are all type parameters and implement the `comparable` constraints.
+
+
+```Go
+package main
+
+type Base[T comparable] []T
+
+func Gf[T comparable](x T) {}
+
+func vut[T comparable]() {
+	_ = Gf[T]
+	var _ Base[T]
+}
+
+func law[T struct{x int}]() {
+	_ = Gf[T]
+	var _ Base[T] 
+}
+
+func pod[T [2]string]() {
+	_ = Gf[T]
+	var _ Base[T]
+}
+
+func main() {}
+```
+ 
 ## More about instantiated types
 
 As an instantiated type is an ordinary type,
 
-* it may be embedded in an interface type as a type name elements.
+* it may be used as union terms if it is an non-interface type.
 * it may be used as union terms if it is an interface type without methods.
+* it may be used as type constraints if it is an interface type.
 * it may be embedded in struct types if it satisfies
   [the requirements for the embedded fields](https://go101.org/article/type-embedding.html).
 

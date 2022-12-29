@@ -83,6 +83,8 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 	
 	https://github.com/golang/go/issues/55964
 	
+	https://github.com/golang/go/issues/56923
+	
 -->
 
 

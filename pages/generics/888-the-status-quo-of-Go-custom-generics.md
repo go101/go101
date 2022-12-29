@@ -52,7 +52,7 @@ type D[X any] = T[int, string] // error
 Generic type aliases [might be supported in future Go versions](https://github.com/golang/go/issues/46477).
 
 {#embed-type-parameter}
-## Embedding type parameters in struct types is not allowed now
+## Embedding type parameters is not allowed now
 
 Due to design and implementation complexities, currently (Go 1.19), type parameters are
 disallowed to be embedded in either interface types or struct types.
