@@ -37,7 +37,7 @@ because the type of <code>-S[0]</code> is <code>byte</code> (aka. <code>uint8</c
 
 <p>It is a pity, it is also a luck.</p>
 
-<p>If elements of constant strings are constants, then there will parsing ambiguities in Go custom generic age.
+<p>If elements of constant strings are constants, then there will be parsing ambiguities in Go custom generic age.
 Since Go 1.18, the following line will be treated as generic type declaration,
 in which <code>S</code> is a type parameter and <code>[4]*int</code> is its constraint.</p>
 
@@ -51,19 +51,23 @@ A type or an integer constant? If it denotes an integer constant,
 and <code>S [4]</code> may be treated as constant <code>byte</code> value,
 then the above line is a valid ordinary array type declaration.</p>
 
-<p>Luckily, now, Go compiler knows <code>S [4]</code> will never be constants,
+<p>Luckily, now, Go compiler knows <code>S [4]</code> will never be constant,
 so it always tries to think the above line is not an ordinary array type declaration.
 No ambiguities happen here.
 Were elements of constant strings constants, the simplified type parameter declaration syntax couldn't be possible.</p>
 
-<p>There is <a href="https://github.com/golang/go/issues/6386">a proposal</a>to let Go support constant arrays (and other constant composite values).
-However, the Go custom syntax design has sentenced that proposal to death.
+<p>There is <a href="https://github.com/golang/go/issues/6386">a proposal</a> to let Go support constant arrays (and other constant composite values).
+However, the Go custom syntax design has almost sentenced that proposal to death.
 Because, similarly, the following code will lead to parsing ambiguities
 if array values may be declared as constants.</p>
 
 <pre><code class="language-Go">const A = [2]int{1, 2}
 type BoolArray [A [1] * int]bool
 </code></pre>
+
+<p>To avoid absolutely sentencing the constant array proposal to death,
+elements of constant array must not be treated as constants,
+just as elements of constant strings are not treated as constants.</p>
 
 <h3>BTW, substrings are also never constants</h3>
 

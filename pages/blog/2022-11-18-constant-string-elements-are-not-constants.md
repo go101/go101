@@ -39,7 +39,7 @@ because the type of `-S[0]` is `byte` (aka. `uint8`), whereas `-71` owerflows th
 
 It is a pity, it is also a luck.
 
-If elements of constant strings are constants, then there will parsing ambiguities in Go custom generic age.
+If elements of constant strings are constants, then there will be parsing ambiguities in Go custom generic age.
 Since Go 1.18, the following line will be treated as generic type declaration,
 in which `S` is a type parameter and `[4]*int` is its constraint.
 
@@ -54,13 +54,13 @@ A type or an integer constant? If it denotes an integer constant,
 and `S [4]` may be treated as constant `byte` value,
 then the above line is a valid ordinary array type declaration.
 
-Luckily, now, Go compiler knows `S [4]` will never be constants,
+Luckily, now, Go compiler knows `S [4]` will never be constant,
 so it always tries to think the above line is not an ordinary array type declaration.
 No ambiguities happen here.
 Were elements of constant strings constants, the simplified type parameter declaration syntax couldn't be possible.
 
-There is [a proposal]to let Go support constant arrays (and other constant composite values).
-However, the Go custom syntax design has sentenced that proposal to death.
+There is [a proposal] to let Go support constant arrays (and other constant composite values).
+However, the Go custom syntax design has almost sentenced that proposal to death.
 Because, similarly, the following code will lead to parsing ambiguities
 if array values may be declared as constants.
 
@@ -68,6 +68,10 @@ if array values may be declared as constants.
 const A = [2]int{1, 2}
 type BoolArray [A [1] * int]bool
 ```
+
+To avoid absolutely sentencing the constant array proposal to death,
+elements of constant array must not be treated as constants,
+just as elements of constant strings are not treated as constants.
 
 [a proposal]: https://github.com/golang/go/issues/6386
 

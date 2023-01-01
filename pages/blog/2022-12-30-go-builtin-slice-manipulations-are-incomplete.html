@@ -1,0 +1,110 @@
+<p id="f-2022-12-30-go-builtin-slice-manipulations-are-incomplete-md"></p>
+<h1>Go Built-in Slice Manipulations Are Incomplete</h1>
+
+<h2>Lack of a performant way to merge 3+ slices</h2>
+
+<p>In Go, there are three built-in functions to manipulate slices:</p>
+
+<ol>
+<li>the <code>make</code> function is used to create a slice with specified length and capacity. All the elements are set to zero values.</li>
+<li>the <code>copy</code> function is used to copy some elements from one slice to another if the two slices have identical element types.</li>
+<li>the <code>append</code> function is used to append some elements to a base slice and result in a new slice.
+The base slice might share all of its elements with the new slice or not,
+depending on whether or not the capacity of the base slice is large enough to hold all the appended elements.</li>
+</ol>
+
+<p>When the capacity of the base slice if an <code>append</code> function call is not larger enough.
+the call can be viewed as a way to merge two slices.
+As the way is built-in, it is performant.</p>
+
+<p>However, there is not a performant way to merge 3+ slices.
+The following implementation might be the most performant way to do the task:</p>
+
+<pre><code class="language-Go">func merge[T any](ss ...[]T) []T {
+	var n, allNils = 0, true
+	for i := range ss {
+		n += len(ss[i])
+		allNils = allNils &amp;&amp; ss[i] == nil
+	}
+	if allNils {
+		return nil
+	}
+	if n == 0 {
+		return []T{}
+	}
+	
+	// Make use of this optimization:
+	// https://github.com/golang/go/commit/6ed4661807b219781d1aa452b7f210e21ad1974b
+	s := ss[0]
+	r := make([]T, n)
+	copy(r, s)
+	
+	r = r[:len(s)]
+	for _, s = range ss[1:] {
+		r = append(r, s...)
+	}
+	return r
+}
+</code></pre>
+
+<p>Generally, a <code>make</code> call will zero the elements allocated during its execution, which is unnecessarily for this particular use case.
+The implementation does its best to zero as few as possible elements within the <code>make</code> call,
+by using the mentioned optimization, it doesn't zero the elements in <code>r[:len(ss[0])]</code>,
+but it still fails to do so for the remaining elements (the ones in <code>r[len(ss[0]):]</code>).</p>
+
+<p>If the <code>merge</code> function is built-in, then it is able to avoid all the unnecessary element zeroing operations.</p>
+
+<h2>Lack of a clean way to clip slices</h2>
+
+<p>As mentioned above, an <code>append</code> function call will reuse the backing array
+of the first slice argument (call it <code>base</code> here) for the result slice if the capacity of <code>base</code>
+is large enough to hold all the appended elements.
+For some scenarios, we want to prevent an <code>append</code> call from modifying the elements in <code>base[len(base):]</code>
+and we achieve this by clipping the capacity of <code>base</code> to its length:</p>
+
+<pre><code class="language-Go">var x, y, z T
+
+	... = append(base[:len(base):len(base)], x, y, z)
+</code></pre>
+
+<p>Nothing to complain about, except that it is some verbose,
+in particular when the <code>base</code> expression is verbose, such as</p>
+
+<pre><code class="language-Go">	... = append(aValue.Field.Slice[:len(aValue.Field.Slice):len(aValue.Field.Slice)], x, y, z)
+</code></pre>
+
+<p>If the <code>base</code> expression is a function call, then we must store the result of a call in a temporary intermediate variable:</p>
+
+<pre><code class="language-Go">	base := aFunctionCall()
+	... = append(base[:len(base):len(base)], x, y, z)
+</code></pre>
+
+<p>We can use the <code>Clip</code> function in the <code>golang.org/x/exp/slices</code> package, but this way is still not clean enough.</p>
+
+<pre><code class="language-Go">import &quot;golang.org/x/exp/slices&quot;
+
+	... = append(slices.Clip((base), x, y, z)
+	
+	... = append(slices.Clip(aValue.Field.Slice), x, y, z)
+	
+	... = append(slices.Clip(aFunctionCall()), x, y, z)
+</code></pre>
+
+<p>I do perfer <a href="https://github.com/golang/go/issues/25638">this proposal</a>, but it has been rejected:</p>
+
+<pre><code class="language-Go">aSlice[ : n : ]  // &lt;=&gt; aSlice[ : n : n]
+aSlice[m : n : ] // &lt;=&gt; aSlice[m : n : n]
+sSlice[ : : ]    // &lt;=&gt; aSlice[ : len(s) : len(s)]
+aSlice[m : : ]   // &lt;=&gt; aSlice[m : len(s) : len(s)]
+</code></pre>
+
+<p>If the proposal is adopted, then we may just write the code as</p>
+
+<pre><code class="language-Go">	... = append(base[::], x, y, z)
+	
+	... = append(aValue.Field.Slice[::], x, y, z)
+	
+	... = append(aFunctionCall()[::], x, y, z)
+</code></pre>
+
+<p>which is much cleaner.</p>
