@@ -39,9 +39,13 @@ During running the first such a command, the Go git repository will be cloned (w
 * a Go release version, such as `1.17.13`, `1.18`, `1.19rc1`,
   which mean the release tags `go1.17.13`, `go1.18`, `go1.19rc1`, respectively,
   in the Go git repository.
-  Note: `1.N.` means the latest release of `1.N` and `1.` means the latest Go 1 release version.
-* `:tip`, which means the local latest `master` branch in the Go git repository.
+  Note:
+  * `1.N.` means the latest release of `1.N`.
+  * `1.` means the latest Go 1 release version.
+  * `.` means the latest Go release version.
 * `:1.N`, which means the local latest `release-branch.go1.N` branch in the Go git repository.
+* `:tip`, which means the local latest `master` branch in the Go git repository.
+* a version suffixed with `!` means to fetch remote versions (by running `gotv fetch-versions`) firstly.
 
 Examples:
 
@@ -79,7 +83,7 @@ $ gotv 1.18.3 run main.go
 Other `gotv` commands:
 
 ```
-# sync the Go git repository
+# sync the local Go git repository with remote
 gotv fetch-versions
 
 # list all versions seen locally
@@ -100,13 +104,13 @@ gotv unpin-version
 
 ## Pin a toolchain version
 
-We can use the `gotv` command to pin a specific toolchain version to a stable path.
+We can use the `gotv pin-version` command to pin a specific toolchain version to a stable path.
 After adding the stable path to the `PATH` environment veriable,
 we can use the official `go` command directly.
 And after doing these, the toolchain versions installed through ways other than GoTV
 may be safely uninstalled.
 
-It is recommanded to pin a 1.17+ version for [bootstrap purpose](https://github.com/golang/go/issues/44505).
+It is recommanded to pin a 1.17+ version for [bootstrap purpose](https://github.com/golang/go/issues/44505) now.
 The following example shows how to pin Go toolchain version 1.17.13:
 
 ```
@@ -126,6 +130,9 @@ open a new terminal window:
 $ go version
 go version go1.17.13 linux/amd64
 ```
+
+The command `gotv pin-version .!` will upgrade the pinned toolchain to the latest release version
+(which may be a beta or rc version).
 
 ## Set a bootstrap toolchain version
 

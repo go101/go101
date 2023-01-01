@@ -351,13 +351,13 @@ As mentioned in the last section, all types in the type set of the predeclared `
 {#implementation-vs-satisfaction}
 ## Type implementation vs. type satisfaction
 
-Before Go 1.20, the two terminolegies are used interchangeably.
-In other words, the following two descriptions are equivalent to each other before Go 1.20:
+Before Go 1.20, the two terminolegies were used interchangeably.
+In other words, the following two descriptions were equivalent to each other before Go 1.20:
 
 * a type `X` implements an interface type `Y`.
 * a type `X` satisfies an interface type `Y`.
 
-Before Go 1.20, they both mean the type set of the type `X` is a sub-set of the interface type `Y`.
+Before Go 1.20, they both meant the type set of the type `X` is a sub-set of the interface type `Y`.
 So, before Go 1.20, if a type `X` implements an interface type `Y`,
 then it must also satisfy `Y`; and vice versa.
 
@@ -397,7 +397,7 @@ type C interface {
 }
 ```
 
-As of Go 1.20, type satisfactions are used to verify whether or not a value type
+As of Go 1.20, type satisfactions are used to verify whether or not an ordinary value type
 can be used as a type argument of an instantiation of a generic type/function.
 Please read the next chapter for details.
 
@@ -591,7 +591,7 @@ type C5[T *int|bool, ] struct{} // compiles okay
 
 (Note: this way doesn't work with Go toolchain 1.18. It was [a bug](https://github.com/golang/go/issues/51488) and has been fixed since Go toolchain 1.19.)
 
-We could also use full constraint form or exchange the places of `*int` and `bool` to make it compile okay.
+We could also use full constraint form or swap the positions of `*int` and `bool` to make it compile okay.
 
 ```Go
 // Assume int and bool are predeclared types.
