@@ -125,8 +125,7 @@
 ### 1.11.e (2018/Oct/26)
 
 * published [Evaluation Orders](https://go101.org/article/evaluation-orders.html).
-* modify some descriptions for
-  * [program resource initialization order](https://go101.org/article/packages-and-imports.html#initialization-order)
+* modify some descriptions for [program resource initialization order](https://go101.org/article/packages-and-imports.html#initialization-order)
 
 ### 1.11.d (2018/Oct/18)
 
