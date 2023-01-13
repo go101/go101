@@ -20,27 +20,35 @@ As the way is built-in, it is performant.</p>
 <p>However, there is not a performant way to merge 3+ slices.
 The following implementation might be the most performant way to do the task:</p>
 
-<pre><code class="language-Go">func merge[T any](ss ...[]T) []T {
-	var n, allNils = 0, true
+<pre><code class="language-Go">func merge[S ~[]E, E any](ss ...S) S {
+	var n, allNils, k = 0, true, -1
 	for i := range ss {
-		n += len(ss[i])
-		allNils = allNils &amp;&amp; ss[i] == nil
+		if m := len(ss[i]); n &gt; 0 {
+			n += m
+		} else if m &gt; 0 {
+			n += m
+			allNils = false
+			k = i
+		} else {
+			allNils = allNils &amp;&amp; ss[i] == nil
+		}
 	}
 	if allNils {
 		return nil
 	}
 	if n == 0 {
-		return []T{}
+		return S{}
 	}
 	
 	// Make use of this optimization:
 	// https://github.com/golang/go/commit/6ed4661807b219781d1aa452b7f210e21ad1974b
-	s := ss[0]
-	r := make([]T, n)
+	s := ss[k]
+	r := make(S, n)
 	copy(r, s)
-	
 	r = r[:len(s)]
-	for _, s = range ss[1:] {
+	ss = ss[k+1:]
+
+	for _, s := range ss {
 		r = append(r, s...)
 	}
 	return r

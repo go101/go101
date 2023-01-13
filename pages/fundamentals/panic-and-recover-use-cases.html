@@ -163,7 +163,7 @@ An example:
 
 <pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
 	defer func() {
-		err = recover()
+		err, _ = recover().(error)
 	}()
 
 	doStep1()
@@ -307,6 +307,29 @@ func doSomething() (err error) {
 However, usually, this panic/recover use pattern is not recommended to use.
 It is less Go-idiomatic and less efficient.
 </p>
+
+And please note that, since a future Go version (probably Go 1.21),
+a <code>panic(nil)</code> call will become
+<a href="https://github.com/golang/go/issues/25448">eqivalent to <code>panic(runtime.PanicNilError)</code></a>.
+Since then, the above deferred function call should be written as
+
+<pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
+	defer func() {
+		err, _ = recover().(error)
+		if err == runtime.PanicNilError {
+			err = nil
+		}
+	}()
+
+	doStep1()
+	...
+}
+</code></pre>
+
+<p>
+</p>
+
+
 </div>
 
 
