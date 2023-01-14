@@ -310,13 +310,13 @@ It is less Go-idiomatic and less efficient.
 
 And please note that, since a future Go version (probably Go 1.21),
 a <code>panic(nil)</code> call will become
-<a href="https://github.com/golang/go/issues/25448">eqivalent to <code>panic(runtime.PanicNilError)</code></a>.
+<a href="https://github.com/golang/go/issues/25448">eqivalent to <code>panic(new(runtime.PanicNilError))</code></a>.
 Since then, the above deferred function call should be written as
 
 <pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
 	defer func() {
 		err, _ = recover().(error)
-		if err == runtime.PanicNilError {
+		if e := (*runtime.PanicNilError)(nil); errors.As(err, &e) {
 			err = nil
 		}
 	}()
