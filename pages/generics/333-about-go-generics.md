@@ -32,7 +32,7 @@ https://dl.acm.org/doi/pdf/10.1145/3428217
 The first Go version supporting custom generics is 1.18.
 
 The type parameters proposal tries to solve many code reuse problems, but not all.
-And please note that, not all the features mentioned in the parameters proposal have been implemented yet currently (Go 1.19). The custom generics design and implementation will continue to evolve and get improved in future Go versions. And please note that the proposal is not the ceiling of Go custom generics.
+And please note that, not all the features mentioned in the parameters proposal have been implemented yet currently (Go 1.20). The custom generics design and implementation will continue to evolve and get improved in future Go versions. And please note that the proposal is not the ceiling of Go custom generics.
 
 Despite the restrictions (temporary or permanent ones) in the current Go custom generics design and implementation,
 I also have found there are some details which are handled gracefully and beautifully in the implementation.

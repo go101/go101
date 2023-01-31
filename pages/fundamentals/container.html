@@ -1043,11 +1043,8 @@ func main() {
 </code></pre>
 
 <p>
-</p>
-
-<p>
-Up to now (Go 1.19), the first argument of an <code>append</code> function
-call can't be an untyped <code>nil</code>.
+The first argument of an <code>append</code> function
+call can't be an untyped <code>nil</code> (up to Go 1.20).
 </p>
 
 </div>
@@ -1529,6 +1526,7 @@ https://github.com/golang/go/issues/46505
 Since Go 1.20, a slice may be converted to an array.
 In such a conversion, if the length of the array type
 is larger than the length of the slice, a panic occurs.
+The slice and the result array don't share any element.
 </p>
 
 An example:
@@ -1597,6 +1595,8 @@ func main() {
 <p>
 </p>
 
+<!--
+
 In fact, the <code>copy</code> function is not very essential.
 We can implement it by using the built-in <code>append</code> function.
 
@@ -1624,6 +1624,8 @@ essential function), for all its uses can be implemented with
 <code>make</code> and <code>copy</code> function calls.
 </p>
 
+-->
+
 <p>
 Note, as a special case, the built-in <code>copy</code> function
 can be used to <a href="string.html#use-string-as-byte-slice">copy bytes
@@ -1631,8 +1633,8 @@ from a string to a byte slice</a>.
 </p>
 
 <p>
-Up to now (Go 1.19), neither of the two arguments of a <code>copy</code>
-function call can be an untyped <code>nil</code> value.
+Neither of the two arguments of a <code>copy</code>
+function call can be an untyped <code>nil</code> value (up to Go 1.20).
 </p>
 
 </div>
@@ -2230,7 +2232,7 @@ is a zero value literal representation of <code>T</code>.
 <h4>Clone slices</h4>
 
 <div>
-For the current Go verison (1.19), the simplest way to clone a slice is:
+For the current Go verison (1.20), the simplest way to clone a slice is:
 <pre class="disable-line-numbers111"><code class="language-go">sClone := append(s[:0:0], s...)
 </code></pre>
 
@@ -2247,7 +2249,7 @@ sClone := make([]T, len(s))
 copy(sClone, s)
 
 // Or the following one-line make+append way.
-// As of Go Toolchain v1.19, this way is a bit
+// As of Go Toolchain v1.20, this way is a bit
 // slower than the above two-line make+copy way.
 sClone := append(make([]T, 0, len(s)), s...)
 </code></pre>
@@ -2270,6 +2272,7 @@ if s != nil {
 <p>
 </p>
 
+<!--
 Before Go Toolchain 1.15, for some common cases, the "append" ways are
 <a href="https://github.com/go101/go101/wiki/How-to-efficiently-clone-a-slice%3F">much more efficient than</a>
 the "make+copy" way. However, since version 1.15, the "make+copy" way has been specially optimized by the
@@ -2299,6 +2302,7 @@ For example, it only works for the first case in the following code:
 	y = make([]T, len(t.x)) // not work
 	copy(y, t.x)
 </code></pre>
+-->
 
 </div>
 
@@ -2445,8 +2449,8 @@ s = append(s[:i], append(elements, s[i:]...)...)
 // might make at most two allocations.
 // The following verbose way always copies s[i:]
 // once and will only make at most one allocation.
-// However, as of Go Toolchain v1.19, the "make"
-// call will clear partial just allocated elements,
+// However, as of Go Toolchain v1.20, the "make"
+// call will clear partial of just allocated elements,
 // which is actually unnecessary. So the verbose
 // way is more efficient than the one-line way
 // only for small slices now.

@@ -1,6 +1,12 @@
 
 # Go (Fundamentals) 101 Update History
 
+### v1.20.a (2023/Feb/01)
+
+* Go 1.20 [started to support slice to array conversions](https://go101.org/article/container.html#slice-to-array).
+* Go 1.20 [added three new functions in the "unsafe" package](https://go101.org/article/unsafe.html): `SliceData`, `String`, and `StringData`.
+* Since Go 1.20, the global random generator in the `math/rand` package will be auto seeded.
+
 ### v1.19.a (2022/Aug/29)
 
 * Go 1.19 [added some atomic types](https://go101.org/article/concurrent-atomic-operation.html).

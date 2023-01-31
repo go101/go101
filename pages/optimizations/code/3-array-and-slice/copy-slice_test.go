@@ -27,3 +27,15 @@ func Benchmark_Copy2(b *testing.B) {
 		copy2(r, s)
 	}
 }
+
+func Benchmark_Copy_self(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		copy(s, s)
+	}
+}
+
+func Benchmark_Copy2_self(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		copy2(s, s)
+	}
+}

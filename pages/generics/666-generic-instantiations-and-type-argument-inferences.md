@@ -269,7 +269,7 @@ https://github.com/golang/go/issues/51139
 
 ## Type argument inferences don't work for generic type instantiations
 
-Currently (Go 1.19), inferring type arguments of instantiated types from value literals is not supported.
+Currently (Go 1.20), inferring type arguments of instantiated types from value literals is not supported.
 That means the type argument list of a generic type instantiation must be always in full form.
 
 For example, in the following code snippet, the declaration line for variable `y` is invalid,
@@ -310,7 +310,7 @@ will be supported in future Go versions.
 https://github.com/golang/go/issues/50482
 -->
 
-For the same reason, the following code doesn't compile (as of Go toolchain 1.19).
+For the same reason, the following code doesn't compile (as of Go toolchain 1.20).
 
 ```Go
 type Getter[T any] interface {

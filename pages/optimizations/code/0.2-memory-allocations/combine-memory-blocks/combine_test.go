@@ -10,9 +10,8 @@ type Book struct {
 	Pages  int
 }
 
+//go:noinline
 func CreateBooksOnOneLargeBlock(n int) []*Book {
-	type _ int // avoid being inline
-
 	books := make([]Book, n)
 	pbooks := make([]*Book, n)
 	for i := range pbooks {
@@ -21,9 +20,8 @@ func CreateBooksOnOneLargeBlock(n int) []*Book {
 	return pbooks
 }
 
+//go:noinline
 func CreateBooksOnManySmallBlocks(n int) []*Book {
-	type _ int // avoid being inline
-
 	books := make([]*Book, n)
 	for i := range books {
 		books[i] = new(Book)

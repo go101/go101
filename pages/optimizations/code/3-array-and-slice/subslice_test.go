@@ -22,7 +22,7 @@ func init() {
 func h(rs []byte, bs []byte) {
 	for i, j := 0, 0; i < len(bs) - 3; i += 4 {
 		s2 := bs[i:]
-		rs[j] = s2[3] ^ s2[2] ^ s2[1] ^ s2[0]
+		rs[j] = s2[3] ^ s2[0]
 		j++
 	}
 }
@@ -31,7 +31,7 @@ func h(rs []byte, bs []byte) {
 func f(rs []byte, bs []byte) {
 	for i, j := 0, 0; i < len(bs) - 3; i += 4 {
 		s2 := bs[i:i+4]
-		rs[j] = s2[3] ^ s2[2] ^ s2[1] ^ s2[0]
+		rs[j] = s2[3] ^ s2[0]
 		j++
 	}
 }
@@ -40,7 +40,7 @@ func f(rs []byte, bs []byte) {
 func g(rs []byte, bs []byte) {
 	for i, j := 0, 0; i < len(bs) - 3; i += 4 {
 		s2 := bs[i:i+4:i+4]
-		rs[j] = s2[3] ^ s2[2] ^ s2[1] ^ s2[0]
+		rs[j] = s2[3] ^ s2[0]
 		j++
 	}
 }
@@ -48,7 +48,7 @@ func g(rs []byte, bs []byte) {
 //go:noinline
 func q(rs []byte, bs []byte) {
 	for j := 0; len(bs) >= 4; j++ {
-		rs[j] = bs[3] ^ bs[2] ^ bs[1] ^ bs[0]
+		rs[j] = bs[3] ^ bs[0]
 		bs = bs[4:]
 	}
 }

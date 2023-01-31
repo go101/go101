@@ -22,10 +22,13 @@ The following implementation might be the most performant way to do the task:
 func merge[S ~[]E, E any](ss ...S) S {
 	var n, allNils, k = 0, true, -1
 	for i := range ss {
-		if m := len(ss[i]); n > 0 {
+		if m := len(ss[i]); n != 0 {
 			n += m
+			if n < 0 {
+				panic("sum of lengths is too large")
+			}
 		} else if m > 0 {
-			n += m
+			n = m
 			allNils = false
 			k = i
 		} else {

@@ -10,7 +10,6 @@ var t5 T5
 
 //go:noinline
 func Add4(x, y T4) (z T4) {
-	type _ int // avoiding being inlined
 	z.a = x.a + y.a
 	z.b = x.b + y.b
 	z.c = x.c + y.c
@@ -20,7 +19,6 @@ func Add4(x, y T4) (z T4) {
 
 //go:noinline
 func Add5(x, y T5) (z T5) {
-	type _ int // avoiding being inlined
 	z.a = x.a + y.a
 	z.b = x.b + y.b
 	z.c = x.c + y.c

@@ -20,13 +20,13 @@ func Benchmark_ConvertToArray_Unnamed(b *testing.B) {
 }
 
 func ConvertToArray_Named(b []byte) (ret [N]byte) {
-	// type _ int
+	// if b == nil {defer print() }
 	ret = *(*[N]byte)(b)
 	return
 }
 
 func ConvertToArray_Unnamed(b []byte) [N]byte {
-	// type _ int
+	// if b == nil {defer print() }
 	return *(*[N]byte)(b)
 }
 
@@ -43,13 +43,13 @@ func Benchmark_CopyToArray_Unnamed(b *testing.B) {
 }
 
 func CopyToArray_Named(b []byte) (ret [N]byte) {
-	// type _ int
+	// if b == nil {defer print() }
 	copy(ret[:], b)
 	return
 }
 
 func CopyToArray_Unnamed(b []byte) [N]byte {
-	// type _ int
+	// if b == nil {defer print() }
 	var ret [N]byte
 	copy(ret[:], b)
 	return ret
