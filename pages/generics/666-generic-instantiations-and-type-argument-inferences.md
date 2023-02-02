@@ -388,7 +388,7 @@ func main() {
 
 On the other hand, all the instantiations in the following program are invalid.
 All the type arguments are type parameters, and none of them implement
-the `comparable` constraints, which is why they are all invliad type arguments.
+the `comparable` constraints, which is why they are all invalid type arguments.
 
 ```Go
 package main

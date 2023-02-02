@@ -334,13 +334,13 @@ func main() {
 ```
 
 The concept of "strictly comparable" is introduced in Go 1.20.
-Comparing values of a strictly comparable type is guarenteed to be run-time panic free.
+Comparing values of a strictly comparable type is guaranteed to be run-time panic free.
 An ordinary type is strictly comparable if it is comparable and neither an interface type nor composed of interface types.
 
 The following value types are not strictly comparable:
 
 * (basic) interface types.
-* struct types which fileds contain interfaces.
+* struct types which fields contain interfaces.
 * array types which elements contain interfaces.
 * type parameters which type set contains at least one type of the above two cases (structs and arrays).
 
@@ -351,7 +351,7 @@ As mentioned in the last section, all types in the type set of the predeclared `
 {#implementation-vs-satisfaction}
 ## Type implementation vs. type satisfaction
 
-Before Go 1.20, the two terminolegies were used interchangeably.
+Before Go 1.20, the two terminologies were used interchangeably.
 In other words, the following two descriptions were equivalent to each other before Go 1.20:
 
 * a type `X` implements an interface type `Y`.
@@ -361,7 +361,7 @@ Before Go 1.20, they both meant the type set of the type `X` is a sub-set of the
 So, before Go 1.20, if a type `X` implements an interface type `Y`,
 then it must also satisfy `Y`; and vice versa.
 
-Since Go 1.20, the meaining of type implementation remains the same.
+Since Go 1.20, the meaning of type implementation remains the same.
 However, sometimes, an ordinary value type `X` might satisfy an interface type `Y`, even if it doesn't implement `Y`.
 In other words, since Go 1.20, if an ordinary value type `X` implements an interface type `Y`,
 then it must also satisfy `Y`; but not vice versa.
@@ -375,7 +375,7 @@ then `X` also satisfies `Y`.
 For example, the type `any` surely doesn't implements the type constraint `comparable`.
 But when it is used as an ordinary value type, it satisfies `comparable`.
 Because the underlying type of `comparable` can be written as `interface{ comparable; any }`
-and `any` impelements `any`.
+and `any` implements `any`.
 
 In the following code, the types `*A` and `*B` both satisfy (but don't implement) the interface type `C`.
 Because `C` can be written as `interface{ comparable; interface{ M() } }` and
