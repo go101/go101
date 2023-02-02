@@ -5,6 +5,7 @@
 
 * In the "Function inlining" section of the "Functions" chapter, mentions containing type delcarations will not prevent a function from being inlined since Go toolchain 1.20. Many examples using local type declaration `type _ int` are modified accordingly, including the one in the last section ("Grow stack in less times") of the "Stack and Escape Analysis" chapter.
 * In the "Arrays and Slices" chapter, mentions that `copy(s, s)` is a no-op, but `append(s[:0], s...)` is not.
+* In the "BCE (Bound Check Eliminate)" chapter, mentions that `-gcflags="-d=ssa/check_bce"` doesn't work for some generic functions.
 
 ## v1.19 (2022/Aug/28)
 

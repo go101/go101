@@ -91,6 +91,49 @@ is safe.
 The compiler also correctly thinks the only line (line <i>22</i>)
 in function <code>f4</code> is safe.
 </p>
+
+<p>
+Please note that, up to now (Go Toolchain 1.20), the standard compiler
+doesn't check BCE for an operation in a generic function if the operation
+involves type parameters and the generic function is never instantiated.
+</p>
+
+A demo case:
+
+<pre class="line-numbers must-line-numbers"><code class="language-go">// example1b.go
+package main
+
+func foo[E any](s []E) {
+	_ = s[0] // line 5
+	_ = s[1] // line 6
+	_ = s[2] // line 7
+}
+
+// var _ = foo[bool]
+
+func main() {
+}
+</code></pre>
+
+When the variable declaration line is disabled, the compiler outputs nothing:
+
+<pre class="output"><code>$ go run -gcflags="-d=ssa/check_bce" example1b.go
+</code></pre>
+
+<p>
+</p>
+
+When the variable declaration line is enabled, the compiler outputs:
+
+<pre class="output"><code>./aaa.go:5:7: Found IsInBounds
+./example1b.go:6:7: Found IsInBounds
+./example1b.go:7:7: Found IsInBounds
+./example1b.go:4:6: Found IsInBounds
+</code></pre>
+
+<p>
+</p>
+
 </div>
 
 <h3>Example 2</h3>
