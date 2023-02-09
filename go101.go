@@ -137,6 +137,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, gr
 				"Title":   article.TitleWithoutTags,
 				"Theme":   go101.theme,
 				//"IsLocalServer": isLocal,
+				"GoVersion": runtime.Version(),
 			}
 			t := retrievePageTemplate(Template_Article, !isLocal)
 			var buf bytes.Buffer
