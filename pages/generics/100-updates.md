@@ -1,13 +1,16 @@
 
 # Go Generics 101 Update History
 
-### v1.20 (2023/Feb/01)
+### v1.20.d (2023/Feb/23)
+
+* since Go 1.20, local type declarations are allowed within generic function bodies.
+  So the limitation is removed from the "The Status Quo of Go Custom Generics" chapter.
+
+### v1.20.a (2023/Feb/01)
 
 * add [comparable vs. strictly comparable](555-type-constraints-and-parameters.md#strictly-comparable) and
   [type implementation vs. type satisfaction](555-type-constraints-and-parameters.md#implementation-vs-satisfaction) sections in the
   [constraints and type parameters]((555-type-constraints-and-parameters.md) chapter.
-* since Go 1.20, local type declarations are allowed within generic function bodies.
-  So the limitation is removed from the "The Status Quo of Go Custom Generics" chapter.
 
 {#implementation-vs-satisfaction}
 ## Type implementation vs. type satisfaction

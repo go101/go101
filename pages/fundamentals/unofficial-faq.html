@@ -1200,6 +1200,7 @@ There are three <b><i>immutable value</i></b> definitions:
 <p>
 In Go, up to now (Go 1.20), there are no values satisfy the third definition.
 In other words, the third definition is not supported.
+However, variables of zero-size types may be viewed de facto immutable (addressable) values.
 </p>
 
 <p>
@@ -1209,7 +1210,7 @@ Name constant values satisfy the first definition.
 <p>
 Methods and package-level functions can also viewed as declared immutable values.
 They satisfy the second definition.
-String elements (bytes) also satisfy the second definition.
+String elements (bytes) and map entry elements also satisfy the second definition.
 </p>
 
 <p>
@@ -1276,49 +1277,7 @@ About more on strings, please read <a href="string.html">strings in Go</a>.
 </h3>
 
 <div>
-Example:
-<pre class="line-numbers"><code class="language-go">import (
-	"unsafe"
-	"sync/atomic"
-)
-
-type T int // just a demo
-
-var p *T
-
-func demo(newP *T) {
-	// load
-	var _ = (*T)(atomic.LoadPointer(
-		(*unsafe.Pointer)(unsafe.Pointer(&p)),
-		))
-
-	// store
-	atomic.StorePointer(
-		(*unsafe.Pointer)(unsafe.Pointer(&p)),
-		unsafe.Pointer(newP),
-		)
-
-
-	// swap
-	var oldP = (*T)(atomic.SwapPointer(
-		(*unsafe.Pointer)(unsafe.Pointer(&p)),
-		unsafe.Pointer(newP),
-		))
-
-	// compare and swap
-	var swapped = atomic.CompareAndSwapPointer(
-		(*unsafe.Pointer)(unsafe.Pointer(&p)),
-		unsafe.Pointer(oldP),
-		unsafe.Pointer(newP),
-		)
-
-	_ = swapped
-}
-</code></pre>
-
-<p>
-Yes, now it is very verbose to use the pointer atomic functions.
-</p>
+Please read <a href="concurrent-atomic-operation.html#pointer">atomic operations for pointers</a>.
 </div>
 
 <!-- others -->
