@@ -5,31 +5,6 @@ The previous chapters explain the basic knowledge about Go custom generics.
 This chapter will list some missing features in the current design and
 implementation of Go custom generics.
 
-## Type declarations inside generic functions are not currently supported
-
-Currently (Go 1.20), local type declarations are not allowed in generic functions.
-For example, in the following code, the ordinary function `f` compiles okay,
-but the generic function `g` doesn't.
-
-```Go
-func f() {
-	type _ int // okay
-}
-
-func g[T any]() {
-	type _ int // error
-}
-
-type T[_ any] struct{}
-
-func (T[_]) m() {
-	type _ int // error
-}
-```
-
-This restriction will [be removed from Go 1.20](https://github.com/golang/go/issues/47631).
-
-
 ## Generic type aliases are not supported currently
 
 Currently (Go 1.20), a declared type alias may not have type parameters.
