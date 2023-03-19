@@ -150,20 +150,17 @@ import (
 	"time"
 )
 
-var x = 0
-
 func main() {
-	var num = 123
-	var p = &num
+	var n = 123
 
 	c := make(chan int)
 
 	go func() {
-		c <- *p + x
+		c <- n + 0
 	}()
 
 	time.Sleep(time.Second)
-	num = 789
+	n = 789
 	fmt.Println(<-c)
 }
 </code></pre>
@@ -171,24 +168,24 @@ func main() {
 <p>
 What do you expect the program will output? <code>123</code>, or <code>789</code>?
 In fact, the output is compiler dependent.
-For the standard Go compiler 1.19,
+For the standard Go compiler 1.20,
 it is very possible the program will output <code>123</code>.
 But in theory, it might also output <code>789</code>.
 </p>
 
 <p>
-Now, let's change <code>c &lt;- *p + x</code> to <code>c &lt;- *p</code>
+Now, let's change <code>c &lt;- n + 0</code> to <code>c &lt;- n</code>
 and run the program again, you will find the output becomes to <code>789</code>
-(for the standard Go compiler 1.19).
+(for the standard Go compiler 1.20).
 Again, the output is compiler dependent.
 </p>
 
 <p>
 Yes, there are data races in the above program.
-The expression <code>*p</code> might be evaluated before, after, or when
-the assignment <code>num = 789</code> is processed.
+The expression <code>n</code> might be evaluated before, after, or when
+the assignment statement <code>n = 789</code> is processed.
 The <code>time.Sleep</code> call can't guarantee the evaluation of
-<code>*p</code> happens before the assignment is processed.
+<code>n</code> happens before the assignment is processed.
 </p>
 
 For this specified example,
@@ -197,7 +194,7 @@ before creating the new goroutine and send the temporary value instead
 in the new goroutine to remove the data races.
 
 <pre class="line-numbers"><code class="language-go">...
-	tmp := *p
+	tmp := n
 	go func() {
 		c <- tmp
 	}()
