@@ -375,7 +375,7 @@ func lol[T string | []byte](c T) {
 ```
 
 Same as element index operations, if the type of an index expression is a type parameter,
-then all types set of its type set must be all integers.
+then all types in its type set must be integers.
 
 ## In a `for-range` loop, the ranged container is required to have a core type
 

@@ -69,10 +69,6 @@ const A = [2]int{1, 2}
 type BoolArray [A [1] * int]bool
 ```
 
-To avoid absolutely sentencing the constant array proposal to death,
-elements of constant array must not be treated as constants,
-just as elements of constant strings are not treated as constants.
-
 [a proposal]: https://github.com/golang/go/issues/6386
 
 ### BTW, substrings are also never constants

@@ -143,7 +143,7 @@ Some facts:
 
 * Toolchain versions <= 1.12.17 are unable to be built with toochain versions >= 1.16;
 * Toolchain versions <= 1.5.4 are uanable to be built with toolchain versions >= 1.6;
-* It is planned to [require a 1.17+ toolchain version to build 1.20+ toolchain versions](https://github.com/golang/go/issues/44505);
+* It is planned to [require a 1.17.13+ toolchain version to build 1.20+ toolchain versions](https://github.com/golang/go/issues/44505);
 * It is proposed to [require a 1.20+ toolchain verison to build 1.22+ toolchain verisons](https://github.com/golang/go/issues/54265).
 
 Currently, GoTV uses the toolchain set in the `PATH` environment variable as the bootstrap version by default.
