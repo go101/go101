@@ -551,7 +551,7 @@ and its underlying type is itself.
 There is not a rule which allows converting values from `[]T` to `string`.
 
 ```Go
-func jon[T byte](x Bytes) []T {
+func jon[T byte](x string) []T {
 	return []T(x) // error
 }
 ```

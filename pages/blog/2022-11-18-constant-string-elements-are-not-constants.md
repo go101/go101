@@ -60,7 +60,7 @@ No ambiguities happen here.
 Were elements of constant strings constants, the simplified type parameter declaration syntax couldn't be possible.
 
 There is [a proposal] to let Go support constant arrays (and other constant composite values).
-However, the Go custom syntax design has almost sentenced that proposal to death.
+However, the Go custom generics design has almost sentenced that proposal to death.
 Because, similarly, the following code will lead to parsing ambiguities
 if array values may be declared as constants.
 

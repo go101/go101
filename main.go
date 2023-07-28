@@ -13,7 +13,7 @@ import (
 
 var portFlag = flag.String("port", "55555", "server port")
 var genFlag = flag.Bool("gen", false, "HTML generation mode?")
-var themeFlag = flag.String("theme", "", "theme (auto | dark | light)")
+var themeFlag = flag.String("theme", "", "theme (dark | light)")
 var nobFlag = flag.Bool("nob", false, "not open browswer?")
 
 func main() {

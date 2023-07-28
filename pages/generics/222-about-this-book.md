@@ -48,6 +48,9 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 
 * more
 
+	https://github.com/golang/go/issues/60130
+	https://github.com/golang/go/issues/60117
+
 	https://github.com/golang/go/issues/51522 miscompilation of comparison between type parameter and interface
 	https://github.com/golang/go/issues/51521 wrong panic message for method call on nil of generic interface type
 

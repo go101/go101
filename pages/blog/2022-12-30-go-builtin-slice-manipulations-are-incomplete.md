@@ -127,4 +127,19 @@ which is much cleaner.
 
 [this proposal]: https://github.com/golang/go/issues/25638
 
+## Lack of a safe way to detect element overlapping of two slices
+
+This fact prevents custom Go packages to make perfect implementations for some slice manipulations.
+
+Some standard packages are using (ever used) unsafe ways to do the job.
+For example:
+
+* https://github.com/golang/go/blob/13529cc5f443ef4e242da3716daa0032aa8d34f2/src/slices/slices.go#L466-L479
+* https://github.com/golang/crypto/blob/eec23a3978ad/internal/subtle/aliasing.go#L13-L19
+
+These unsafe usages actually don't follow any [valid unsafe use patterns](https://pkg.go.dev/unsafe#Pointer),
+so they are bad and dangerous implementations.
+
+
+
 

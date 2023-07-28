@@ -10,7 +10,7 @@ This article lists several missing changes in Go [1.18] and [1.19] release notes
 [1.18]: https://go.dev/doc/go1.18
 [1.19]: https://go.dev/doc/go1.19
 
-## GoTv
+## GoTV
 
 We use [GoTV] to demonstrate the missing changes in this article.
 GoTV (Go Toolchain Version) is a tool used to manage and

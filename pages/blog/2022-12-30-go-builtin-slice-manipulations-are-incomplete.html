@@ -119,3 +119,18 @@ aSlice[m : : ]   // &lt;=&gt; aSlice[m : len(s) : len(s)]
 </code></pre>
 
 <p>which is much cleaner.</p>
+
+<h2>Lack of a safe way to detect element overlapping of two slices</h2>
+
+<p>This fact prevents custom Go packages to make perfect implementations for some slice manipulations.</p>
+
+<p>Some standard packages are using (ever used) unsafe ways to do the job.
+For example:</p>
+
+<ul>
+<li><a href="https://github.com/golang/go/blob/13529cc5f443ef4e242da3716daa0032aa8d34f2/src/slices/slices.go#L466-L479">https://github.com/golang/go/blob/13529cc5f443ef4e242da3716daa0032aa8d34f2/src/slices/slices.go#L466-L479</a></li>
+<li><a href="https://github.com/golang/crypto/blob/eec23a3978ad/internal/subtle/aliasing.go#L13-L19">https://github.com/golang/crypto/blob/eec23a3978ad/internal/subtle/aliasing.go#L13-L19</a></li>
+</ul>
+
+<p>These unsafe usages actually don't follow any <a href="https://pkg.go.dev/unsafe#Pointer">valid unsafe use patterns</a>,
+so they are bad and dangerous implementations.</p>

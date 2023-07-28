@@ -18,7 +18,7 @@ But in practice, this is seldom a problem and and actually often good for progra
 
 <h2>Clear map entries</h2>
 
-<p>We could use the following loop to clear all entries in a map:</p>
+<p>Before Go 1.21, we could use the following loop to clear all entries in a map:</p>
 
 <pre><code class="language-Go">	for key := range aMap {
 		delete(aMap, key)
@@ -31,13 +31,17 @@ Then how to release the backing array of the map? There are two ways:</p>
 
 <pre><code class="language-Go">	aMap = nil
 	// or
-	aMap = map(map[K]V)
+	aMap = make(map[K]V)
 </code></pre>
 
 <p>If the backing array of the map is not referenced elsewhere, then the backing array will be collected eventually after being released.</p>
 
 <p>If there will be many new entries to be put in the map after it is cleared, then the former way is preferred;
 otherwise, the latter (release) ways are preferred.</p>
+
+<p>Note: since Go 1.21, there is a better way to do this job.
+Go 1.21 introduced a new built-in function, <code>clear</code>, which may be used to clear all entries in a map,
+including those ones with NaN keys.</p>
 
 <h2><code>aMap[key]++</code> is more efficient than <code>aMap[key] = aMap[key] + 1</code></h2>
 
@@ -313,34 +317,34 @@ Benchmark_MapSwitch-4  47.46 ns/op
 block way is much more performant than the map-switch way.</p>
 
 <p>For the use cases which require high code performance,
-we can use index tables to reduce <code>if-else</code> boilerplates
+we can simulate a bool-key map by using an index table to reduce <code>if-else</code> boilerplates,
 but still keep the simplicity of the map switch way,
 with the help of a bool-to-int function.
 The following benchmarks show how to use the index table way.</p>
 
 <pre><code class="language-Go">func b2i(b bool) (r int) {
-	if b {r = 1}
+	if b {
+		r = 1
+	}
 	return
 }
-var a = [2]func() {g, f}
-func IndexTable(x bool) func() {
-	return a[b2i(x)]
-}
 
-func Benchmark_IndexTable(b *testing.B) {
+var boolMap = [2]func(){g, f}
+
+func Benchmark_BoolMap(b *testing.B) {
 	for i := 0; i &lt; b.N; i++ {
-		IndexTable(true)()
-		IndexTable(false)()
+		boolMap[b2i(true)]()
+		boolMap[b2i(false)]()
 	}
 }
 </code></pre>
 
-<p>From the above code, we could find that the uses of the index table way is as clean as
-the map-switch way, though it needs to define an extra tiny <code>b2i</code> function.
+<p>From the above code, we could find that the uses of the index table way are almost
+as clean as the map-switch way, though an extra tiny <code>b2i</code> function is needed.
 And from the following benchmark results, we know that the index table way
 is as performant as the <code>if-else</code> block way.</p>
 
 <pre><code>Benchmark_IfElse-4      4.155 ns/op
 Benchmark_MapSwitch-4  47.46 ns/op
-Benchmark_IndexTable-4  4.135 ns/op
+Benchmark_BoolMap-4     4.135 ns/op
 </code></pre>
