@@ -31,6 +31,14 @@ func Benchmark_LoopDelete(b *testing.B) {
 	}
 }
 
+func Benchmark_Clear(b *testing.B) {
+	var m = make(map[float64]struct{}, Max)
+	for i := 0; i < b.N; i++ {
+		addMapEntries(m, 0)
+		clear(m)
+	}
+}
+
 func Benchmark_LoopDelete_WithNaNs(b *testing.B) {
 	var m = make(map[float64]struct{}, Max)
 	for i := 0; i < b.N; i++ {
@@ -38,6 +46,14 @@ func Benchmark_LoopDelete_WithNaNs(b *testing.B) {
 		for k := range m {
 			delete(m, k)
 		}
+	}
+}
+
+func Benchmark_Clear_WithNaNs(b *testing.B) {
+	var m = make(map[float64]struct{}, Max)
+	for i := 0; i < b.N; i++ {
+		addMapEntries(m, 3)
+		clear(m)
 	}
 }
 

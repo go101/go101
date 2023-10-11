@@ -2,12 +2,12 @@ package arrays
 
 import "testing"
 
-// Before Go toolchain 1.19, the length used here is 2048.
-// But sometiems, the length 2048 is unable to verify the assuptions
-// with Go toolchain 1.19.
+// Before Go toolchain 1.19, the length has no effects on the (relative) benchmark results.
+// Since 1.19, we can only get expected benchmarks when the length is out of range of (128, 4000).
 // No sure whether or not this is caused by the runtime changes added in 1.19.
 // Todo: need investigations.
-var s = make([]int, 2048)
+var n = 4000
+var s = make([]int, n)
 var a = [1][]int{s}
 var t = struct{x []int}{s}
 var r []int
@@ -71,29 +71,31 @@ func Benchmark_MakeCopy_g(b *testing.B) {
 	}
 }
 
-func Benchmark_MakeCopy4(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		var a, b = s[:0], s[0:]
-		r = make([]int, len(s))
-		copy(r, a)
-		copy(r[len(a):], b)
-	}
-}
+var x, y []int
 
 func Benchmark_MakeCopy2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		var a, b = s[:len(s)], s[len(s):]
-		r = make([]int, len(s))
-		copy(r, a)
-		copy(r[len(a):], b)
+		x, y = s[:len(s)], s[len(s):]
+		r = make([]int, len(x))
+		copy(r, x)
+		copy(r[len(x):], y)
 	}
 }
 
 func Benchmark_MakeCopy3(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		var a, b = s[:len(s)/2], s[len(s)/2:]
+		x, y = s[:len(s)/2], s[len(s)/2:]
 		r = make([]int, len(s))
-		copy(r, a)
-		copy(r[len(a):], b)
+		copy(r, x)
+		copy(r[len(x):], y)
+	}
+}
+
+func Benchmark_MakeCopy4(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		x, y = s[:0], s[0:]
+		r = make([]int, len(s))
+		copy(r, x)
+		copy(r[len(x):], y)
 	}
 }

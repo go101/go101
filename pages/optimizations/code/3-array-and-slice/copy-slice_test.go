@@ -39,3 +39,10 @@ func Benchmark_Copy2_self(b *testing.B) {
 		copy2(s, s)
 	}
 }
+
+func Benchmark_Copy_self_half(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		copy(s, s[:N/2])
+	}
+}
+
