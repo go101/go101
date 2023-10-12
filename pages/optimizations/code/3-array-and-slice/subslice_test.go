@@ -4,14 +4,16 @@ package arrays
 
 import "testing"
 import "math/rand"
-import "time"
 
-var N = 1 << 6
+// Making benchmarks in Go is harder and harder.
+// Since Go 1.21, if N == 1 << 6, unxpected results will be got,
+// Still not get the reason.
+
+const N = 1 << 10
 var s = make([]byte, N)
 var r = make([]byte, N/4)
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
 	s := s
 	for i := range s {
 		s[i] = byte(rand.Intn(256))
