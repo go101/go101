@@ -128,7 +128,7 @@ In the generic function example shown in the last section,
 the two function instantiations are called full form instantiations,
 in which all type arguments are presented in their containing type argument lists.
 Go supports type inferences for generic function instantiations,
-which means the type argument list of an instantiated function
+so that the type argument list of an instantiated function
 may be partial or even be omitted totally,
 as long as the missing type arguments could be inferred from value parameters
 and presented type arguments.
@@ -175,7 +175,8 @@ func main() {
 }
 ```
 
-The inferred type arguments in a type argument list must be a suffix of the type argument list.
+The above has mentioned that a partial type argument list must be a prefix of the full argument list.
+This also means that the inferred type arguments in a type argument list belong to a suffix of the type argument list.
 For example, the following code fails to compile.
 
 ```Go
@@ -228,40 +229,143 @@ func main() {
 	foo(1.0)  // okay
 	foo(1.23) // error: cannot use 1.23 as int
 
-	bar(1.0) // error: float64 does not implement ~int
-	bar(1.2) // error: float64 does not implement ~int
+	bar(1.0)  // error: float64 does not implement ~int
+	bar(1.23) // error: float64 does not implement ~int
 }
 ```
 
-Sometimes, the inference process might be more complicate.
-For example, the following code compiles okay.
-The type of the instantiated function is `func([]Ints, Ints)`.
-A `[]int` value argument is [allowed to be passed](https://go101.org/article/value-conversions-assignments-and-comparisons.html) to an `Ints` value parameter,
-which is why the code compiles okay.
+Type argument inferences rules and implementation are still in the process of continuous improvement,
+from version to version. For example, the following code fails to compile before Go 1.21
+but it compiles okay since Go 1.21 (`T` is inferred as `float64`).
 
 ```Go
-func pat[P ~[]T, T any](x P, y T) bool { return true }
+func Less[T ~int | ~float64](x, y T) bool {
+	return x < y
+}
 
-type Ints []int
-var vs = []Ints{}
-var v = []int{}
-
-var _ = pat[[]Ints, Ints](vs, v) // okay
+var _ = Less(1, 0.0) // only compiles since 1.21
 ```
 
-But both of the following two calls don't compile.
-The reason is the missing type arguments are inferred from value arguments,
-so the second type arguments are inferred as `[]int`
-and the first type arguments are (or are inferred as) `[]Ints`.
-The two type arguments together don't satisfy the type parameter list.
+Before Go 1.21, when using a generic function as a function value,
+the type argument list of the instantiated function must be full.
+Since Go 1.21, the type argument list is allowed to be partial if
+some suffix type arguments could be inferred. For example
 
 ```Go
-// error: []Ints does not implement ~[][]int
-var _ = pat[[]Ints](vs, v)
-var _ = pat(vs, v)
+func Sum[T ~float32 | ~float64](x, y T) T {
+	return x + y
+}
+
+// The followig two lines compile okay only since Go 1.21.
+var _ func(float32, float32) float32 = Sum
+var _ func(float64, float64) float64 = Sum
+
+// Before Go 1.21, the above two lines must be written as:
+var _ func(float32, float32) float32 = Sum[float32]
+var _ func(float64, float64) float64 = Sum[float64]
 ```
 
-Please read Go specification for [the detailed type argument inference rules](https://go.dev/ref/spec#Type_inference).
+A complete example:
+
+```Go
+package main
+
+import "fmt"
+
+func Convert[S ~[]E, E, T any](s S, conv func(E) T) []T {
+	r := make([]T, len(s))
+	for i := range s {
+		r[i] = conv(s[i])
+	}
+	return r
+}
+
+func isEven(n int) bool {
+	return n&1 == 0
+}
+
+func intsToBools(s []int) []bool {
+	// The following line only compiles since Go 1.21.
+	var conv func([]int, func(int) bool) []bool = Convert
+	// Before Go 1.21, to make the above line compile, its
+	// right side must be written as Convert[[]int, int bool]
+	
+	return conv(s, isEven)
+}
+
+func main() {
+	var s = []int{2, 3, 5, 8}
+	fmt.Println(intsToBools(s)) // [true false false true]
+}
+```
+
+Similarly, since Go 1.21, type arguments may be inferred
+by analyzing method parameter types and result types.
+For example, the following code fails to compile before Go 1.21
+but it compiles okay since Go 1.21.
+
+
+```Go
+package main
+
+type C[I, O any] interface {
+	M(I) O
+}
+
+type Foo struct {
+	v int
+}
+
+func (f Foo) M(n int) bool {
+	return n == f.v
+}
+
+func bar[T C[I, O], I, O any](t T) {}
+
+func main() {
+	var foo Foo
+	
+	// 1.20:  error: cannot infer I. It must be written
+	//        as bar[Foo, int, bool](foo) to compile.
+	// 1.21+: compile okay.
+	bar(foo)
+}
+```
+
+A more complex example (it compiles okay since Go 1.21):
+
+```Go
+type Getter[T any] interface {
+	Get() T
+}
+
+type Age[T uint8 | int16] struct {
+	n T
+}
+
+func (a Age[T]) Get() T {
+	return a.n
+}
+
+func doSomething[T any](g Getter[T]) T {
+	return g.Get()
+}
+
+// The two lines only compiles since Go 1.21.
+var _ = doSomething(Age[uint8]{255}) // error
+var _ = doSomething(Age[int16]{256}) // error
+
+// Before Go 1.21, to make the above two lines
+// compile, they must be written as:
+var _ = doSomething[uint8](Age[uint8]{255})
+var _ = doSomething[int16](Age[int16]{256})
+```
+
+The book doesn't explain the detailed mechanisms involved in the inference process.
+Please read [Go specification] and [this blog] for the details in type argument inferences.
+
+[Go specification]: https://go.dev/ref/spec#Type_inference
+[this blog]: https://go.dev/blog/type-inference
 
 <!--
 https://github.com/golang/go/issues/51139
@@ -269,7 +373,7 @@ https://github.com/golang/go/issues/51139
 
 ## Type argument inferences don't work for generic type instantiations
 
-Currently (Go 1.20), inferring type arguments of instantiated types from value literals is not supported.
+Currently (Go 1.21), inferring type arguments of instantiated types from value literals is not supported.
 That means the type argument list of a generic type instantiation must be always in full form.
 
 For example, in the following code snippet, the declaration line for variable `y` is invalid,
@@ -305,45 +409,6 @@ var b = Lockable{Data: float64(1.23)} // error
 It is unclear whether or not [type argument inferences
 for generic type instantiations](https://github.com/golang/go/issues/50482)
 will be supported in future Go versions.
-
-<!--
-https://github.com/golang/go/issues/50482
--->
-
-For the same reason, the following code doesn't compile (as of Go toolchain 1.20).
-
-```Go
-type Getter[T any] interface {
-	Get() T
-}
-
-type Age[T uint8 | int16] struct {
-	n T
-}
-
-func (a Age[T]) Get() T {
-	return a.n
-}
-
-func doSomething[T any](g Getter[T]) T {
-	return g.Get()
-}
-
-// The twol lines fail to compile.
-var z = doSomething(Age[uint8]{255}) // error
-var w = doSomething(Age[int16]{256}) // error
-
-// The two lines compile okay.
-var x = doSomething[uint8](Age[uint8]{255})
-var y = doSomething[int16](Age[int16]{256})
-```
-
-<!--
-
-https://github.com/golang/go/issues/50484
-https://github.com/golang/go/issues/41176
-
--->
 
 ## Differences between passing type parameters and ordinary types as type arguments
 

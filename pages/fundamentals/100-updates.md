@@ -1,6 +1,11 @@
 
 # Go (Fundamentals) 101 Update History
 
+### v1.21.a (2023/Oct/11)
+
+* Go 1.21 [added a `clear` builtin function](https://go101.org/article/container.html#clear).
+* Since Go 1.21, [the call `panic(nil)` will produce a new non-nil runtime panic](https://go101.org/article/panic-and-recover-use-cases.html#avoid-verbose).
+
 ### v1.20.a (2023/Feb/01)
 
 * Go 1.20 [started to support slice to array conversions](https://go101.org/article/container.html#slice-to-array).

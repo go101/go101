@@ -1,6 +1,13 @@
 
 # Go Details & Tips 101 Update History
 
+### v1.21.a (2023/OCT/11)
+
+* "Syntax and Semantics Related" chapter:
+  * mentions the evaluation results of `unsafe.Alignof`, `unsafe.Offsetof` and `unsafe.Sizeof` function calls are not constants.
+* "Compiler and Runtime Related" chapter:
+  * added a "How to guarantee a struct field to be always 8-byte aligned" tip.
+
 ### v1.20.a (2023/Feb/01)
 
 * "Syntax and Semantics Related" chapter:

@@ -1044,7 +1044,7 @@ func main() {
 
 <p>
 The first argument of an <code>append</code> function
-call can't be an untyped <code>nil</code> (up to Go 1.20).
+call can't be an untyped <code>nil</code> (up to Go 1.21).
 </p>
 
 </div>
@@ -1634,7 +1634,7 @@ from a string to a byte slice</a>.
 
 <p>
 Neither of the two arguments of a <code>copy</code>
-function call can be an untyped <code>nil</code> value (up to Go 1.20).
+function call can be an untyped <code>nil</code> value (up to Go 1.21).
 </p>
 
 </div>
@@ -1759,33 +1759,35 @@ Some details about iterations over maps are listed here.
 
 If it is promised that there are no other goroutines
 manipulating a map <code>m</code>, then the following code is guaranteed to
-clear all entries stored in the map <code>m</code>:
+clear all entries (but the ones with keys as <code>NaN</code>) stored in the map <code>m</code>:
 <pre class="line-numbers"><code class="language-go">for key := range m {
 	delete(m, key)
 }
 </code></pre>
+
+<i>
+(Note: Go 1.21 introduced a <a href="#clear"><code>clear</code> builtin function</a>,
+which may be used to clear all entries of a map, including those with keys as <code>NaN</code>.)
+</i>
 
 <p>
 </p>
 
 Surely, array and slice elements can also be iterated by using the traditional <code>for</code> loop block:
 <pre class="line-numbers"><code class="language-go">for i := 0; i < len(anArrayOrSlice); i++ {
-	element := anArrayOrSlice[i]
-	// ...
+	// ... use anArrayOrSlice[i]
 }
 </code></pre>
 
 <p>
-Since version 1.11, the standard Go compiler has specially optimized the above loop block
-so that the loop block runs much faster than it looks.
 </p>
 
-For a <code>for-range</code> loop block
+For a <code>for-range</code> loop block (whether <code>=</code> or <code>:=</code> before <code>range</code>)
 
 <pre class="disable-line-numbers111"><code class="language-go">for key, element = range aContainer {...}
 </code></pre>
 
-there are three important facts.
+there are two important facts.
 
 <ol>
 <li>
@@ -1819,9 +1821,6 @@ there are three important facts.
 	(For this fact, and as using <code>for-range</code> loop blocks is the only way
 	to iterate map keys and elements, it is recommended not to use large-size types
 	as map key and element types, to avoid large copy burdens.)
-</li>
-<li>
-	All key-element pairs will be assigned to the <b>same</b> iteration variable pair.
 </li>
 </ol>
 
@@ -1895,49 +1894,27 @@ persons: &[{Alice 28} {Jack 25}]
 <p>
 </p>
 
-An example to prove the second and third facts.
+The following example proves the second facts.
 <pre class="line-numbers"><code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	langs := map[struct{ dynamic, strong bool }]map[string]int{
-		{true, false}:  {"JavaScript": 1995},
-		{false, true}:  {"Go": 2009},
-		{false, false}: {"C": 1972},
+	m := map[int]struct{ dynamic, strong bool } {
+		0: {true, false},
+		1: {false, true},
+		2: {false, false},
 	}
-	// The key type and element type of this map
-	// are both pointer types. Some weird, just
-	// for education purpose.
-	m0 := map[*struct{ dynamic, strong bool }]*map[string]int{}
-	for category, langInfo := range langs {
-		m0[&category] = &langInfo
-		// This following line has no effects on langs.
-		category.dynamic, category.strong = true, true
+	
+	for _, v := range m {
+		// This following line has no effects on the map m.
+		v.dynamic, v.strong = true, true
 	}
-	for category, langInfo := range langs {
-		fmt.Println(category, langInfo)
-	}
-
-	m1 := map[struct{ dynamic, strong bool }]map[string]int{}
-	for category, langInfo := range m0 {
-		m1[*category] = *langInfo
-	}
-	// m0 and m1 both contain only one entry.
-	fmt.Println(len(m0), len(m1)) // 1 1
-	fmt.Println(m1) // map[{true true}:map[C:1972]]
+	
+	fmt.Println(m[0]) // {true false}
+	fmt.Println(m[1]) // {false true}
+	fmt.Println(m[2]) // {false false}
 }
-</code></pre>
-
-As mentioned above, the entry iteration order is randomized,
-so the order of the first three lines of the output of
-the above program may be not same as the following one.
-
-<pre class="output"><code>{false true} map[Go:2009]
-{false false} map[C:1972]
-{true false} map[JavaScript:1995]
-1 1
-map[{true true}:map[Go:2009]]
 </code></pre>
 
 <p>
@@ -1983,6 +1960,88 @@ func fb(buffers []Buffer) int {
 </code></pre>
 
 <p>
+</p>
+
+Before Go 1.22, for a <code>for-range</code> loop block
+(note the sign before before <code>range</code> is <code>:=</code>)
+
+<pre class="line-numbers"><code class="language-go">for key, element := range aContainer {...}
+</code></pre>
+
+all key-element pairs will be assigned to <b>the same</b> iteration variable pair.
+However, since Go 1.22, each key-element pair will be assigned to a <b>distinctive</b> iteration variable pair
+(a.k.a. a distinctive instance will be created for each iteration variable in each loop step).
+
+<p></p>
+
+The following example shows the behavior differences between 1.21- and 1.22+ Go versions.
+
+<pre class="line-numbers"><code class="language-go">// forrange1.go
+package main
+
+import "fmt"
+
+func main() {
+	for i, n := range []int{0, 1, 2} {
+		defer func() {
+			fmt.Println(i, n)
+		}()
+	}
+}
+</code></pre>
+
+Use different versions of Go Toolchain to run the code
+(<a href="https://go101.org/apps-and-libs/gotv.html">gotv</a> is a tool used to
+manage and use multiple coexisting installations of official Go toolchain versions;
+the coming Go 1.22 versions will be based on the current tip version),
+we will get different outputs:
+
+<pre class="line-numbers"><code class="language-go">$ gotv 1.21. run forrange1.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.2/bin/go run forrange1.go
+2 3
+2 3
+2 3
+$ gotv :tip run forrange1.go
+[Run]: $HOME/.cache/gotv/bra_master/bin/go run forrange1.go
+2 3
+1 2
+0 1
+</code></pre>
+
+<p></p>
+
+Another example:
+
+<pre class="line-numbers"><code class="language-go">// forrange2.go
+package main
+
+import "fmt"
+
+func main() {
+	var m = map[*int]uint32{}
+	for i, n := range []int{1, 2, 3} {
+		m[&i]++
+		m[&n]++
+	}
+	fmt.Println(len(m))
+}
+</code></pre>
+
+Use different Go Toolchain versions, we will get the following outputs:
+
+<pre class="line-numbers"><code class="language-go">$ gotv 1.21. run forrange2.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.2/bin/go run forrange2.go
+2
+$ gotv :tip run forrange2.go
+[Run]: $HOME/.cache/gotv/bra_master/bin/go run forrange2.go
+6
+</code></pre>
+
+<p>
+Therefore, this is a semantic change that breaks backward compatibility.
+But the new semantic is actually more in line with people's expectations;
+and in theory, no old logic-correct code has been found will
+be broken by this change.
 </p>
 
 </div>
@@ -2131,19 +2190,56 @@ Since Go Toolchain 1.19, the optimization also works if the ranged value is an a
 </p>
 
 <p>
-Note: Go 1.21 will introduce a built-in <code>clear</code> function,
+Note: Go 1.21 introduced a <code>clear</code> builtin function,
 which can be used to clear map entries and reset slice elements.
+We should try to use that function instead of relying on this optimization
+to reset slice/array elements.
+Please read the next section for the <code>clear</code> builtin function.
 </p>
 </div>
 
-<!--
 <a class="anchor" id="clear"></a>
 <h3>Use the built-in <code>clear</code> function to clear map entries and reset slice elements</h3>
 
 <div>
-Go 1.21 introduced 
+<p>
+Go 1.21 introduced <code>clear</code> builtin function.
+This function is used to clear map entries and reset slice elements.
+</p>
+
+An example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	s := []int{1, 2, 3}
+	clear(s)
+	fmt.Println(s) // [0 0 0]
+	
+	a := [4]int{5, 6, 7, 8}
+	clear(a[1:3])
+	fmt.Println(a) // [5 0 0 8]
+	
+	m := map[float64]float64{}
+	x := 0.0
+	m[x] = x
+	x /= x // x is NaN now
+	m[x] = x
+	fmt.Println(len(m)) // 2
+	for k := range m {
+		delete(m, k)
+	}
+	fmt.Println(len(m)) // 1
+	clear(m)
+	fmt.Println(len(m)) // 0
+}
+</code></pre>
+
+<p>
+We can find that the <code>clear</code> function can even delete map entries with keys as <code>NaN</code>.
+</p>
 </div>
--->
 
 <a class="anchor" id="compile-time-evaluation"></a>
 <h3>Calls to the Built-in <code>len</code> and <code>cap</code> Functions May Be Evaluated at Compile Time</h3>
@@ -2246,7 +2342,7 @@ is a zero value literal representation of <code>T</code>.
 <h4>Clone slices</h4>
 
 <div>
-For the current Go verison (1.20), the simplest way to clone a slice is:
+For the current Go verison (1.21), the simplest way to clone a slice is:
 <pre class="disable-line-numbers111"><code class="language-go">sClone := append(s[:0:0], s...)
 </code></pre>
 
@@ -2263,7 +2359,7 @@ sClone := make([]T, len(s))
 copy(sClone, s)
 
 // Or the following one-line make+append way.
-// As of Go Toolchain v1.20, this way is a bit
+// As of Go Toolchain v1.21.n, this way is a bit
 // slower than the above two-line make+copy way.
 sClone := append(make([]T, 0, len(s)), s...)
 </code></pre>
@@ -2463,7 +2559,7 @@ s = append(s[:i], append(elements, s[i:]...)...)
 // might make at most two allocations.
 // The following verbose way always copies s[i:]
 // once and will only make at most one allocation.
-// However, as of Go Toolchain v1.20, the "make"
+// However, as of Go Toolchain v1.21.n, the "make"
 // call will clear partial of just allocated elements,
 // which is actually unnecessary. So the verbose
 // way is more efficient than the one-line way

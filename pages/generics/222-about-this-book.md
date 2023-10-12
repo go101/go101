@@ -20,6 +20,12 @@ including Go built-in generics, which and Go custom generics are two different s
 Currently, the book mainly focuses on the syntax of (and concepts in) custom generics.
 More practical examples will be provided when I get more experiences of using custom generics.
 
+## About GoTV
+
+During writing this book, the tool [GoTV](https://go101.org/apps-and-libs/gotv.html)
+is used to manage installations of multiple Go toolchain versions and check
+the behavior differences between Go toolchain versions.
+
 
 <!--
 https://github.com/golang/proposal/blob/master/design/generics-implementation-dictionaries-go1.18.md
@@ -47,6 +53,29 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
   使用bullet一条一条列出来。
 
 * more
+
+	https://github.com/golang/go/issues/62172
+		https://github.com/golang/go/issues/40301#issuecomment-885119414
+		https://github.com/golang/go/issues/40301#issuecomment-754156626
+		
+				package main
+
+				import "unsafe"
+
+				func f(x int64) byte {
+				  return 1 << unsafe.Sizeof(x) >> unsafe.Sizeof(x)
+				}
+
+				func g[T int64](x T) byte {
+				  return 1 << unsafe.Sizeof(x) >> unsafe.Sizeof(x)
+				}
+
+				func main() {
+				  var n int64 = 0
+				  println(f(n), g(n))
+				}
+
+	https://github.com/golang/go/issues/61741
 
 	https://github.com/golang/go/issues/60130
 	https://github.com/golang/go/issues/60117
@@ -87,6 +116,8 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 	https://github.com/golang/go/issues/55964
 	
 	https://github.com/golang/go/issues/56923
+	
+	https://github.com/golang/go/issues/62157
 	
 -->
 

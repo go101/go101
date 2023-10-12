@@ -1,6 +1,10 @@
 
 # Go Generics 101 Update History
 
+### v1.21.a (2023/Oct/11)
+
+* add examples for type inference enhancements made in Go 1.21.
+
 ### v1.20.d (2023/Feb/23)
 
 * since Go 1.20, local type declarations are allowed within generic function bodies.
