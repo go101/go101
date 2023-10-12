@@ -4,7 +4,6 @@
 ### v1.21.a (2023/OCT/11)
 
 * In "Stack and Escape Analysis" chapter, mentions `reflect.ValueOf` function calls will not always allocate and escale the values referenced by their arguments.
-* In "Specify capacity explicitly in subslice expression" section of the "Arrays and Slices" chapter, mentions specifying capacity is not faster now.
 * In "Clear map entries" section of the "Maps" chapter, mentions that Go 1.21 added a new `clear` builtin function.
 
 ### v1.20.a (2023/Feb/01)
