@@ -522,7 +522,7 @@ of a generic type specification declares a single type parameter
 which constraint presents in simplified form and starts with `*` or `(`.
 
 <!--
-Either the spec is not accurate or the implementaiton is still not perfect yet.
+Either the spec is not accurate or the implementation is still not perfect yet.
 
 type bar[T **string] struct{} // *string (type) is not an expression
 -->

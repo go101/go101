@@ -41,8 +41,8 @@ func Compare(a, b []byte) int {
 }
 ```
 
-The `strings.Compare` implementation is comparatively inefficent.
-Specifically, it is less efficent when the two string operands are not equal but their lengths are equal.
+The `strings.Compare` implementation is comparatively inefficient.
+Specifically, it is less efficient when the two string operands are not equal but their lengths are equal.
 
 [strings.Compare]: https://github.com/golang/go/blob/go1.19/src/strings/compare.go#L7-L28
 [bytes.Compare]: https://github.com/golang/go/blob/go1.19/src/bytes/bytes.go#L23-L28
@@ -56,7 +56,7 @@ is some interesting. The comment suggests that we should not use
 `strings.Compare` in Go at all, but no alternative efficient ways are available now yet
 (ironically, this function is used in [Go toolchain code] and recommended by [a standard library function]).
 It mentions that the compiler should make special optimizations to automatically
-convert the code using comparision operators into internal optimized three-way comparisons if possible.
+convert the code using comparison operators into internal optimized three-way comparisons if possible.
 However, such compiler optimizations have never been made,
 and there are no plans to make such optimizations yet as far as I know.
 Personally, I doubt such optimizations are feasible to be made for any use case.

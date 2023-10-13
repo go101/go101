@@ -39,7 +39,7 @@
 ### 1.15.b (2020/Oct/09)
 
 * describe more about [reflect.DeepEqual](https://go101.org/article/details.html#reflect-deep-equal) related details.
-* add [a new syntax execption](https://go101.org/article/exceptions.html#code-block-following-else).
+* add [a new syntax exception](https://go101.org/article/exceptions.html#code-block-following-else).
 
 ### 1.15.a (2020/Aug/07)
 
