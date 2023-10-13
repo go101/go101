@@ -315,9 +315,10 @@ So since Go 1.21, the above deferred function call should be written as
 
 <pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
 	defer func() {
-		err, _ = recover().(error)
-		if e := (*runtime.PanicNilError)(nil); errors.As(err, &e) {
-			err = nil
+		switch e := recover().(type) {
+		case *runtime.PanicNilError:
+		case error:
+			err = e
 		}
 	}()
 
