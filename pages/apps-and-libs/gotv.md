@@ -80,7 +80,11 @@ $ gotv 1.18.3 run main.go
 6 12
 ```
 
-Other `gotv` commands:
+Since version 0.2.1, we can set a toolchain version as the default version.
+When the default toolchain version is set, we can omit ToolchainVersion
+in `gotv` commands.
+
+All `gotv` specific commands:
 
 ```
 # sync the local Go git repository with remote
@@ -100,6 +104,12 @@ gotv pin-version ToolchainVersion
 
 # unpin the current pinned toolchain version
 gotv unpin-version
+
+# set the default toolchain version (since v0.2.1)
+gotv default-version ToolchainVersion
+
+# check the default toolchain version (since v0.2.1)
+gotv default-version
 ```
 
 ## Pin a toolchain version

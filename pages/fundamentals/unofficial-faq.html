@@ -491,9 +491,9 @@ Please read <a href="https://golang.org/doc/faq#What_operations_are_atomic_What_
 <div>
 <p>
 For most types, this is true.
-In fact, this is compiler dependent.
+But we should know that this is compiler dependent.
 For example, for the standard Go compiler,
-the statement is wrong for some zero values of string types.
+the statement is wrong for some zero values of string types and float-point types.
 </p>
 
 Evidence:
@@ -505,13 +505,18 @@ import (
 )
 
 func main() {
-	var s1 string
-	fmt.Println(s1 == "") // true
-	fmt.Println(*(*uintptr)(unsafe.Pointer(&s1))) // 0
-	var s2 = "abc"[0:0]
-	fmt.Println(s2 == "") // true
-	fmt.Println(*(*uintptr)(unsafe.Pointer(&s2))) // 4869856
-	fmt.Println(s1 == s2) // true
+	// case 1:
+	var s = "abc"[0:0]
+	fmt.Println(s == "") // true
+	var addr = *(*uintptr)(unsafe.Pointer(&s))
+	fmt.Println(addr) // <a-non-zero-value>
+
+	// case 2:
+	var x = 0.0
+	var y = -x
+	fmt.Println(y == 0) // true
+	var n = *(*uintptr)(unsafe.Pointer(&y))
+	fmt.Println(n) // 9223372036854775808
 }
 </code></pre>
 </div>
@@ -547,7 +552,7 @@ Currently (Go Toolchain 1.21), for the standard Go compiler:
 <li>
 	In user programs, there are not formal ways to prevent inlining of particular functions.
 	You can add a line <code>//go:noinline</code> directive before a function declaration to
-	prevent the function from being inlined, but this way is not guaranteed to work in the future.
+	prevent the function from being inlined, but this way is not guaranteed to always work in the future.
 </li>
 </ul>
 </div>

@@ -21,7 +21,7 @@ The permanent ones are caused by the custom generics design principles.
 The following contents of this chapter will list these restrictions.
 Some facts and related concepts will also be listed.
 
-## The type of a value used in a generic function must be a specified type
+## A value used in a generic function must have a specified type
 
 As mentioned in a previous chapter, since Go 1.18,
 value types in Go could be categorized in two categories:
@@ -98,7 +98,7 @@ the other two both compile okay.
 
 ```Go
 func box[T chan int | chan byte](c T) {
-	_ = <-c // error: no core type
+	_ = <-c // error
 }
 
 
@@ -112,7 +112,7 @@ func cat[T chan int | Ch](c T) {
 }
 ```
 
-This rule [might be relaxed to some extent in future Go versions](https://github.com/golang/go/issues/52129).
+<!-- https://github.com/golang/go/issues/52129 -->
 
 ## Type parameters may be type asserted to
 
@@ -250,6 +250,11 @@ Many operations require the constraint of a type parameter has a core type.
 
 To make descriptions simple, sometimes, we also call the core type of the constraint
 of a type parameter as the core type of the type parameter.
+
+Please note that, since a future Go version, [the core type concept]
+might be removed so that many of the limitations listed below will go.
+
+[the core type concept]: https://github.com/golang/go/issues/63940
 
 ## A function is required to have a core type to be callable
 

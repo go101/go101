@@ -163,7 +163,13 @@ An example:
 
 <pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
 	defer func() {
-		err, _ = recover().(error)
+		switch e := recover().(type) {
+		case nil:
+		case error:
+			err = e
+		default:
+			panic(e) // re-throw the panic
+		}
 	}()
 
 	doStep1()
@@ -179,7 +185,6 @@ An example:
 // might be different. Here, for each of them,
 // * panic with nil for success and no needs to continue.
 // * panic with error for failure and no needs to continue.
-// * will not produce other panics.
 // * not panic for continuing.
 func doStepN() {
 	...
@@ -316,9 +321,11 @@ So since Go 1.21, the above deferred function call should be written as
 <pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
 	defer func() {
 		switch e := recover().(type) {
-		case *runtime.PanicNilError:
+		case nil, *runtime.PanicNilError:
 		case error:
 			err = e
+		default:
+			panic(e) // re-throw the panic
 		}
 	}()
 
