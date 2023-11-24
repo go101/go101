@@ -284,13 +284,12 @@ func main() {
 </i></p>
 
 <p>
-Generally, converting a constant still yields a constant as result.
-(Except converting a constant string to byte slice or rune slice
-described in the below 8th rules.)
+Generally, converting a constant still yields a constant as result
+(except that the target type is not a basic type).
 </p>
 
 <div class="well">
-Given a constant value <code>x</code> and a type <code>T</code>, if <code>x</code> is representable as a value of type <code>T</code>,
+Given a constant value <code>x</code> and a basic type <code>T</code>, if <code>x</code> is representable as a value of type <code>T</code>,
 then <code>x</code> can be explicitly converted to <code>T</code>. In particular if <code>x</code> is an untyped value,
 then <code>x</code> can be <b>implicitly</b> converted to <code>T</code>.
 </div>
@@ -308,18 +307,21 @@ Example:
 <pre class="line-numbers"><code class="language-go">package main
 
 func main() {
+	// The implicit conversions are all legal.
 	const I = 123
 	const I1, I2 int8 = 0x7F, -0x80
 	const I3, I4 int8 = I, 0.0
-
 	const F = 0.123456789
 	const F32 float32 = F
 	const F32b float32 = I
 	const F64 float64 = F
-	const F64b = float64(I3) // must be explicitly
-
 	const C1, C2 complex64 = F, I
-	const I5 = int(C2) // must be explicitly
+	
+	// const F64b float64 = I3 // doesn't compile
+	const F64b = float64(I3)   // compiles okay
+	
+	// const I5 int = C2 // doesn't compile
+	const I5 = int(C2)   // compiles okay
 }
 </code></pre>
 </div>

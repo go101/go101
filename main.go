@@ -44,8 +44,6 @@ Retry:
 
 	go101.theme = *themeFlag
 
-	println("go101.theme: ", go101.theme)
-
 	genMode, rootURL := *genFlag, fmt.Sprintf("http://localhost:%v/", addr.Port)
 	if !genMode && !isAppEngine {
 		if !*nobFlag {
