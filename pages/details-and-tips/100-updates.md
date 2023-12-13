@@ -1,6 +1,11 @@
 
 # Go Details & Tips 101 Update History
 
+### v1.21.b 
+
+* "Standard and User Packages Related" chapter:
+  * due to https://github.com/golang/go/issues/57411, removed the "How to try to run a custom `init` function as early as possible?" tip.
+
 ### v1.21.a (2023/OCT/11)
 
 * "Syntax and Semantics Related" chapter:

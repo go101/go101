@@ -30,7 +30,7 @@ the behavior differences between Go toolchain versions.
 <!--
 
 
-
+https://github.com/golang/go/issues/58608
 
 https://github.com/golang/proposal/blob/master/design/generics-implementation-dictionaries-go1.18.md
 
