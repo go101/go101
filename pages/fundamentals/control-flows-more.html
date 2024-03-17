@@ -375,8 +375,8 @@ so that other running goroutines can have a chance to get attached and executed.
 <p>
 At runtime. we can call the <a href="https://golang.org/pkg/runtime/#GOMAXPROCS"><code>runtime.GOMAXPROCS</code></a>
 function to get and set the number of logical processors (<b>P</b>s).
-For the standard Go runtime, before Go 1.5, the default initial value of this number is <code>1</code>,
-but since Go 1.5, the default initial value of this number is equal to
+For the standard Go runtime, before Go Toolchain 1.5, the default initial value of this number is <code>1</code>,
+but since Go Toolchain 1.5, the default initial value of this number is equal to
 the number of logical CPUs available for the current running program.
 The default initial value (the number of logical CPUs) is the best choice for most programs.
 But for some file IO heavy programs, a <code>GOMAXPROCS</code> value larger than <code>runtime.NumCPU()</code> may be helpful.
@@ -515,44 +515,61 @@ are evaluated during the anonymous function call is executed.
 </p>
 
 Here is an example.
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="line-numbers"><code class="language-go">// eval-moment.go
+package main
 
 import "fmt"
 
 func main() {
 	func() {
+		var x = 0
 		for i := 0; i < 3; i++ {
-			defer fmt.Println("a:", i)
+			defer fmt.Println("a:", i + x)
 		}
+		x = 10
 	}()
 	fmt.Println()
 	func() {
+		var x = 0
 		for i := 0; i < 3; i++ {
 			defer func() {
-				fmt.Println("b:", i)
+				fmt.Println("b:", i + x)
 			}()
 		}
+		x = 10
 	}()
 }
 </code></pre>
 
-Run it. The output:
-<pre class="output"><code>a: 2
+Use different Go Toolchain versions to run the code
+(<a href="https://go101.org/apps-and-libs/gotv.html">gotv</a> is a tool used to
+manage and use multiple coexisting installations of official Go toolchain versions).
+The outputs:
+<pre class="output"><code>$ gotv 1.21. run eval-moment.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.8/bin/go run eval-moment.go
+a: 2
 a: 1
 a: 0
 
-b: 3
-b: 3
-b: 3
+b: 13
+b: 13
+b: 13
+$ gotv 1.22. run eval-moment.go
+[Run]: $HOME/.cache/gotv/tag_go1.22.1/bin/go run eval-moment.go
+a: 2
+a: 1
+a: 0
+
+b: 12
+b: 11
+b: 10
 </code></pre>
 
 <p>
-The first loop prints <code>i</code> as <code>2</code>, <code>1</code> and <code>0</code> as a sequence.
-The second loop always prints <code>i</code> as <code>3</code>,
-because when the three <code>fmt.Println</code> calls within the anonymous function are invoked,
-the value of the loop variable <code>i</code> has changed to <code>3</code>.
+Please note the behavior change caused by <a href="control-flows.html#for-semantic-change">the semantic change (of <code>for</code> loop blocks) made in Go 1.22</a>.
 </p>
 
+<!--
 To make the second loop print the same result as the first one,
 we can modify the second loop as
 
@@ -577,6 +594,7 @@ or
 
 <p>
 </p>
+-->
 
 The same argument valuation moment rules also apply to goroutine function calls.
 The following program will output <code>123 789</code>.

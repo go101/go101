@@ -25,16 +25,17 @@ There are three kinds of basic control flow code blocks in Go:
 There are also some control flow code blocks which are related to some certain kinds of types in Go.
 <ul>
 <li>
-	<code>for-range</code> loop block for
-	<a href="container.html#iteration">container</a> types.
+	<code>for-range</code> loop block to iterate integers,
+	all kinds of <a href="container.html#iteration">containers</a>,
+	and <a href="channel.html#range">channels</a>.
 </li>
 <li>
 	<code>type-switch</code> multi-way conditional execution block for
-	<a href="interface.html#type-switch">interface</a> types.
+	<a href="interface.html#type-switch">interfaces</a>.
 </li>
 <li>
 	<code>select-case</code> block for
-	<a href="channel.html#select">channel</a> types.
+	<a href="channel.html#select">channels</a>.
 </li>
 </ul>
 
@@ -55,7 +56,7 @@ jump out of breakable control flow blocks.
 <p>
 <code>for</code> and <code>for-range</code> loop blocks are called
 <b>loop control flow blocks</b>.
-We can use <code>continue</code> statements to end a loop step in advance
+We can use <code>continue</code> statements to end a loop iteration in advance
 in a loop control flow block, i.e. continue to the next iteration of the loop.
 </p>
 
@@ -75,9 +76,10 @@ can be viewed as control flow statements in broad sense.
 </p>
 
 <p>
-Only the basic control flow code blocks and code jump statements will be explained
-in the current article, other ones will be explained in
-many other Go 101 articles later.
+The current article mainly explains the basic control flow code blocks
+and code jump statements. Go 1.22 introduced <code>for range anInteger {...}</code>
+loops will be also touched. Other control flow code blocks will be explained
+in many other coming Go 101 articles.
 </p>
 </div>
 
@@ -234,13 +236,13 @@ will be executed (only once) before executing other statements in the <code>for<
 </p>
 
 <p>
-The <code>Condition</code> expression will be evaluated at each loop step.
+The <code>Condition</code> expression will be evaluated at each loop iteration.
 If the evaluation result is <code>false</code>, then the loop will end.
 Otherwise the body (a.k.a., the explicit code block) of the loop will get executed.
 </p>
 
 <p>
-The <code>PostSimpleStatement</code> will be executed at the end of each loop step.
+The <code>PostSimpleStatement</code> will be executed at the end of each loop iteration.
 </p>
 
 
@@ -298,8 +300,10 @@ for {
 <p>
 </p>
 
-If the <code>InitSimpleStatement</code> in a <code>for</code> block is a short variable declaration statement,
-then the declared variables will be viewed as being declared in the top nesting implicit code block of the <code>for</code> block.
+If the <code>InitSimpleStatement</code> in a <code>for</code> block
+is a short variable declaration statement,
+then the declared loop variables will be viewed as being declared
+in the top nesting implicit code block of the <code>for</code> block.
 For example, the following code snippet prints <code>012</code> instead of <code>0</code>.
 
 <pre class="line-numbers"><code class="language-go">for i := 0; i < 3; i++ {
@@ -317,10 +321,33 @@ For example, the following code snippet prints <code>012</code> instead of <code
 <p>
 </p>
 
-A <code>break</code> statement can be used to make execution jump out of the
+<a class="anchor" id="for-semantic-change"></a>
+Note: Go 1.22 modified the semantics of <code>for</code> loop blocks.
+<ul>
+<li>
+Prior to Go 1.22, every declared loop variable used in a <code>for</code> loop block
+was shared by all iterations during executing the loop block.
+</li>
+<li>
+Since Go 1.22, every declared loop variable used in a <code>for</code> loop
+will be instantiated as a distinctive instance at the start of each iteration.
+</li>
+</ul>
+
+<p>
+For most cases, the semantic change doesn't change code behavior.
+But <a href="control-flows-more.html#argument-evaluation-moment">sometimes, it does</a>.
+So the semantic change breaks backward compatibility.
+Since Go 1.22, <a href="https://go101.org/blog/2024-03-01-for-loop-semantic-changes-in-go-1.22.html">every
+Go source file should be specified a Go version</a> to
+reduce the damage as small as possible.
+</p>
+
+A <code>break</code> statement can be used to make execution jump out of a
 <code>for</code> loop control flow block in advance,
 if the <code>for</code> loop control flow block is the innermost breakable
 control flow block containing the <code>break</code> statement.
+For example, the following code also prints <code>0</code> to <code>9</code>.
 
 <pre class="line-numbers"><code class="language-go">i := 0
 for {
@@ -335,13 +362,74 @@ for {
 <p>
 </p>
 
-A <code>continue</code> statement can be used to end the current loop step
+A <code>continue</code> statement can be used to end the current loop iteration
 in advance (<code>PostSimpleStatement</code> will still get executed),
 if the <code>for</code> loop control flow block is the innermost
 loop control flow block containing the <code>continue</code> statement.
 For example, the following code snippet will print <code>13579</code>.
 
 <pre class="line-numbers"><code class="language-go">for i := 0; i < 10; i++ {
+	if i % 2 == 0 {
+		continue
+	}
+	fmt.Print(i)
+}
+</code></pre>
+
+</div>
+
+<a class="anchor" id="for-range-integer"></a>
+<h3>Use <code>for-range</code> Control Flow Blocks to Iterate Integers</h3>
+
+<div>
+
+<p>
+<code>for-range</code> loop blocks can be used to iterate integers,
+all kinds of <a href="container.html#iteration">containers</a>,
+and <a href="channel.html#range">channels</a>.
+The current article only explains how to use <code>for-range</code> loop blocks
+to iterate integers.
+</p>
+
+<p>
+Note: using <code>for-range</code> loop blocks to iterate integers is only supported since Go 1.22.
+</p>
+
+The following code
+
+<pre class="line-numbers"><code class="language-go">for i = range anInteger {
+	...
+}
+</code></pre>
+
+is actually a short form of
+
+<pre class="line-numbers"><code class="language-go">for i = 0; i < anInteger; i++ {
+	...
+}
+</code></pre>
+
+<p></p>
+
+Similarly,
+
+<pre class="line-numbers"><code class="language-go">for i := range anInteger {
+	...
+}
+</code></pre>
+
+is actually a short form of
+
+<pre class="line-numbers"><code class="language-go">for i := 0; i < anInteger; i++ {
+	...
+}
+</code></pre>
+
+<p></p>
+
+For example, the last example in the last section is equivalent to
+
+<pre class="line-numbers"><code class="language-go">for i := range 10 {
 	if i % 2 == 0 {
 		continue
 	}
@@ -499,7 +587,7 @@ can be detected to be equal at compile time, then a compiler may reject the latt
 For example, the standard Go compiler thinks the <code>case 6, 7, 8</code> line
 in the above example is invalid if that line is not commented out.
 But other compilers may think that line is okay.
-In fact, the current standard Go compiler (version 1.21.n)
+In fact, the current standard Go compiler (version 1.22.n)
 <a href="https://github.com/golang/go/issues/28357">allows duplicate boolean case expressions</a>,
 and gccgo (v8.2) allows both duplicate boolean and string case expressions.
 </p>
@@ -818,7 +906,7 @@ If a <code>continue</code> statement contains a label,
 the label must be declared just before a loop control flow block
 which contains the <code>continue</code> statement.
 We can view the label name as the name of the loop control flow block.
-The <code>continue</code> statement will end the current loop step of
+The <code>continue</code> statement will end the current loop iteration of
 the loop control flow block in advance, even if the loop control flow block
 is not the innermost loop control flow block containing
 the <code>continue</code> statement.

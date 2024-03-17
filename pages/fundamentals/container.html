@@ -1044,7 +1044,7 @@ func main() {
 
 <p>
 The first argument of an <code>append</code> function
-call can't be an untyped <code>nil</code> (up to Go 1.21).
+call can't be an untyped <code>nil</code> (up to Go 1.22).
 </p>
 
 </div>
@@ -1634,7 +1634,7 @@ from a string to a byte slice</a>.
 
 <p>
 Neither of the two arguments of a <code>copy</code>
-function call can be an untyped <code>nil</code> value (up to Go 1.21).
+function call can be an untyped <code>nil</code> value (up to Go 1.22).
 </p>
 
 </div>
@@ -1962,15 +1962,15 @@ func fb(buffers []Buffer) int {
 <p>
 </p>
 
-Before Go 1.22, for a <code>for-range</code> loop block
+Prior to Go 1.22, when a <code>for-range</code> loop block
 (note the sign before before <code>range</code> is <code>:=</code>)
 
 <pre class="line-numbers"><code class="language-go">for key, element := range aContainer {...}
 </code></pre>
 
-all key-element pairs will be assigned to <b>the same</b> iteration variable pair.
-However, since Go 1.22, each key-element pair will be assigned to a <b>distinctive</b> iteration variable pair
-(a.k.a. a distinctive instance will be created for each iteration variable in each loop step).
+is executed, all key-element pairs will be assigned to <b>the same</b> iteration variable instance pair.
+However, since Go 1.22, each key-element pair will be assigned to a <b>distinctive</b> iteration variable instance pair
+(a.k.a. a distinctive instance will be created for each iteration variable in each loop iteration).
 
 <p></p>
 
@@ -1990,22 +1990,21 @@ func main() {
 }
 </code></pre>
 
-Use different versions of Go Toolchain to run the code
+Use different Go Toolchain versions to run the code
 (<a href="https://go101.org/apps-and-libs/gotv.html">gotv</a> is a tool used to
-manage and use multiple coexisting installations of official Go toolchain versions;
-the coming Go 1.22 versions will be based on the current tip version),
+manage and use multiple coexisting installations of official Go toolchain versions),
 we will get different outputs:
 
 <pre class="line-numbers"><code class="language-go">$ gotv 1.21. run forrange1.go
-[Run]: $HOME/.cache/gotv/tag_go1.21.2/bin/go run forrange1.go
-2 3
-2 3
-2 3
-$ gotv :tip run forrange1.go
-[Run]: $HOME/.cache/gotv/bra_master/bin/go run forrange1.go
-2 3
-1 2
-0 1
+[Run]: $HOME/.cache/gotv/tag_go1.21.8/bin/go run forrange1.go
+2 2
+2 2
+2 2
+$ gotv 1.22. run forrange1.go
+[Run]: $HOME/.cache/gotv/tag_go1.22.1/bin/go run forrange1.go
+2 2
+1 1
+0 0
 </code></pre>
 
 <p></p>
@@ -2030,18 +2029,18 @@ func main() {
 Use different Go Toolchain versions, we will get the following outputs:
 
 <pre class="line-numbers"><code class="language-go">$ gotv 1.21. run forrange2.go
-[Run]: $HOME/.cache/gotv/tag_go1.21.2/bin/go run forrange2.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.8/bin/go run forrange2.go
 2
-$ gotv :tip run forrange2.go
-[Run]: $HOME/.cache/gotv/bra_master/bin/go run forrange2.go
+$ gotv 1.22. run forrange2.go
+[Run]: $HOME/.cache/gotv/tag_go1.22.1/bin/go run forrange2.go
 6
 </code></pre>
 
 <p>
-Therefore, this is a semantic change that breaks backward compatibility.
-But the new semantic is actually more in line with people's expectations;
-and in theory, no old logic-correct code has been found will
-be broken by this change.
+Therefore, this is a semantic change which breaks backward compatibility.
+But the new semantic is actually more in line with people's expectations.
+And in theory, no old code that was found to be logically correct
+would be broken by this change.
 </p>
 
 </div>
@@ -2342,7 +2341,7 @@ is a zero value literal representation of <code>T</code>.
 <h4>Clone slices</h4>
 
 <div>
-For the current Go version (1.21), the simplest way to clone a slice is:
+For the current Go version (1.22), the simplest way to clone a slice is:
 <pre class="disable-line-numbers111"><code class="language-go">sClone := append(s[:0:0], s...)
 </code></pre>
 
@@ -2359,7 +2358,7 @@ sClone := make([]T, len(s))
 copy(sClone, s)
 
 // Or the following one-line make+append way.
-// As of Go Toolchain v1.21.n, this way is a bit
+// As of Go Toolchain v1.22.n, this way is a bit
 // slower than the above two-line make+copy way.
 sClone := append(make([]T, 0, len(s)), s...)
 </code></pre>
@@ -2559,7 +2558,7 @@ s = append(s[:i], append(elements, s[i:]...)...)
 // might make at most two allocations.
 // The following verbose way always copies s[i:]
 // once and will only make at most one allocation.
-// However, as of Go Toolchain v1.21.n, the "make"
+// However, as of Go Toolchain v1.22.n, the "make"
 // call will clear partial of just allocated elements,
 // which is actually unnecessary. So the verbose
 // way is more efficient than the one-line way
