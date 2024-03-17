@@ -8,7 +8,7 @@ are valid and which are invalid in generic function bodies.
 Within a generic function body,
 an operation on a value of a type parameter is valid only if it is
 valid for values of every type in the type set of the constraint of the type parameter.
-In the current custom generic design and implementation (Go 1.21),
+In the current custom generic design and implementation (Go 1.22),
 it is not always vice versa.
 Some extra requirements must be met to make the operation valid.
 
@@ -258,7 +258,7 @@ might be removed so that many of the limitations listed below will go.
 
 ## A function is required to have a core type to be callable
 
-For example, currently (Go 1.21), in the following code, the functions `foo` and `bar` don't compile, bit the `tag` function does.
+For example, currently (Go 1.22), in the following code, the functions `foo` and `bar` don't compile, bit the `tag` function does.
 The reason is the `F` type parameters in the `foo` and `bar` generic functions
 both have not a core type, even
 
@@ -284,7 +284,7 @@ It is unclear whether or not the rule will be relaxed in future Go versions.
 
 ## The type literal in a composite literal must have a core type
 
-For example, currently (Go 1.21), in the following code snippet,
+For example, currently (Go 1.22), in the following code snippet,
 the functions `foo` and `bar` compile okay, but the other ones don't.
 
 ```Go
@@ -314,7 +314,7 @@ And if all types in the type set are maps, then their underlying types must be i
 Otherwise, their element types must be identical.
 The elements of strings are viewed as `byte` values.
 
-For example, currently (Go 1.21), in the following code snippet, only the functions `foo` and `bar` compile okay.
+For example, currently (Go 1.22), in the following code snippet, only the functions `foo` and `bar` compile okay.
 
 ```Go
 func foo[T []byte | [2]byte | string](c T) {
@@ -353,7 +353,7 @@ The specification requires the index expression must has a core type.)_
 
 ## A (sub)slice operation requires the container operand has a core type
 
-For example, currently (Go 1.21), the following two functions both fail to compile,
+For example, currently (Go 1.22), the following two functions both fail to compile,
 even if the subslice operations are valid for all types in the corresponding type sets.
 
 ```Go
@@ -384,7 +384,7 @@ then all types in its type set must be integers.
 
 ## In a `for-range` loop, the ranged container is required to have a core type
 
-For example, currently (Go 1.21), in the following code, 
+For example, currently (Go 1.22), in the following code, 
 only the last two functions, `dot1` and `dot2`, compile okay.
 
 ```Go
@@ -490,7 +490,7 @@ The conversion `[]byte(v)` (if it follows the `range` keyword) is [specifically
 optimized by the official standard Go compiler](https://go101.org/article/string.html#conversion-optimizations) so that it doesn't duplicate
 underlying bytes.
 
-The following function doesn't compile now (Go 1.21),
+The following function doesn't compile now (Go 1.22),
 even if the types of the two iteration variables are always `int` and `rune`.
 Whether or not it will compile in future Go versions is unclear.
 
@@ -513,7 +513,7 @@ https://github.com/golang/go/issues/51053
 
 Firstly, we should know [the conversion rules for ordinary types/values](https://go101.org/article/value-conversions-assignments-and-comparisons.html).
 
-By the current specification (Go 1.21),
+By the current specification (Go 1.22),
 given two types `From` and `To`, assume at least one of them is a type parameter,
 then a value of `From` can be converted to `To` if a value of each type in
 the type set of `From` can be converted to each type in the type set of `T`
@@ -618,7 +618,7 @@ Firstly, we should know [the assignment rules for ordinary types/values](https:/
 
 In the following descriptions, the type of the destination value is called as the destination type, and the type of the source value is called as the source type.
 
-By the current specification (Go 1.21), for a type parameter involved assignment,
+By the current specification (Go 1.22), for a type parameter involved assignment,
 
 * if the destination type is a type parameter and the source value is
   an untyped value, then the assignment is valid only if
@@ -805,7 +805,7 @@ func MyNew[T any]() *T {
 
 ## A call to the predeclared `make` function requires its first argument (the container type) has a core type 
 
-Currently (Go 1.21), in the following code snippet, the functions `voc` and `ted` both
+Currently (Go 1.22), in the following code snippet, the functions `voc` and `ted` both
 fail to compile, the other two compile okay.
 The reason is the first argument of a call to the predeclared `make` function
 is required to have a core type.
@@ -918,11 +918,11 @@ Empty-type-set interface types are totally useless in practice,
 but they might affect the implementation perfection from theory view.
 
 There are really several imperfections in the implementation
-of the current official standard Go compiler (v1.21.n).
+of the current official standard Go compiler (v1.22.n).
 
 For [example](https://github.com/golang/go/issues/51470),
 should the following function compile?
-It does with the latest official standard Go compiler (v1.21.n).
+It does with the latest official standard Go compiler (v1.22.n).
 However, one of the above sections has mentioned that a `make` call
 requires its argument must have a core type.
 The type set of the constraint `C` declared in the following code
@@ -944,7 +944,7 @@ func foo[T C]() {
 This following is [another example](https://github.com/golang/go/issues/51917#issuecomment-1084188702),
 in which all the function calls in the function `g` should compile okay.
 However, two of them fail to compile with
-the latest official standard Go compiler (v1.21.n).
+the latest official standard Go compiler (v1.22.n).
 
 ```Go
 func f1[T any](x T) {}
