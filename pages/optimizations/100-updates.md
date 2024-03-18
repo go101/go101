@@ -1,6 +1,10 @@
 
 # Go Optimizations 101 Update History
 
+### v1.22.a (2024/Mar/18)
+
+* Go 1.22 changed the semantics of for-loop code blocks. Related articles are modified accordingly.
+
 ### v1.21.a (2023/OCT/11)
 
 * In "Stack and Escape Analysis" chapter, mentions `reflect.ValueOf` function calls will not always allocate and escale the values referenced by their arguments.

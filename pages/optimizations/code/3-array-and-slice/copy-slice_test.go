@@ -2,7 +2,7 @@ package arrays
 
 import "testing"
 
-const N = 64
+const N = 32
 
 var r []byte
 var s = make([]byte, N)
@@ -12,6 +12,12 @@ func init() {
 	r = make([]byte, N)
 }
 
+func Benchmark_Copy2(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		copy2(r, s)
+	}
+}
+
 func copy2(d, s []byte) {
 	*(*[N]byte)(d) = *(*[N]byte)(s)
 }
@@ -19,12 +25,6 @@ func copy2(d, s []byte) {
 func Benchmark_Copy(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		copy(r, s)
-	}
-}
-
-func Benchmark_Copy2(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		copy2(r, s)
 	}
 }
 

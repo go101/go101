@@ -1,6 +1,13 @@
 
 # Go (Fundamentals) 101 Update History
 
+### v1.22.a (2024/Mar/18)
+
+* Go 1.22 introduced `for range Integer` loops and changed the semantics of for-loop code blocks. Related articles are modified accordingly:
+  * [Basic Control Flows](https://go101.org/article/control-flows.html#for-semantic-change)
+  * [Goroutines, Deferred Function Calls and Panic/Recover](https://go101.org/article/control-flows-more.html#argument-evaluation-moment)
+  * [Arrays, Slices and Maps in Go](https://go101.org/article/container.html#iteration)
+  
 ### v1.21.a (2023/Oct/11)
 
 * Go 1.21 [added a `clear` builtin function](https://go101.org/article/container.html#clear).

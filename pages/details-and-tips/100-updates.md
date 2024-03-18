@@ -1,6 +1,10 @@
 
 # Go Details & Tips 101 Update History
 
+### v1.22.a (2024/Mar/18)
+
+* Go 1.22 introduced `for range Integer` loops and changed the semantics of for-loop code blocks. Related contents are modified accordingly.
+
 ### v1.21.b 
 
 * "Standard and User Packages Related" chapter:

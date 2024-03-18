@@ -10,8 +10,7 @@ Currently, the following books are avaliable:
 These books are expected to help gophers gain a deep and thorough understanding of Go
 and be helpful for both beginner and experienced Go programmers.
 
-To get latest news of Go 101 books, please follow the official twitter account [@go100and1](https://twitter.com/go100and1)
-and join [the Go 101 Slack space](https://go-101.slack.com).
+To get latest news of Go 101 books, please follow the official twitter account [@go100and1](https://twitter.com/go100and1).
 
 ### Install, Update, and Read Locally
 
