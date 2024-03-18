@@ -671,7 +671,7 @@ func pet[A, B []byte](x A, y B){
 ```
 
 It is unclear whether or not the assignment rules will be relaxed in future Go versions.
-It looks [the posibility is small](https://github.com/golang/go/issues/51501).
+It looks [the possibility is small](https://github.com/golang/go/issues/51501).
 
 ## Calls to predeclared functions
 

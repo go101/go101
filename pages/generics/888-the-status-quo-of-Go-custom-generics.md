@@ -79,7 +79,7 @@ func foobar[T C](v T) {
 func main() {}
 ```
 
-This restriction is planed [to be removed in future Go toochain versions](https://github.com/golang/go/issues/51183).
+This restriction is planed [to be removed in future Go toolchain versions](https://github.com/golang/go/issues/51183).
 
 ## No ways to specific a field set for a constraint
 

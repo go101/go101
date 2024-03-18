@@ -256,7 +256,7 @@ func Sum[T ~float32 | ~float64](x, y T) T {
 	return x + y
 }
 
-// The followig two lines compile okay only since Go 1.21.
+// The following two lines compile okay only since Go 1.21.
 var _ func(float32, float32) float32 = Sum
 var _ func(float64, float64) float64 = Sum
 

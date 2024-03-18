@@ -286,7 +286,7 @@ The `comparable` interface type could be embedded in other interface types
 to filter out types which are not strictly comparable from their type sets.
 For example, the type set of the following declared constraint `C` contains only one type: `string`,
 because the other types in the union are either
-[incomprarable](https://go101.org/article/type-system-overview.html#types-not-support-comparison)
+[incomparable](https://go101.org/article/type-system-overview.html#types-not-support-comparison)
 (the first three) or not [strictly comparable](#strictly-comparable) (the last one).
 
 ```Go
