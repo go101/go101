@@ -32,15 +32,6 @@ func genStaticFiles(rootURL string) {
 		log.Fatal(err)
 	}
 
-	// md -> html
-	md2htmls := func(group string) {
-		dir := fullPath("pages", group)
-		outputs, err := runShellCommand(time.Minute/2, dir, "ebooktool", "-md2htmls")
-		if err != nil {
-			log.Fatalf("ebooktool failed to execute in directory: %s.\n%s", dir, outputs)
-		}
-	}
-
 	// load from http server
 	loadFile := func(uri string) []byte {
 		fullURL := rootURL + uri
@@ -130,6 +121,28 @@ func genStaticFiles(rootURL string) {
 		return
 	}
 
+	// md -> html
+	md2htmls := func(group string) {
+		dir := fullPath("pages", group)
+		outputs, err := runShellCommand(time.Minute/2, dir, "ebooktool", "-md2htmls")
+		if err != nil {
+			log.Fatalf("ebooktool failed to execute in directory: %s.\n%s", dir, outputs)
+		}
+	}
+	
+	tmd2htmls := func(group string) {
+		dir := fullPath("pages", group)
+		filenames, _ := readFolder(dir)
+		for _, filename := range filenames {
+			if strings.HasSuffix(filename, ".tmd") {
+				outputs, err := runShellCommand(time.Minute/2, dir, "tmd", filename)
+				if err != nil {
+					log.Fatalf("tmd failed to execute in directory: %s.\n%s", dir, outputs)
+				}
+			}
+		}
+	}
+
 	// collect ...
 
 	files := make(map[string][]byte, 128)
@@ -164,6 +177,7 @@ func genStaticFiles(rootURL string) {
 		}
 
 		md2htmls(group)
+		tmd2htmls(group)
 
 		{
 			dir := fullPath("pages", group)

@@ -512,14 +512,14 @@ The <code>After</code> function in the <code>time</code> standard package
 returns <a href="channel-use-cases.html#timer">a channel for delay notification</a>.
 The function is convenient, however each of its calls will
 create a new value of the <code>time.Timer</code> type.
-The new created <code>Timer</code> value will keep alive in the duration
+Before Go 1.23, the new created <code>Timer</code> value will keep alive within the duration
 specified by the passed argument to the <code>After</code> function.
 If the function is called many times in a certain period,
 there will be many alive <code>Timer</code> values accumulated
 so that much memory and computation is consumed.
 </p>
 
-For example, if the following <code>longRunning</code> function is called
+For example, (before Go 1.23), if the following <code>longRunning</code> function is called
 and there are millions of messages coming in one minute, then there will
 be millions of <code>Timer</code> values alive in a certain small period (several seconds),
 even if most of these <code>Timer</code> values have already become useless.
@@ -544,9 +544,11 @@ func longRunning(messages <-chan string) {
 </code></pre>
 
 <p>
+Note: since Go 1.23, this problem has gone.
+Because, since Go 1.23, a <code>Timer</code> value can be collected without expiring or being stopped.
 </p>
 
-To avoid too many <code>Timer</code> values being created in the above code,
+Before Go 1.23, to avoid too many <code>Timer</code> values being created in the above code,
 we should use (and reuse) a single <code>Timer</code> value to do the same job.
 
 <pre class="line-numbers"><code class="language-go">func longRunning(messages <-chan string) {
@@ -573,15 +575,41 @@ we should use (and reuse) a single <code>Timer</code> value to do the same job.
 </code></pre>
 
 <p>
-Note, the <code>if</code> code block is used to discard/drain a possible timer notification
-which is sent in the small period when executing the second branch code block.
+Note, the <code>if</code> code block is used to discard/drain the potential timer notification
+which is sent in the small period when executing the second branch code block
+(since Go 1.23, this has become needless).
 </p>
+
+Note: since Go 1.23, the <code>Timer.Reset</code> method will aoutomatically discard/drain the potential stale timer notification.
+So the above code can be simplified as
+
+<pre class="line-numbers"><code class="language-go">func longRunning(messages <-chan string) {
+	timer := time.NewTimer(time.Minute)
+	// defer timer.Stop() // become needless since Go 1.23
+
+	for {
+		select {
+		case <-timer.C:
+			return
+		case msg := <-messages:
+			fmt.Println(msg)
+		}
+
+		timer.Reset(time.Minute)
+	}
+}
+</code></pre>
 
 </div>
 
 <h3>Use <code>time.Timer</code> Values Incorrectly</h3>
 
 <div>
+
+<p><i>
+(Note: the problems described in the current section only existed before Go 1.23.
+Since Go 1.23, they have gone.)
+</i></p>
 
 An idiomatic use example of <code>time.Timer</code> values has been shown in the last section.
 Some explanations:
@@ -594,11 +622,11 @@ Some explanations:
 	then the <code>Timer</code> value must have already expired.
 </li>
 <li>
-	after a <code>Timer</code> value is stopped, its <code>C</code> channel field
+	before Go 1.23, after a <code>Timer</code> value is stopped, its <code>C</code> channel field
 	can only contain most one timeout notification.
 </li>
 <li>
-	we should take out the timeout notification, if it hasn't been taken out,
+	before Go 1.23, we should take out the timeout notification, if it hasn't been taken out,
 	from a timeout <code>Timer</code> value after the <code>Timer</code> value is stopped
 	and before resetting and reusing the <code>Timer</code> value.
 	This is the meaningfulness of the <code>if</code> code block in the example in the last section.
@@ -609,7 +637,8 @@ Some explanations:
 The <code>Reset</code> method of a <code>*Timer</code> value must be called
 when the corresponding <code>Timer</code> value has already expired or been stopped, otherwise,
 a data race may occur between the <code>Reset</code> call and
-a possible notification send to the <code>C</code> channel field of the <code>Timer</code> value.
+a possible notification send to the <code>C</code> channel field of the <code>Timer</code> value
+(before Go 1.23).
 </p>
 
 <p>

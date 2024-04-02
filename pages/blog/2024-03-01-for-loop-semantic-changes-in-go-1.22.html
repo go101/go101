@@ -1,3 +1,138 @@
+<html>
+<head><style>
+
+body {
+}
+
+.tmd-doc {
+  line-height: 1.5;
+}
+
+.tmd-doc, .tmd-base {
+  margin-top: 0px;
+  margin-bottom: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+
+.tmd-list {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.tmd-indented {
+  padding-left: 32px;
+}
+
+.tmd-quotation {
+  border-left: solid 3px #888;
+  color: #666;
+  margin-left: 6px;
+  padding-left: 6px;
+}
+
+.tmd-alert {
+  border: solid 1px #000;
+  margin: 3px 32px;
+  padding: 3px;
+}
+
+.tmd-code-block {
+  margin-top: 0px;
+  margin-bottom: 0px;
+  background: #ddd;
+  padding: 3px 6px;
+}
+
+
+.tmd-bold {
+  font-weight: bold;
+}
+
+.tmd-pale {
+  opacity:0.5;
+}
+
+.tmd-italic {
+  font-style: italic;
+}
+
+.tmd-revert-italic {
+  transform: scale(1) rotate(0deg) translate(0px, 0px) skew(10deg, 0deg);
+  display: inline-block;
+}
+
+.tmd-smaller-size {
+  font-size: smaller;
+}
+
+.tmd-larger-size {
+  font-size: larger;
+}
+
+.tmd-spoiler {
+  background: black;
+  color: black;
+  border-bottom: 3px black solid;
+}
+
+.tmd-secure-spoiler {
+  color: white;
+}
+
+.tmd-secure-spoiler::selection {
+  color: rgba(0, 0, 0, 0.0);
+  background: #888;
+}
+
+.tmd-deleted {
+  text-decoration: 2px line-through;
+}
+
+.tmd-invisible {
+  visibility: hidden;
+}
+
+.tmd-marked {
+  background: yellow;
+}
+
+.tmd-marked-2 {
+  background: #faa;
+}
+
+.tmd-underlined {
+  text-decoration: solid underline 1px;
+}
+
+.tmd-broken-link {
+  text-decoration: dotted underline 3px;
+}
+
+.tmd-code-span {
+  background: #ddd;
+  border: solid 1px #666;
+  padding: 1px 2px;
+  border-radius: 3px;
+}
+
+.tmd-mono-font {
+  border: 0px;
+  background: inherit;
+  color: inherit;
+  padding: inherit;
+}
+
+.tmd-keep-whitespaces {
+  white-space: break-spaces;
+}
+
+</style>
+</head>
+<body>
+
+<div class='tmd-doc'>
+
 <h1><code class='tmd-code-span'>for</code> Loop Semantic Changes in Go 1.22: Be Aware of the Impact</h1>
 
 <p></p>
@@ -44,7 +179,7 @@ func main() {
 </code></pre>
 
 <p></p>
-We can install multiple Go toolchain versions to check the outputs. Here, I use the <a href='https://go101.org/apps-and-libs/gotv.html'>GoTV tool</a> to (conveniently) choose Go toolchain versions.
+We can install multiple Go toolchain versions to check the outputs. Here, I use the <a href='https://go101.org/apps-and-libs/gotv.html'>GoTV</a> tool to (conveniently) choose Go toolchain versions.
 <p></p>
 The outputs:<pre class='tmd-code-block'><code>$ gotv 1.21. run demo1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo1.go
@@ -59,11 +194,11 @@ The behavior difference is obvious:
 <ul class='tmd-list'>
 
 <li>
-prior to Go 1.22, it (more likely) printed <code class='tmd-code-span'>14</code>;
+prior to Go 1.22, it printed <code class='tmd-code-span'>14</code> (very probably, when without the participation of the channel <code class='tmd-code-span'>c</code>);
 </li>
 
 <li>
-since Go 1.22, it (always) prints <code class='tmd-code-span'>10</code>.
+since Go 1.22, it prints <code class='tmd-code-span'>10</code> (always, even without the participation of the channel <code class='tmd-code-span'>c</code>).
 </li>
 
 </ul>
@@ -73,7 +208,7 @@ The reason for the difference:
 <ul class='tmd-list'>
 
 <li>
-prior to Go 1.22, every freshly-declared loop variable used in a <code class='tmd-code-span'>for</code> loop is shared by all iterations during executing the loop. The two new created goroutines are more likely executed after the execution of the <code class='tmd-code-span'>for</code> loop, in which case, the final values of the <code class='tmd-code-span'>i</code> and <code class='tmd-code-span'>v</code> loop variables are <code class='tmd-code-span'>3</code> and <code class='tmd-code-span'>4</code>. <code class='tmd-code-span'>(3+4) + (3+4)</code> gives <code class='tmd-code-span'>14</code>.
+prior to Go 1.22, every freshly-declared loop variable used in a <code class='tmd-code-span'>for</code> loop is shared by all iterations during executing the loop. The two new created goroutines are executed after the execution of the <code class='tmd-code-span'>for</code> loop, in which case, the final values of the <code class='tmd-code-span'>i</code> and <code class='tmd-code-span'>v</code> loop variables are <code class='tmd-code-span'>3</code> and <code class='tmd-code-span'>4</code>. <code class='tmd-code-span'>(3+4) + (3+4)</code> gives <code class='tmd-code-span'>14</code>.
 </li>
 
 <li>
@@ -83,12 +218,11 @@ since Go 1.22, every freshly-declared loop variable used in a <code class='tmd-c
 </ul>
 
 <p></p>
-Prior to Go 1.22, there is a data race condition present in the above program code, which should be a clear fact for a competent Go programmer. In order to avoid data race and get the same result as the new semantics, the loop in the program should be re-written as:
+Prior to Go 1.22, <span class='tmd-bold'>without the participation of the channel <code class='tmd-code-span'>c</code></span>, there is a data race condition present in the above program code, which should be a clear fact for a competent Go programmer. In order to avoid data race and get the same result as the new semantics, the loop in the program should be re-written as:
 <p></p>
 <pre class='tmd-code-block'><code class='language-Go'>	for i, v := range m {
 		i, v := i, v // this line is added
 		go func() {
-			<-c
 			out <- i+v
 		}()
 	}
@@ -119,7 +253,7 @@ func main() {
 </code></pre>
 
 <p></p>
-The outputs of the above program (similarly, for 1.21, it is more likely, and for 1.22, it is always):<pre class='tmd-code-block'><code>$ gotv 1.21. run demo2.go
+The outputs of the above program:<pre class='tmd-code-block'><code>$ gotv 1.21. run demo2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo2.go
 12
 $ gotv 1.22. run demo2.go
@@ -312,8 +446,8 @@ So, since Go 1.22, just be careful when using freshly-declared loop variables in
 <p></p>
 
 <div class='tmd-alert'>
-The above example suggests that some freshly-declared loop variables in <code class='tmd-code-span'>for;;</code> loops are expected to be per-iteration scoped, and some ones are expected to be whole-loop scoped. I ever suggested to <a href='https://github.com/golang/go/issues/60078#issuecomment-1547130632'>allow re-declaration statements as <code class='tmd-code-span'>postStatement</code> of <code class='tmd-code-span'>for;;</code> loops to <span class='tmd-bold'><span class='tmd-italic'>explicitly</span></span> specify which loop variables are per-iteration scoped</a>. For example, in the following loop code, <code class='tmd-code-span'>n</code> is per-iteration scoped but <code class='tmd-code-span'>counter</code> is whole-loop scoped.
-<div>
+The above example suggests that some freshly-declared variables in the first clause of a <code class='tmd-code-span'>for;;</code> loops are expected to be per-iteration scoped, and some are expected to be whole-loop scoped. I ever suggested to <a href='https://github.com/golang/go/issues/60078#issuecomment-1547130632'>allow re-declaration statements as <code class='tmd-code-span'>postStatement</code> of <code class='tmd-code-span'>for;;</code> loops to <span class='tmd-bold'><span class='tmd-italic'>explicitly</span></span> specify which variables are per-iteration scoped</a>. For example, in the following loop code, <code class='tmd-code-span'>n</code> is per-iteration scoped but <code class='tmd-code-span'>counter</code> is whole-loop scoped.
+<div class='tmd-base'>
 
 <p></p>
 <pre class='tmd-code-block'><code class='language-Go'>for counter, n := 0, 2; n >= 0; n := n - 1 { ... }
@@ -1050,4 +1184,8 @@ I have expressed my opinions in the following comments:
 But the proposal makers (some members in the Go core team) totally ignored them and decided to proceed with the semantic change of <code class='tmd-code-span'>for;;</code> loops anyway.
 <p></p>
 What's done is done. In the end, I hope this article will help you write professional Go code in the Go 1.22+ era.
+<p></p>
 
+</div>
+
+</body>

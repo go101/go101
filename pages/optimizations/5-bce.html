@@ -1,0 +1,629 @@
+<p id="f-5-BCE-md"></p>
+<h1>BCE (Bound Check Elimination)</h1>
+
+<p>Go is a memory safe language. In array/slice/string element indexing and subslice operations, Go runtime will check whether or not the involved indexes are out of range. If an index is out of range, a panic will be produced to prevent the invalid index from doing harm. This is called bounds checking.</p>
+
+<p>Bounds checks make our code run safely, on the other hand, they also make our code run a little slower.
+This is a trade-off a safe language must made.</p>
+
+<p>Since Go toolchain v1.7, the standard Go compiler has started to support BCE (bounds check elimination). BCE can avoid some unnecessary bounds checks, so that the standard Go compiler could generate more efficient programs.</p>
+
+<p>The following will list some examples to show in which cases BCE works and in which cases BCE doesn't work.</p>
+
+<p>We could use the <code>-d=ssa/check_bce</code> compiler option to show which code lines need bound checks.</p>
+
+<h2 id="example-1">Example 1</h2>
+
+<p>A simple example:</p>
+
+<pre><code class="language-Go">// example1.go
+package main
+
+func f1a(s []struct{}, index int) {
+	_ = s[index] // line 5: Found IsInBounds
+	_ = s[index]
+	_ = s[index:]
+	_ = s[:index+1]
+}
+
+func f1b(s []byte, index int) {
+	s[index-1] = 'a' // line 12: Found IsInBounds
+	_ = s[:index]
+}
+
+func f1c(a [5]int) {
+	_ = a[0]
+	_ = a[4]
+}
+
+func f1d(s []int) {
+	if len(s) &gt; 2 {
+	    _, _, _ = s[0], s[1], s[2]
+	}
+}
+
+func f1e(s []byte) {
+	if len(s) &gt;= 2 {
+		r := len(s) % 2
+		_ = s[r]
+	}
+}
+
+func f1g(s []int) {
+	middle := len(s) / 2
+	_ = s[:middle]
+	_ = s[middle:]
+}
+
+func main() {}
+</code></pre>
+
+<p>Let's run it with the <code>-d=ssa/check_bce</code> compiler option:</p>
+
+<pre><code>$ go run -gcflags=&quot;-d=ssa/check_bce&quot; example1.go
+./example1.go:5:7: Found IsInBounds
+./example1.go:12:3: Found IsInBounds
+</code></pre>
+
+<p>The outputs show that only two code lines needs bound checks in the above example code.</p>
+
+<p>Note that:</p>
+
+<ul>
+<li>Go toolchains with version smaller than 1.19 fail to remove the unnecessary bound check in the <code>f1e</code> function.</li>
+<li>Go toolchains with version smaller than 1.21 fail to remove the unnecessary bound check in the <code>f1g</code> function.</li>
+</ul>
+
+<p>And note that, up to now (Go toolchain v1.22.n), the official standard compiler
+doesn't check BCE for an operation in a generic function if the operation
+involves type parameters and the generic function is never instantiated.
+For example, the command <code>go run -gcflags=-d=ssa/check_bce bar.go</code> will report nothing.</p>
+
+<pre><code>// bar.go
+package bar
+
+func foo[E any](s []E) {
+	_ = s[0] // line 5
+	_ = s[1] // line 6
+	_ = s[2] // line 7
+}
+
+// var _ = foo[bool]
+</code></pre>
+
+<p>However, if the variable declaration line is enabled, then the compiler will report:</p>
+
+<pre><code>./bar.go:5:7: Found IsInBounds
+./bar.go:6:7: Found IsInBounds
+./bar.go:7:7: Found IsInBounds
+./bar.go:4:6: Found IsInBounds
+</code></pre>
+
+<h2 id="example-2">Example 2</h2>
+
+<p>All the bound checks in the slice element indexing and subslice operations shown in the following example are eliminated.</p>
+
+<pre><code class="language-Go">// example2.go
+package main
+
+func f2a(s []int) {
+	for i := range s {
+		_ = s[i]
+		_ = s[i:len(s)]
+		_ = s[:i+1]
+	}
+}
+
+func f2b(s []int) {
+	for i := 0; i &lt; len(s); i++ {
+		_ = s[i]
+		_ = s[i:len(s)]
+		_ = s[:i+1]
+	}
+}
+
+func f2c(s []int) {
+	for i := len(s) - 1; i &gt;= 0; i-- {
+		_ = s[i]
+		_ = s[i:len(s)]
+		_ = s[:i+1]
+	}
+}
+
+func f2d(s []int) {
+	for i := len(s); i &gt; 0; {
+		i--
+		_ = s[i]
+		_ = s[i:len(s)]
+		_ = s[:i+1]
+	}
+}
+
+func f2e(s []int) {
+	for i := 0; i &lt; len(s) - 1; i += 2 {
+		_ = s[i]
+		_ = s[i:len(s)]
+		_ = s[:i+1]
+	}
+}
+
+func main() {}
+</code></pre>
+
+<p>Run it, we will find that nothing is outputted.
+Yes, the official standard Go compiler is so clever that it finds all bound checks may be removed in the above example code.</p>
+
+<pre><code>$ go run -gcflags=&quot;-d=ssa/check_bce&quot; example2.go
+</code></pre>
+
+<p>There are still some small imperfections. If we modify the <code>f2g</code> and <code>f2h</code> functions as that shown in the following code, then the compiler (v1.22.n) fails to remove the bound checks for the two subslice operations.</p>
+
+<pre><code class="language-Go">// example2b.go
+package main
+
+func f2g(s []int) {
+	for i := len(s) - 1; i &gt;= 0; i-- {
+		//_ = s[i]
+		_ = s[:i+1] // line 7: Found IsSliceInBounds
+	}
+}
+
+func f2h(s []int) {
+	for i := 0; i &lt;= len(s) - 1; i++ {
+		//_ = s[i]
+		_ = s[:i+1] // line 14: Found IsSliceInBounds
+	}
+}
+
+func main() {}
+</code></pre>
+
+<p>Run it, we will get the following output:</p>
+
+<pre><code>$ go run -gcflags=&quot;-d=ssa/check_bce&quot; example2b.go
+./example2b.go:7:8: Found IsSliceInBounds
+./example2b.go:14:8: Found IsSliceInBounds
+</code></pre>
+
+<p>We may give the compiler some hints by turning on the comment lines to remove these bound checks.</p>
+
+<h2 id="example-3">Example 3</h2>
+
+<p>We should try to evaluate the element indexing or subslice operation with the largest index as earlier as possible to reduce the number of bound checks.</p>
+
+<p>In the following example, if the expression <code>s[3]</code> is evaluated without panicking, then the bound checks for <code>s[0]</code>, <code>s[1]</code> and <code>s[2]</code> could be eliminated.</p>
+
+<pre><code class="language-Go">// example3.go
+package main
+
+func f3a(s []int32) int32 {
+	return s[0] | // Found IsInBounds (line 5)
+		s[1] | // Found IsInBounds
+		s[2] | // Found IsInBounds
+		s[3]   // Found IsInBounds
+}
+
+func f3b(s []int32) int32 {
+	return s[3] | // Found IsInBounds (line 12)
+		s[0] |
+		s[1] |
+		s[2]
+}
+
+func main() {
+}
+</code></pre>
+
+<p>Run it, we get:</p>
+
+<pre><code>./example3.go:5:10: Found IsInBounds
+./example3.go:6:4: Found IsInBounds
+./example3.go:7:4: Found IsInBounds
+./example3.go:8:4: Found IsInBounds
+./example3.go:12:10: Found IsInBounds
+</code></pre>
+
+<p>From the output, we could learn that there are 4 bound checks in the <code>f3a</code> function, but only one in the <code>f3b</code> function.</p>
+
+<h2 id="example-4">Example 4</h2>
+
+<p>Since Go toolchain v1.19, the bould check in the <code>f5a</code> function is successfully removed,</p>
+
+<pre><code class="language-Go">func f5a(isa []int, isb []int) {
+	if len(isa) &gt; 0xFFF {
+		for _, n := range isb {
+			_ = isa[n &amp; 0xFFF]
+		}
+	}
+}
+</code></pre>
+
+<p>However, before Go toolchain v1.19, the check is not removed.
+The compilers before version 1.19 need a hint to be removed, as shown in the <code>f5b</code> function:</p>
+
+<pre><code class="language-Go">func f5b(isa []int, isb []int) {
+	if len(isa) &gt; 0xFFF {
+		// A successful hint (for v1.18- compilers)
+		isa = isa[:0xFFF+1]
+		for _, n := range isb {
+			_ = isa[n &amp; 0xFFF] // BCEed!
+		}
+	}
+}
+
+func f5c(isa []int, isb []int) {
+	if len(isa) &gt; 0xFFF {
+		// A not-workable hint (for v1.18- compilers)
+		_ = isa[:0xFFF+1]
+		for _, n := range isb {
+			_ = isa[n &amp; 0xFFF] // Found IsInBounds
+		}
+	}
+}
+
+func f5d(isa []int, isb []int) {
+	if len(isa) &gt; 0xFFF {
+		// A not-workable hint (for v1.18- compilers)
+		_ = isa[0xFFF]
+		for _, n := range isb {
+			_ = isa[n &amp; 0xFFF] // Found IsInBounds
+		}
+	}
+}
+</code></pre>
+
+<p>The next section shows more cases which need compiler hints to avoid some unnecessary bound checks.</p>
+
+<h2>Sometimes, the compiler needs some hints to remove some bound checks</h2>
+
+<p>The official standard Go compiler is still not smart enough to remove all unnecessary bound checks.
+Sometimes, the compiler needs to be given some hints to remove some bound checks.</p>
+
+<p>In the following example, by adding one hint line in the function <code>f4b</code>, all bound checks in the loop are eliminated.</p>
+
+<pre><code class="language-Go">func f4a(is []int, bs []byte) {
+	if len(is) &gt;= 256 {
+		for _, n := range bs {
+			_ = is[n] // Found IsInBounds
+		}
+	}
+}
+
+func f4b(is []int, bs []byte) {
+	if len(is) &gt;= 256 {
+		is = is[:256] // a successful hint
+		for _, n := range bs {
+			_ = is[n] // BCEed!
+		}
+	}
+}
+
+func f4c(is []int, bs []byte) {
+	if len(is) &gt;= 256 {
+		_ = is[:256] // a non-workable hint
+		for _, n := range bs {
+			_ = is[n] // Found IsInBounds
+		}
+	}
+}
+
+func f4d(is []int, bs []byte) {
+	if len(is) &gt;= 256 {
+		_ = is[255] // a non-workable hint
+		for _, n := range bs {
+			_ = is[n] // Found IsInBounds
+		}
+	}
+}
+</code></pre>
+
+<p>Please note that, as of Go toolchain v1.22.n, the two hints used in the <code>f4c</code> and <code>f4d</code> functions are not workable (but they should).</p>
+
+<p>In the following example, by adding a redundant <code>if</code> code block in the function <code>NumSameBytes_2</code>, all bound checks in the loop are eliminated.</p>
+
+<pre><code class="language-Go">type T = string
+
+func NumSameBytes_1(x, y T) int {
+	if len(x) &gt; len(y) {
+		x, y = y, x
+	}
+	for i := 0; i &lt; len(x); i++ {
+		if x[i] != 
+			y[i] { // Found IsInBounds
+			return i
+		}
+	}
+	return len(x)
+}
+
+func NumSameBytes_2(x, y T) int {
+	if len(x) &gt; len(y) {
+		x, y = y, x
+	}
+	
+	// a successful hint
+	if len(x) &gt; len(y) {
+		panic(&quot;unreachable&quot;)
+	}
+	
+	for i := 0; i &lt; len(x); i++ {
+		if x[i] != y[i] { // BCEed!
+			return i
+		}
+	}
+	return len(x)
+}
+</code></pre>
+
+<p>The above hint works when <code>T</code> is either a string type or a slice type,
+whereas each of the following two hints only works for one case (as of Go toolchain v1.22.n).</p>
+
+<pre><code class="language-Go">func NumSameBytes_3(x, y T) int {
+	if len(x) &gt; len(y) {
+		x, y = y, x
+	}
+	
+	y = y[:len(x)] // a hint, only works if T is slice
+	for i := 0; i &lt; len(x); i++ {
+		if x[i] != y[i] {
+			return i
+		}
+	}
+	return len(x)
+}
+
+func NumSameBytes_4(x, y T) int {
+	if len(x) &gt; len(y) {
+		x, y = y, x
+	}
+	
+	_ = y[:len(x)] // a hint, only works if T is string
+	for i := 0; i &lt; len(x); i++ {
+		if x[i] != y[i] {
+			return i
+		}
+	}
+	return len(x)
+}
+</code></pre>
+
+<p>Please note that, the future versions of the standard official Go compiler will become smarter so that the above hints will become unnecessary later.</p>
+
+<h2>Write code in BCE-friendly ways</h2>
+
+<p>In the following example, the <code>f7b</code> and <code>f7c</code> functions makes 3 less bound checks than <code>f7a</code>.</p>
+
+<pre><code class="language-Go">func f7a(s []byte, i int) {
+	_ = s[i+3] // Found IsInBounds
+	_ = s[i+2] // Found IsInBounds
+	_ = s[i+1] // Found IsInBounds
+	_ = s[i]   // Found IsInBounds
+}
+
+func f7b(s []byte, i int) {
+	s = s[i:i+4] // Found IsSliceInBounds
+	_ = s[3]
+	_ = s[2]
+	_ = s[1]
+	_ = s[0]
+}
+
+func f7c(s []byte, i int) {
+	s = s[i:i+4:i+4] // Found IsSliceInBounds
+	_ = s[3]
+	_ = s[2]
+	_ = s[1]
+	_ = s[0]
+}
+</code></pre>
+
+<p>However, please note that, there might be <a href="3-array-and-slice.html#specify-capacity">some other factors</a> which will affect program performances.
+On my machine (Intel i5-4210U CPU @ 1.70GHz, Linux/amd64), among the above 3 functions,
+the function <code>f7b</code> is actually the least performant one.</p>
+
+<pre><code class="language-Go">Benchmark_f7a-4  3861 ns/op
+Benchmark_f7b-4  4223 ns/op
+Benchmark_f7c-4  3477 ns/op
+</code></pre>
+
+<p>In practice, it is encouraged to use the three-index subslice form (<code>f7c</code>).</p>
+
+<p>In the following example, benchmark results show that</p>
+
+<ul>
+<li>the <code>f8z</code> function is the most performant one (in line with expectation)</li>
+<li>but the <code>f8y</code> function is as performant as the <code>f8x</code> function (unexpected).</li>
+</ul>
+
+<pre><code class="language-Go">func f8x(s []byte) {
+	var n = len(s)
+	s = s[:n]
+	for i := 0; i &lt;= n - 4; i += 4 {
+		_ = s[i+3] // Found IsInBounds
+		_ = s[i+2] // Found IsInBounds
+		_ = s[i+1] // Found IsInBounds
+		_ = s[i]
+	}
+}
+
+func f8y(s []byte) {
+	for i := 0; i &lt;= len(s) - 4; i += 4 {
+		s2 := s[i:]
+		_ = s2[3] // Found IsInBounds
+		_ = s2[2]
+		_ = s2[1]
+		_ = s2[0]
+	}
+}
+
+func f8z(s []byte) {
+	for i := 0; len(s) &gt;= 4; i += 4 {
+		_ = s[3]
+		_ = s[2]
+		_ = s[1]
+		_ = s[0]
+		s = s[4:]
+	}
+}
+</code></pre>
+
+<p>In fact, benchmark results also show the following <code>f8y3</code> function is as performant as the <code>f8z</code> function
+and the performance of the <code>f8y2</code> function is on par with the <code>f8y</code> function.
+So it is encouraged to use three-index subslice forms for such situations in practice.</p>
+
+<pre><code class="language-Go">func f8y2(s []byte) {
+	for i := 0; i &lt; len(s) - 3; i += 4 {
+		s2 := s[i:i+4] // Found IsInBounds
+		_ = s2[3]
+		_ = s2[2]
+		_ = s2[1]
+		_ = s2[0]
+	}
+}
+
+func f8y3(s []byte) {
+	for i := 0; i &lt; len(s) - 3; i += 4 {
+		s2 := s[i:i+4:i+4] // Found IsInBounds
+		_ = s2[3]
+		_ = s2[2]
+		_ = s2[1]
+		_ = s2[0]
+	}
+}
+</code></pre>
+
+<p>In the following example, there are no bound checks in the <code>f9b</code> and <code>f9c</code> functions, but there is one in the <code>f9a</code> function.</p>
+
+<pre><code class="language-Go">func f9a(n int) []int {
+	buf := make([]int, n+1)
+	k := 0
+	for i := 0; i &lt;= n; i++ {
+		buf[i] = k // Found IsInBounds
+		k++
+	}
+	return buf
+}
+
+
+func f9b(n int) []int {
+	buf := make([]int, n+1)
+	k := 0
+	for i := 0; i &lt; len(buf); i++ {
+		buf[i] = k
+		k++
+	}
+	return buf
+}
+
+func f9c(n int) []int {
+	buf := make([]int, n+1)
+	k := 0
+	for i := 0; i &lt; n+1; i++ {
+		buf[i] = k
+		k++
+	}
+	return buf
+}
+</code></pre>
+
+<p>In the following code, the function <code>f0b</code> is much more performant than <code>f0a</code>.</p>
+
+<pre><code class="language-Go">func f0a(x [16]byte) (r [4]byte){
+	for i := 0; i &lt; 4; i++ {
+		r[i] =
+			x[i*4+3] ^ // Found IsInBounds
+			x[i*4+2] ^ // Found IsInBounds
+			x[i*4+1] ^ // Found IsInBounds
+			x[i*4]     // Found IsInBounds
+	}
+	return
+}
+
+func f0b(x [16]byte) (r [4]byte){
+	r[0] = x[3] ^ x[2] ^ x[1] ^ x[0]
+	r[1] = x[7] ^ x[6] ^ x[5] ^ x[4]
+	r[2] = x[11] ^ x[10] ^ x[9] ^ x[8]
+	r[3] = x[15] ^ x[14] ^ x[13] ^ x[12]
+	return
+}
+</code></pre>
+
+<p>Global (package-level) slices are often unfriendly to BCE, so we should try to assign them to local ones to eliminate some unnecessary bound checks. For example, in the following code, the <code>fa0</code> function does one more bound check than the <code>fa1</code> and <code>fa2</code> functions, so the function calls <code>fa1()</code> and <code>fa2(s)</code> are both more performant than <code>fa0()</code>.</p>
+
+<pre><code class="language-Go">var s = make([]int, 5)
+
+func fa0() {
+	for i := range s {
+		s[i] = i // Found IsInBounds
+	}
+}
+
+func fa1() {
+	s := s
+	for i := range s {
+		s[i] = i
+	}
+}
+
+func fa2(x []int) {
+	for i := range x {
+		x[i] = i
+	}
+}
+</code></pre>
+
+<p>Arrays are often more BCE-friendly than slices.
+In the following code, the array version functions (<code>fb2</code> and <code>fc2</code>) don't need bound checks.</p>
+
+<pre><code class="language-Go">var s = make([]int, 256)
+var a = [256]int{}
+
+func fb1() int {
+    return s[100] // Found IsInBounds
+}
+
+func fb2() int {
+    return a[100]
+}
+
+func fc1(n byte) int {
+    return s[n] // Found IsInBounds
+}
+
+func fc2(n byte) int {
+    return a[n]
+}
+</code></pre>
+
+<p>Please note that, the future versions of the standard official Go compiler will become smarter so that some BCE-unfriendly code might become BCE-friendly later.</p>
+
+<h2>The current official standard Go compiler fails to eliminate some unnecessary bound checks</h2>
+
+<p>As of Go toolchain v1.22.n, the official standard Go compiler doesn't eliminate the following unnecessary bound checks.</p>
+
+<pre><code class="language-Go">func fb(s, x, y []byte) {
+	n := copy(s, x)
+	copy(s[n:], y) // Found IsSliceInBounds
+	_ = x[n:]      // Found IsSliceInBounds
+}
+
+func fc(s []byte) {
+	const N = 6
+	for i := 0; i &lt; len(s)-(N-1); i += N {
+		_ = s[i+N-1] // Found IsInBounds
+	}
+}
+
+func fd(data []int, check func(int) bool) []int {
+	var k = 0
+	for _, v := range data {
+		if check(v) {
+			data[k] = v // Found IsInBounds
+			k++
+		}
+	}
+	return data[:k] // Found IsSliceInBounds
+}
+</code></pre>
+
+<p>The future versions of the standard official Go compiler will become smarter so that the above unnecessary bound checks will be eliminated later.</p>

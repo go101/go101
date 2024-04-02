@@ -11,6 +11,7 @@ var redirectPages = map[[2]string][2]string{
 	{"fundamentals", "tools.html"}:      {"apps-and-libs", "101.html"},
 	{"fundamentals", "tool-gold.html"}:  {"apps-and-libs", "golds.html"},
 	{"fundamentals", "tool-golds.html"}: {"apps-and-libs", "golds.html"},
+	{"fundamentals", "bounds-check-elimination.html"}: {"optimizations", "5-bce.html"},
 }
 
 func (go101 *Go101) RedirectArticlePage(w http.ResponseWriter, r *http.Request, group, file string) bool {

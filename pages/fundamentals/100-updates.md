@@ -188,7 +188,7 @@
 ### 1.10.d (2018/Apr/18)
 
 * added a new detail: [Non-exported method names and struct field names from different packages are viewed as diffferent names.](https://go101.org/article/details.html#non-exported-names-from-different-packages).
-* added a FAQ question: [What does the compiler error message <code>declared and not used</code> mean?](https://go101.org/article/unofficial-faq.html#error-declared-not-used")
+* added a FAQ question: [What does the compiler error message `declared and not used` mean?](https://go101.org/article/unofficial-faq.html#error-declared-not-used)
 * added a FAQ question: [What is the difference between the function call <code>time.Sleep(d)</code> and the channel receive operation <code>&lt;-time.After(d)</code>?](https://go101.org/article/unofficial-faq.html#time-sleep-after)
 * added a FAQ question: [What is the difference between the random numbers produced by the <code>math/rand</code> standard package and the <code>crypto/rand</code> standard package?](https://go101.org/article/unofficial-faq.html#math-crypto-rand)
 * added a FAQ question: [What are the differences between the <code>fmt.Print</code> and <code>fmt.Println</code> functions?](https://go101.org/article/unofficial-faq.html#fmt-print-println)

@@ -58,31 +58,46 @@ $ gotv 1.18.3 version
 [Run]: $HOME/.cache/gotv/tag_go1.18.3/bin/go version
 go version go1.18.3 linux/amd64
 
-$ cat main.go
+$ cat search.go
 package main
 
-const A = 3
+import "fmt"
 
-func main() {
-	const (
-		A = A + A
-		B
-	)
-	println(A, B)
+func demoFilter(n int) bool {
+	return n & 1 == 0;
 }
 
-$ gotv 1.17. run main.go
-[Run]: $HOME/.cache/gotv/tag_go1.17.13/bin/go run main.go
-6 6
+// Search values and return them without perverting order.
+func search(start, end int)(r []int) {
+	var count = 0
+	for i, index := start, 0; i <= end; i++ {
+		if demoFilter(i) {
+			count++
+			defer func(value int) {
+				r[index] = value
+				index++
+			}(i)
+		}
+	}
 
-$ gotv 1.18.3 run main.go
-[Run]: $HOME/.cache/gotv/tag_go1.18.3/bin/go run main.go
-6 12
+	r = make([]int, count) // only allocate once
+	return
+}
+
+func main() {
+	fmt.Println(search(0, 9))
+}
+
+$ gotv 1.21. run search.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run search.go
+[8 6 4 2 0]
+$ gotv 1.22. run search.go
+[Run]: $HOME/.cache/gotv/tag_go1.22.1/bin/go run search.go
+[0 0 0 0 0]
 ```
 
-Since version 0.2.1, we can set a toolchain version as the default version.
-When the default toolchain version is set, we can omit ToolchainVersion
-in `gotv` commands.
+_(The example code comes from [this blog article](https://go101.org/blog/2024-03-01-for-loop-semantic-changes-in-go-1.22.html).
+More uses of GoTV are demonstrated [here](https://go101.org/blog/2022-08-22-some-undocumented-changes-in-go-1.18-and-1.19.html).)_
 
 All `gotv` specific commands:
 
@@ -120,7 +135,7 @@ we can use the official `go` command directly.
 And after doing these, the toolchain versions installed through ways other than GoTV
 may be safely uninstalled.
 
-It is recommanded to pin a 1.17+ version for [bootstrap purpose](https://github.com/golang/go/issues/44505) now.
+It is recommended to pin a 1.17+ version for [bootstrap purpose](https://github.com/golang/go/issues/44505) now.
 The following example shows how to pin Go toolchain version 1.17.13:
 
 ```
@@ -153,8 +168,9 @@ Some facts:
 
 * Toolchain versions <= 1.12.17 are unable to be built with toochain versions >= 1.16;
 * Toolchain versions <= 1.5.4 are uanable to be built with toolchain versions >= 1.6;
-* It is planned to [require a 1.17.13+ toolchain version to build 1.20+ toolchain versions](https://github.com/golang/go/issues/44505);
-* It is proposed to [require a 1.20+ toolchain version to build 1.22+ toolchain versions](https://github.com/golang/go/issues/54265).
+* [A 1.17.13+ toolchain version is required to build 1.20+ toolchain versions](https://github.com/golang/go/issues/44505);
+* [A 1.20+ toolchain version is required to build 1.22+ toolchain versions](https://github.com/golang/go/issues/54265).
+* It is proposed to [require a 1.22+ toolchain version to build 1.24+ toolchain versions](https://github.com/golang/go/issues/64751).
 
 Currently, GoTV uses the toolchain set in the `PATH` environment variable as the bootstrap version by default.
 If `GOROOT_BOOTSTRAP` environment variable is set, then its value will be used.
