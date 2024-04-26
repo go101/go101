@@ -76,6 +76,10 @@ Update: view discussions on [reddit] and [HN].
 [reddit]: https://old.reddit.com/r/programming/comments/ycz0va/no_safe_efficient_ways_to_do_threeway_string/
 [HN]: https://news.ycombinator.com/item?id=33316402
 
+Update 2: finally, the `strings.Compare` function [got optimizted in Go 1.23].
+
+[got optimizted in Go 1.23]: https://github.com/golang/go/commit/fd999fda5941f215ef082c6ef70e44e648db5485
+
 
 
 

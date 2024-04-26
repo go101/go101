@@ -42,13 +42,6 @@ func f1d(s []int) {
 	}
 }
 
-func f1e(s []byte) {
-	if len(s) &gt;= 2 {
-		r := len(s) % 2
-		_ = s[r]
-	}
-}
-
 func f1g(s []int) {
 	middle := len(s) / 2
 	_ = s[:middle]
@@ -67,19 +60,14 @@ func main() {}
 
 <p>The outputs show that only two code lines needs bound checks in the above example code.</p>
 
-<p>Note that:</p>
-
-<ul>
-<li>Go toolchains with version smaller than 1.19 fail to remove the unnecessary bound check in the <code>f1e</code> function.</li>
-<li>Go toolchains with version smaller than 1.21 fail to remove the unnecessary bound check in the <code>f1g</code> function.</li>
-</ul>
+<p>Note that: Go toolchains with version smaller than 1.21 failed to remove the bound checks in the <code>f1g</code> function.</p>
 
 <p>And note that, up to now (Go toolchain v1.22.n), the official standard compiler
 doesn't check BCE for an operation in a generic function if the operation
 involves type parameters and the generic function is never instantiated.
 For example, the command <code>go run -gcflags=-d=ssa/check_bce bar.go</code> will report nothing.</p>
 
-<pre><code>// bar.go
+<pre><code class="language-Go">// bar.go
 package bar
 
 func foo[E any](s []E) {
@@ -548,6 +536,30 @@ func f0b(x [16]byte) (r [4]byte){
 }
 </code></pre>
 
+<p>In the following code, the function <code>f6b</code> is more performant than <code>f6a</code>,
+but both of them are much less performant than <code>f6c</code>.</p>
+
+<pre><code class="language-Go">const N = 3
+
+func f6a(s []byte) {
+	for i := 0; i &lt; len(s)-(N-1); i += N {
+		_ = s[i+N-1] // Found IsInBounds
+	}
+}
+
+func f6b(s []byte) {
+	for i := N-1; i &lt; len(s); i += N {
+		_ = s[i] // Found IsInBounds
+	}
+}
+
+func f6c(s []byte) {
+	for i := uint(N-1); i &lt; uint(len(s)); i += N {
+		_ = s[i]
+	}
+}
+</code></pre>
+
 <p>Global (package-level) slices are often unfriendly to BCE, so we should try to assign them to local ones to eliminate some unnecessary bound checks. For example, in the following code, the <code>fa0</code> function does one more bound check than the <code>fa1</code> and <code>fa2</code> functions, so the function calls <code>fa1()</code> and <code>fa2(s)</code> are both more performant than <code>fa0()</code>.</p>
 
 <pre><code class="language-Go">var s = make([]int, 5)
@@ -607,13 +619,6 @@ func fc2(n byte) int {
 	_ = x[n:]      // Found IsSliceInBounds
 }
 
-func fc(s []byte) {
-	const N = 6
-	for i := 0; i &lt; len(s)-(N-1); i += N {
-		_ = s[i+N-1] // Found IsInBounds
-	}
-}
-
 func fd(data []int, check func(int) bool) []int {
 	var k = 0
 	for _, v := range data {
@@ -623,6 +628,25 @@ func fd(data []int, check func(int) bool) []int {
 		}
 	}
 	return data[:k] // Found IsSliceInBounds
+}
+
+// For the only bound check in the following function,
+// * if N == 1, it will be always removed.
+// * if N is a power of 2, Go toolchain 1.19+ can remove it.
+// * for other cases, Go toolchain fails to remove it.
+func fe(s []byte) {
+	const N = 3
+	if len(s) &gt;= N {
+		r := len(s) % N
+		_ = s[r] // Found IsInBounds
+	}
+}
+
+func ff(s []byte) {
+	for i := 0; i &lt; len(s); i++ {
+		_ = s[i/2] // Found IsInBounds
+		_ = s[i/3] // Found IsInBounds
+	}
 }
 </code></pre>
 

@@ -21,7 +21,7 @@ The permanent ones are caused by the custom generics design principles.
 The following contents of this chapter will list these restrictions.
 Some facts and related concepts will also be listed.
 
-## A value used in a generic function must have a specified type
+## Each typed value must have a specified type, the ones used in a generic function are the same
 
 As mentioned in a previous chapter, since Go 1.18,
 value types in Go could be categorized in two categories:
@@ -166,12 +166,11 @@ but the function `g` doesn't.
 const N = 5
 
 func g[P int]() {
-	const y = P(N) // error: P(N) is not constant
+	const _ = P(N) // error: P(N) is not constant
 }
 
 func h[P int]() {
-	var y = P(N) // okay
-	_ = y
+	var _ = P(N) // okay
 }
 ```
 
@@ -252,7 +251,7 @@ To make descriptions simple, sometimes, we also call the core type of the constr
 of a type parameter as the core type of the type parameter.
 
 Please note that, since a future Go version, [the core type concept]
-might be removed so that many of the limitations listed below will go.
+might be removed so that many of the limitations listed below will be eliminated in future Go versions.
 
 [the core type concept]: https://github.com/golang/go/issues/63940
 

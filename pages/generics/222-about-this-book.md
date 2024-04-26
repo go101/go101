@@ -29,6 +29,8 @@ the behavior differences between Go toolchain versions.
 
 <!--
 
+https://github.com/golang/go/issues/66751
+
 https://github.com/golang/go/issues/58573 local types in different instantiations of a generic function
 https://github.com/golang/go/issues/58573#issuecomment-1433898205
 https://github.com/golang/go/issues/65152
