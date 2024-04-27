@@ -6,7 +6,7 @@ It is a tool used to manage and use multiple coexisting installations of officia
 
 Project page: https://github.com/go101/gotv
 
-Please follow [@Go100and1](https://twitter.com/go100and1) to get the latest news of GoTV
+Please follow [@zigo_101](https://twitter.com/zigo_101) to get the latest news of GoTV
 (and all kinds of Go details/facts/tips/...).
 
 ## Installation

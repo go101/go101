@@ -29,6 +29,8 @@ the behavior differences between Go toolchain versions.
 
 <!--
 
+https://github.com/golang/go/issues/67025
+
 https://github.com/golang/go/issues/66751
 
 https://github.com/golang/go/issues/58573 local types in different instantiations of a generic function
@@ -120,11 +122,11 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 
 ==================== type argument inference https://go.dev/blog/type-inference
 
- * https://twitter.com/go100and1/status/1714885320599302598
+ * https://twitter.com/zigo_101/status/1714885320599302598
 
 interace:
 	
-		https://twitter.com/go100and1/status/1714187265310957864
+		https://twitter.com/zigo_101/status/1714187265310957864
 		
 		package main
 
