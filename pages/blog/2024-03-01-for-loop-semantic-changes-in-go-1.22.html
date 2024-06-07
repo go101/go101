@@ -1,137 +1,3 @@
-<html>
-<head><style>
-
-body {
-}
-
-.tmd-doc {
-  line-height: 1.5;
-}
-
-.tmd-doc, .tmd-base {
-  margin-top: 0px;
-  margin-bottom: 0px;
-  padding-top: 0px;
-  padding-bottom: 0px;
-}
-
-.tmd-list {
-  margin-top: 0px;
-  margin-bottom: 0px;
-}
-
-.tmd-indented {
-  padding-left: 32px;
-}
-
-.tmd-quotation {
-  border-left: solid 3px #888;
-  color: #666;
-  margin-left: 6px;
-  padding-left: 6px;
-}
-
-.tmd-alert {
-  border: solid 1px #000;
-  margin: 3px 32px;
-  padding: 3px;
-}
-
-.tmd-code-block {
-  margin-top: 0px;
-  margin-bottom: 0px;
-  background: #ddd;
-  padding: 3px 6px;
-}
-
-
-.tmd-bold {
-  font-weight: bold;
-}
-
-.tmd-pale {
-  opacity:0.5;
-}
-
-.tmd-italic {
-  font-style: italic;
-}
-
-.tmd-revert-italic {
-  transform: scale(1) rotate(0deg) translate(0px, 0px) skew(10deg, 0deg);
-  display: inline-block;
-}
-
-.tmd-smaller-size {
-  font-size: smaller;
-}
-
-.tmd-larger-size {
-  font-size: larger;
-}
-
-.tmd-spoiler {
-  background: black;
-  color: black;
-  border-bottom: 3px black solid;
-}
-
-.tmd-secure-spoiler {
-  color: white;
-}
-
-.tmd-secure-spoiler::selection {
-  color: rgba(0, 0, 0, 0.0);
-  background: #888;
-}
-
-.tmd-deleted {
-  text-decoration: 2px line-through;
-}
-
-.tmd-invisible {
-  visibility: hidden;
-}
-
-.tmd-marked {
-  background: yellow;
-}
-
-.tmd-marked-2 {
-  background: #faa;
-}
-
-.tmd-underlined {
-  text-decoration: solid underline 1px;
-}
-
-.tmd-broken-link {
-  text-decoration: dotted underline 3px;
-}
-
-.tmd-code-span {
-  background: #ddd;
-  border: solid 1px #666;
-  padding: 1px 2px;
-  border-radius: 3px;
-}
-
-.tmd-mono-font {
-  border: 0px;
-  background: inherit;
-  color: inherit;
-  padding: inherit;
-}
-
-.tmd-keep-whitespaces {
-  white-space: break-spaces;
-}
-
-</style>
-</head>
-<body>
-
-<div class='tmd-doc'>
 
 <h1><code class='tmd-code-span'>for</code> Loop Semantic Changes in Go 1.22: Be Aware of the Impact</h1>
 
@@ -181,13 +47,15 @@ func main() {
 <p></p>
 We can install multiple Go toolchain versions to check the outputs. Here, I use the <a href='https://go101.org/apps-and-libs/gotv.html'>GoTV</a> tool to (conveniently) choose Go toolchain versions.
 <p></p>
-The outputs:<pre class='tmd-code-block'><code>$ gotv 1.21. run demo1.go
+
+<div></div>
+The outputs:<pre class='tmd-code-block'>$ gotv 1.21. run demo1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo1.go
 14
 $ gotv 1.22. run demo1.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo1.go
 10
-</code></pre>
+</pre>
 
 <p></p>
 The behavior difference is obvious:
@@ -253,13 +121,13 @@ func main() {
 </code></pre>
 
 <p></p>
-The outputs of the above program:<pre class='tmd-code-block'><code>$ gotv 1.21. run demo2.go
+The outputs of the above program:<pre class='tmd-code-block'>$ gotv 1.21. run demo2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo2.go
 12
 $ gotv 1.22. run demo2.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo2.go 
 6
-</code></pre>
+</pre>
 
 <p></p>
 This article focuses on the details of the changes and impact of the changes, rather than the reasons behind them. For details on the approval process and reasons behind the changes, see
@@ -289,6 +157,8 @@ Go 1.22 release notes: <a href='https://go.dev/doc/go1.22'>https://go.dev/doc/go
 
 <p></p>
 
+<div></div>
+
 <h2>The impact of the changes</h2>
 
 <p></p>
@@ -310,6 +180,8 @@ Each iteration has its own separate declared variable (or variables). The variab
 </div>
 
 <p></p>
+
+<div></div>
 By the speficication, since Go 1.22, the loop shown above is actually equivalent to the following pseudo-code (<span class='tmd-italic'>Sorry, the new semantics are hard to explain in a clear and perfect way. None of Go official documentations ever successfully achieve this goal. Here, I have tried my best.</span>):
 <p></p>
 <pre class='tmd-code-block'><code class='language-Go'>{
@@ -335,7 +207,7 @@ By the speficication, since Go 1.22, the loop shown above is actually equivalent
 <p></p>
 Wow, quite a lot of magical implicit code. For a language that promotes explicitness, it's embarrassing.
 <p></p>
-Implicitness often leads to unexpected surprises, which is not a surprise. The following will show several examples which might break your expectations.
+Implicitness often leads to unexpected surprises, which is not a surprise. The following will show several cases which might break your expectations.
 <p></p>
 
 <h3>The behaviors of deferred function calls which capture loop variables might change</h3>
@@ -359,7 +231,7 @@ func main() {
 </code></pre>
 
 <p></p>
-Its outputs:<pre class='tmd-code-block'><code>$ gotv 1.21. run demo-defer.go
+Its outputs:<pre class='tmd-code-block'>$ gotv 1.21. run demo-defer.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-defer.go
 #0: 0
 #1: 1
@@ -369,7 +241,7 @@ $ gotv 1.22. run demo-defer.go
 #0: 0
 #0: 1
 #0: 2
-</code></pre>
+</pre>
 
 <p></p>
 You can find that, since Go 1.22, the value of <code class='tmd-code-span'>counter</code> is never effectively increased. Why? I'm sorry. As mentioned above, it is some hard to clearly explain the new semantics and I don't think I have the ability to do this. You may get it from the following equivalent code:
@@ -385,7 +257,7 @@ You can find that, since Go 1.22, the value of <code class='tmd-code-span'>count
 		} else {
 			n--
 		}
-
+		
 		if !(n >= 0) {
 			break
 		}
@@ -422,7 +294,7 @@ func search(start, end int)(r []int) {
 			}(i)
 		}
 	}
-
+	
 	r = make([]int, count) // only allocate once
 	return
 }
@@ -433,13 +305,13 @@ func main() {
 </code></pre>
 
 <p></p>
-The outputs of the above program:<pre class='tmd-code-block'><code>$ gotv 1.21. run search.go
+The outputs of the above program:<pre class='tmd-code-block'>$ gotv 1.21. run search.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run search.go
 [8 6 4 2 0]
 $ gotv 1.22. run search.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run search.go
 [0 0 0 0 0]
-</code></pre>
+</pre>
 
 <p></p>
 So, since Go 1.22, just be careful when using freshly-declared loop variables in deferred function calls.
@@ -454,6 +326,8 @@ The above example suggests that some freshly-declared variables in the first cla
 </code></pre>
 
 <p></p>
+
+<div></div>
 However, sadly, the suggestion was ignored totally.
 </div>
 
@@ -485,13 +359,13 @@ func main() {
 </code></pre>
 
 <p></p>
-Its outputs:<pre class='tmd-code-block'><code>$ gotv 1.21. run demo-closure-1.go
+Its outputs:<pre class='tmd-code-block'>$ gotv 1.21. run demo-closure-1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-closure-1.go
 9
 $ gotv 1.22. run demo-closure-1.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo-closure-1.go
 0
-</code></pre>
+</pre>
 
 <p></p>
 Prior to Go 1.22, what the <code class='tmd-code-span'>printN</code> closure captures is the only instance of the loop variable, which final value is <code class='tmd-code-span'>9</code>. However, since Go 1.22, what the <code class='tmd-code-span'>printN</code> closure captures is the first instance of the loop variable, which final value is <code class='tmd-code-span'>1</code>. That is the reason of the behavior difference between the two Go versions.
@@ -521,13 +395,13 @@ func main() {
 </code></pre>
 
 <p></p>
-Its outputs:<pre class='tmd-code-block'><code>$ gotv 1.21. run demo-closure-2.go
+Its outputs:<pre class='tmd-code-block'>$ gotv 1.21. run demo-closure-2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-closure-2.go
 abcdefghijklmnopqrstuvwxyz
 $ gotv 1.22. run demo-closure-2.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo-closure-2.go
 a
-</code></pre>
+</pre>
 
 <p></p>
 The third example:
@@ -554,9 +428,7 @@ So, whether you think it is intuitive or not, just remember that, since Go 1.22,
 </div>
 
 <p></p>
-
-<h3>Be careful when taking addresses of loop variables</h3>
-
+#:::::::::::::::::::::::::::::::::::::::::::::::::; Be careful when taking addresses of loop variables
 <p></p>
 Similarly, since Go 1.22, it may be dangerous to use the address of a freshly-declared loop variable across loop iterations.
 <p></p>
@@ -575,13 +447,13 @@ func main() {
 </code></pre>
 
 <p></p>
-Its outputs:<pre class='tmd-code-block'><code>$ gotv 1.21. run demo-pointer1.go
+Its outputs:<pre class='tmd-code-block'>$ gotv 1.21. run demo-pointer1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-pointer1.go
 true
 $ gotv 1.22. run demo-pointer1.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo-pointer1.go
 false
-</code></pre>
+</pre>
 
 <p></p>
 Go 1.21 and 1.22 give different answers. Why? From the equivalent code shown below, we can get that, in the comparison <code class='tmd-code-span'>p == &amp;i</code>, <code class='tmd-code-span'>p</code> points to the first instance of <code class='tmd-code-span'>i</code>, whereas <code class='tmd-code-span'>&amp;i</code> takes the address of the second instance of <code class='tmd-code-span'>i</code>. So the comparison evaluation result is <code class='tmd-code-span'>false</code>.
@@ -624,7 +496,7 @@ func main() {
 </code></pre>
 
 <p></p>
-Since Go 1.22, the above program will never exit (prior to Go 1.22, it will):<pre class='tmd-code-block'><code>$ gotv 1.21. run demo-pointer2.go
+Since Go 1.22, the above program will never exit (prior to Go 1.22, it will):<pre class='tmd-code-block'>$ gotv 1.21. run demo-pointer2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-pointer2.go
 0
 1
@@ -635,12 +507,10 @@ $ gotv 1.22. run demo-pointer2.go
 0
 0
 ...
-</code></pre>
+</pre>
 
 <p></p>
-
-<h3>Be careful when moving the 3rd clause statements inside loop bodies</h3>
-
+#::::::::::::::::::::::::::::::::::::::::::::::::; Be careful when moving the 3rd clause statements inside loop bodies
 <p></p>
 Since Go 1.22, the following two loops might be not equivalent with each other any more (prior to Go 1.22, they are equivalent).
 <p></p>
@@ -686,18 +556,16 @@ func main() {
 </code></pre>
 
 <p></p>
-The new outputs:<pre class='tmd-code-block'><code>$ gotv 1.22. run demo-pointer3.go
+The new outputs:<pre class='tmd-code-block'>$ gotv 1.22. run demo-pointer3.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo-pointer3.go
 true
 0
 1
 2
-</code></pre>
+</pre>
 
 <p></p>
-
-<h3>Be careful when declaring no-copy values as loop variables</h3>
-
+#::::::::::::::::::::::::::::::::::::::::::::::::::; Be careful when declaring no-copy values as loop variables
 <p></p>
 As explained above, since Go 1.22, at the start of each loop iteration, each freshly-declared loop variable will get copied once, <span class='tmd-bold'><span class='tmd-italic'>implicitly</span></span>. The implication means that, since Go 1.22, it is not a good idea to declare no-copy values as loop variables, such as <code class='tmd-code-span'>sync.Mutex</code>, <code class='tmd-code-span'>sync/atomic.Int64</code>, <code class='tmd-code-span'>bytes.Buffer</code>, and <code class='tmd-code-span'>strings.Builder</code> values etc.
 <p></p>
@@ -716,7 +584,7 @@ func process() (wait func()) {
 		if (wait == nil) {
 			wait = wg.Wait
 		}
-
+		
 		wg.Add(1)
 		go func(v int) {
 			defer wg.Done()
@@ -735,7 +603,7 @@ func main() {
 </code></pre>
 
 <p></p>
-Its outputs:<pre class='tmd-code-block'><code>$ gotv 1.21. run demo-nocopy1.go
+Its outputs:<pre class='tmd-code-block'>$ gotv 1.21. run demo-nocopy1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.8/bin/go run demo-nocopy1.go
 0
 2
@@ -745,7 +613,7 @@ $ gotv 1.22. run demo-nocopy1.go
 0
 $ gotv 1.22. vet demo-nocopy1.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.1/bin/go vet demo-nocopy1.go
-</code></pre>
+</pre>
 
 <p></p>
 Note that the <code class='tmd-code-span'>go vet</code> command in Go 1.22 toolchain can't catch such implicit duplication of no-copy values, regardless of whether the loop variable <code class='tmd-code-span'>wg</code> is captured in the loop body or not.
@@ -781,7 +649,7 @@ func main() {
 </code></pre>
 
 <p></p>
-Run it with different Go toolchains, we get:<pre class='tmd-code-block'><code>$ gotv 1.21. run demo-nocopy2.go
+Run it with different Go toolchains, we get:<pre class='tmd-code-block'>$ gotv 1.21. run demo-nocopy2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-nocopy2.go
 abcdefghijklmnopqrstuvwxyz
 $ gotv 1.22. run demo-nocopy2.go
@@ -790,7 +658,7 @@ panic: strings: illegal use of non-zero Builder copied by value
 
 goroutine 1 [running]:
 ...
-</code></pre>
+</pre>
 
 <p></p>
 Yes, the run-time <code class='tmd-code-span'>no-copy</code> check works. Since Go 1.22, when the loop variable of type <code class='tmd-code-span'>strings.Builder</code> gets duplicated, a panic is created. Prior to Go 1.22, this duplication will not happen, so there will be no panic.
@@ -799,20 +667,22 @@ Note that, starting from Go 1.22, a Go compiler might optimize freshly-declared 
 <p></p>
 Let's change the <code class='tmd-code-span'>Debug</code> constant in the above example to <code class='tmd-code-span'>false</code>, then run the example again with the 1.22 toolchain.
 <p></p>
-<pre class='tmd-code-block'><code>$ gotv 1.22. run demo-nocopy.go
+<pre class='tmd-code-block'>$ gotv 1.22. run demo-nocopy.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo-nocopy.go
 abcdefghijklmnopqrstuvwxyz
-</code></pre>
+</pre>
 
 <p></p>
 We can find that no panic occurs now. Why? Because now the <code class='tmd-code-span'>if (Debug) { callback(&amp;b) }</code> line becomes into dead code so that the compiler thinks that each instance of the loop variable <code class='tmd-code-span'>b</code> is used solely within the corresponding iteration's lifetime. So the loop variable <code class='tmd-code-span'>b</code> is instantiated only once for the entire loop and no duplication happens for the only instance.
 <p></p>
 However, the compiler is too smart to <a href='https://github.com/golang/go/issues/66070'>make a bad decision</a> here. The compiler incorrectly implements the semantics. The example program should panic regardless of the value of the <code class='tmd-code-span'>Debug</code> constant. While this specific case might be considered acceptable due to the lack of harmful consequences, it raises concerns about the potential for unexpected behavior in other scenarios.
 <p></p>
+
+<div></div>
 The safe advice is try not to declare no-copy values as loop variables. This is just a suggestion, not a mandatory rule, because copying no-copy values does not always cause damage (but the damage may be exposed later when the code is refactored in some way).
 <p></p>
 
-<h2>Warning: the performance of your Go programs might be degraded silently</h2>
+<h3>Warning: the performance of your Go programs might be degraded silently</h3>
 
 <p></p>
 Sometimes, a compiler is over smart; sometimes, it is not smart enough. For example, sometimes, the official standard compiler provided in Go toolchain 1.22 is unable to determine that each instance of a freshly-declared loop variable is used solely within the corresponding iteration's lifetime, so that the loop variable will be instantiated per iteration and each of its instances will be allocated on heap instead of stack. Even worse, if the size of the loop variable is large, then high duplication costs will be incurred. When these situations occur, the performance of the program will be degraded.
@@ -855,7 +725,7 @@ func main() {
 </code></pre>
 
 <p></p>
-Its outputs:<pre class='tmd-code-block'><code>$ gotv 1.21. run aaa.go
+Its outputs:<pre class='tmd-code-block'>$ gotv 1.21. run aaa.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run aaa.go
 foo time: 3.573µs
 bar time: 3.267µs
@@ -863,7 +733,7 @@ $ gotv 1.22. run aaa.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run aaa.go
 foo time: 3.819µs
 bar time: 552.246µs
-</code></pre>
+</pre>
 
 <p></p>
 The benchmark results reveal a significant performance regression in the <code class='tmd-code-span'>bar</code> function between Go 1.21 and 1.22. Why? Because, with the official standard Go compiler 1.22, the loop variable <code class='tmd-code-span'>a</code> in the <code class='tmd-code-span'>bar</code> function is duplicated in each iteration. Whereas in prior versions, such duplication is always needless.
@@ -912,7 +782,7 @@ func main() {
 </code></pre>
 
 <p></p>
-The above program is intended to print the values of the loop variable <code class='tmd-code-span'>i</code> at each iteration. Prior to Go 1.22, there is a clear data race condition present in the program, because the loop variable <code class='tmd-code-span'>i</code> is only instantiated once during the whole loop. All the new created goroutines will read the single instance but the main goroutine will modify it. The following outputs prove this fact:<pre class='tmd-code-block'><code>$ CGO_ENABLED=1 gotv 1.21. run -race demo-concurency1.go
+The above program is intended to print the values of the loop variable <code class='tmd-code-span'>i</code> at each iteration. Prior to Go 1.22, there is a clear data race condition present in the program, because the loop variable <code class='tmd-code-span'>i</code> is only instantiated once during the whole loop. All the new created goroutines will read the single instance but the main goroutine will modify it. The following outputs prove this fact:<pre class='tmd-code-block'>$ CGO_ENABLED=1 gotv 1.21. run -race demo-concurency1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run -race demo-concurency1.go
 3
 3
@@ -921,15 +791,15 @@ WARNING: DATA RACE
 ...
 ==================
 3
-</code></pre>
+</pre>
 
 <p></p>
-Prior to Go 1.22, the fix is simple, just add an <code class='tmd-code-span'>i := i</code> line at the start of the loop body. Go 1.22 fixes the specified data race problem by changing the semantics of <code class='tmd-code-span'>for;;</code> loops, without modifying the old problematic code. This can be verified by the following outputs:<pre class='tmd-code-block'><code>$ CGO_ENABLED=1 gotv 1.22. run -race demo-concurency1.go
+Prior to Go 1.22, the fix is simple, just add an <code class='tmd-code-span'>i := i</code> line at the start of the loop body. Go 1.22 fixes the specified data race problem by changing the semantics of <code class='tmd-code-span'>for;;</code> loops, without modifying the old problematic code. This can be verified by the following outputs:<pre class='tmd-code-block'>$ CGO_ENABLED=1 gotv 1.22. run -race demo-concurency1.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run -race demo-concurency1.go
 1
 2
 0
-</code></pre>
+</pre>
 
 <p></p>
 In fact, this is just the reason why Go 1.22 made the semantic change to <code class='tmd-code-span'>for;;</code> loops. But is it worth it to fix such a small problem by introducing magical implicit code?
@@ -961,7 +831,7 @@ func main() {
 <p></p>
 Is the new code still data race free (with Go 1.22 semantics)? It looks good. Each new created goroutine just uses an exclusive copy of the loop variable <code class='tmd-code-span'>i</code>. But the answer is "no", because there is an implicit assignment at the start of each iteration and the implicit assignment uses an instance of the loop variable as source value (a.k.a. the main goroutine reads it), however the instance is modified in a new created goroutine.
 <p></p>
-The following outputs verify there is a data race condition present in the new code:<pre class='tmd-code-block'><code>$ CGO_ENABLED=1 gotv 1.22. run -race demo-concurency2.go
+The following outputs verify there is a data race condition present in the new code:<pre class='tmd-code-block'>$ CGO_ENABLED=1 gotv 1.22. run -race demo-concurency2.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run -race demo-concurency2.go
 ==================
 WARNING: DATA RACE
@@ -971,7 +841,7 @@ WARNING: DATA RACE
 1
 3
 Found 1 data race(s)
-</code></pre>
+</pre>
 
 <p></p>
 Prior to Go 1.22, the data race is clear and easily to detect. But since Go 1.22, things become more subtle and the data race is not very clear (because of the implicit code).
@@ -1004,14 +874,14 @@ func main() {
 				i++
 				v := i
 				m.Unlock()
-
+				
 				if isGold(v) {
 					c <- v
 				}
 			}
 		}()
 	}
-
+	
 	for n := range c {
 		fmt.Println("Found gold", n)
 	}
@@ -1019,7 +889,7 @@ func main() {
 </code></pre>
 
 <p></p>
-Run it with different toolchain versions, get the following outputs:<pre class='tmd-code-block'><code>$ CGO_ENABLED=1 gotv 1.21. run -race demo-concurency3.go
+Run it with different toolchain versions, get the following outputs:<pre class='tmd-code-block'>$ CGO_ENABLED=1 gotv 1.21. run -race demo-concurency3.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run -race demo-concurency3.go
 Found gold 1048576
 Found gold 2097152
@@ -1043,7 +913,7 @@ Found gold 3145728
 Found gold 3145728
 ...
 ^C
-</code></pre>
+</pre>
 
 <p></p>
 😳😳😳... <span class='tmd-italic'>(Consider that the title of the proposal to make the semantic change is "Proposal: Less Error-Prone Loop Variable Scoping".)</span>
@@ -1082,6 +952,8 @@ Put a <code class='tmd-code-span'>go 1.xy</code> directive line in the <code cla
 </ol>
 
 <p></p>
+
+<div></div>
 If the Go language version of a Go source file is not specified by any of the above ways, then the version of the used Go compiler is used. In other words, the behavior of the code in the source file is compiler dependent.
 <p></p>
 The design causes two problems:
@@ -1098,6 +970,8 @@ If, for any reason (for example, to use a feature provided in newer Go versions)
 </ol>
 
 <p></p>
+
+<div></div>
 Anyway, since Go 1.22, you should try to specify a Go language version for every Go source file, in any of the above introduced ways, to avoid compiler version dependent behaviors. This is the minimum standard to be a professional Go programmer in the Go 1.22+ era.
 <p></p>
 
@@ -1157,7 +1031,7 @@ The new semantics of <code class='tmd-code-span'>for;;</code> loops might introd
 <p></p>
 In my honest opinion, the benefits of the new semantics of <code class='tmd-code-span'>for;;</code> loops are rare and tiny, whereas the drawbacks are more prominent and serious.
 <p></p>
-The semantic changes introduced in Go 1.22 significantly lower the threshold for maintaining backward compatibility. This is a bad start.
+The semantic changes introduced in Go 1.22 significantly lower the standard for maintaining backward compatibility. This is a bad start.
 <p></p>
 I have expressed my opinions in the following comments:
 <ul class='tmd-list'>
@@ -1185,7 +1059,3 @@ But the proposal makers (some members in the Go core team) totally ignored them 
 <p></p>
 What's done is done. In the end, I hope this article will help you write professional Go code in the Go 1.22+ era.
 <p></p>
-
-</div>
-
-</body>
