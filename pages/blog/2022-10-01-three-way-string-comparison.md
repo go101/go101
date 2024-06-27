@@ -59,7 +59,7 @@ It mentions that the compiler should make special optimizations to automatically
 convert the code using comparison operators into internal optimized three-way comparisons if possible.
 However, such compiler optimizations have never been made,
 and there are no plans to make such optimizations yet as far as I know.
-Personally, I doubt such optimizations are feasible to be made for any use case.
+Personally, I doubt such optimizations are feasible to be made for every use case.
 So I think [the `strings.Compare` should be implemented efficiently][issue 50167],
 to avoid breaking user expectations.
 
@@ -67,7 +67,7 @@ to avoid breaking user expectations.
 [a standard library function]: https://github.com/golang/go/blob/go1.19/src/sort/search.go#L88-L99
 [issue 50167]: https://github.com/golang/go/issues/50167
 
-_(This is one of the dozens of facts mentioned in the [Go Optimizations 101] book.)_
+_(This is one of 75+ facts and suggestions mentioned in the [Go Optimizations 101] book.)_
 
 [Go Optimizations 101]: https://go101.org/optimizations/101.html
 

@@ -138,19 +138,19 @@ The first discussion: redefining for loop variable semantics: <a href='https://g
 </li>
 
 <li>
-The formal proposal issue thread: <a href='https://github.com/golang/go/issues/60078'>https://github.com/golang/go/issues/60078</a>.
+The formal proposal issue thread: <a href='https://github.com/golang/go/issues/60078'>https://github.com/golang/go/issues/60078</a>. <span class='tmd-bold'>Note that the open comment of this thread almost didn't mention the semantic change on <code class='tmd-code-span'>for;;</code> loops.</span>
 </li>
 
 <li>
-<span class='tmd-bold'>The proposal file itself: </span><a href='https://go.googlesource.com/proposal/+/master/design/60078-loopvar.md'><span class='tmd-bold'>https://go.googlesource.com/proposal/+/master/design/60078-loopvar.md</span></a><span class='tmd-bold'>.</span> <span class='tmd-italic'>(If you only care about the reasons, you can just read this one.)</span>
+The proposal file itself: <a href='https://go.googlesource.com/proposal/+/master/design/60078-loopvar.md'>https://go.googlesource.com/proposal/+/master/design/60078-loopvar.md</a>. <span class='tmd-italic'>(If you only care about the reasons, you can just read this one.)</span>
 </li>
 
 <li>
-The wiki page:    <a href='https://go.dev/wiki/LoopvarExperiment'>https://go.dev/wiki/LoopvarExperiment</a>, and the blog article: <a href='https://go.dev/blog/loopvar-preview'>https://go.dev/blog/loopvar-preview</a>. Both of them were created after the proposal was accepted, which means the experiment phase started after the proposal was accepted.
+The wiki page:    <a href='https://go.dev/wiki/LoopvarExperiment'>https://go.dev/wiki/LoopvarExperiment</a>, and the blog article: <a href='https://go.dev/blog/loopvar-preview'>https://go.dev/blog/loopvar-preview</a>. Both of them were created after the proposal was accepted, which means <span class='tmd-bold'>the proposal was accepted before the experiment phase even began!</span> <span class='tmd-italic'>(It was very unusually. The experiment phase seemed like a mere formality. This was evident in the brevity of the experiment phase period and the lack of a strong public call for participation. Consequently, the numerous problems mentioned in this article only surfaced after the proposed changes were officially released.)</span>
 </li>
 
 <li>
-Go 1.22 release notes: <a href='https://go.dev/doc/go1.22'>https://go.dev/doc/go1.22</a>, which claims the release maintains <a href='https://go.dev/doc/go1compat'>the Go 1 promise of compatibility</a>. However, this is simply not the case (read below for reasons).
+Go 1.22 release notes: <a href='https://go.dev/doc/go1.22'>https://go.dev/doc/go1.22</a>, which claims the release maintains <a href='https://go.dev/doc/go1compat'>the Go 1 promise of compatibility</a>. However, <span class='tmd-bold'>this is simply not the case (read below for reasons).</span>
 </li>
 
 </ol>
@@ -681,7 +681,9 @@ abcdefghijklmnopqrstuvwxyz
 <p></p>
 We can find that no panic occurs now. Why? Because now the <code class='tmd-code-span'>if (Debug) { callback(&amp;b) }</code> line becomes into dead code so that the compiler thinks that each instance of the loop variable <code class='tmd-code-span'>b</code> is used solely within the corresponding iteration's lifetime. So the loop variable <code class='tmd-code-span'>b</code> is instantiated only once for the entire loop and no duplication happens for the only instance.
 <p></p>
-However, the compiler is too smart to <a href='https://github.com/golang/go/issues/66070'>make a bad decision</a> here. The compiler incorrectly implements the semantics. The example program should panic regardless of the value of the <code class='tmd-code-span'>Debug</code> constant. While this specific case might be considered acceptable due to the lack of harmful consequences, it raises concerns about the potential for unexpected behavior in other scenarios.
+However, the compiler is too smart to <a href='https://github.com/golang/go/issues/66070'>make a bad decision</a> here. The compiler incorrectly implements the semantics. The example program should panic regardless of the value of the <code class='tmd-code-span'>Debug</code> constant.
+<p></p>
+The Go core team <a href='https://github.com/golang/go/issues/66070#issuecomment-1981642904'>refused to fix this bug</a>, which raises the alarm that unexpected behavior may happen in other similar scenarios.
 <p></p>
 
 <div></div>

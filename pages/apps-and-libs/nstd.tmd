@@ -1,0 +1,180 @@
+
+################################## nstd (The Non-Standard Go library)
+
+`nstd` is a single-package go module which provides
+some missing types and functions in the standard library.
+
+Project page: __https://github.com/go101/nstd__
+
+Module path: **%% go101.org/nstd
+
+Please follow __@zigo_101__ to get the latest news of `nstd`
+(and all kinds of Go details/facts/tips/...).
+
+  //// __@zigo_101 `` https://twitter.com/zigo_101
+
+#================================ Some examples using `nstd`
+
+Example 1:
+'''Go
+package main
+
+import (
+	"go101.org/nstd"
+	"log"
+)
+
+const debug = true
+
+const foo = "foo"
+
+func debugPrint(s string) {
+	if debug {
+		log.Print(s)
+	}
+}
+
+func main() {
+	var bar = "bar"
+	_ = debug && nstd.Logf(foo + ":" + bar)
+	// It is cleaner than
+	//    if debug {
+	//         log.Print(foo + " " + bar)
+	//    }
+	//
+	// And it is more performant than
+	//    debugPrint(foo + " " + bar)
+	// when debug is false.
+}
+'''
+
+Example 2:
+'''Go
+package main
+
+import (
+	"go101.org/nstd"
+)
+
+func ExampleMutexAndWaitGroup() {
+	const N = 1000
+	var n = 0
+	defer func() {
+		nstd.Printfln("n = %d", n) // will print a new line at the end
+		if expected := N*7; n != expected {
+			nstd.Panicf("n (%d) != %d", n, expected) // panic with format
+		}
+	}()
+
+	var wg nstd.WaitGroup
+	defer wg.Wait()
+
+	var m nstd.Mutex
+	for range [1000]struct{}{} {
+		// WaitGroup.Go starts several tasks.
+		wg.Go(func() {
+			defer m.Lock().Unlock() // call Lock and Unlock chainly
+			n += 2
+		}, func() {
+			defer m.Lock().Unlock()
+			n += 1
+		})
+		
+		// WaitGroup.GoN starts one task several times.
+		wg.GoN(3, func() {
+			defer m.Lock().Unlock()
+			n += 1
+		})
+	}
+
+	// Mutex.Do guards the execution of a function.
+	m.Do(func() {
+		n += N
+	})
+}
+
+func main() {
+	ExampleMutexAndWaitGroup()
+}
+'''
+
+Example 3:
+'''Go
+package main
+
+import (
+	"go101.org/nstd"
+)
+
+func main() {
+	pInt := nstd.New(123)
+	nstd.Printfln("%T: %v", pInt, *pInt) // *int: 123
+	pBool := nstd.New(true)
+	nstd.Printfln("%T: %v", pBool, *pBool) // *bool: true
+
+	nstd.Printfln("%v", nstd.Zero[int]())  // 0
+	nstd.Printfln("%v", nstd.Zero[bool]()) // false
+
+	nstd.Printfln("%v", nstd.Zero(789))  // 0
+	nstd.Printfln("%v", nstd.Zero(true)) // false
+
+	nstd.ZeroIt(pInt)
+	nstd.Printfln("%v", *pInt) // 0
+	nstd.ZeroIt(pBool)
+	nstd.Printfln("%v", *pBool) // false
+}
+'''
+
+Example 4:
+'''Go
+package main
+
+import (
+	"go101.org/nstd"
+)
+
+func main() {
+	var aCondition = true
+	
+	var m = map[string]int{"Zig": 2016}
+	_ = aCondition && nstd.HasEntry(m, "Go")
+	// So that, no need to write it in two lines:
+	//     _, ok := m["Go"]
+	//     _ = aCondition && ok
+	
+	var x any = 123
+	var n int
+	_ = aCondition && nstd.TypeAssert(x, &n)
+	// So that, no need to write it in two lines:
+	//     n, ok := x.(int)
+	//      _ = aCondition && ok
+	nstd.Printfln("n = %v", n) // n = 123
+	_ = aCondition && nstd.TypeAssert[int](x, nil)
+	_ = aCondition && nstd.TypeAssert(x, (*int)(nil))
+}
+'''
+
+Example 5:
+'''go
+package main
+
+import (
+	"reflect"
+	"go101.org/nstd"
+)
+
+func main() {
+	var n int = 123
+	var x any = n
+	
+	nstd.Printfln("type of x: %s", reflect.TypeOf(x)) // type of x: int
+	nstd.Printfln("type of x: %s", nstd.TypeOf(x))    // type of x: interface {}
+	
+	nstd.Printfln("type of x: %s", reflect.ValueOf(x).Type()) // type of x: int
+	nstd.Printfln("type of x: %s", nstd.ValueOf(x).Type())    // type of x: interface {}
+}
+'''
+
+
+
+

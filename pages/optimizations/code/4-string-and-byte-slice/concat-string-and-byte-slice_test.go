@@ -1,9 +1,11 @@
 package bytes
 
+import "bytes"
 import "testing"
 
-const N = 8
-const M = 1000
+var K = 10000
+var N = 1 * K
+var M = 2 * K
 
 var str = string(make([]byte, N))
 var bs = make([]byte, M)
@@ -24,3 +26,10 @@ func Benchmark_append(b *testing.B) {
 		x = append([]byte(str), bs...)
 	}
 }
+
+func Benchmark_Join(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		x = bytes.Join([][]byte{[]byte(str), bs}, nil)
+	}
+}
+
