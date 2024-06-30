@@ -1,7 +1,7 @@
 
-# Go Built-in Slice Manipulations Are Incomplete
+## Go Built-in Slice Manipulations Are Incomplete
 
-## Lack of a performant way to merge 3+ slices
+##========= Lack of a performant way to merge 3+ slices
 
 In Go, there are three built-in functions to manipulate slices:
 
@@ -18,7 +18,7 @@ As the way is built-in, it is performant.
 However, there is not a performant way to merge 3+ slices.
 The following implementation might be the most performant way to do the task:
 
-```Go
+'''Go
 func merge[S ~[]E, E any](ss ...S) S {
 	var n, allNils, k = 0, true, -1
 	for i := range ss {
@@ -55,7 +55,7 @@ func merge[S ~[]E, E any](ss ...S) S {
 	}
 	return r
 }
-```
+'''
 
 Generally, a `make` call will zero the elements allocated during its execution, which is unnecessarily for this particular use case.
 The implementation does its best to zero as few as possible elements within the `make` call,
@@ -64,7 +64,7 @@ but it still fails to do so for the remaining elements (the ones in `r[len(ss[0]
 
 If the `merge` function is built-in, then it is able to avoid all the unnecessary element zeroing operations.
 
-## Lack of a clean way to clip slices
+##========= Lack of a clean way to clip slices
 
 As mentioned above, an `append` function call will reuse the backing array
 of the first slice argument (call it `base` here) for the result slice if the capacity of `base`
@@ -72,29 +72,29 @@ is large enough to hold all the appended elements.
 For some scenarios, we want to prevent an `append` call from modifying the elements in `base[len(base):]`
 and we achieve this by clipping the capacity of `base` to its length:
 
-```Go
+'''Go
 var x, y, z T
 
 	... = append(base[:len(base):len(base)], x, y, z)
-```
+'''
 
 Nothing to complain about, except that it is some verbose,
 in particular when the `base` expression is verbose, such as
 
-```Go
+'''Go
 	... = append(aValue.Field.Slice[:len(aValue.Field.Slice):len(aValue.Field.Slice)], x, y, z)
-```
+'''
 
 If the `base` expression is a function call, then we must store the result of a call in a temporary intermediate variable:
 
-```Go
+'''Go
 	base := aFunctionCall()
 	... = append(base[:len(base):len(base)], x, y, z)
-```
+'''
 
 We can use the `Clip` function in the `golang.org/x/exp/slices` package, but this way is still not clean enough.
 
-```Go
+'''Go
 import "golang.org/x/exp/slices"
 
 	... = append(slices.Clip((base), x, y, z)
@@ -102,40 +102,40 @@ import "golang.org/x/exp/slices"
 	... = append(slices.Clip(aValue.Field.Slice), x, y, z)
 	
 	... = append(slices.Clip(aFunctionCall()), x, y, z)
-```
+'''
 
-I do perfer [this proposal], but it has been rejected:
+I do perfer __this proposal__, but it has been rejected:
 
-```Go
+'''Go
 aSlice[ : n : ]  // <=> aSlice[ : n : n]
 aSlice[m : n : ] // <=> aSlice[m : n : n]
 sSlice[ : : ]    // <=> aSlice[ : len(s) : len(s)]
 aSlice[m : : ]   // <=> aSlice[m : len(s) : len(s)]
-```
+'''
 
 If the proposal is adopted, then we may just write the code as
 
-```Go
+'''Go
 	... = append(base[::], x, y, z)
 	
 	... = append(aValue.Field.Slice[::], x, y, z)
 	
 	... = append(aFunctionCall()[::], x, y, z)
-```
+'''
 
 which is much cleaner.
 
-[this proposal]: https://github.com/golang/go/issues/25638
+	////__this proposal `` https://github.com/golang/go/issues/25638
 
-## Lack of a safe way to detect element overlapping of two slices
+##========= Lack of a safe way to detect element overlapping of two slices
 
 This fact prevents custom Go packages to make perfect implementations for some slice manipulations.
 
 Some standard packages are using (ever used) unsafe ways to do the job.
 For example:
 
-* https://github.com/golang/go/blob/13529cc5f443ef4e242da3716daa0032aa8d34f2/src/slices/slices.go#L466-L479
-* https://github.com/golang/crypto/blob/eec23a3978ad/internal/subtle/aliasing.go#L13-L19
+* __https://github.com/golang/go/blob/13529cc5f443ef4e242da3716daa0032aa8d34f2/src/slices/slices.go#L466-L479
+* __https://github.com/golang/crypto/blob/eec23a3978ad/internal/subtle/aliasing.go#L13-L19
 
 These unsafe usages actually don't follow any [valid unsafe use patterns](https://pkg.go.dev/unsafe#Pointer),
 so they are bad and dangerous implementations.

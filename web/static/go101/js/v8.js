@@ -48,12 +48,12 @@ $(document).ready(function(){
 			loadCSS('css-bs', '/static/bootstrap/v4.5.0/css/bootstrap.min.css')
 			loadCSS('css-prism', '/static/prism/2020-08-03-light/prism.css')
 			loadJS('js-prism', '/static/prism/2020-08-03-light/prism.js')
-			loadCSS('css-go101', '/static/go101/css/v995-light.css')
+			loadCSS('css-go101', '/static/go101/css/v996-light.css')
 		} else if (theme == "dark") {
 			loadCSS('css-bs', '/static/bootstrap/v4.0.3-dark/css/bootstrap.min.css')
 			loadCSS('css-prism', '/static/prism/2020-08-03-dark/prism.css')
 			loadJS('js-prism', '/static/prism/2020-08-03-dark/prism.js')
-			loadCSS('css-go101', '/static/go101/css/v995-dark.css')
+			loadCSS('css-go101', '/static/go101/css/v996-dark.css')
 		}
 
 		if (manually) {

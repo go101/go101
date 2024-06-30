@@ -1,9 +1,9 @@
 
-# It Is a Pity That Byte Elements of Go Constant Strings Are Not Constants. And It Is a Luck
+## It Is a Pity That Byte Elements of Go Constant Strings Are Not Constants. And It Is a Luck
 
 Does the following Go program compile okay?
 
-```Go
+'''Go
 package main
 
 const S = "Go"
@@ -11,7 +11,7 @@ const S = "Go"
 const G = S[0]
 
 func main() {}
-```
+'''
 
 Many gophers might think it should compile okay.
 But it fails to compile.
@@ -24,7 +24,7 @@ For backward-compatibility, the pity is hard to make up.
 For example, currently, the following program compiles okay.
 It prints `185` (-71 + 256).
 
-```Go
+'''Go
 package main
 
 const S = "Go" // S[0] == 71
@@ -32,7 +32,7 @@ const S = "Go" // S[0] == 71
 func main() {
 	println(-S[0])
 }
-```
+'''
 
 But if elements of constant strings become into constants, then the program will not compile,
 because the type of `-S[0]` is `byte` (aka. `uint8`), whereas `-71` owerflows the range of `byte`.
@@ -43,9 +43,9 @@ If elements of constant strings are constants, then there will be parsing ambigu
 Since Go 1.18, the following line will be treated as generic type declaration,
 in which `S` is a type parameter and `[4]*int` is its constraint.
 
-```Go
+'''Go
 type T [S [4]*int] struct{}
-```
+'''
 
 However, if elements of constant strings are constants,
 then `S [4]` may be treated as constant `byte` value if `S` is a constant string.
@@ -59,35 +59,35 @@ so it always tries to think the above line is not an ordinary array type declara
 No ambiguities happen here.
 Were elements of constant strings constants, the simplified type parameter declaration syntax couldn't be possible.
 
-There is [a proposal] to let Go support constant arrays (and other constant composite values).
+There is __a proposal__ to let Go support constant arrays (and other constant composite values).
 However, the Go custom generics design has almost sentenced that proposal to death.
 Because, similarly, the following code will lead to parsing ambiguities
 if array values may be declared as constants.
 
-```Go
+'''Go
 const A = [2]int{1, 2}
 type BoolArray [A [1] * int]bool
-```
+'''
 
-[a proposal]: https://github.com/golang/go/issues/6386
+	////__a proposal `` https://github.com/golang/go/issues/6386
 
 ### BTW, substrings are also never constants
 
 The following code line doesn't compile in Go:
 
-```Go
+'''Go
 const _ = "Google"[:2]
-```
+'''
 
 Instead, the following line compiles:
 
-```Go
+'''Go
 var _ = "Google"[:2]
-```
+'''
 
-By this fact, the following program will print `128 0` (the reason is explained [here]).
+By this fact, the following program will print `128 0` (the reason is explained __here__).
 
-```Go
+'''Go
 package main
 
 const S = "Go"
@@ -98,12 +98,12 @@ var b byte = 64 << len(S[:]) / 2
 func main() {
 	println(a, b) // 128 0
 }
-```
+'''
 
-So [making substrings of constant strings constant will also break backward-compatibility][issues#28591].
+So __making substrings of constant strings constant will also break backward-compatibility__.
 
-[here]: https://go101.org/quizzes/operator-3.html
-[issues#28591]: https://github.com/golang/go/issues/28591#issuecomment-697357430
+	////__here `` https://go101.org/quizzes/operator-3.html
+	////__making substrings... `` https://github.com/golang/go/issues/28591#issuecomment-697357430
 
 
 

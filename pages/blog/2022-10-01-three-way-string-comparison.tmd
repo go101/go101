@@ -1,0 +1,86 @@
+
+## No Safe Efficient Ways to Do Three-way String Comparisons in Go
+
+Three-way string comparison is widely used in programming (__proof 1__ and __proof 2__).
+But up to now (Go 1.19), the __strings.Compare__ function in the standard library
+is (__intentionally__) implemented with __a non-opitimized way__:
+
+	////__proof 1 `` https://sourcegraph.com/search?q=context:global+switch+strings.Compare+lang:Go+&patternType=literal
+	////__proof 2 `` https://sourcegraph.com/search?q=context:global+strings.Compare+lang:Go&patternType=standard
+	////__intentionally `` https://news.ycombinator.com/item?id=33353106
+	////__a non-opitimized way `` https://go-review.googlesource.com/c/go/+/3012
+
+'''Go
+func Compare(a, b string) int {
+	// NOTE(rsc): This function does NOT call the runtime cmpstring function,
+	// because we do not want to provide any performance justification for
+	// using strings.Compare. Basically no one should use strings.Compare.
+	// As the comment above says, it is here only for symmetry with package bytes.
+	// If performance is important, the compiler should be changed to recognize
+	// the pattern so that all code doing three-way comparisons, not just code
+	// using strings.Compare, can benefit.
+	if a == b {
+		return 0
+	}
+	if a < b {
+		return -1
+	}
+	return +1
+}
+'''
+
+When comparing two unequal strings, the implementation will perform two comparison operations.
+Whereas a perfect implementation only needs one,
+just like the implementation of __bytes.Compare__ shown below,
+in which __bytealg.Compare__ is implemented using assembly code
+on most architectures.
+
+'''Go
+func Compare(a, b []byte) int {
+	return bytealg.Compare(a, b)
+}
+'''
+
+The `strings.Compare` implementation is comparatively inefficient.
+Specifically, it is less efficient when the two string operands are not equal but their lengths are equal.
+
+	////__strings.Compare `` https://github.com/golang/go/blob/go1.19/src/strings/compare.go#L7-L28
+	////__bytes.Compare `` https://github.com/golang/go/blob/go1.19/src/bytes/bytes.go#L23-L28
+	////__bytealg.Compare `` https://github.com/golang/go/blob/go1.19/src/internal/bytealg/compare_native.go#L12
+
+Benchmark code constantly shows `strings.Compare` uses 2x CPU time of `bytes.Compare`
+when comparing unequal same-length byte sequences (we view both strings and byte slices as byte sequences here).
+
+The internal comment for the current `strings.Compare` implementation
+is some interesting. The comment suggests that we should not use
+`strings.Compare` in Go at all, but no alternative efficient ways are available now yet
+(ironically, this function is used in __Go toolchain code__ and recommended by __a standard library function__).
+It mentions that the compiler should make special optimizations to automatically
+convert the code using comparison operators into internal optimized three-way comparisons if possible.
+However, such compiler optimizations have never been made,
+and there are no plans to make such optimizations yet as far as I know.
+Personally, I doubt such optimizations are feasible to be made for every use case.
+So I think __the `strings.Compare` should be implemented efficiently__,
+to avoid breaking user expectations.
+
+	////__Go toolchain code `` https://github.com/golang/go/blob/go1.19/src/cmd/go/internal/modindex/read.go#L822
+	////__a standard library function `` https://github.com/golang/go/blob/go1.19/src/sort/search.go#L88-L99
+	////__...efficiently `` https://github.com/golang/go/issues/50167
+
+_(This is one of 75+ facts and suggestions mentioned in the __Go Optimizations 101__ book.)_
+
+	////__Go Optimizations 101 `` https://go101.org/optimizations/101.html
+
+Update: view discussions on __reddit__ and __HN__.
+
+	////__reddit `` https://old.reddit.com/r/programming/comments/ycz0va/no_safe_efficient_ways_to_do_threeway_string/
+	////__HN `` https://news.ycombinator.com/item?id=33316402
+
+Update 2: finally, the `strings.Compare` function __got optimizted in Go 1.23__.
+
+	////__got optimizted in Go 1.23 `` https://github.com/golang/go/commit/fd999fda5941f215ef082c6ef70e44e648db5485
+
+
+
+
+
