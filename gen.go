@@ -135,7 +135,7 @@ func genStaticFiles(rootURL string) {
 		filenames, _ := readFolder(dir)
 		for _, filename := range filenames {
 			if strings.HasSuffix(filename, ".tmd") {
-				outputs, err := runShellCommand(time.Minute/2, dir, "tmd", filename)
+				outputs, err := runShellCommand(time.Minute/2, dir, "tmd", "render", filename)
 				if err != nil {
 					log.Fatalf("tmd failed to execute in directory: %s.\n%s", dir, outputs)
 				}
