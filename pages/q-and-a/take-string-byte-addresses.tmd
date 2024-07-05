@@ -1,0 +1,135 @@
+
+### How to take addresses of the bytes in a string?
+
+We all know that string bytes are not addressable,
+so Go compilers will report for `&aString[i]` alike expressions.
+
+Prior to Go 1.22, the only way to take the addresses of string bytes
+is through the unsafe way:
+
+'''Go
+package main
+
+import (
+	"unsafe"
+)
+
+var h = "Hello "
+var w = "world!"
+
+func commonUnderlyingBytes(x, y string) bool {
+	return &[]byte(x)[4] == &[]byte(y)[4]
+}
+
+func main() {
+	var s = h + w
+	//var p = &s[4] // error: cannot take address of s[4]
+	var p = unsafe.StringData(s[4:])
+	println(p, string(*p))
+}
+'''
+
+Since Go toolchain 1.22, __an optimization__ has been made so that
+memory allocation and bytes duplication are not needed any more in some
+`[]byte(aString)` conversions (if the bytes in the conversion result
+are proven to be never modified).
+
+	////__an optimization `` https://github.com/golang/go/issues/2205
+
+We can make use of this optimization to take addresses of the bytes of a string,
+by converting the string to a byte slice then indirectly take addresses of
+the bytes in the byte slice. Here is an example demonstrating the usage:
+
+'''Go
+package main
+
+var h = "Hello "
+var w = "world!"
+
+func takeAddressOfFirstByte(s string) *byte {
+	return &[]byte(s)[0]
+}
+
+func commonUnderlyingBytes(x, y string) bool {
+	return len(x) != 0 && len(y) != 0 &&
+		takeAddressOfFirstByte(x) == takeAddressOfFirstByte(y)
+}
+
+func main() {
+	var s = h + w
+
+	var p1 = &[]byte(s)[4]
+	println(p1, string(*p1))
+	
+	var p2 = &[]byte(s)[4]
+	println(p2, string(*p2))
+
+	println(p1 == p2)
+	
+	var s2 = s
+	println(commonUnderlyingBytes(s[4:], s2[4:]))
+}
+'''
+
+Run it with Go toolchain 1.21 and 1.22 versions:
+
+'''
+$ gotv 1.21. run aa.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.12/bin/go run demo1.go
+0xc00003c6c4 o
+0xc00003c6a4 o
+false
+false
+$ gotv 1.22. run aa.go
+[Run]: $HOME/.cache/gotv/tag_go1.22.5/bin/go run demo1.go
+0xc0000426ec o
+0xc0000426ec o
+true
+true
+'''
+
+Wait! Does this mean we can modify string content now?
+Don't worry. The answer is certainly not.
+The compiler can successfully detect such attempts
+and disable the optimimation for the invloved conversions,
+as the following code demonstrates:
+
+'''Go
+package main
+
+var h = "Hello "
+var w = "world!"
+
+func main() {
+	var s = h + w
+
+	var p1 = &[]byte(s)[4]
+	println(p1, string(*p1))
+	
+	var p2 = &[]byte(s)[4]
+	*p2 = 'X' // modify the byte
+	println(p2, string(*p2))
+
+	println(p1 == p2)
+}
+'''
+
+The behaviors are identical between Go toolchain v1.21 and v1.22 versions.
+
+'''
+$ gotv 1.21. run aa.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.12/bin/go run demo2.go
+0xc00003c6d4 o
+0xc00003c6b4 X
+false
+$ gotv 1.22. run aa.go
+[Run]: $HOME/.cache/gotv/tag_go1.22.5/bin/go run demo2.go
+0xc0000426f0 o
+0xc0000426cc X
+false
+'''
+
+^++%%(__GoTV__ is a tool used to manage and use multiple coexisting installations
+of official Go toolchain versions harmoniously and conveniently.)
+
+	////__GoTV `` https://go101.org/apps-and-libs/gotv.html

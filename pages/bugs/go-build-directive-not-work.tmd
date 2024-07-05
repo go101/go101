@@ -1,0 +1,87 @@
+
+### The `//go:build go1.mn` comment directives don't work with Go toolchain v1.22.x versions
+    when no `go.mod` files are involved
+
+Go 1.22 changed the semantics of `for-range` and tranditional `for;;` loops.
+Since the semantic changes alter the behavior of existing code written according
+to the previous semantics, they break backward compatibility.
+
+While `for-range` loops are almost unaffected, traditional `for;;` loops
+__exhibit unexpected behaviors due to the breakage__.
+
+	////____exhibit... `` https://go101.org/blog/2024-03-01-for-loop-semantic-changes-in-go-1.22.html
+
+To keep using the old semantics prior to Go 1.22 in Go 1.22+ age,
+we must specify a Go version for each Go source file.
+One way to achieve this is adding a `//go:build go1.21` comment directive
+at the beginning of the Go source file containing the old code.
+
+While officially documented, due to __a known bug__,
+this way is currently non-functional in Go toolchain 1.22.x versions.
+
+	////__a known bug `` https://github.com/golang/go/issues/66092
+
+Here, I simply describe this bug: for a Go source file which Go version
+is not specified in a `go.mod` file, the `//go:build go1.mn` comment directive
+in it fails to specify the Go verison for it.
+
+Here is an example:
+
+'''Go
+//go:build go1.21
+package main
+
+import "fmt"
+
+func filter(n int) bool {
+	return n&3 == 1
+}
+
+// Search values and return them without perversing order.
+func search(start, end int) (r []int) {
+	var count = 0
+	for i, index := start, 0; i <= end; i++ {
+		if filter(i) {
+			count++
+			defer func(value int) {
+				r[index] = value
+				index++
+			}(i)
+		}
+	}
+
+	r = make([]int, count)
+	return
+}
+'''
+
+When run the Go file as a script with the `go run` command
+(without a `go.mod` file involved), the example program prints
+`[13 0]` with Go toolchain 1.22.x versions,
+due to Go 1.22+ semantics are used, which is wrongly.
+It should prints `[17 13]`, as with older and newer toolchain versions.
+
+'''
+$ gotv 1.21. run example.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.12/bin/go run aa.go
+[17 13]
+$ gotv 1.22. run example.go
+[Run]: $HOME/.cache/gotv/tag_go1.22.5/bin/go run aa.go
+[13 0]
+$ gotv 1.23. run example.go
+[Run]: $HOME/.cache/gotv/tag_go1.23rc1/bin/go run aa.go
+[17 13]
+'''
+
+The Go core team deliberately __refused to fix the bug
+for coming 1.22.x versions__.
+So ou should be aware of the fact that the bug will be always
+in 1.22.x versions when you are using these versions of the Go toolchain.
+
+	////__refused ... `` https://github.com/golang/go/issues/66092#issuecomment-2192570381
+
+^++%%(__GoTV__ is a tool used to manage and use multiple coexisting installations
+of official Go toolchain versions harmoniously and conveniently.)
+
+	////__GoTV `` https://go101.org/apps-and-libs/gotv.html
+
