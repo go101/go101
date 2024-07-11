@@ -1,0 +1,82 @@
+
+### How to canonicalize strings to save memory?
+
+At run time of Go programs, sometimes, some equal strings don't share
+underlying bytes memory blocks, even if they can share a single common
+bytes memory block.
+
+The process to let them share a single common bytes memory block
+is called string canonicalization. There are several ways in Go
+to implement string canonicalization.
+
+##====== Way 1: canonicalize two strings when they are found equal
+
+The logic and implementation is simple:
+
+'''Go
+	if str1 == str2 {
+		str1 = str2 // give up str2's underlying bytes memory block
+	}
+'''
+
+Here is a clumsy implementation to canonicalize the strings in a slice:
+
+'''Go
+func CanonicalizeStrings(ss []string) {
+	type S struct {
+		str   string
+		index int
+	}
+	var temp = make([]S, len(ss))
+	for i := range temp {
+		temp[i] = S {
+			str: ss[i],
+			index: i,
+		}
+	}
+	
+	for i := 0; i < len(temp); {
+		var k = i+1
+		for j := k; j < len(temp); j++ {
+			if temp[j].str == temp[i].str {
+				temp[j].str = temp[i].str
+				temp[k], temp[j] = temp[j], temp[k]
+				k++
+			}
+		}
+		i = k
+	}
+	
+	for i := range temp {
+		ss[temp[i].index] = temp[i].str
+	}
+}
+'''
+
+The way is more performant than the following way for the specified case
+(canonicalize all strings in a slice).
+
+##====== Way 2: use Go 1.23 introduced `unique.Handle`
+
+Go 1.23 introduced `unique.Handle` is a convenient way to canonicalize strings.
+
+'''Go
+import "unique"
+
+func CanonicalizeString(s string) string {
+	return unique.Make(s).Value()
+}
+
+func CanonicalizeStrings(ss []string) {
+	for i, s := range ss {
+		ss[i] = CanonicalizeString(s)
+	}
+}
+'''
+
+The way is more flexible. Just apply the above `CanonicalizeString` function
+for every string used at run time, then all equal strings will share the same
+underlying bytes memory blocks.
+
+
+

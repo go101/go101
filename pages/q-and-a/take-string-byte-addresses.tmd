@@ -4,7 +4,9 @@
 We all know that string bytes are not addressable,
 so Go compilers will report for `&aString[i]` alike expressions.
 
-Prior to Go 1.22, the only way to take the addresses of string bytes
+##==== Use `unsafe.StringData`
+
+Prior to Go 1.22 (and since 1.20), the only way to take the addresses of string bytes
 is through the unsafe way:
 
 '''Go
@@ -25,9 +27,40 @@ func main() {
 	var s = h + w
 	//var p = &s[4] // error: cannot take address of s[4]
 	var p = unsafe.StringData(s[4:])
-	println(p, string(*p))
+	println(p, string(*p)) // 0xc00004470c o
 }
 '''
+
+##==== Use `reflect.Value.UnsafePointer`
+
+Since Go 1.23, the `reflect.Value.UnsafePointer` method has supported string values.
+So we can use it to get addresses of string bytes.
+
+'''Go
+package main
+
+import (
+	"reflect"
+)
+
+var h = "Hello "
+var w = "world!"
+
+func commonUnderlyingBytes(x, y string) bool {
+	return &[]byte(x)[4] == &[]byte(y)[4]
+}
+
+func main() {
+	var s = h + w
+	//var p = &s[4] // error: cannot take address of s[4]
+	var p = (*byte)(reflect.ValueOf(s[4:]).UnsafePointer())
+	println(p, string(*p)) // 0xc000104eec o
+}
+'''
+
+The above two ways both involve `unsafe.Pointer`. The following one doesn't.
+
+##==== Convert string to a byte slice, then take addresses of the byte slice
 
 Since Go toolchain 1.22, __an optimization__ has been made so that
 memory allocation and bytes duplication are not needed any more in some
@@ -129,7 +162,49 @@ $ gotv 1.22. run aa.go
 false
 '''
 
+So to make this way work, we should never change the bytes in the result
+byte slice, even potentially.
+
 ^++%%(__GoTV__ is a tool used to manage and use multiple coexisting installations
 of official Go toolchain versions harmoniously and conveniently.)
 
 	////__GoTV `` https://go101.org/apps-and-libs/gotv.html
+
+Is this trick useful in practice? I think the answer is yes.
+If one of two strings is derived from another (through substring operation),
+then to get their common prefix, the following `CommonStringPrefix1` function
+is more performant than the `CommonStringPrefix2` function (we don't there is
+a derivation relation between thetwo strings).
+
+'''Go
+func CommonStringPrefix1(x, y string) int {
+	if len(x) == 0 || len(y) == 0 {
+		return 0
+	}
+	if &[]byte(x)[0] == &[]byte(y)[0] {
+		if len(x) <= len(y) {
+			return len(x)
+		} else {
+			return len(y)
+		}
+	}
+	return CommonStringPrefix2(x, y)
+}
+
+func CommonStringPrefix2(x, y string) int {
+	var min = len(x)
+	if len(y) < len(x) {
+		min = len(y)
+	}
+	x2, y2 := x[:min], y[:min]
+	if len(x2) == len(y2) {
+		for i := 0; i < len(x2); i++ {
+			if x2[i] != y2[i] {
+				return i
+			}
+		}
+	}
+	return min
+}
+'''
+

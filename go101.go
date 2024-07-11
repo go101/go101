@@ -5,6 +5,7 @@ import (
 	"context"
 	//"errors"
 	"go/build"
+	"html"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -170,8 +171,8 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, gr
 	w.Write(page)
 }
 
-var H1, _H1 = []byte("<h1>"), []byte("</h1>")
-var H2, _H2 = []byte("<h2>"), []byte("</h2>")
+var H1, _H1 = []byte("<h1"), []byte("</h1>")
+var H2, _H2 = []byte("<h2"), []byte("</h2>")
 
 const MaxTitleLen = 256
 
@@ -209,7 +210,7 @@ func retrieveArticleContent(group, file string) (Article, error) {
 	if titleStart < 0 {
 		//log.Println("retrieveTitlesForArticle failed:", group, file)
 	} else {
-		article.Title = article.Content[titleStart:contentStart]
+		article.Title = template.HTML(html.UnescapeString(string(article.Content[titleStart:contentStart])))
 		article.Content = article.Content[contentStart:]
 		k, s := 0, make([]rune, 0, MaxTitleLen)
 		for _, r := range article.Title {

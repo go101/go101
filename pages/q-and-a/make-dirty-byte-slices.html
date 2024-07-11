@@ -1,0 +1,38 @@
+
+<p></p>
+
+<h1 class='tmd-header-1'>How to dirtily make a byte slice (without zeroing its byte elements)?</h1>
+
+<p></p>
+
+<div class='tmd-usual'>
+Prior to Go 1.21, there is no way to achieve this, even if with <code class='tmd-code-span'>unsafe</code> ways.
+</div>
+
+<p></p>
+
+<div class='tmd-usual'>
+Since Go 1.21, the implmentation of <code class='tmd-code-span'>strings.Builder.Grow</code> calls an internal <code class='tmd-code-span'>bytealg.MakeNoZero</code> function instead of the built-in <code class='tmd-code-span'>make</code> function the old implementation called. For most cases, the built-in <code class='tmd-code-span'>make</code> function will zero the elements of the result slice, so it is often comparatively slower.
+</div>
+
+<p></p>
+
+<div class='tmd-usual'>
+With the 1.21+ implementation, now we get a chance to create byte slices without initializing their elements to zero (though achieving this functionality requires the use of  <code class='tmd-code-span'>unsafe</code> functions).
+</div>
+
+<p></p>
+<pre class='tmd-code-block'><code class='language-Go'>import (
+	"strings"
+	"unsafe"
+)
+
+func MakeDirtyByteSlice(n int) []byte {
+	var b strings.Builder
+	b.Grow(n)
+	var p = unsafe.StringData(b.String())
+	return unsafe.Slice(p, n)
+}
+</code></pre>
+
+<p></p>

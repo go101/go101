@@ -1,0 +1,118 @@
+### How to clone slices?
+
+##======== The approaches
+
+There are several ways to do the task.
+
+##++++++++ Way 1: use `make` and `copy`
+
+'''Go
+	cloned := make(SliceType, len(aSlice))
+	copy(cloned, aSlice)
+'''
+
+Note:
+* since Go toolchain v1.15, this way is optimized specifically so that
+  the elements of the cloned slice will not get zeroed in the `make` call.
+* the capacity of the cloned slice is not aligned to a memory class size.
+  %%(Memory class sizes are mentioned in __Go Optimizations 101__.)
+  ////__Go Optimizations 101 `` https://go101.org/optimizations/0.3-memory-allocations.html
+
+For the two reasons, thw way is the fastest approach.
+
+The drawbacks of this approach:
+*. If the source slice `aSlice` is nil, the cloned slice is not nil. Sometimes, this matters.
+*. It is a little verbose (it needs two lines).
+*. It can't be used as a sub-expression in statements.
+*. It needs to import the containing package of type `SliceType` if `SliceType` is declared in another package.
+
+##++++++++ Way 2: the more verbose form of way 1
+
+'''Go
+	var cloned SliceType
+	if aSlice != nil {
+		cloned = make(SliceType, len(aSlice))
+		copy(cloned, aSlice)
+	}
+'''
+
+Excpet for the first drawback of the way 1, the verbose way offers similar benefits and drawbacks to way 1.
+
+##++++++++ Way 3: use `make` and `append`
+
+'''Go
+	append(make(SliceType, 0, len(aSlice)), aSlice...)
+'''
+
+The approach can be used as a sub-expression in statements.
+
+Note:
+* the `make` call will __unnecessarily zeros the elements of the cloned slice__,
+  ////____unnecessarily... `` https://github.com/golang/go/issues/46079
+* with the official toolchain, the capacity of the cloned slice is aligned to a memory class size.
+  This might make it even slower.
+  %%(Memory class sizes are mentioned in __Go Optimizations 101__.)
+
+The drawbacks of this approach:
+*. For the two reasons, currently, thw way is the slowest way.
+*. If the source slice `aSlice` is nil, the cloned slice is not nil. Sometimes, this matters.
+*. It needs to import the containing package of type `SliceType` if `SliceType` is declared in another package.
+
+##++++++++ Way 4: use `append`
+
+'''Go
+	append(SliceType(nil), aSlice...) // manner 1
+	// or
+	append(SliceType{}, aSlice...) // manner 2
+'''
+
+Similar to the last one, the approach can be used as a sub-expression in statements.
+
+Note:
+* this approach doesn't unnecessarily zeros elements, so it is performant.
+* with the official toolchain, the capacity of the cloned slice is aligned to a memory class size.
+  This makes it not always as fast as the way 1 approach.
+  %%(Memory class sizes are mentioned in __Go Optimizations 101__.)
+
+The drawbacks of this approach:
+*. For the two reasons, thw way is slower than other ones.
+   - for manner 1, if the source slice `aSlice` is a non-nil blank slice, the cloned slice is nil.
+   - for manner 2, if the source slice `aSlice` is a nil slice, the cloned slice is not nil.
+*. It needs to import the containing package of type `SliceType` if `SliceType` is declared in another package.
+
+##++++++++ Way 5: use `append` cleverly
+
+'''Go
+	append(aSlice[:0:0], aSlice...)
+'''
+
+This approach improves on the last one by avoiding the two drawbacks listed above,
+which means:
+* If the source slice `aSlice` is a non-nil blank slice, the cloned slice is also a non-nil blank slice.
+* If the source slice `aSlice` is a nil slice, the cloned slice is also nil.
+* It never needs to import the containing package of type `SliceType`.
+
+But it has one (potential tiny) drawback: if the source slice `aSlice` is a non-nil blank slice,
+then the cloned slice (also a non-nil blank slice) references the same underlying element memory block
+as the source slice. This might prevent (or delay) the collection of the element memory block
+when the source slice become unused.
+
+##++++++++ Way 6: use `slices.Clone` (since Go 1.21) 
+
+'''Go
+import "slices"
+
+	slices.Clone(aSlice)
+'''
+
+The current implementation of `slices.Clone` simply uses the way 5 approach.
+So it offers similar benefits and drawbacks to way 5.
+
+It has one drawback: it needs to import the "slices" stdandard package.
+
+##======== So?
+
+There's no single perfect way to clone slices in Go.
+Just choose the way that best suits your situation.
+
+

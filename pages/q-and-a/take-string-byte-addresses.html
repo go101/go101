@@ -11,8 +11,12 @@ We all know that string bytes are not addressable, so Go compilers will report f
 
 <p></p>
 
+<h2 class='tmd-header-2'>Use <code class='tmd-code-span'>unsafe.StringData</code></h2>
+
+<p></p>
+
 <div class='tmd-usual'>
-Prior to Go 1.22, the only way to take the addresses of string bytes is through the unsafe way:
+Prior to Go 1.22 (and since 1.20), the only way to take the addresses of string bytes is through the unsafe way:
 </div>
 
 <p></p>
@@ -33,9 +37,51 @@ func main() {
 	var s = h + w
 	//var p = &s[4] // error: cannot take address of s[4]
 	var p = unsafe.StringData(s[4:])
-	println(p, string(*p))
+	println(p, string(*p)) // 0xc00004470c o
 }
 </code></pre>
+
+<p></p>
+
+<h2 class='tmd-header-2'>Use <code class='tmd-code-span'>reflect.Value.UnsafePointer</code></h2>
+
+<p></p>
+
+<div class='tmd-usual'>
+Since Go 1.23, the <code class='tmd-code-span'>reflect.Value.UnsafePointer</code> method has supported string values. So we can use it to get addresses of string bytes.
+</div>
+
+<p></p>
+<pre class='tmd-code-block'><code class='language-Go'>package main
+
+import (
+	"reflect"
+)
+
+var h = "Hello "
+var w = "world!"
+
+func commonUnderlyingBytes(x, y string) bool {
+	return &[]byte(x)[4] == &[]byte(y)[4]
+}
+
+func main() {
+	var s = h + w
+	//var p = &s[4] // error: cannot take address of s[4]
+	var p = (*byte)(reflect.ValueOf(s[4:]).UnsafePointer())
+	println(p, string(*p)) // 0xc000104eec o
+}
+</code></pre>
+
+<p></p>
+
+<div class='tmd-usual'>
+The above two ways both involve <code class='tmd-code-span'>unsafe.Pointer</code>. The following one doesn't.
+</div>
+
+<p></p>
+
+<h2 class='tmd-header-2'>Convert string to a byte slice, then take addresses of the byte slice</h2>
 
 <p></p>
 
@@ -153,11 +199,55 @@ false
 <p></p>
 
 <div class='tmd-usual'>
+So to make this way work, we should never change the bytes in the result byte slice, even potentially.
+</div>
+
+<p></p>
+
+<div class='tmd-usual'>
 <span class='tmd-smaller-size'><span class='tmd-italic'>(</span></span><a href='https://go101.org/apps-and-libs/gotv.html'><span class='tmd-smaller-size'><span class='tmd-italic'>GoTV</span></span></a><span class='tmd-smaller-size'><span class='tmd-italic'> is a tool used to manage and use multiple coexisting installations of official Go toolchain versions harmoniously and conveniently.)</span></span>
 </div>
 
 <p></p>
 
 <div></div>
+
+<p></p>
+
+<div class='tmd-usual'>
+Is this trick useful in practice? I think the answer is yes. If one of two strings is derived from another (through substring operation), then to get their common prefix, the following <code class='tmd-code-span'>CommonStringPrefix1</code> function is more performant than the <code class='tmd-code-span'>CommonStringPrefix2</code> function (we don't there is a derivation relation between thetwo strings).
+</div>
+
+<p></p>
+<pre class='tmd-code-block'><code class='language-Go'>func CommonStringPrefix1(x, y string) int {
+	if len(x) == 0 || len(y) == 0 {
+		return 0
+	}
+	if &[]byte(x)[0] == &[]byte(y)[0] {
+		if len(x) <= len(y) {
+			return len(x)
+		} else {
+			return len(y)
+		}
+	}
+	return CommonStringPrefix2(x, y)
+}
+
+func CommonStringPrefix2(x, y string) int {
+	var min = len(x)
+	if len(y) < len(x) {
+		min = len(y)
+	}
+	x2, y2 := x[:min], y[:min]
+	if len(x2) == len(y2) {
+		for i := 0; i < len(x2); i++ {
+			if x2[i] != y2[i] {
+				return i
+			}
+		}
+	}
+	return min
+}
+</code></pre>
 
 <p></p>
