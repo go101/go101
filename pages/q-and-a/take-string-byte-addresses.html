@@ -20,7 +20,7 @@ Prior to Go 1.22 (and since 1.20), the only way to take the addresses of string 
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>package main
+<pre class='tmd-code_snippet'><code class='language-Go'>package main
 
 import (
 	"unsafe"
@@ -30,12 +30,12 @@ var h = "Hello "
 var w = "world!"
 
 func commonUnderlyingBytes(x, y string) bool {
-	return &[]byte(x)[4] == &[]byte(y)[4]
+	return &amp;[]byte(x)[4] == &amp;[]byte(y)[4]
 }
 
 func main() {
 	var s = h + w
-	//var p = &s[4] // error: cannot take address of s[4]
+	//var p = &amp;s[4] // error: cannot take address of s[4]
 	var p = unsafe.StringData(s[4:])
 	println(p, string(*p)) // 0xc00004470c o
 }
@@ -52,7 +52,7 @@ Since Go 1.23, the <code class='tmd-code-span'>reflect.Value.UnsafePointer</code
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>package main
+<pre class='tmd-code_snippet'><code class='language-Go'>package main
 
 import (
 	"reflect"
@@ -62,12 +62,12 @@ var h = "Hello "
 var w = "world!"
 
 func commonUnderlyingBytes(x, y string) bool {
-	return &[]byte(x)[4] == &[]byte(y)[4]
+	return &amp;[]byte(x)[4] == &amp;[]byte(y)[4]
 }
 
 func main() {
 	var s = h + w
-	//var p = &s[4] // error: cannot take address of s[4]
+	//var p = &amp;s[4] // error: cannot take address of s[4]
 	var p = (*byte)(reflect.ValueOf(s[4:]).UnsafePointer())
 	println(p, string(*p)) // 0xc000104eec o
 }
@@ -100,27 +100,27 @@ We can make use of this optimization to take addresses of the bytes of a string,
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>package main
+<pre class='tmd-code_snippet'><code class='language-Go'>package main
 
 var h = "Hello "
 var w = "world!"
 
 func takeAddressOfFirstByte(s string) *byte {
-	return &[]byte(s)[0]
+	return &amp;[]byte(s)[0]
 }
 
 func commonUnderlyingBytes(x, y string) bool {
-	return len(x) != 0 && len(y) != 0 &&
+	return len(x) != 0 &amp;&amp; len(y) != 0 &amp;&amp;
 		takeAddressOfFirstByte(x) == takeAddressOfFirstByte(y)
 }
 
 func main() {
 	var s = h + w
 
-	var p1 = &[]byte(s)[4]
+	var p1 = &amp;[]byte(s)[4]
 	println(p1, string(*p1))
 	
-	var p2 = &[]byte(s)[4]
+	var p2 = &amp;[]byte(s)[4]
 	println(p2, string(*p2))
 
 	println(p1 == p2)
@@ -137,7 +137,7 @@ Run it with Go toolchain 1.21 and 1.22 versions:
 </div>
 
 <p></p>
-<pre class='tmd-code-block'>$ gotv 1.21. run aa.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run aa.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.12/bin/go run demo1.go
 0xc00003c6c4 o
 0xc00003c6a4 o
@@ -158,7 +158,7 @@ Wait! Does this mean we can modify string content now? Don't worry. The answer i
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>package main
+<pre class='tmd-code_snippet'><code class='language-Go'>package main
 
 var h = "Hello "
 var w = "world!"
@@ -166,10 +166,10 @@ var w = "world!"
 func main() {
 	var s = h + w
 
-	var p1 = &[]byte(s)[4]
+	var p1 = &amp;[]byte(s)[4]
 	println(p1, string(*p1))
 	
-	var p2 = &[]byte(s)[4]
+	var p2 = &amp;[]byte(s)[4]
 	*p2 = 'X' // modify the byte
 	println(p2, string(*p2))
 
@@ -184,7 +184,7 @@ The behaviors are identical between Go toolchain v1.21 and v1.22 versions.
 </div>
 
 <p></p>
-<pre class='tmd-code-block'>$ gotv 1.21. run aa.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run aa.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.12/bin/go run demo2.go
 0xc00003c6d4 o
 0xc00003c6b4 X
@@ -219,12 +219,12 @@ Is this trick useful in practice? I think the answer is yes. If one of two strin
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>func CommonStringPrefix1(x, y string) int {
+<pre class='tmd-code_snippet'><code class='language-Go'>func CommonStringPrefix1(x, y string) int {
 	if len(x) == 0 || len(y) == 0 {
 		return 0
 	}
-	if &[]byte(x)[0] == &[]byte(y)[0] {
-		if len(x) <= len(y) {
+	if &amp;[]byte(x)[0] == &amp;[]byte(y)[0] {
+		if len(x) &lt;= len(y) {
 			return len(x)
 		} else {
 			return len(y)
@@ -235,12 +235,12 @@ Is this trick useful in practice? I think the answer is yes. If one of two strin
 
 func CommonStringPrefix2(x, y string) int {
 	var min = len(x)
-	if len(y) < len(x) {
+	if len(y) &lt; len(x) {
 		min = len(y)
 	}
 	x2, y2 := x[:min], y[:min]
 	if len(x2) == len(y2) {
-		for i := 0; i < len(x2); i++ {
+		for i := 0; i &lt; len(x2); i++ {
 			if x2[i] != y2[i] {
 				return i
 			}

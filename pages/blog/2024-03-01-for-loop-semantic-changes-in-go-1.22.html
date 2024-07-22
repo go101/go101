@@ -26,7 +26,7 @@ Specifically speaking, only the semantics of the <code class='tmd-code-span'>for
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>	for k, v = range aContainer {...}
+<pre class='tmd-code_snippet'><code class='language-Go'>	for k, v = range aContainer {...}
 	for a, b, c = f(); condition; statement {...}
 
 	for k, v := range aContainer {...}
@@ -46,7 +46,7 @@ Let's view a simple Go program which undergoes semantic change (and behavior cha
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>//demo1.go
+<pre class='tmd-code_snippet'><code class='language-Go'>//demo1.go
 package main
 
 func main() {
@@ -55,14 +55,14 @@ func main() {
 	m := map[int]int{1: 2, 3: 4}
 	for i, v := range m {
 		go func() {
-			<-c
-			out <- i+v
+			&lt;-c
+			out &lt;- i+v
 		}()
 	}
 
 	close(c)
 
-	println(<-out + <-out)
+	println(&lt;-out + &lt;-out)
 }
 </code></pre>
 
@@ -81,7 +81,7 @@ We can install multiple Go toolchain versions to check the outputs. Here, I use 
 <div class='tmd-usual'>
 The outputs:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run demo1.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run demo1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo1.go
 14
 $ gotv 1.22. run demo1.go
@@ -148,10 +148,10 @@ Prior to Go 1.22, <span class='tmd-bold'>without the participation of the channe
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>	for i, v := range m {
+<pre class='tmd-code_snippet'><code class='language-Go'>	for i, v := range m {
 		i, v := i, v // this line is added
 		go func() {
-			out <- i+v
+			out &lt;- i+v
 		}()
 	}
 </code></pre>
@@ -169,22 +169,22 @@ Similarly, the following program also undergoes semantic/behavior change from Go
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo2.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo2.go
 package main
 
 func main() {
 	c, out := make(chan int), make(chan int)
 
-	for i := 1; i <= 3; i++ {
+	for i := 1; i &lt;= 3; i++ {
 		go func() {
-			<-c
-			out <- i
+			&lt;-c
+			out &lt;- i
 		}()
 	}
 
 	close(c)
 
-	println(<-out + <-out + <-out)
+	println(&lt;-out + &lt;-out + &lt;-out)
 }
 </code></pre>
 
@@ -193,7 +193,7 @@ func main() {
 <div class='tmd-usual'>
 The outputs of the above program:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run demo2.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run demo2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo2.go
 12
 $ gotv 1.22. run demo2.go
@@ -272,7 +272,7 @@ On the other hand, in my honest opinion, the rationale of the change to <code cl
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>for a, b, c := anExpression; aCondition; postStatement {
+<pre class='tmd-code_snippet'><code class='language-Go'>for a, b, c := anExpression; aCondition; postStatement {
 	... // loop body
 }
 </code></pre>
@@ -304,9 +304,9 @@ By the speficication, since Go 1.22, the loop shown above is actually equivalent
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>{
+<pre class='tmd-code_snippet'><code class='language-Go'>{
 	a_last, b_last, c_last := anExpression
-	pa_last, pb_last, pc_last = &a_last, &b_last, &c_last
+	pa_last, pb_last, pc_last = &amp;a_last, &amp;b_last, &amp;c_last
 	first := true
 	for {
 		a, b, c := *pa_last, *pb_last, *pc_last
@@ -318,7 +318,7 @@ By the speficication, since Go 1.22, the loop shown above is actually equivalent
 		if !(aCondition) {
 			break
 		}
-		pa_last, pb_last, pc_last = &a, &b, &c
+		pa_last, pb_last, pc_last = &amp;a, &amp;b, &amp;c
 		... // loop body
 	}
 }
@@ -347,13 +347,13 @@ A simple example:
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-defer.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-defer.go
 package main
 
 import "fmt"
 
 func main() {
-	for counter, n := 0, 2; n >= 0; n-- {
+	for counter, n := 0, 2; n &gt;= 0; n-- {
 		defer func(v int) {
 		    fmt.Print("#", counter, ": ", v, "\n")
 		    counter++
@@ -367,7 +367,7 @@ func main() {
 <div class='tmd-usual'>
 Its outputs:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run demo-defer.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run demo-defer.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-defer.go
 #0: 0
 #1: 1
@@ -386,9 +386,9 @@ You can find that, since Go 1.22, the value of <code class='tmd-code-span'>count
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>func main() {
+<pre class='tmd-code_snippet'><code class='language-Go'>func main() {
 	counter_last, n_last := 0, 2
-	p_counter_last, p_n_last := &counter_last, &n_last
+	p_counter_last, p_n_last := &amp;counter_last, &amp;n_last
 	first := true
 	for {
 		counter, n := *p_counter_last, *p_n_last
@@ -398,10 +398,10 @@ You can find that, since Go 1.22, the value of <code class='tmd-code-span'>count
 			n--
 		}
 		
-		if !(n >= 0) {
+		if !(n &gt;= 0) {
 			break
 		}
-		p_counter_last, p_n_last = &counter, &n
+		p_counter_last, p_n_last = &amp;counter, &amp;n
 		defer func(v int) {
 			fmt.Print("#", counter, ": ", v, "\n")
 			counter++
@@ -417,19 +417,19 @@ A more realistic example:
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// search.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// search.go
 package main
 
 import "fmt"
 
 func demoFilter(n int) bool {
-	return n & 1 == 0;
+	return n &amp; 1 == 0;
 }
 
 // Search values and return them without perverting order.
 func search(start, end int)(r []int) {
 	var count = 0
-	for i, index := start, 0; i <= end; i++ {
+	for i, index := start, 0; i &lt;= end; i++ {
 		if demoFilter(i) {
 			count++
 			defer func(value int) {
@@ -453,7 +453,7 @@ func main() {
 <div class='tmd-usual'>
 The outputs of the above program:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run search.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run search.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run search.go
 [8 6 4 2 0]
 $ gotv 1.22. run search.go
@@ -479,7 +479,7 @@ The above example suggests that some freshly-declared variables in the first cla
 
 <div class='tmd-base'>
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>for counter, n := 0, 2; n >= 0; n := n - 1 { ... }
+<pre class='tmd-code_snippet'><code class='language-Go'>for counter, n := 0, 2; n &gt;= 0; n := n - 1 { ... }
 </code></pre>
 
 <p></p>
@@ -509,14 +509,14 @@ An example:
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-closure-1.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-closure-1.go
 package main
 
 import "fmt"
 
 func main() {
 	var printN func()
-	for n := 0; n < 9; n++ {
+	for n := 0; n &lt; 9; n++ {
 		if printN == nil {
 			printN = func() {
 				fmt.Println(n)
@@ -532,7 +532,7 @@ func main() {
 <div class='tmd-usual'>
 Its outputs:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run demo-closure-1.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run demo-closure-1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-closure-1.go
 9
 $ gotv 1.22. run demo-closure-1.go
@@ -553,7 +553,7 @@ Here is a similar example:
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-closure-2.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-closure-2.go
 package main
 
 import (
@@ -563,7 +563,7 @@ import (
 
 func main() {
 	var printBuf func()
-	for buf, i := (bytes.Buffer{}), byte('a'); i <= 'z'; i++ {
+	for buf, i := (bytes.Buffer{}), byte('a'); i &lt;= 'z'; i++ {
 		if printBuf == nil {
 			printBuf = func() {
 				fmt.Printf("%s\n", buf.Bytes())
@@ -580,7 +580,7 @@ func main() {
 <div class='tmd-usual'>
 Its outputs:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run demo-closure-2.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run demo-closure-2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-closure-2.go
 abcdefghijklmnopqrstuvwxyz
 $ gotv 1.22. run demo-closure-2.go
@@ -595,11 +595,11 @@ The third example:
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>package main
+<pre class='tmd-code_snippet'><code class='language-Go'>package main
 
 func main() {
     var next func()
-    for i := 0; i < 3; next() {
+    for i := 0; i &lt; 3; next() {
         print(i)
         next = func() {
             i++
@@ -645,14 +645,14 @@ For example, what does the following Go program print? <span class='tmd-italic'>
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-pointer1.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-pointer1.go
 package main
 
 import "fmt"
 
 func main() {
-	for i, p := 0, (*int)(nil); p == nil; fmt.Println(p == &i) {
-		p = &i
+	for i, p := 0, (*int)(nil); p == nil; fmt.Println(p == &amp;i) {
+		p = &amp;i
 	}
 }
 </code></pre>
@@ -662,7 +662,7 @@ func main() {
 <div class='tmd-usual'>
 Its outputs:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run demo-pointer1.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run demo-pointer1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-pointer1.go
 true
 $ gotv 1.22. run demo-pointer1.go
@@ -677,22 +677,22 @@ Go 1.21 and 1.22 give different answers. Why? From the equivalent code shown bel
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>func main() {
+<pre class='tmd-code_snippet'><code class='language-Go'>func main() {
 	i_last, p_last := 0, (*int)(nil)
-	p_i_last, p_p_last := &i_last, &p_last
+	p_i_last, p_p_last := &amp;i_last, &amp;p_last
 	first := true
 	for {
 		i, p := *p_i_last, *p_p_last
 		if first {
 			first = false
 		} else {
-			fmt.Println(p == &i)
+			fmt.Println(p == &amp;i)
 		}
 		if !(p == nil) {
 			break
 		}
-		p_i_last, p_p_last = &i, &p
-		p = &i
+		p_i_last, p_p_last = &amp;i, &amp;p
+		p = &amp;i
 	}
 }
 </code></pre>
@@ -704,15 +704,15 @@ Another example:
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-pointer2.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-pointer2.go
 package main
 
 import "fmt"
 
 func main() {
     var p *int
-	for i := 0; i < 3; *p++ {
-	    p = &i
+	for i := 0; i &lt; 3; *p++ {
+	    p = &amp;i
 	    fmt.Println(i)
 	}
 }
@@ -723,7 +723,7 @@ func main() {
 <div class='tmd-usual'>
 Since Go 1.22, the above program will never exit (prior to Go 1.22, it will):
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run demo-pointer2.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run demo-pointer2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-pointer2.go
 0
 1
@@ -747,7 +747,7 @@ Since Go 1.22, the following two loops might be not equivalent with each other a
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>for ...; ...; postStatement {
+<pre class='tmd-code_snippet'><code class='language-Go'>for ...; ...; postStatement {
 	... // no continue statements here
 }
 
@@ -764,23 +764,23 @@ For example, if we move the 3rd clause statements of the loops in the last secti
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-pointer3.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-pointer3.go
 package main
 
 import "fmt"
 
 func pointerDemo1() {
 	for i, p := 0, (*int)(nil); p == nil; {
-		p = &i
-		fmt.Println(p == &i) // the old 3rd clause
+		p = &amp;i
+		fmt.Println(p == &amp;i) // the old 3rd clause
 	}
 }
 
 
 func pointerDemo2() {
     var p *int
-	for i := 0; i < 3; {
-	    p = &i
+	for i := 0; i &lt; 3; {
+	    p = &amp;i
 	    fmt.Println(i)
 	    *p++ // the old 3rd clause
 	}
@@ -797,7 +797,7 @@ func main() {
 <div class='tmd-usual'>
 The new outputs:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.22. run demo-pointer3.go
+<pre class='tmd-code_snippet'>$ gotv 1.22. run demo-pointer3.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo-pointer3.go
 true
 0
@@ -822,7 +822,7 @@ For example, in Go versions prior to 1.22, the following code was considered con
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-nocopy1.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-nocopy1.go
 package main
 
 import (
@@ -831,7 +831,7 @@ import (
 )
 
 func process() (wait func()) {
-	for wg, i := (sync.WaitGroup{}), 0; i < 3; i++ {
+	for wg, i := (sync.WaitGroup{}), 0; i &lt; 3; i++ {
 		if (wait == nil) {
 			wait = wg.Wait
 		}
@@ -839,7 +839,7 @@ func process() (wait func()) {
 		wg.Add(1)
 		go func(v int) {
 			defer wg.Done()
-			if (v > 0) {
+			if (v &gt; 0) {
 				time.Sleep(time.Second/8)
 			}
 			println(v)
@@ -858,7 +858,7 @@ func main() {
 <div class='tmd-usual'>
 Its outputs:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run demo-nocopy1.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run demo-nocopy1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.8/bin/go run demo-nocopy1.go
 0
 2
@@ -883,7 +883,7 @@ Certain <code class='tmd-code-span'>no-copy</code> checks occur during run time.
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-nocopy2.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-nocopy2.go
 package main
 
 import (
@@ -896,7 +896,7 @@ const Debug = true
 func a2z(callback func(*strings.Builder)) string {
 	for b, i := (strings.Builder{}), byte('a'); ; i++ {
 		b.WriteByte(i)
-		if (Debug) { callback(&b) }
+		if (Debug) { callback(&amp;b) }
 		if i == 'z' {
 			return b.String()
 		}
@@ -916,7 +916,7 @@ func main() {
 <div class='tmd-usual'>
 Run it with different Go toolchains, we get:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run demo-nocopy2.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run demo-nocopy2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-nocopy2.go
 abcdefghijklmnopqrstuvwxyz
 $ gotv 1.22. run demo-nocopy2.go
@@ -946,7 +946,7 @@ Let's change the <code class='tmd-code-span'>Debug</code> constant in the above 
 </div>
 
 <p></p>
-<pre class='tmd-code-block'>$ gotv 1.22. run demo-nocopy.go
+<pre class='tmd-code_snippet'>$ gotv 1.22. run demo-nocopy.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo-nocopy.go
 abcdefghijklmnopqrstuvwxyz
 </pre>
@@ -996,7 +996,7 @@ Let's view an example, in which a large-size loop variable is used in the <code 
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-largesize.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-largesize.go
 package main
 
 import (
@@ -1004,18 +1004,18 @@ import (
 	"time"
 )
 
-type Large [1<<10]byte
+type Large [1&lt;&lt;10]byte
 
 func foo(constFunc func(*Large, int)) {
 	a := Large{}
-	for i := 0; i < len(a); i++ {
-		constFunc(&a, i)
+	for i := 0; i &lt; len(a); i++ {
+		constFunc(&amp;a, i)
 	}
 }
 
 func bar(constFunc func(*Large, int)) {
-	for a, i := (Large{}), 0; i < len(a); i++ {
-		constFunc(&a, i)
+	for a, i := (Large{}), 0; i &lt; len(a); i++ {
+		constFunc(&amp;a, i)
 	}
 }
 
@@ -1036,7 +1036,7 @@ func main() {
 <div class='tmd-usual'>
 Its outputs:
 </div>
-<pre class='tmd-code-block'>$ gotv 1.21. run aaa.go
+<pre class='tmd-code_snippet'>$ gotv 1.21. run aaa.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run aaa.go
 foo time: 3.573µs
 bar time: 3.267µs
@@ -1095,7 +1095,7 @@ Firstly, let's view a simple program.
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-concurency1.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-concurency1.go
 package main
 
 import (
@@ -1105,7 +1105,7 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
-	for i := 0; i < 3; i++ {
+	for i := 0; i &lt; 3; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -1121,7 +1121,7 @@ func main() {
 <div class='tmd-usual'>
 The above program is intended to print the values of the loop variable <code class='tmd-code-span'>i</code> at each iteration. Prior to Go 1.22, there is a clear data race condition present in the program, because the loop variable <code class='tmd-code-span'>i</code> is only instantiated once during the whole loop. All the new created goroutines will read the single instance but the main goroutine will modify it. The following outputs prove this fact:
 </div>
-<pre class='tmd-code-block'>$ CGO_ENABLED=1 gotv 1.21. run -race demo-concurency1.go
+<pre class='tmd-code_snippet'>$ CGO_ENABLED=1 gotv 1.21. run -race demo-concurency1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run -race demo-concurency1.go
 3
 3
@@ -1137,7 +1137,7 @@ WARNING: DATA RACE
 <div class='tmd-usual'>
 Prior to Go 1.22, the fix is simple, just add an <code class='tmd-code-span'>i := i</code> line at the start of the loop body. Go 1.22 fixes the specified data race problem by changing the semantics of <code class='tmd-code-span'>for;;</code> loops, without modifying the old problematic code. This can be verified by the following outputs:
 </div>
-<pre class='tmd-code-block'>$ CGO_ENABLED=1 gotv 1.22. run -race demo-concurency1.go
+<pre class='tmd-code_snippet'>$ CGO_ENABLED=1 gotv 1.22. run -race demo-concurency1.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run -race demo-concurency1.go
 1
 2
@@ -1157,7 +1157,7 @@ The effect of the attempt to fix the problem by making semantic change is actual
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-concurency2.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-concurency2.go
 package main
 
 import (
@@ -1167,11 +1167,11 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
-	for i := 0; i < 3; i++ {
+	for i := 0; i &lt; 3; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			i++ // <-- add this line
+			i++ // &lt;-- add this line
 			fmt.Println(i)
 		}()
 	}
@@ -1190,7 +1190,7 @@ Is the new code still data race free (with Go 1.22 semantics)? It looks good. Ea
 <div class='tmd-usual'>
 The following outputs verify there is a data race condition present in the new code:
 </div>
-<pre class='tmd-code-block'>$ CGO_ENABLED=1 gotv 1.22. run -race demo-concurency2.go
+<pre class='tmd-code_snippet'>$ CGO_ENABLED=1 gotv 1.22. run -race demo-concurency2.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run -race demo-concurency2.go
 ==================
 WARNING: DATA RACE
@@ -1221,7 +1221,7 @@ More seriously, some old good concurrent code will become problematic. Here is a
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>// demo-concurency3.go
+<pre class='tmd-code_snippet'><code class='language-Go'>// demo-concurency3.go
 package main
 
 import (
@@ -1232,13 +1232,13 @@ import (
 const NumWorkers = 3
 
 func isGold(num uint64) bool {
-	return num & 0xFFFFF == 0
+	return num &amp; 0xFFFFF == 0
 }
 
 func main() {
 	var c = make(chan uint64)
 	var m sync.Mutex
-	for n, i := 0, uint64(0); n < NumWorkers; n++ {
+	for n, i := 0, uint64(0); n &lt; NumWorkers; n++ {
 		go func() {
 			for {
 				m.Lock()
@@ -1247,7 +1247,7 @@ func main() {
 				m.Unlock()
 				
 				if isGold(v) {
-					c <- v
+					c &lt;- v
 				}
 			}
 		}()
@@ -1264,7 +1264,7 @@ func main() {
 <div class='tmd-usual'>
 Run it with different toolchain versions, get the following outputs:
 </div>
-<pre class='tmd-code-block'>$ CGO_ENABLED=1 gotv 1.21. run -race demo-concurency3.go
+<pre class='tmd-code_snippet'>$ CGO_ENABLED=1 gotv 1.21. run -race demo-concurency3.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run -race demo-concurency3.go
 Found gold 1048576
 Found gold 2097152
@@ -1431,7 +1431,7 @@ Don't be too nervous, :D. In fact, most <code class='tmd-code-span'>for;;</code>
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>for a, b, c := anExpression; aCondition; postStatement {
+<pre class='tmd-code_snippet'><code class='language-Go'>for a, b, c := anExpression; aCondition; postStatement {
 	... // loop body
 }
 </code></pre>
@@ -1443,7 +1443,7 @@ as
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>{
+<pre class='tmd-code_snippet'><code class='language-Go'>{
 	a, b, c := anExpression
 	for ; aCondition; postStatement {
 		... // loop body
@@ -1458,7 +1458,7 @@ to avoid triggering the new semantics. You can even specify which loop variables
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>{
+<pre class='tmd-code_snippet'><code class='language-Go'>{
 	a, b, c := anExpression
 	for ; aCondition; postStatement {
 		a, c := a, c

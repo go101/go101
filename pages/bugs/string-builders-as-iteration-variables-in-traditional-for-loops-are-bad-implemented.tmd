@@ -1,0 +1,93 @@
+
+### `strings.Builder` iteration variables in traditional 3-clause `for;;` loops are implemented incorrectly
+
+Go 1.22 changed the semantics of `for` loops,
+including both `for-range` loops and traditional
+3-clause `for ..; ..; .. {...}` loops.
+For details, please read __`for` Loop Semantic Changes in Go 1.22: Be Aware of the Impact__.
+
+	////__...the Impact ``https://go101.org/blog/2024-03-01-for-loop-semantic-changes-in-go-1.22.html
+
+In my honest opinion, the overall impact of the new semantics of `for-range` loops is positive,
+while the overall impact of the new semantics of traditional 3-clause `for;;` loops is negative.
+The above referenced article shows the all the bad effects of the semantic change of traditional 3-clause `for;;` loops
+I have found so far.
+
+One fact is that, currently, the latest official Go toolchain doesn't implement the new semantics correctly
+for some cases in which `strings.Builder` values are used as (freshly-declared) iteration variables of traditional 3-clause `for;;` loops.
+The following example shows one such case: 
+
+'''Go
+package main
+
+import (
+	"fmt"
+	"strings"
+)
+
+func foo() string {
+	for b, i := (strings.Builder{}), byte('a'); ; i++ {
+		b.WriteByte(i) // not panic
+		if i == 'z' {
+			return b.String()
+		}
+	}
+}
+
+func bar(callback func(*strings.Builder)) string {
+	for b, i := (strings.Builder{}), byte('a'); ; i++ {
+		b.WriteByte(i) // panics here
+		callback(&b)
+		if i == 'z' {
+			return b.String()
+		}
+	}
+}
+
+func main() {
+	fmt.Println(foo())
+	debugProcess := func(pb *strings.Builder) {
+		//fmt.Println(pb.String()) // do nothing
+	}
+	fmt.Println(bar(debugProcess))
+}
+'''
+
+The above example program doesn't panic with official Go toolchain
+versions prior to v1.22:
+
+'''
+$ gotv 1.21 run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.12/bin/go run main.go
+abcdefghijklmnopqrstuvwxyz
+abcdefghijklmnopqrstuvwxyz
+'''
+
+::%%(__GoTV__ is a tool used to manage and use multiple coexisting installations
+of official Go toolchain versions harmoniously and conveniently.)
+
+	////__GoTV `` https://go101.org/apps-and-libs/gotv.html
+
+However, when with official Go toolchain v1.22+, the example program
+panics:
+
+'''
+$ gotv 1.22 run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.22.5/bin/go run main.go
+abcdefghijklmnopqrstuvwxyz
+panic: strings: illegal use of non-zero Builder copied by value
+'''
+
+The behavior of the `foo` and `bar` functions should be consistent,
+but official Go toolchain v1.22+ fail to make the guarantee.
+In fact, by the Go 1.22+ new semantics, both of the `foo` and `bar`
+functions should produce a panic, because nocopy values should not
+be used as (freshly declared) iteration variables since Go 1.22
+(currently, the `go vet` command provided in the latest Go toolchain version
+fails to warn on such cases).
+
+The Go core team __refused to fix this bug__. You should be aware of this bug.
+
+	////__refused to fix this bug `` https://github.com/golang/go/issues/66070#issuecomment-1981642904
+
+

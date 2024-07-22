@@ -6,7 +6,7 @@
 <p></p>
 
 <div class='tmd-usual'>
-Prior to Go 1.21, there is no way to achieve this, even if with <code class='tmd-code-span'>unsafe</code> ways.
+Prior to Go 1.21, there is no way to achieve this, even if with unsafe ways.
 </div>
 
 <p></p>
@@ -22,7 +22,7 @@ With the 1.21+ implementation, now we get a chance to create byte slices without
 </div>
 
 <p></p>
-<pre class='tmd-code-block'><code class='language-Go'>import (
+<pre class='tmd-code_snippet'><code class='language-Go'>import (
 	"strings"
 	"unsafe"
 )
@@ -34,5 +34,112 @@ func MakeDirtyByteSlice(n int) []byte {
 	return unsafe.Slice(p, n)
 }
 </code></pre>
+
+<p></p>
+
+<div class='tmd-usual'>
+However, for an unknown reason (which should be releted to the official compiler/runtime implementation), benchmark results show that the function is not as faster as expected when the length of the created byte slice is not large.
+</div>
+
+<p></p>
+<pre class='tmd-code_snippet'><code class='language-Go'>package ttt
+
+import (
+	"strings"
+	"testing"
+	"unsafe"
+)
+
+const Len = 20000
+
+func init() {
+	println("=============== Len =", Len)
+}
+
+func MakeDirtyByteSlice(n int) []byte {
+	var b strings.Builder
+	b.Grow(n)
+	var p = unsafe.StringData(b.String())
+	return unsafe.Slice(p, n)
+}
+
+func Benchmark_MakeDirtyByteSlice(tb *testing.B) {
+	for range tb.N {
+		r = MakeDirtyByteSlice(Len)
+	}
+}
+
+func Benchmark_make(tb *testing.B) {
+	for range tb.N {
+		r = make([]byte, Len)
+	}
+}
+
+func MakeByteSlice(initialValues ...[]byte) []byte {
+	n := 0
+	for i := range initialValues {
+		n += len(initialValues[i])
+	}
+	n, r := 0, MakeDirtyByteSlice(n)
+	for _, s := range initialValues {
+		n += copy(r[n:], s)
+	}
+	return r
+}
+
+const N = Len / 4
+
+var x = []byte(strings.Repeat("x", N))
+var y = []byte(strings.Repeat("y", N))
+var z = []byte(strings.Repeat("z", N))
+var w = []byte(strings.Repeat("z", N))
+var r []byte
+
+func Benchmark_MakeByteSlice(tb *testing.B) {
+	for range tb.N {
+		r = MakeByteSlice(x, y, z, w)
+	}
+}
+
+func Benchmark_make_append(tb *testing.B) {
+	for range tb.N {
+		r = make([]byte, 0, Len)
+		r = append(r, x...)
+		r = append(r, y...)
+		r = append(r, z...)
+		r = append(r, w...)
+	}
+}
+</code></pre>
+
+<p></p>
+
+<div class='tmd-usual'>
+Benchmark results:
+</div>
+<pre class='tmd-code_snippet'>$ gotv . test -bench=. -benchmem
+[Run]: $HOME/.cache/gotv/tag_go1.23rc1/bin/go test -bench=. -benchmem
+=============== Len = 4000
+goos: linux
+goarch: amd64
+pkg: example.com
+cpu: Intel(R) Core(TM) i5-4210U CPU @ 1.70GHz
+Benchmark_MakeDirtyByteSlice-4   	 1752531	       669.5 ns/op	    4096 B/op	       1 allocs/op
+Benchmark_make-4                 	 1268131	       940.3 ns/op	    4096 B/op	       1 allocs/op
+Benchmark_MakeByteSlice-4        	  913239	      1119 ns/op	    4096 B/op	       1 allocs/op
+Benchmark_make_append-4          	 1142342	      1046 ns/op	    4096 B/op	       1 allocs/op
+
+$ gotv . test -bench=. -benchmem
+[Run]: $HOME/.cache/gotv/tag_go1.23rc1/bin/go test -bench=. -benchmem
+=============== Len = 20000
+goos: linux
+goarch: amd64
+pkg: example.com
+cpu: Intel(R) Core(TM) i5-4210U CPU @ 1.70GHz
+Benchmark_MakeDirtyByteSlice-4   	  628150	      1863 ns/op	   20480 B/op	       1 allocs/op
+Benchmark_make-4                 	  320997	      3404 ns/op	   20480 B/op	       1 allocs/op
+Benchmark_MakeByteSlice-4        	  262684	      4213 ns/op	   20480 B/op	       1 allocs/op
+Benchmark_make_append-4          	  246081	      4525 ns/op	   20480 B/op	       1 allocs/op
+</pre>
 
 <p></p>
