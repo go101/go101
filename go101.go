@@ -265,27 +265,28 @@ func retrieveIndexContent(group string) template.HTML {
 }
 
 var (
+	aStart = []byte(`<a `)
 	aEnd  = []byte(`</a>`)
 	aHref = []byte(`href="`)
 	aID   = []byte(`id="i-`)
+	// The lengths of the above two must be equal.
 )
 
 func disableArticleLink(htmlContent template.HTML, page string) (r template.HTML) {
 	content := []byte(htmlContent)
-	aStart := []byte(`<a class="index" href="` + page)
-	i := bytes.Index(content, aStart)
+	i := bytes.Index(content, []byte(page))
 	if i >= 0 {
-		content := content[i:]
-		i = bytes.Index(content[len(aStart):], aEnd)
-		if i >= 0 {
-			i += len(aStart)
-			//filleBytes(content[:len(start)], 0)
-			//filleBytes(content[i:i+len(end)], 0)
-			k := bytes.Index(content, aHref)
-			if i >= 0 {
-				content[1] = 'b'
-				content[i+2] = 'b'
-				copy(content[k:], aID)
+		j := bytes.LastIndex(content[:i], aHref)
+		if j >= 0 {
+			k := bytes.LastIndex(content[:j], aStart)
+			if k >= 0 {
+				l := bytes.Index(content[i+len(page):], aEnd)
+				if l >= 0 {
+					l += i+len(page)
+					content[k+1] = 'b'
+					content[l+2] = 'b'
+					copy(content[j:], aID)
+				}
 			}
 		}
 	}

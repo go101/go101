@@ -1,0 +1,163 @@
+
+<p></p>
+
+<h1 class="tmd-header-1">
+How to efficiently delete contiguous elements of a slice while keeping the element order?</h1>
+
+<p></p>
+
+<div class="tmd-usual">
+Assume:
+</div>
+
+<ol class="tmd-list">
+
+<li class="tmd-list-item">
+
+<div class="tmd-usual">
+the involved slice is <code class="tmd-code-span">s</code> and its type is <code class="tmd-code-span">[]E</code>, where <code class="tmd-code-span">E</code> is the slice element type.
+</div>
+
+</li>
+
+<li class="tmd-list-item">
+
+<div class="tmd-usual">
+we want to delete the elements in the subslice <code class="tmd-code-span">s[from:to]</code> and <code class="tmd-code-span">from &lt;= to</code>.
+</div>
+
+</li>
+
+</ol>
+
+<p></p>
+
+<h2 class="tmd-header-2">
+Way 1: use the build-in <code class="tmd-code-span">copy</code> function</h2>
+
+<p></p>
+<pre class="tmd-code_snippet""><code class="language-Go">	s = s[:from + copy(s[from:], s[to:])]
+</code></pre>
+
+<p></p>
+
+<h2 class="tmd-header-2">
+Way 2: use the build-in <code class="tmd-code-span">append</code> function</h2>
+
+<p></p>
+<pre class="tmd-code_snippet""><code class="language-Go">	s = append(s[from:], s[to:]...)
+</code></pre>
+
+<p></p>
+
+<h2 class="tmd-header-2">
+Way 3: use the <code class="tmd-code-span">slices.Delete</code> function</h2>
+
+<p></p>
+<pre class="tmd-code_snippet""><code class="language-Go">import "slices"
+
+	s = slices.Delete(s, from, to)
+</code></pre>
+
+<p></p>
+
+<h2 class="tmd-header-2">
+Some notes</h2>
+
+<p></p>
+
+<h3 class="tmd-header-3">
+Note 1</h3>
+
+<p></p>
+
+<div class="tmd-usual">
+There is a detail we should be aware of:
+</div>
+
+<ul class="tmd-list">
+
+<li class="tmd-list-item">
+
+<div class="tmd-usual">
+when <code class="tmd-code-span">from &lt; to</code>, the two ways are as performant as each other.
+</div>
+
+</li>
+
+<li class="tmd-list-item">
+
+<div class="tmd-usual">
+when <code class="tmd-code-span">from == to</code>, <a href="https://github.com/golang/go/issues/57759">the first way is almost a no-op, but the second way is not</a>.
+</div>
+
+</li>
+
+</ul>
+
+<p></p>
+
+<p></p>
+
+<div class="tmd-usual">
+So the first way is preferred over the second way.
+</div>
+
+<p></p>
+
+<div class="tmd-usual">
+Note that, in Go 1.21, the implementation of the <code class="tmd-code-span">slices.Delete</code> function was the same as the way 2. So it was also inefficient when <code class="tmd-code-span">from == to</code>. Since Go 1.22, the problem has been removed.
+</div>
+
+<p></p>
+
+<div class="tmd-usual">
+<span class="tmd-smaller-size"><span class="tmd-italic">(The detail is collected in the </span></span><a href="https://go101.org/optimizations/101.html"><span class="tmd-smaller-size"><span class="tmd-italic">Go Optimizations 101</span></span></a><span class="tmd-smaller-size"><span class="tmd-italic"> book.)</span></span>
+</div>
+
+<p></p>
+
+<p></p>
+
+<h3 class="tmd-header-3">
+Note 2</h3>
+
+<p></p>
+
+<div class="tmd-usual">
+If it is important to try to shorten the lifespan of other values referenced by the freed-up elements (which contain pointers), then we need do more (for both way 1 and way 2) by clearing the freed-up elements with either of the following two manners:
+</div>
+
+<p></p>
+
+<div class="tmd-usual">
+Manner 1 (since Go 1.21):
+</div>
+
+<p></p>
+<pre class="tmd-code_snippet""><code class="language-Go">	// The "clear" built-in function was introduced in Go 1.21.
+	clear(s[len(s):len(s)+to-from])
+</code></pre>
+
+<p></p>
+
+<div class="tmd-usual">
+Manner 2 (assume the zero literal of <code class="tmd-code-span">E</code> is <code class="tmd-code-span">zeroE</code>):
+</div>
+
+<p></p>
+<pre class="tmd-code_snippet""><code class="language-Go">	{
+		temp := s[len(s):len(s)+to-from]
+		for i := range temp {
+			temp[i] = zeroE
+		}
+	}
+</code></pre>
+
+<p></p>
+
+<div class="tmd-usual">
+If Go toolchain 1.21 is used, then we should also clear the freed-up elements by ourselves after calling the <code class="tmd-code-span">slices.Delete</code> function (with either of the above two manners). Since Go 1.22, the <code class="tmd-code-span">slices.Delete</code> function will automatically clear the freed-up elements.
+</div>
+
+<p></p>

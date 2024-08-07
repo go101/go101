@@ -1,44 +1,46 @@
 
 <p></p>
 
-<h1 class='tmd-header-1'>How to canonicalize strings to save memory?</h1>
+<h1 class="tmd-header-1">
+How to canonicalize strings to save memory?</h1>
 
 <p></p>
 
-<div class='tmd-usual'>
+<div class="tmd-usual">
 At run time of Go programs, sometimes, some equal strings don't share underlying bytes memory blocks, even if they can share a single common bytes memory block.
 </div>
 
 <p></p>
 
-<div class='tmd-usual'>
+<div class="tmd-usual">
 The process to let them share a single common bytes memory block is called string canonicalization. There are several ways in Go to implement string canonicalization.
 </div>
 
 <p></p>
 
-<h2 class='tmd-header-2'>Way 1: canonicalize two strings when they are found equal</h2>
+<h2 class="tmd-header-2">
+Way 1: canonicalize two strings when they are found equal</h2>
 
 <p></p>
 
-<div class='tmd-usual'>
+<div class="tmd-usual">
 The logic and implementation is simple:
 </div>
 
 <p></p>
-<pre class='tmd-code_snippet'><code class='language-Go'>	if str1 == str2 {
+<pre class="tmd-code_snippet""><code class="language-Go">	if str1 == str2 {
 		str1 = str2 // give up str2's underlying bytes memory block
 	}
 </code></pre>
 
 <p></p>
 
-<div class='tmd-usual'>
+<div class="tmd-usual">
 Here is a clumsy implementation to canonicalize the strings in a slice:
 </div>
 
 <p></p>
-<pre class='tmd-code_snippet'><code class='language-Go'>func CanonicalizeStrings(ss []string) {
+<pre class="tmd-code_snippet""><code class="language-Go">func CanonicalizeStrings(ss []string) {
 	type S struct {
 		str   string
 		index int
@@ -71,22 +73,23 @@ Here is a clumsy implementation to canonicalize the strings in a slice:
 
 <p></p>
 
-<div class='tmd-usual'>
+<div class="tmd-usual">
 The way is more performant than the following way for the specified case (canonicalize all strings in a slice).
 </div>
 
 <p></p>
 
-<h2 class='tmd-header-2'>Way 2: use Go 1.23 introduced <code class='tmd-code-span'>unique.Handle</code></h2>
+<h2 class="tmd-header-2">
+Way 2: use Go 1.23 introduced <code class="tmd-code-span">unique.Handle</code></h2>
 
 <p></p>
 
-<div class='tmd-usual'>
-Go 1.23 introduced <code class='tmd-code-span'>unique.Handle</code> is a convenient way to canonicalize strings.
+<div class="tmd-usual">
+Go 1.23 introduced <code class="tmd-code-span">unique.Handle</code> is a convenient way to canonicalize strings.
 </div>
 
 <p></p>
-<pre class='tmd-code_snippet'><code class='language-Go'>import "unique"
+<pre class="tmd-code_snippet""><code class="language-Go">import "unique"
 
 func CanonicalizeString(s string) string {
 	return unique.Make(s).Value()
@@ -101,8 +104,8 @@ func CanonicalizeStrings(ss []string) {
 
 <p></p>
 
-<div class='tmd-usual'>
-The way is more flexible. Just apply the above <code class='tmd-code-span'>CanonicalizeString</code> function for every string used at run time, then all equal strings will share the same underlying bytes memory blocks.
+<div class="tmd-usual">
+The way is more flexible. Just apply the above <code class="tmd-code-span">CanonicalizeString</code> function for every string used at run time, then all equal strings will share the same underlying bytes memory blocks.
 </div>
 
 <p></p>

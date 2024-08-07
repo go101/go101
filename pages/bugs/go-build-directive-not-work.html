@@ -1,54 +1,51 @@
 
 <p></p>
 
-<h1 class='tmd-header-1'>The <code class='tmd-code-span'>//go:build go1.mn</code> comment directives don't work with Go toolchain v1.22.x versions when no <code class='tmd-code-span'>go.mod</code> files are involved</h1>
+<h1 class="tmd-header-1">
+The <code class="tmd-code-span">//go:build go1.mn</code> comment directives don't work with Go toolchain v1.22.x versions when no <code class="tmd-code-span">go.mod</code> files are involved</h1>
 
 <p></p>
 
-<div class='tmd-usual'>
-Go 1.22 changed the semantics of <code class='tmd-code-span'>for-range</code> and tranditional <code class='tmd-code-span'>for;;</code> loops. Since the semantic changes alter the behavior of existing code written according to the previous semantics, they break backward compatibility.
+<div class="tmd-usual">
+Go 1.22 changed the semantics of <code class="tmd-code-span">for-range</code> and tranditional <code class="tmd-code-span">for;;</code> loops. Since the semantic changes alter the behavior of existing code written according to the previous semantics, they break backward compatibility.
 </div>
 
 <p></p>
 
-<div class='tmd-usual'>
-While <code class='tmd-code-span'>for-range</code> loops are almost unaffected, traditional <code class='tmd-code-span'>for;;</code> loops <a href='https://go101.org/blog/2024-03-01-for-loop-semantic-changes-in-go-1.22.html'>exhibit unexpected behaviors due to the breakage</a>.
+<div class="tmd-usual">
+While <code class="tmd-code-span">for-range</code> loops are almost unaffected, traditional <code class="tmd-code-span">for;;</code> loops <a href="https://go101.org/blog/2024-03-01-for-loop-semantic-changes-in-go-1.22.html">exhibit unexpected behaviors due to the breakage</a>.
 </div>
 
 <p></p>
 
-<div></div>
-
 <p></p>
 
-<div class='tmd-usual'>
-To keep using the old semantics prior to Go 1.22 in Go 1.22+ age, we must specify a Go version for each Go source file. One way to achieve this is adding a <code class='tmd-code-span'>//go:build go1.21</code> comment directive at the beginning of the Go source file containing the old code.
+<div class="tmd-usual">
+To keep using the old semantics prior to Go 1.22 in Go 1.22+ age, we must specify a Go version for each Go source file. One way to achieve this is adding a <code class="tmd-code-span">//go:build go1.21</code> comment directive at the beginning of the Go source file containing the old code.
 </div>
 
 <p></p>
 
-<div class='tmd-usual'>
-While officially documented, due to <a href='https://github.com/golang/go/issues/66092'>a known bug</a>, this way is currently non-functional in Go toolchain 1.22.x versions.
+<div class="tmd-usual">
+While officially documented, due to <a href="https://github.com/golang/go/issues/66092">a known bug</a>, this way is currently non-functional in Go toolchain 1.22.x versions.
 </div>
 
 <p></p>
 
-<div></div>
-
 <p></p>
 
-<div class='tmd-usual'>
-Here, I simply describe this bug: for a Go source file which Go version is not specified in a <code class='tmd-code-span'>go.mod</code> file, the <code class='tmd-code-span'>//go:build go1.mn</code> comment directive in it fails to specify the Go verison for it.
+<div class="tmd-usual">
+Here, I simply describe this bug: for a Go source file which Go version is not specified in a <code class="tmd-code-span">go.mod</code> file, the <code class="tmd-code-span">//go:build go1.mn</code> comment directive in it fails to specify the Go verison for it.
 </div>
 
 <p></p>
 
-<div class='tmd-usual'>
+<div class="tmd-usual">
 Here is an example:
 </div>
 
 <p></p>
-<pre class='tmd-code_snippet'><code class='language-Go'>//go:build go1.21
+<pre class="tmd-code_snippet""><code class="language-Go">//go:build go1.21
 package main
 
 import "fmt"
@@ -77,12 +74,12 @@ func search(start, end int) (r []int) {
 
 <p></p>
 
-<div class='tmd-usual'>
-When run the Go file as a script with the <code class='tmd-code-span'>go run</code> command (without a <code class='tmd-code-span'>go.mod</code> file involved), the example program prints <code class='tmd-code-span'>[13 0]</code> with Go toolchain 1.22.x versions, due to Go 1.22+ semantics are used, which is wrongly. It should prints <code class='tmd-code-span'>[17 13]</code>, as with older and newer toolchain versions.
+<div class="tmd-usual">
+When run the Go file as a script with the <code class="tmd-code-span">go run</code> command (without a <code class="tmd-code-span">go.mod</code> file involved), the example program prints <code class="tmd-code-span">[13 0]</code> with Go toolchain 1.22.x versions, due to Go 1.22+ semantics are used, which is wrongly. It should prints <code class="tmd-code-span">[17 13]</code>, as with older and newer toolchain versions.
 </div>
 
 <p></p>
-<pre class='tmd-code_snippet'>$ gotv 1.21. run example.go
+<pre class="tmd-code_snippet"">$ gotv 1.21. run example.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.12/bin/go run aa.go
 [17 13]
 $ gotv 1.22. run example.go
@@ -95,22 +92,18 @@ $ gotv 1.23. run example.go
 
 <p></p>
 
-<div class='tmd-usual'>
-The Go core team deliberately <a href='https://github.com/golang/go/issues/66092#issuecomment-2192570381'>refused to fix the bug for coming 1.22.x versions</a>. So you should be aware of the fact that the bug will be always in 1.22.x versions when you are using these Go toolchain versions.
+<div class="tmd-usual">
+The Go core team deliberately <a href="https://github.com/golang/go/issues/66092#issuecomment-2192570381">refused to fix the bug for coming 1.22.x versions</a>. So you should be aware of the fact that the bug will be always in 1.22.x versions when you are using these Go toolchain versions.
 </div>
 
 <p></p>
 
-<div></div>
-
 <p></p>
 
-<div class='tmd-usual'>
-<span class='tmd-smaller-size'><span class='tmd-italic'>(</span></span><a href='https://go101.org/apps-and-libs/gotv.html'><span class='tmd-smaller-size'><span class='tmd-italic'>GoTV</span></span></a><span class='tmd-smaller-size'><span class='tmd-italic'> is a tool used to manage and use multiple coexisting installations of official Go toolchain versions harmoniously and conveniently.)</span></span>
+<div class="tmd-usual">
+<span class="tmd-smaller-size"><span class="tmd-italic">(</span></span><a href="https://go101.org/apps-and-libs/gotv.html"><span class="tmd-smaller-size"><span class="tmd-italic">GoTV</span></span></a><span class="tmd-smaller-size"><span class="tmd-italic"> is a tool used to manage and use multiple coexisting installations of official Go toolchain versions harmoniously and conveniently.)</span></span>
 </div>
 
 <p></p>
-
-<div></div>
 
 <p></p>
