@@ -12,7 +12,7 @@ understand the implications of these changes
 in order to write Go code which will behave as intended.
 Otherwise, your code may exhibit unexpected behavior.
 
-##========================================
+###========================================
 	What are the changes?
 
 Specifically speaking, only the semantics of the `for` loops
@@ -62,7 +62,7 @@ func main() {
 We can install multiple Go toolchain versions to check the outputs.
 Here, I use the __GoTV__ tool to (conveniently) choose Go toolchain versions.
 
-////__GoTV `` https://go101.org/apps-and-libs/gotv.html
+// __GoTV `` https://go101.org/apps-and-libs/gotv.html
 
 The outputs:
 '''
@@ -171,9 +171,9 @@ see
    the release maintains __the Go 1 promise of compatibility__. However,
    ** this is simply not the case (read below for reasons).
 
-   ////__the Go 1 promise of compatibility `` https://go.dev/doc/go1compat
+   // __the Go 1 promise of compatibility `` https://go.dev/doc/go1compat
 
-##==========================================
+###==========================================
 	The impact of the changes
 
 Personally, I think the rationale of the change to `for-range` loops is well-justified.
@@ -208,7 +208,7 @@ code to do the job. This is true. __Go 1.22+ specification__ says:
   before executing the post statement and initialized to the value of
   the previous iteration's variable at that moment. 
 
-////__... specification``https://go.dev/ref/spec#For_statements
+// __... specification``https://go.dev/ref/spec#For_statements
 
 By the speficication, since Go 1.22, the loop shown above is
 actually equivalent to the following pseudo-code (%%Sorry,
@@ -240,10 +240,10 @@ Here, I have tried my best.%%):
 Wow, quite a lot of magical implicit code.
 For a language that promotes explicitness, it's embarrassing.
 
-Implicitness often leads to unexpected surprises, which is not a surprise.
+Implicitness frequently results in unintended surprises, a fact that is itself unsurprising.
 The following will show several cases which might break your expectations.
 
-##++++++++++++++
+###++++++++++++++
 	The behaviors of deferred function calls which capture loop variables might change
 
 A simple example:
@@ -356,24 +356,26 @@ $ gotv 1.22. run search.go
 So, since Go 1.22, just be careful when using freshly-declared loop variables
 in deferred function calls.
 
-! The above example suggests that some freshly-declared variables in the first clause of
-a `for;;` loops are expected to be per-iteration scoped, and some are expected to be whole-loop scoped.
-I ever suggested to __allow re-declaration statements as `postStatement`
-of `for;;` loops to **%%explicitly%%** specify which variables are per-iteration scoped__.
-For example, in the following loop code, `n` is per-iteration scoped but `counter`
-is whole-loop scoped.
-{
+! The above example suggests that some freshly-declared loop variables in the first clause of
+  a `for;;` loops might be okay to be per-iteration scoped,
+  but some are strongly expected to be whole-loop scoped,
+  such as the `index` and `counter` loop variables shown above.
+  I ever suggested to __allow re-declaration statements as `postStatement`
+  of `for;;` loops to **%%explicitly%%** specify which variables are per-iteration scoped__.
+  For example, in the following loop code, `n` is per-iteration scoped but `counter`
+  is whole-loop scoped.
+  {
 
-'''Go
-for counter, n := 0, 2; n >= 0; n := n - 1 { ... }
-'''
+  '''Go
+  for counter, n := 0, 2; n >= 0; n := n - 1 { ... }
+  '''
 
-////__allow re-declaration... ``https://github.com/golang/go/issues/60078#issuecomment-1547130632
+  However, sadly, the suggestion was ignored totally.
+  }
 
-However, sadly, the suggestion was ignored totally.
-}
+  // __allow re-declaration... ``https://github.com/golang/go/issues/60078#issuecomment-1547130632
 
-##++++++++++++++
+###++++++++++++++
 	Be careful when capturing loop variables in closures
 
 An example:
@@ -471,7 +473,7 @@ since Go 1.22, a freshly-declared loop variable may have many instances at run t
 whether or not it is modified in `postStatement`.
 Each of the instances is instantiated in one iteration.
 
-##++++++++++++++
+###++++++++++++++
 	Be careful when taking addresses of loop variables
 
 Similarly, since Go 1.22, it may be dangerous to use
@@ -479,7 +481,7 @@ the address of a freshly-declared loop variable across loop iterations.
 
 For example, what does the following Go program print?
 %%(Some people say this example is so bizarre that backward-compatibility
-should not be kept for such cases. What a ridiculous point.
+should not be kept for such cases. What a ridiculous point!
 The code in reality may be more bizarre than this!)%%
 
 '''Go
@@ -564,7 +566,7 @@ $ gotv 1.22. run demo-pointer2.go
 ...
 '''
 
-##++++++++++++++
+###++++++++++++++
 	Be careful when moving the 3rd clause statements inside loop bodies
 
 Since Go 1.22, the following two loops might be not equivalent with each other any more
@@ -623,15 +625,14 @@ true
 2
 '''
 
-##++++++++++++++
+###++++++++++++++
 	Be careful when declaring no-copy values as loop variables
 
 As explained above, since Go 1.22, at the start of each loop iteration,
 each freshly-declared loop variable will get copied once, **%%implicitly%%**.
-The implication means that, since Go 1.22, it is not a good idea
-to declare no-copy values as loop variables,
-such as `sync.Mutex`, `sync/atomic.Int64`, `bytes.Buffer`,
-and `strings.Builder` values etc.
+The implication means that, since Go 1.22, it’s generally not advisable
+to use no-copy values as loop variables.
+Examples include `sync.Mutex`, `sync/atomic.Int64`, `bytes.Buffer`, and `strings.Builder`.
 
 For example, in Go versions prior to 1.22, the following code was considered concurrently correct.
 However, starting with Go 1.22, this code is considered to have a concurrency issue,
@@ -766,15 +767,15 @@ The example program should panic regardless of the value of the `Debug` constant
 The Go core team __refused to fix this bug__, which raises the alarm that
 unexpected behavior may happen in other similar scenarios.
 
-  ////__make a bad decision `` https://github.com/golang/go/issues/66070
-  ////__refused to fix this bug `` https://github.com/golang/go/issues/66070#issuecomment-1981642904
+  // __make a bad decision `` https://github.com/golang/go/issues/66070
+  // __refused to fix this bug `` https://github.com/golang/go/issues/66070#issuecomment-1981642904
 
 The safe advice is try not to declare no-copy values as loop variables.
 This is just a suggestion, not a mandatory rule,
 because copying no-copy values does not always cause damage
 (but the damage may be exposed later when the code is refactored in some way).
 
-##++++++++++++++
+###++++++++++++++
 	Warning: the performance of your Go programs might be degraded silently
 
 Sometimes, a compiler is over smart; sometimes, it is not smart enough.
@@ -853,7 +854,7 @@ Suggestions to avoid such performance degradation issue:
    the loop itself to optimize performance. This is beneficial if you can
    guarantee that the variables don't need to be instantiated in each iteration.
 
-##++++++++++++++
+###++++++++++++++
 	Warning: things might become more subtle than before when loop variables are used concurrently
 
 Firstly, let's view a simple program.
@@ -1047,7 +1048,7 @@ We can still use the old trick: just add an `i := i` line at the start of the lo
 Yes, this is still the best suggestion to avoid data race for such situations in the Go 1.22+ era.
 Is this a mockery of the new semantics (of `for;;` loops)?
 
-##==============================================
+###==============================================
 	Advice and suggestions
 
 Okay, the above are the potential issues I've identified so far
@@ -1056,7 +1057,7 @@ There might be more, I'm not sure.
 
 Here are some recommendations you can follow in the Go 1.22+ era.
 
-##++++++++++++++
+###++++++++++++++
 	Specify Go language versions for Go source files
 
 As demonstrated in many above examples, the semantic changes made
@@ -1082,8 +1083,8 @@ for Go source files:
    A missing go directive line is assumed as `go 1.16`.
    The effects of the directive line are __described here__.
 
-   ////__described here``https://go.dev/ref/mod#go-mod-file-go
-   ////__this known bug``https://github.com/golang/go/issues/66092
+   // __described here``https://go.dev/ref/mod#go-mod-file-go
+   // __this known bug``https://github.com/golang/go/issues/66092
 
 If the Go language version of a Go source file is not specified by
 any of the above ways, then the version of the used Go compiler is used.
@@ -1099,14 +1100,15 @@ The design causes two problems:
 -. If, for any reason (for example, to use a feature provided in newer Go versions),
    you upgrade the language version of a Go module that you maintain to 1.22 or higher,
    the behavior of the Go module might change. If the behavior changes
-   are not detected in time (due to insufficient testing, etc.),
+   are not detected in time (due to insufficient testing and the drawbacks of
+   the new senmantics of `for;;` loops, etc.),
    then things may not go well.
 
 Anyway, since Go 1.22, you should try to specify a Go language version for every Go source file,
-in any of the above introduced ways, to avoid compiler version dependent behaviors.
+in any of the above introduced ways, to reduce compiler version dependent behaviors.
 This is the minimum standard to be a professional Go programmer in the Go 1.22+ era.
 
-##++++++++++++++
+###++++++++++++++
 	Upgrading module versions
 
 If you are maintaining a public Go module which are depended by other Go projects,
@@ -1120,7 +1122,7 @@ pay attention to those ones which language versions os
 upgraded to Go 1.22 or higher
 from a version with the old semantics before Go 1.22.
 
-##++++++++++++++
+###++++++++++++++
 	Avoid using freshly-declared loop variables in `for;;` loops
     if you worry about getting bitten by the pitful of the new semantics
 
@@ -1165,7 +1167,7 @@ only instantiated once during the whole loop.
 
 This is a little awkward, but it is much safer.
 
-##=====================================
+###=====================================
 	Final words
 
 Overall, I find the impact of the new semantics of `for-range` loops
