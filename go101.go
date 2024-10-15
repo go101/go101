@@ -479,7 +479,7 @@ func runShellCommand(timeout time.Duration, wd string, cmd string, args ...strin
 	defer cancel()
 	command := exec.CommandContext(ctx, cmd, args...)
 	command.Dir = wd
-	return command.Output()
+	return command.CombinedOutput()
 }
 
 func gitPull(wd string) {

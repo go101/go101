@@ -373,7 +373,7 @@ https://github.com/golang/go/issues/51139
 
 ## Type argument inferences don't work for generic type instantiations
 
-Currently (Go 1.22), inferring type arguments of instantiated types from value literals is not supported.
+Currently (Go 1.23), inferring type arguments of instantiated types from value literals is not supported.
 That means the type argument list of a generic type instantiation must be always in full form.
 
 For example, in the following code snippet, the declaration line for variable `y` is invalid,

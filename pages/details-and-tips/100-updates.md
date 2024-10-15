@@ -1,9 +1,15 @@
 
 # Go Details & Tips 101 Update History
 
+### v1.23.a (2024/Oct/16)
+
+* "Syntax and Semantics Related" chapter:
+  * add a "`for {...}` and `for true {...}` are not always equivalent to each other" detail.
+
 ### v1.22.a (2024/Mar/18)
 
-* Go 1.22 introduced `for range Integer` loops and changed the semantics of for-loop code blocks. Related contents are modified accordingly.
+* "Syntax and Semantics Related" chapter:
+  * Go 1.22 introduced `for range Integer` loops and changed the semantics of for-loop code blocks.Some related contents are added.
 
 ### v1.21.b 
 

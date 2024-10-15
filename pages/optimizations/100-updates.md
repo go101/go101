@@ -1,6 +1,10 @@
 
 # Go Optimizations 101 Update History
 
+### v1.23.a (2024/Oct/16)
+
+* The "BCE (Bound Check Elimination)" chapter is modified according https://github.com/golang/go/issues/40704
+
 ### v1.22.a (2024/Mar/18)
 
 * Go 1.22 changed the semantics of for-loop code blocks. Related articles are modified accordingly.

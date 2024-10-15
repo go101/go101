@@ -62,7 +62,7 @@ func main() {}
 
 <p>Note that: Go toolchains with version smaller than 1.21 failed to remove the bound checks in the <code>f1g</code> function.</p>
 
-<p>And note that, up to now (Go toolchain v1.22.n), the official standard compiler
+<p>And note that, up to now (Go toolchain v1.23.n), the official standard compiler
 doesn't check BCE for an operation in a generic function if the operation
 involves type parameters and the generic function is never instantiated.
 For example, the command <code>go run -gcflags=-d=ssa/check_bce bar.go</code> will report nothing.</p>
@@ -144,7 +144,7 @@ Yes, the official standard Go compiler is so clever that it finds all bound chec
 <pre><code>$ go run -gcflags=&quot;-d=ssa/check_bce&quot; example2.go
 </code></pre>
 
-<p>There are still some small imperfections. If we modify the <code>f2g</code> and <code>f2h</code> functions as that shown in the following code, then the compiler (v1.22.n) fails to remove the bound checks for the two subslice operations.</p>
+<p>There are still some small imperfections. If we modify the <code>f2g</code> and <code>f2h</code> functions as that shown in the following code, then the compiler (v1.23.n) fails to remove the bound checks for the two subslice operations.</p>
 
 <pre><code class="language-Go">// example2b.go
 package main
@@ -305,7 +305,7 @@ func f4d(is []int, bs []byte) {
 }
 </code></pre>
 
-<p>Please note that, as of Go toolchain v1.22.n, the two hints used in the <code>f4c</code> and <code>f4d</code> functions are not workable (but they should).</p>
+<p>Please note that, as of Go toolchain v1.23.n, the two hints used in the <code>f4c</code> and <code>f4d</code> functions are not workable (but they should).</p>
 
 <p>In the following example, by adding a redundant <code>if</code> code block in the function <code>NumSameBytes_2</code>, all bound checks in the loop are eliminated.</p>
 
@@ -344,7 +344,7 @@ func NumSameBytes_2(x, y T) int {
 </code></pre>
 
 <p>The above hint works when <code>T</code> is either a string type or a slice type,
-whereas each of the following two hints only works for one case (as of Go toolchain v1.22.n).</p>
+whereas each of the following two hints only works for one case (as of Go toolchain v1.23.n).</p>
 
 <pre><code class="language-Go">func NumSameBytes_3(x, y T) int {
 	if len(x) &gt; len(y) {
@@ -514,28 +514,6 @@ func f9c(n int) []int {
 }
 </code></pre>
 
-<p>In the following code, the function <code>f0b</code> is much more performant than <code>f0a</code>.</p>
-
-<pre><code class="language-Go">func f0a(x [16]byte) (r [4]byte){
-	for i := 0; i &lt; 4; i++ {
-		r[i] =
-			x[i*4+3] ^ // Found IsInBounds
-			x[i*4+2] ^ // Found IsInBounds
-			x[i*4+1] ^ // Found IsInBounds
-			x[i*4]     // Found IsInBounds
-	}
-	return
-}
-
-func f0b(x [16]byte) (r [4]byte){
-	r[0] = x[3] ^ x[2] ^ x[1] ^ x[0]
-	r[1] = x[7] ^ x[6] ^ x[5] ^ x[4]
-	r[2] = x[11] ^ x[10] ^ x[9] ^ x[8]
-	r[3] = x[15] ^ x[14] ^ x[13] ^ x[12]
-	return
-}
-</code></pre>
-
 <p>In the following code, the function <code>f6b</code> is more performant than <code>f6a</code>,
 but both of them are much less performant than <code>f6c</code>.</p>
 
@@ -607,11 +585,37 @@ func fc2(n byte) int {
 }
 </code></pre>
 
-<p>Please note that, the future versions of the standard official Go compiler will become smarter so that some BCE-unfriendly code might become BCE-friendly later.</p>
+<p>Prior Go toolchain v1.24, the function <code>f0b</code> in the following code is much more performant than <code>f0a</code>,
+because there are some unnecessary bound checks in the <code>f0a</code> function.
+Since Go toolchain v1.24, the unnecessary bound checks in the <code>f0a</code> function are all removed,
+so the performance of the <code>f0a</code> function is improved much (though it is still some slower than <code>f0b</code>).</p>
+
+<pre><code class="language-Go">func f0a(x [16]byte) (r [4]byte){
+	for i := 0; i &lt; 4; i++ {
+		r[i] =
+			x[i*4+3] ^
+			x[i*4+2] ^
+			x[i*4+1] ^
+			x[i*4]     
+	}
+	return
+}
+
+func f0b(x [16]byte) (r [4]byte){
+	r[0] = x[3] ^ x[2] ^ x[1] ^ x[0]
+	r[1] = x[7] ^ x[6] ^ x[5] ^ x[4]
+	r[2] = x[11] ^ x[10] ^ x[9] ^ x[8]
+	r[3] = x[15] ^ x[14] ^ x[13] ^ x[12]
+	return
+}
+</code></pre>
+
+<p>Please note that, the future versions of the standard official Go compiler will become smarter so that
+more BCE-unfriendly code might become BCE-friendly later.</p>
 
 <h2>The current official standard Go compiler fails to eliminate some unnecessary bound checks</h2>
 
-<p>As of Go toolchain v1.22.n, the official standard Go compiler doesn't eliminate the following unnecessary bound checks.</p>
+<p>As of Go toolchain v1.23.n, the official standard Go compiler doesn't eliminate the following unnecessary bound checks.</p>
 
 <pre><code class="language-Go">func fb(s, x, y []byte) {
 	n := copy(s, x)

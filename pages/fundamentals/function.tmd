@@ -1,0 +1,641 @@
+### Functions in Go
+
+__Function declarations and calls__ have been explained before.
+The current article will touch more function related concepts and details in Go.
+
+	// __... declarations and calls :: function-declarations-and-calls.html
+
+In fact, function is one kind of first-class citizen types in Go.
+In other words, we can use functions as values.
+Although Go is a static language, Go functions are very flexible.
+The feeling of using Go functions is much like using many dynamic languages.
+
+There are some built-in functions in Go.
+These functions are documented in __`builtin`__ and __`unsafe`__ standard code packages.
+Built-in functions have several differences from custom functions.
+These differences will be mentioned below.
+
+	// __ builtin :: https://docs.go101.org/std/pkg/builtin.html
+	// __ unsafe :: https://docs.go101.org/std/pkg/unsafe.html
+
+###++++++ Function Signatures and Function Types
+
+The literal of a function type is composed of the `func` keyword
+and a function signature literal.
+A function signature is composed of two type list,
+one is the input parameter type list, the other is the output result type lists.
+Parameter and result names can appear in function type and signature literals,
+but the names are not important.
+
+In practice, the `func` keyword can be presented in signature literals, or not.
+For this reason, we can think function type and function signature as the same concept.
+
+Here is a literal of a function type:
+@@@ .disable-line-numbers111
+'''go
+func (a int, b string, c string) (x int, y int, z bool)
+'''
+
+From the article __function declarations and calls__,
+we have learned that consecutive parameters and results of the same type can be declared together.
+So the above literal is equivalent to
+@@@ .disable-line-numbers111
+'''go
+func (a int, b, c string) (x, y int, z bool)
+'''
+
+As parameter names and result names are not important in the literals
+(as long as there are no duplicate non-blank names),
+the above ones are equivalent to the following one.
+@@@ .disable-line-numbers111
+'''go
+func (x int, y, z string) (a, b int, c bool)
+'''
+
+Variable (parameter and result) names can be blank identifier `_`.
+The above ones are equivalent to the following one.
+@@@ .disable-line-numbers111
+'''go
+func (_ int, _, _ string) (_, _ int, _ bool)
+'''
+
+The parameter names must be either all present or all absent (anonymous).
+The same rule is for result names.
+The above ones are equivalent to the following ones.
+@@@ .disable-line-numbers111
+'''go
+func (int, string, string) (int, int, bool) // the standard form
+func (a int, b string, c string) (int, int, bool)
+func (x int, _ string, z string) (int, int, bool)
+func (int, string, string) (x int, y int, z bool)
+func (int, string, string) (a int, b int, _ bool)
+'''
+
+All of the above function type literals denote the same (unnamed) function type.
+
+Each parameter list must be enclosed in a `()` in a literal,
+even if the parameter list is blank.
+If a result list of a function type is blank, then it can be omitted from literal of the function type.
+When a result list has most one result, then the result list doesn't need to be enclosed in a `()`
+if the literal of the result list contains no result names.
+
+@@@ .disable-line-numbers111
+'''go
+// The following three function types are identical.
+func () (x int)
+func () (int)
+func () int
+
+// The following two function types are identical.
+func (a int, b string) ()
+func (a int, b string)
+'''
+
+@@@ #variadic-parameter
+###----- Variadic parameters and variadic function types
+
+The last parameter of a function can be a variadic parameter.
+Each function can have at most one variadic parameter.
+The type of a variadic parameter is always a slice type.
+To indicate the last parameter is variadic,
+just prefix three dots `...` to the element type of its (slice) type
+in its declaration. Example:
+@@@ .disable-line-numbers111
+'''go
+func (values ...int64) (sum int64)
+func (sep string, tokens ...string) string
+'''
+
+A function type with variadic parameter can be called a variadic function type.
+A variadic function type and a non-variadic function type are absolutely not identical.
+
+Some variadic functions examples will be shown in a below section.
+
+###--------- Function types are incomparable types
+
+It has been __mentioned__ several times in Go 101 that function types are incomparable types.
+But like map and slice values, function values can compare with the untyped bare `nil` identifier.
+(Function values will be explained in the last section of the current article.)
+
+	// __mentioned :: type-system-overview.html#types-not-support-comparison
+
+As function types are incomparable types,
+they can't be used as the key types of map types.
+
+@@@ #prototype
+###+++++++++ Function Prototypes
+
+A function prototype is composed of a function name and a function type (or signature).
+Its literal is composed of the `func` keyword,
+a function name and the literal of a function signature literal.
+
+A function prototype literal example:
+@@@ .disable-line-numbers111
+'''go
+func Double(n int) (result int)
+'''
+
+In other words, a function prototype is a function declaration without
+the body portion.
+A function declaration is composed of a function prototype and a function body.
+
+@@@ #variadic-function
+###++++++ Variadic Function Declarations and Variadic Function Calls
+
+General function declarations and calls have been explained in
+__function declarations and calls__.
+Here introduces how to declare and call variadic functions.
+
+###------ Variadic function declarations
+
+Variadic function declarations are similar to general function declarations.
+The difference is that the last parameter of a variadic function must be variadic parameter.
+Note, the variadic parameter of a variadic function will be treated as a slice
+within the body of the variadic function.
+
+@@@ .line-numbers
+'''go
+// Sum and return the input numbers.
+func Sum(values ...int64) (sum int64) {
+	// The type of values is []int64.
+	sum = 0
+	for _, v := range values {
+		sum += v
+	}
+	return
+}
+
+// An inefficient string concatenation function.
+func Concat(sep string, tokens ...string) string {
+	// The type of tokens is []string.
+	r := ""
+	for i, t := range tokens {
+		if i != 0 {
+			r += sep
+		}
+		r += t
+	}
+	return r
+}
+'''
+
+From the above two variadic function declarations,
+we can find that if a variadic parameter is declared with type portion as `...T`,
+then the type of the parameter is `[]T` actually.
+
+In fact, the `Print`, `Println` and `Printf`
+functions in the `fmt` standard package are all variadic functions.
+
+@@@ .line-numbers;must-line-numbers
+'''go
+func Print(a ...interface{}) (n int, err error)
+func Printf(format string, a ...interface{}) (n int, err error)
+func Println(a ...interface{}) (n int, err error)
+'''
+
+The variadic parameter types of the three functions are all `[]interface{}`,
+which element type `interface{}` is an interface types.
+Interface types and values will be explained __interfaces in Go__ later.
+
+	// __ interfaces in Go :: interface.html
+
+@@@ #variadic-call
+###------ Variadic function calls
+
+There are two manners to pass arguments to a variadic parameter of type `[]T`:
+*.	pass a slice value as the only argument.
+	The slice must be assignable to values of type `[]T`,
+	and the slice must be followed by three dots `...`.
+	The passed slice is called as a variadic argument.
+*. 	pass zero or more arguments which are assignable to values of type `T`.
+	These arguments will be copied (or converted) as the elements of
+	a new allocated slice value of type `[]T`,
+	then the new allocated slice will be passed to the variadic parameter.
+
+Note, the two manners can't be mixed in the same variadic function call.
+
+An example program which uses some variadic function calls:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func Sum(values ...int64) (sum int64) {
+	sum = 0
+	for _, v := range values {
+		sum += v
+	}
+	return
+}
+
+func main() {
+	a0 := Sum()
+	a1 := Sum(2)
+	a3 := Sum(2, 3, 5)
+	// The above three lines are equivalent to
+	// the following three respective lines.
+	b0 := Sum([]int64{}...) // <=> Sum(nil...)
+	b1 := Sum([]int64{2}...)
+	b3 := Sum([]int64{2, 3, 5}...)
+	fmt.Println(a0, a1, a3) // 0 2 10
+	fmt.Println(b0, b1, b3) // 0 2 10
+}
+'''
+
+Another example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func Concat(sep string, tokens ...string) (r string) {
+	for i, t := range tokens {
+		if i != 0 {
+			r += sep
+		}
+		r += t
+	}
+	return
+}
+
+func main() {
+	tokens := []string{"Go", "C", "Rust"}
+	// manner 1
+	langsA := Concat(",", tokens...)
+	// manner 2
+	langsB := Concat(",", "Go", "C","Rust")
+	fmt.Println(langsA == langsB) // true
+}
+'''
+
+The following example doesn't compile,
+for the two variadic function call manners are mixed.
+@@@ .line-numbers
+'''go
+package main
+
+// See above examples for the full declarations
+// of the following two functions.
+func Sum(values ...int64) (sum int64)
+func Concat(sep string, tokens ...string) string
+
+func main() {
+	// The following two lines both fail
+	// to compile, for the same error:
+	// too many arguments in call.
+	_ = Sum(2, []int64{3, 5}...)
+	_ = Concat(",", "Go", []string{"C", "Rust"}...)
+}
+'''
+
+###++++++More About Function Declarations and Calls
+
+###------ Functions whose names can be duplicate
+
+Generally, the names of the functions declared in the same code package
+can't be duplicate. But there are two exceptions.
+*.	One exception is each code package can declare several functions
+	with __the same name `init` and the same type `func ()`__.
+*.
+	The other exception is multiple functions can be declared with names
+	as the blank identifier `_`, in which cases,
+	the declared functions can never be called.
+	
+	// __the same name ... :: packages-and-imports.html#init
+
+@@@ #compile-time-evaluated-calls
+###------ Some function calls are evaluated at compile time
+
+Most function calls are evaluated at run time.
+But calls to the functions of the `unsafe` standard package
+are always evaluated at compile time.
+Calls to some other built-in functions,
+such as `len` and `cap`, __may be evaluated at
+either compile time or run time__, depending on the passed arguments.
+The results of the function calls evaluated at compile time can be
+assigned to constants.
+
+	// __ may be evaluated at ... :: summaries.html#compile-time-evaluation
+
+###------ All function arguments are passed by copy
+
+Let's repeat it again, like all value assignments in Go,
+all function arguments are passed by copy in Go.
+When a value is copied, __only its direct part is copied__
+(a.k.a., a shallow copy).
+
+	// __ ... direct part is copied :: value-part.html#about-value-copy
+
+###------ Function declarations without bodies
+
+We can implement a function in __Go assembly__.
+Go assembly source files are stored in `*.a` files.
+A function implemented in Go assembly is still needed to be declared in a
+`*.go` file, but the only the prototype of the function is needed
+to be present. The body portion of the declaration of the function
+must be omitted in the `*.go` file.
+
+	// __ Go assembly :: https://golang.org/doc/asm
+
+###------ Some functions with results are not required to return
+
+If a function has return results, then the last statement in its declaration
+body must be a __terminating statement__.
+Other than `return` terminating statement, there are some other kinds of terminating statements.
+So a function body is not required to contain a return statement. For example,
+@@@ .line-numbers
+'''go
+func fa() int {
+	a:
+	goto a
+}
+
+func fb() bool {
+	for{}
+}
+'''
+
+	// __ terminating statement :: https://golang.org/ref/spec#Terminating_statements
+
+###------ The results of calls to custom function can be discarded, not true for calls to some built-in functions
+
+The return results of a custom function call can be all discarded together.
+However, the return results of calls to built-in functions, except `recover`
+and `copy`, can't be discarded,
+though they can be ignored by assigning them to some blank identifiers.
+Function calls whose results can't be discarded can't be used as deferred
+function calls or goroutine calls.
+
+@@@ #call-as-expression
+###------ Use function calls as expressions
+
+A call to a function with single return result can always be used as a single
+value. For example, it can be nested in another function call as an argument,
+and can also be used as a single value to appear in any other
+expressions and statements.
+
+If the return results of a call to a multi-result function are not discarded,
+then the call can only be used as a multi-value expression in two scenarios.
+*.	The call can be used in an assignment as source values.
+	But the call can't mix with other source values in the assignment.
+*. 	The call can be nested in another function call as arguments.
+	But the call can't mix with other arguments.
+
+An example:
+@@@ .line-numbers
+'''go
+package main
+
+func HalfAndNegative(n int) (int, int) {
+	return n/2, -n
+}
+
+func AddSub(a, b int) (int, int) {
+	return a+b, a-b
+}
+
+func Dummy(values ...int) {}
+
+func main() {
+	// These lines compile okay.
+	AddSub(HalfAndNegative(6))
+	AddSub(AddSub(AddSub(7, 5)))
+	AddSub(AddSub(HalfAndNegative(6)))
+	Dummy(HalfAndNegative(6))
+	_, _ = AddSub(7, 5)
+
+	// The following lines fail to compile.
+	/*
+	_, _, _ = 6, AddSub(7, 5)
+	Dummy(AddSub(7, 5), 9)
+	Dummy(AddSub(7, 5), HalfAndNegative(6))
+	*/
+}
+'''
+
+Note, for the standard Go compiler,
+__some built-in functions break the universality__
+of the just described rules above.
+
+	// __ some built-in functions break the universality :: exceptions.html#nest-function-calls
+
+###++++++ Function Values
+
+As mentioned above, function types are one kind of types in Go.
+A value of a function type is called a function value.
+The zero values of function types are represented with
+the predeclared `nil` identifier.
+
+When we declare a custom function, we also declared an immutable function value actually.
+The function value is identified by the function name.
+The type of the function value is represented as the literal
+by omitting the function name from the function prototype literal.
+
+Note, built-in functions can't be used as values.
+`init` functions also can't be used as values.
+
+Any function value can be invoked just like a declared function.
+It is fatal error to call a nil function to start a new goroutine.
+The fatal error is not recoverable and will make the whole program crash.
+For other situations, calls to nil function values will produce
+recoverable panics, including deferred function calls.
+
+From the article __value parts__,
+we know that non-nil function values are multi-part values.
+After one function value is assigned to another,
+the two functions share the same underlying parts(s).
+In other words, the two functions represent the same internal function object.
+The effects of invoking two functions are the same.
+
+	// __ value parts :: value-part.html
+
+An example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func Double(n int) int {
+	return n + n
+}
+
+func Apply(n int, f func(int) int) int {
+	return f(n) // the type of f is "func(int) int"
+}
+
+func main() {
+	fmt.Printf("%T\n", Double) // func(int) int
+	// Double = nil // error: Double is immutable.
+
+	var f func(n int) int // default value is nil.
+	f = Double
+	g := Apply // let compile deduce the type of g
+	fmt.Printf("%T\n", g) // func(int, func(int) int) int
+
+	fmt.Println(f(9))         // 18
+	fmt.Println(g(6, Double)) // 12
+	fmt.Println(Apply(6, f))  // 12
+}
+'''
+
+In the above example, `g(6, Double)` and `Apply(6, f)` are equivalent.
+
+In practice, we often assign anonymous functions to function variables,
+so that we can call the anonymous functions multiple times.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	// This function returns a function (a closure).
+	isMultipleOfX := func (x int) func(int) bool {
+		return func(n int) bool {
+			return n%x == 0
+		}
+	}
+
+	var isMultipleOf3 = isMultipleOfX(3)
+	var isMultipleOf5 = isMultipleOfX(5)
+	fmt.Println(isMultipleOf3(6))  // true
+	fmt.Println(isMultipleOf3(8))  // false
+	fmt.Println(isMultipleOf5(10)) // true
+	fmt.Println(isMultipleOf5(12)) // false
+
+	isMultipleOf15 := func(n int) bool {
+		return isMultipleOf3(n) && isMultipleOf5(n)
+	}
+	fmt.Println(isMultipleOf15(32)) // false
+	fmt.Println(isMultipleOf15(60)) // true
+}
+'''
+
+All functions in Go can be viewed as closures.
+This is one important reason why Go, as a static language,
+is flexible as many dynamic script languages.
+
+@@@ #range
+###++++++ Range Over Functions (Since Go 1.23)
+
+Since Go 1.23, values of function types which underlying types are any of
+the following ones can be ranged over with `for-range` loops.
+
+@@@ .disable-line-numbers111
+'''go
+// K and V are some types.
+
+func(yield func() bool)
+
+func(yield func(V) bool)
+
+func(yield func(K, V) bool)
+'''
+
+Such values are called push iterators, and often iterators in short.
+
+When using a `for-range` loop operates on such an iterator function value,
+the iterator function value will be called (once)
+with an implicitly constructed `yield` callback function. 
+The `yield` callback function returns a `bool` result.
+When it returns `false`, the call to the iterator function
+should (but is not required to) exit immediately;
+otherwise (when the `yield` callback function returns `true`),
+the iterator function should continue run until it exits naturally.
+
+The following are some examples using such iterators.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func Loop3(yield func() bool) {
+	for range 3 {
+		if (!yield()) {
+			return
+		}
+	}
+}
+
+func OneDigitNumbers(onValue func(int) bool) {
+	for i := range 10 {
+		if (!onValue(i)) {
+			return
+		}
+	}
+}
+
+func SquareLessThan50(onKeyValue func(int, int) bool) {
+	for i := range 8 {
+		if (!onKeyValue(i, i*i)) {
+			return
+		}
+	}
+}
+
+func main() {
+	var n = 0
+	for range Loop3 {
+		fmt.Print(n)
+		n++
+	}
+	fmt.Println()
+	// Output: 012
+	
+	for i := range OneDigitNumbers {
+		fmt.Print(i)
+	}
+	fmt.Println()
+	// Output: 0123456789
+	
+	for i, ii := range SquareLessThan50 {
+		fmt.Printf("%v:%v ", i, ii)
+	}
+	fmt.Println()
+	// Output: 0:0 1:1 2:4 3:9 4:16 5:25 6:36 7:49 
+}
+'''
+
+The above `for-range` loops are eqivalent to the following function calls, respectively.
+
+@@@ .line-numbers
+'''go
+func main() {
+	var n = 0
+	Loop3(func() bool {
+		fmt.Print(n)
+		n++
+		return true
+	})
+	fmt.Println()
+	
+	OneDigitNumbers(func(i int) bool {
+		fmt.Print(i)
+		return true
+	})
+	fmt.Println()
+	
+	SquareLessThan50(func(i, ii int) bool {
+		fmt.Printf("%v:%v ", i, ii)
+		return true
+	})
+	fmt.Println()
+}
+'''
+
+Yes, we can think of the Go 1.23 introduced range-over-functions feature as a syntactic sugar.
+
+Please read __this official blog article__ for more about iterators in Go.
+
+	// __this official blog article :: https://go.dev/blog/range-functions
+
+
+
+
+

@@ -1,6 +1,10 @@
 
 # Go (Fundamentals) 101 Update History
 
+### v1.23.a (2024/Oct/16)
+
+* add a [Range Over Functions](https://go101.org/article/function.html#range) section.
+
 ### v1.22.a (2024/Mar/18)
 
 * Go 1.22 introduced `for range Integer` loops and changed the semantics of for-loop code blocks. Related articles are modified accordingly:
@@ -18,7 +22,7 @@
 * Go 1.20 [started to support slice to array conversions](https://go101.org/article/container.html#slice-to-array).
 * Go 1.20 [added three new functions in the "unsafe" package](https://go101.org/article/unsafe.html): `SliceData`, `String`, and `StringData`.
 * Since Go 1.20, the global random generator in the `math/rand` package will be auto seeded.
-* mentions that `-gcflags="-d=ssa/check_bce"` doesn't work for some generic functions in the [Bounds Check Elimination](https://go101.org/article/bounds-check-elimination.html) chapter.
+* mention that `-gcflags="-d=ssa/check_bce"` doesn't work for some generic functions in the [Bounds Check Elimination](https://go101.org/article/bounds-check-elimination.html) chapter.
 
 ### v1.19.a (2022/Aug/29)
 

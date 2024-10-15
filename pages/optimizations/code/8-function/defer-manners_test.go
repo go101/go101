@@ -6,11 +6,13 @@ func foo(x *int) {
 	*x++
 }
 
+//go:noinline
 func f(a int) (r int) {
 	defer foo(&r)
 	return a
 }
 
+//go:noinline
 func g(a int) (r int) {
 	defer func() { foo(&r) }()
 	return a

@@ -2,7 +2,7 @@ package allocations
 
 import "testing"
 
-const N = 821
+const N = 100 // 821
 
 type Book struct {
 	Title  string

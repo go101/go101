@@ -64,8 +64,8 @@ These optimizations will be introduced later in this book.</p>
 In the official standard Go runtime implementation, for memory blocks allocated on heap,</p>
 
 <ul>
-<li><a href="https://github.com/golang/go/blob/master/src/runtime/sizeclasses.go">some memory block size classes</a> (no more than 32768 bytes) are predefined. As of the official standard Go compiler version 1.22.x, the smallest size classes are 8, 16, 24, 32, 48, 64, 80 and 96 bytes.</li>
-<li>For memory blocks larger than 32768 bytes, each of them is always composed of multiple memory pages. The memory page size used by the official standard Go runtime (1.22 versions) is 8192 bytes.</li>
+<li><a href="https://github.com/golang/go/blob/master/src/runtime/sizeclasses.go">some memory block size classes</a> (no more than 32768 bytes) are predefined. As of the official standard Go compiler version 1.23.x, the smallest size classes are 8, 16, 24, 32, 48, 64, 80 and 96 bytes.</li>
+<li>For memory blocks larger than 32768 bytes, each of them is always composed of multiple memory pages. The memory page size used by the official standard Go runtime (1.23 versions) is 8192 bytes.</li>
 </ul>
 
 <p>So,</p>
@@ -142,7 +142,7 @@ In the end, 14 bytes are wasted.
 And 44 (15 + 15 + 14) bytes are wasted during executing the <code>Concat</code> function.</p>
 
 <p>In the above example, the results of the <code>string(s)</code> conversions are used temporarily in the string concatenation operation.
-By the current official standard Go compiler/runtime implementation (1.22 versions), the string bytes are allocated on heap (see below sections for details).
+By the current official standard Go compiler/runtime implementation (1.23 versions), the string bytes are allocated on heap (see below sections for details).
 After the concatenation is done, the memory blocks carrying the string bytes become into memory garbage and will be collected eventually later.</p>
 
 <h2>Reduce memory allocations and save memory</h2>
@@ -266,7 +266,7 @@ func main() {
 }
 </code></pre>
 
-<p>The outputs (for the official standard Go compiler v1.22.1):</p>
+<p>The outputs (for the official standard Go compiler v1.23.n):</p>
 
 <pre><code>Allocate from 0 to 2 (when append slice#0).
 Allocate from 2 to 6 (when append slice#1).
@@ -276,8 +276,8 @@ Allocate from 12 to 24 (when append slice#3).
 
 <p>From the outputs, we could get that only the last <code>append</code> call doesn't allocate.</p>
 
-<p>In fact, the <code>Merge_TwoLoops</code> function could be faster in theory.
-As of the official standard Go compiler version 1.22, the <code>make</code> call in the <code>Merge_TwoLoop</code> function will zero all just created elements, <a href="https://go101.org/blog/2022-12-30-go-builtin-slice-manipulations-are-incomplete.html">which is actually unnecessary</a>. Compiler optimizations in future versions might avoid the zero operation.</p>
+<p>In fact, the <code>Merge_TwoLoops</code> function could be even faster in theory.
+As of the official standard Go compiler version 1.23, the <code>make</code> call in the <code>Merge_TwoLoop</code> function will zero all just created elements, <a href="https://go101.org/blog/2022-12-30-go-builtin-slice-manipulations-are-incomplete.html">which is actually unnecessary</a>. Compiler optimizations in future versions might avoid the zero operation.</p>
 
 <p>BTW, the above implementation of the <code>Merge_TwoLoops</code> function has an imperfection.
 It doesn't handle the integer overflowing case.
@@ -362,7 +362,7 @@ func Benchmark_FilterNoAllocations(b *testing.B) {
 
 <p>The benchmark results:</p>
 
-<pre><code>Benchmark_FilterOneAllocation-4  7263 ns/op   8192 B/op  1 allocs/op
+<pre><code>Benchmark_FilterOneAllocation-4  3711 ns/op   8192 B/op  1 allocs/op
 Benchmark_FilterNoAllocations-4   903.3 ns/op    0 B/op  0 allocs/op
 </code></pre>
 

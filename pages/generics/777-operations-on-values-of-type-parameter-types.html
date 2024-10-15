@@ -7,7 +7,7 @@ are valid and which are invalid in generic function bodies.</p>
 <p>Within a generic function body,
 an operation on a value of a type parameter is valid only if it is
 valid for values of every type in the type set of the constraint of the type parameter.
-In the current custom generic design and implementation (Go 1.22),
+In the current custom generic design and implementation (Go 1.23),
 it is not always vice versa.
 Some extra requirements must be met to make the operation valid.</p>
 
@@ -249,7 +249,7 @@ might be removed so that many of the limitations listed below will be eliminated
 
 <h2>A function is required to have a core type to be callable</h2>
 
-<p>For example, currently (Go 1.22), in the following code, the functions <code>foo</code> and <code>bar</code> don't compile, bit the <code>tag</code> function does.
+<p>For example, currently (Go 1.23), in the following code, the functions <code>foo</code> and <code>bar</code> don't compile, bit the <code>tag</code> function does.
 The reason is the <code>F</code> type parameters in the <code>foo</code> and <code>bar</code> generic functions
 both have not a core type, even</p>
 
@@ -274,7 +274,7 @@ func tag[F func(int) | Fun] (f F, x int) {
 
 <h2>The type literal in a composite literal must have a core type</h2>
 
-<p>For example, currently (Go 1.22), in the following code snippet,
+<p>For example, currently (Go 1.23), in the following code snippet,
 the functions <code>foo</code> and <code>bar</code> compile okay, but the other ones don't.</p>
 
 <pre><code class="language-Go">func foo[T ~[]int] () {
@@ -303,7 +303,7 @@ func jup[T [2]int | map[int]int] () {
 Otherwise, their element types must be identical.
 The elements of strings are viewed as <code>byte</code> values.</p>
 
-<p>For example, currently (Go 1.22), in the following code snippet, only the functions <code>foo</code> and <code>bar</code> compile okay.</p>
+<p>For example, currently (Go 1.23), in the following code snippet, only the functions <code>foo</code> and <code>bar</code> compile okay.</p>
 
 <pre><code class="language-Go">func foo[T []byte | [2]byte | string](c T) {
 	_ = c[0] // okay
@@ -340,7 +340,7 @@ The specification requires the index expression must has a core type.)</em></p>
 
 <h2>A (sub)slice operation requires the container operand has a core type</h2>
 
-<p>For example, currently (Go 1.22), the following two functions both fail to compile,
+<p>For example, currently (Go 1.23), the following two functions both fail to compile,
 even if the subslice operations are valid for all types in the corresponding type sets.</p>
 
 <pre><code class="language-Go">func foo[T []int | [2]int](c T) {
@@ -369,7 +369,7 @@ then all types in its type set must be integers.</p>
 
 <h2>In a <code>for-range</code> loop, the ranged container is required to have a core type</h2>
 
-<p>For example, currently (Go 1.22), in the following code,
+<p>For example, currently (Go 1.23), in the following code,
 only the last two functions, <code>dot1</code> and <code>dot2</code>, compile okay.</p>
 
 <pre><code class="language-Go">func values[T []E | map[int]E, E any](kvs T) []E {
@@ -471,7 +471,7 @@ we could use the following code to achieve the goal.</p>
 optimized by the official standard Go compiler</a> so that it doesn't duplicate
 underlying bytes.</p>
 
-<p>The following function doesn't compile now (Go 1.22),
+<p>The following function doesn't compile now (Go 1.23),
 even if the types of the two iteration variables are always <code>int</code> and <code>rune</code>.
 Whether or not it will compile in future Go versions is unclear.</p>
 
@@ -488,7 +488,7 @@ Whether or not it will compile in future Go versions is unclear.</p>
 
 <p>Firstly, we should know <a href="https://go101.org/article/value-conversions-assignments-and-comparisons.html">the conversion rules for ordinary types/values</a>.</p>
 
-<p>By the current specification (Go 1.22),
+<p>By the current specification (Go 1.23),
 given two types <code>From</code> and <code>To</code>, assume at least one of them is a type parameter,
 then a value of <code>From</code> can be converted to <code>To</code> if a value of each type in
 the type set of <code>From</code> can be converted to each type in the type set of <code>T</code>
@@ -589,7 +589,7 @@ func main() {
 
 <p>In the following descriptions, the type of the destination value is called as the destination type, and the type of the source value is called as the source type.</p>
 
-<p>By the current specification (Go 1.22), for a type parameter involved assignment,</p>
+<p>By the current specification (Go 1.23), for a type parameter involved assignment,</p>
 
 <ul>
 <li>if the destination type is a type parameter and the source value is
@@ -674,7 +674,7 @@ func capacity2[T ~chan int | ~[]int](x T) int {
 
 <p>Please note that a call to <code>len</code> or <code>cap</code> always returns a non-constant value
 if the type of the argument of the call is a type parameter,
-even of the type set of the argument only contains arrays and pointers to arrays.
+even if the type set of the argument only contains arrays and pointers to arrays.
 For example, in the following code,
 the first <code>cap</code> and <code>len</code> calls within the first two functions
 all fail to compile.</p>
@@ -731,7 +731,7 @@ func main() {
 and <a href="https://github.com/golang/go/issues/28591">this issue</a>
 for why the two functions return different results.</p>
 
-<p>Please not that, the following function doesn't compile,
+<p>Please note that, the following function doesn't compile,
 because the type of <code>&amp;x</code> is <code>*T</code>, which is a pointer
 to a type parameter, instead of a pointer to an array.</p>
 
@@ -771,7 +771,7 @@ In the above example. <code>*T</code> and <code>*[2]int</code> are two different
 
 <h2>A call to the predeclared <code>make</code> function requires its first argument (the container type) has a core type</h2>
 
-<p>Currently (Go 1.22), in the following code snippet, the functions <code>voc</code> and <code>ted</code> both
+<p>Currently (Go 1.23), in the following code snippet, the functions <code>voc</code> and <code>ted</code> both
 fail to compile, the other two compile okay.
 The reason is the first argument of a call to the predeclared <code>make</code> function
 is required to have a core type.
@@ -879,11 +879,11 @@ including itself.</p>
 but they might affect the implementation perfection from theory view.</p>
 
 <p>There are really several imperfections in the implementation
-of the current official standard Go compiler (v1.22.n).</p>
+of the current official standard Go compiler (v1.23.n).</p>
 
 <p>For <a href="https://github.com/golang/go/issues/51470">example</a>,
 should the following function compile?
-It does with the latest official standard Go compiler (v1.22.n).
+It does with the latest official standard Go compiler (v1.23.n).
 However, one of the above sections has mentioned that a <code>make</code> call
 requires its argument must have a core type.
 The type set of the constraint <code>C</code> declared in the following code
@@ -904,7 +904,7 @@ func foo[T C]() {
 <p>This following is <a href="https://github.com/golang/go/issues/51917#issuecomment-1084188702">another example</a>,
 in which all the function calls in the function <code>g</code> should compile okay.
 However, two of them fail to compile with
-the latest official standard Go compiler (v1.22.n).</p>
+the latest official standard Go compiler (v1.23.n).</p>
 
 <pre><code class="language-Go">func f1[T any](x T) {}
 func f2[T comparable](x T) {}

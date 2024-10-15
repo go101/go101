@@ -129,7 +129,8 @@ func genStaticFiles(rootURL string) {
 			log.Fatalf("ebooktool failed to execute in directory: %s.\n%s", dir, outputs)
 		}
 	}
-	
+
+	// tmd -> html
 	tmd2htmls := func(group string) {
 		dir := fullPath("pages", group)
 		filenames, _ := readFolder(dir)
