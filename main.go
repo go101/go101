@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -56,22 +59,41 @@ Retry:
 		go updateGo101()
 	}
 
+	httpServer := &http.Server{
+		Handler:      go101,
+		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  5 * time.Second,
+	}
+
 	runServer := func() {
 		log.Println("Server started:")
 		log.Printf("   http://localhost:%v (non-cached version)\n", addr.Port)
 		log.Printf("   http://127.0.0.1:%v (cached version)\n", addr.Port)
-		(&http.Server{
-			Handler:      go101,
-			WriteTimeout: 10 * time.Second,
-			ReadTimeout:  5 * time.Second,
-		}).Serve(l)
+		httpServer.Serve(l)
+	}
+
+	shutdownServer := func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := httpServer.Shutdown(ctx); err != nil {
+			log.Fatalf("Server shutdown error: %s", err)
+		}
+		log.Println("Server shutdown.")
 	}
 
 	if genMode {
 		go runServer()
 		genStaticFiles(rootURL)
+		shutdownServer()
 		return
 	}
 
-	runServer()
+	go runServer()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	<-c
+
+	shutdownServer()
 }

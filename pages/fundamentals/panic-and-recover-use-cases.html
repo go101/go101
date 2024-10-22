@@ -1,23 +1,36 @@
-<h1>Some Panic/Recover Use Cases</h1>
 
-<p>
-Panic and recover have been
-<a href="control-flows-more.html#panic-recover">introduced before</a>.
-The following of the current article will introduce some (good and bad)
-panic/recover use cases.
-</p>
+<h1 class="tmd-header-1">
+Some Panic/Recover Use Cases</h1>
 
-<a class="anchor" id="avoid-crashing"></a>
-<h3>Use Case 1: Avoid Panics Crashing Programs</h3>
+<p></p>
 
-<div>
-<p>
-This should be the most popular use case of panic/recover.
-The use case is used commonly in concurrent programs, especially client-server programs.
-</p>
+<div class="tmd-usual">
+Panic and recover have been <a href="control-flows-more.html#panic-recover">introduced before</a>. The following of the current article will introduce some (good and bad) panic/recover use cases.
+</div>
 
+<p></p>
+
+<div class="tmd-usual">
+
+</div>
+
+<p></p>
+
+<h3 id="avoid-crashing" class="tmd-header-3">
+Use Case 1: Avoid Panics Crashing Programs</h3>
+
+<p></p>
+
+<div class="tmd-usual">
+This should be the most popular use case of panic/recover. The use case is used commonly in concurrent programs, especially client-server programs.
+</div>
+
+<p></p>
+
+<div class="tmd-usual">
 An example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers"><code class="language-go">package main
 
 import "errors"
 import "log"
@@ -51,27 +64,29 @@ func ClientHandler(c net.Conn) {
 }
 </code></pre>
 
-<p>
-Start the server and run <code>telnet localhost 12345</code> in another terminal,
-we can observe that the server will not crash down
-for the panics created in each client handler goroutine.
-</p>
+<p></p>
 
-<p>
-If we don't recover the potential panic in each client handler goroutine,
-the potential panic will crash the program.
-</p>
-
+<div class="tmd-usual">
+Start the server and run <code class="tmd-code-span">telnet localhost 12345</code> in another terminal, we can observe that the server will not crash down for the panics created in each client handler goroutine.
 </div>
 
-<a class="anchor" id="auto-restart"></a>
-<h3>Use Case 2: Automatically Restart a Crashed Goroutine</h3>
+<p></p>
 
-<div>
+<div class="tmd-usual">
+If we don't recover the potential panic in each client handler goroutine, the potential panic will crash the program.
+</div>
 
-When a panic is detected in a goroutine, we can create a new goroutine for it.
-An example:
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+
+<h3 id="auto-restart" class="tmd-header-3">
+Use Case 2: Automatically Restart a Crashed Goroutine</h3>
+
+<p></p>
+
+<div class="tmd-usual">
+When a panic is detected in a goroutine, we can create a new goroutine for it. An example:
+</div>
+<pre class="tmd-code line-numbers"><code class="language-go">package main
 
 import "log"
 import "time"
@@ -82,7 +97,7 @@ func shouldNotExit() {
 		time.Sleep(time.Second)
 
 		// Simulate an unexpected panic.
-		if time.Now().UnixNano() & 0x3 == 0 {
+		if time.Now().UnixNano() &amp; 0x3 == 0 {
 			panic("unexpected situation")
 		}
 	}
@@ -106,24 +121,24 @@ func main() {
 	select{} // block here for ever
 }
 </code></pre>
+
+<p></p>
+
+<h3 id="long-jump" class="tmd-header-3">
+Use Case 3: Use <code class="tmd-code-span">panic</code>/<code class="tmd-code-span">recover</code> Calls to Simulate Long Jump Statements</h3>
+
+<p></p>
+
+<div class="tmd-usual">
+Sometimes, we can use panic/recover as a way to simulate crossing-function long jump statements and crossing-function returns, though generally this way is not recommended to use. This way does harm for both code readability and execution efficiency. The only benefit is sometimes it can make code look less verbose.
 </div>
 
-<a class="anchor" id="long-jump"></a>
-<h3>Use Case 3: Use <code>panic</code>/<code>recover</code> Calls to Simulate Long Jump Statements</h3>
+<p></p>
 
-<div>
-<p>
-Sometimes, we can use panic/recover as a way to
-simulate crossing-function long jump statements
-and crossing-function returns,
-though generally this way is not recommended to use.
-This way does harm for both code readability and execution efficiency.
-The only benefit is sometimes it can make code look less verbose.
-</p>
-
-In the following example, once a panic is created in an inner function,
-the execution will jump to the deferred call.
-<pre class="line-numbers"><code class="language-go">package main
+<div class="tmd-usual">
+In the following example, once a panic is created in an inner function, the execution will jump to the deferred call.
+</div>
+<pre class="tmd-code line-numbers"><code class="language-go">package main
 
 import "fmt"
 
@@ -152,16 +167,20 @@ func main() {
 	fmt.Println(n) // 123
 }
 </code></pre>
+
+<p></p>
+
+<h3 id="avoid-verbose" class="tmd-header-3">
+Use Case 4: Use <code class="tmd-code-span">panic</code>/<code class="tmd-code-span">recover</code> Calls to Reduce Error Checks</h3>
+
+<p></p>
+
+<div class="tmd-usual">
+An example:
 </div>
 
-<a class="anchor" id="avoid-verbose"></a>
-<h3>Use Case 4: Use <code>panic</code>/<code>recover</code> Calls to Reduce Error Checks</h3>
-
-<div>
-
-An example:
-
-<pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
+<p></p>
+<pre class="tmd-code line-numbers"><code class="language-go">func doSomething() (err error) {
 	defer func() {
 		switch e := recover().(type) {
 		case nil:
@@ -198,11 +217,14 @@ func doStepN() {
 }
 </code></pre>
 
-<p>
-The above code is less verbose than the following one.
-</p>
+<p></p>
 
-<pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
+<div class="tmd-usual">
+The above code is less verbose than the following one.
+</div>
+
+<p></p>
+<pre class="tmd-code line-numbers"><code class="language-go">func doSomething() (err error) {
 	shouldContinue, err := doStep1()
 	if !shouldContinue {
 		return err
@@ -242,83 +264,20 @@ func doStepN() (shouldContinue bool, err error) {
 }
 </code></pre>
 
+<p></p>
 
-<!--
-<pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
-package main
+<div class="tmd-usual">
+However, usually, this panic/recover use pattern is not recommended to use. It is less Go-idiomatic and less efficient.
+</div>
 
-import "fmt"
+<p></p>
 
-func doTask(n int) {
-	if n%2 != 0 {
-		// Create a demo-purpose panic.
-		panic(fmt.Errorf("bad number: %v", n))
-	}
-	return
-}
+<div class="tmd-usual">
+And please note that, since Go 1.21, a <code class="tmd-code-span">panic(nil)</code> call will become <a href="https://github.com/golang/go/issues/25448">eqivalent to <code class="tmd-code-span">panic(new(runtime.PanicNilError))</code></a>. So since Go 1.21, the above deferred function call should be written as
+</div>
 
-func doSomething() (err error) {
-	defer func() {
-		// The second optional return must be present here,
-		// otherwise, the assertion will panic if no errors occur.
-		err, _ = recover().(error)
-	}()
-
-	doTask(22)
-	doTask(98)
-	doTask(100)
-	doTask(53)
-	return nil
-}
-
-func main() {
-	fmt.Println(doSomething()) // bad number: 53
-}
-</code></pre>
-
-<p>
-The above code is less verbose than the following one.
-</p>
-
-<pre class="line-numbers"><code class="language-go">func doTask(n int) error {
-	if n%2 != 0 {
-		return fmt.Errorf("bad number: %v", n)
-	}
-	return nil
-}
-
-func doSomething() (err error) {
-	err = doTask(22)
-	if err != nil {
-		return
-	}
-	err = doTask(98)
-	if err != nil {
-		return
-	}
-	err = doTask(100)
-	if err != nil {
-		return
-	}
-	err = doTask(53)
-	if err != nil {
-		return
-	}
-	return
-}
-</code></pre>
--->
-
-<p>
-However, usually, this panic/recover use pattern is not recommended to use.
-It is less Go-idiomatic and less efficient.
-</p>
-
-And please note that, since Go 1.21, a <code>panic(nil)</code> call will become
-<a href="https://github.com/golang/go/issues/25448">eqivalent to <code>panic(new(runtime.PanicNilError))</code></a>.
-So since Go 1.21, the above deferred function call should be written as
-
-<pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
+<p></p>
+<pre class="tmd-code line-numbers"><code class="language-go">func doSomething() (err error) {
 	defer func() {
 		switch e := recover().(type) {
 		case nil, *runtime.PanicNilError:
@@ -334,10 +293,10 @@ So since Go 1.21, the above deferred function call should be written as
 }
 </code></pre>
 
-<p>
-</p>
+<p></p>
 
+<div class="tmd-usual">
 
 </div>
 
-
+<p></p>

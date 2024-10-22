@@ -1,0 +1,448 @@
+### Line Break Rules in Go
+
+If you have written go code much, you should have known that
+we can't use arbitrary code styles in Go programming.
+Specifically speaking,
+we can't break a code line at an arbitrary space character position.
+The remaining of this article will list the detailed line break rules in Go.
+
+###+++++++++++ Semicolon Insertion Rules
+
+One rule we often obey in practice is, we should not put
+the a starting curly brace (`{`) of any explicit code block on a new line.
+For example, the following `for` loop code block fails to compile.
+
+@@@ .line-numbers
+'''go
+	for i := 5; i > 0; i--
+	{ // unexpected newline, expecting { after for clause
+	}
+'''
+
+To make it compiles okay, the starting curly brace mustn't be put on a new line,
+like the following:
+
+@@@ .line-numbers
+'''go
+	for i := 5; i > 0; i-- {
+	}
+'''
+
+
+However, there are some exceptions for the rule mentioned above.
+For example, the following bare `for` loop block compiles okay.
+
+@@@ .line-numbers
+'''go
+	for
+	{
+		// do something ...
+	}
+'''
+
+
+Then, what are the fundamental rules to do line breaks in Go programming?
+Before answering this question, we should know a fact that the formal Go grammar
+uses semicolons `;` as terminators of code lines.
+However, we seldom use semicolons in our Go code. Why?
+The reason is most semicolons are optional and can be omitted.
+Go compilers will insert the omitted semicolons
+for us automatically in compiling.
+
+For example, the ten semicolons in the following program are all optional.
+
+@@@ .line-numbers
+'''go
+package main;
+
+import "fmt";
+
+func main() {
+	var (
+		i   int;
+		sum int;
+	);
+	for i < 6 {
+		sum += i;
+		i++;
+	};
+	fmt.Println(sum);
+};
+'''
+
+Assume the above program is stored in a file named `semicolons.go`,
+we can run `go fmt semicolons.go` to remove all the unnecessary
+semicolons from that file.
+Compilers will insert the removed semicolons back (in memory) automatically
+in compiling the source code.
+
+What are the semicolons insertion rules in Go?
+Let's read __the semicolon rules listed in Go specification__.
+
+// __ the semicolon rules ... :: https://golang.org/ref/spec#Semicolons
+
+@@@ .alert;alert-success
+{
+The formal grammar uses semicolons ";" as terminators in a number of productions.
+Go programs may omit most of these semicolons using the following two rules:
+
+*.
+	When the input is broken into tokens, a semicolon is automatically
+	inserted into the token stream immediately after a line's final token
+	if that token is
+	*
+		an __identifier__
+			// __ identifier :: keywords-and-identifiers.html#identifier
+	*
+		an integer, floating-point, imaginary, rune, or string __literal__
+			// __ literal :: basic-types-and-value-literals.html#basic-value-literals
+	*
+		one of the keywords `break`, `continue`,
+		`fallthrough`, or `return`
+	*
+		one of the operators and punctuation `++`,
+		`--`, `)`,
+		`]`, or `}`
+	
+*.
+	To allow complex statements to occupy a single line,
+	a semicolon may be omitted before a closing `)` or `}`.
+}
+
+For the scenarios listed in the first rule, surely, we can also insert
+the semicolons manually, just like the semicolons in the last code example.
+In other words, these semicolons are optional in programming.
+
+The second rule means the last semicolon in a multi-item declaration before
+the closing sign `)` and the last semicolon within a code block or
+a (struct or interface) type declaration before the closing sign
+`}` are optional.
+If the last semicolon is absent, compilers will automatically insert it back.
+
+The second rule lets us be able to write the following valid code.
+
+@@@ .line-numbers
+'''go
+import (_ "math"; "fmt")
+var (a int; b string)
+const (M = iota; N)
+type (MyInt int; T struct{x bool; y int32})
+type I interface{m1(int) int; m2() string}
+func f() {print("a"); panic(nil)}
+'''
+
+Compilers will automatically insert the omitted semicolons for us,
+as the following code shows.
+
+@@@ .line-numbers
+'''go
+var (a int; b string;);
+const (M = iota; N;);
+type (MyInt int; T struct{x bool; y int32;};);
+type I interface{m1(int) int; m2() string;};
+func f() {print("a"); panic(nil);};
+'''
+
+
+Compilers will not insert semicolons for any other scenarios.
+We must insert the semicolons manually as needed for other scenarios.
+For example,
+the first semicolon at each line in the last code example are all required.
+The semicolons in the following example are also required.
+
+@@@ .line-numbers
+'''go
+var a = 1; var b = true
+a++; b = !b
+print(a); print(b)
+'''
+
+From the two rules, we know that a semicolon will never be inserted
+just after the `for` keyword.
+This is why the bare `for` loop example shown above is valid.
+
+One consequence of the semicolon insertion rules is that the self increment
+and self decrement operations must appear as statements.
+They can't be used as expressions.
+For example, the following code is invalid.
+
+@@@ .line-numbers
+'''go
+func f() {
+	a := 0
+	// The following two lines both fail to compile.
+	println(a++) // unexpected ++, expecting comma or )
+	println(a--) // unexpected --, expecting comma or )
+}
+'''
+
+The reason why the above code is invalid is compilers will view it as
+
+@@@ .line-numbers
+'''go
+func f() {
+	a := 0;
+	println(a++;);
+	println(a--;);
+}
+'''
+
+Another consequence of the semicolon insertion rules is
+we can't break a line before the dot `.` in a selector.
+We can only break a line after the dot, as the following code shows
+
+@@@ .line-numbers
+'''go
+	anObject.
+		MethodA().
+		MethodB().
+		MethodC()
+'''
+
+whereas the following code fails to compile.
+
+@@@ .line-numbers
+'''go
+	anObject
+		.MethodA()
+		.MethodB()
+		.MethodC()
+'''
+
+Compilers will insert a semicolon at the end of each line
+in the modified version, so the above code is equivalent to
+the following code which is obviously invalid.
+
+@@@ .line-numbers
+'''go
+	anObject;
+		.MethodA();
+		.MethodB();
+		.MethodC();
+'''
+
+The semicolon insertion rules make us write cleaner code.
+They also make it is possible to write some valid but a little weird code.
+For example,
+
+@@@ .line-numbers;must-line-numbers
+'''go
+package main
+
+import "fmt"
+
+func alwaysFalse() bool {return false}
+
+func main() {
+	for
+	i := 0
+	i < 6
+	i++ {
+		// use i ...
+	}
+
+	if x := alwaysFalse()
+	!x {
+		// do something ...
+	}
+
+	switch alwaysFalse()
+	{
+	case true: fmt.Println("true")
+	case false: fmt.Println("false")
+	}
+}
+'''
+
+All the three control flow blocks are valid.
+Compilers will insert a semicolon at the end of each of line %% 9 %%,
+%% 10 %%, %% 15 %% and %% 20 %%.
+
+Please note, the `switch-case` block in the above example
+will print a `true` instead of a `false`.
+It is different from
+
+@@@ .line-numbers
+'''go
+	switch alwaysFalse() {
+	case true: fmt.Println("true")
+	case false: fmt.Println("false")
+	}
+'''
+
+If we use the `go fmt` command to format the former one,
+a semicolon will be appended automatically after the
+`alwaysFalse()` call, so it will become to
+
+@@@ .line-numbers
+'''go
+	switch alwaysFalse();
+	{
+	case true: fmt.Println("true")
+	case false: fmt.Println("false")
+	}
+'''
+
+The modified version is equivalent to the following one.
+
+@@@ .line-numbers
+'''go
+	switch alwaysFalse(); true {
+	case true: fmt.Println("true")
+	case false: fmt.Println("false")
+	}
+'''
+
+That is why it will print a `true`.
+
+It is a good habit to run `go fmt`
+and `go vet` often for your code.
+
+For a rare case, the semicolon insertion rules also make some code look valid
+but invalid actually.
+For example, the following code snippet fails to compile.
+
+@@@ .line-numbers
+'''go
+func f(x int) {
+	switch x {
+	case 1:
+	{
+		goto A
+		A: // compiles okay
+	}
+	case 2:
+		goto B
+		B: // syntax error: missing statement after label
+	case 0:
+		goto C
+		C: // compiles okay
+	}
+}
+'''
+
+The compilation error message indicates that there must be
+a statement following a label declaration.
+But it looks none label in the above example is followed by a statement.
+Why is only the `B:` label declaration invalid?
+The reason is, by the second semicolon insertion rule mentioned above,
+compilers will insert a semicolon before each of the `}` characters
+following the `A:` and `C:` label declarations.
+As the following code shows.
+
+@@@ .line-numbers
+'''go
+func f(x int) {
+	switch x {
+	case 1:
+	{
+		goto A
+		A:
+	;} // a semicolon is inserted here
+	case 2:
+		goto B
+		B: // syntax error: missing statement after label
+	case 0:
+		goto C
+		C:
+	;} // a semicolon is inserted here
+}
+'''
+
+A solo semicolon represents a __blank statement__ actually,
+which is why the `A:` and `C:` label declarations are both valid.
+On the other hand, the `B:` label declaration is followed by `case 0:`,
+which is not a statement, so the `B:` label declaration is invalid.
+
+	// __ blank statement :: expressions-and-statements.html#simple-statements
+
+We can manually insert a semicolon (a blank statement) at the end of
+each of the `B:` label declaration to make it compile okay.
+
+
+@@@ #commas
+###+++++++++++ Comma (`,`) Will Not Be Inserted Automatically
+
+In some syntax forms containing multiple alike items,
+commas are used as separators,
+such as composite literals, function argument lists,
+function parameter lists and function result lists.
+In such a syntax form, the last item can always be followed by a comma.
+If the following comma is the last effective character in its respective code line,
+then the comma is required, otherwise, it is optional.
+Compilers will not insert commas automatically for any cases.
+
+For example, the following code snippet is valid.
+
+@@@ .line-numbers;must-line-numbers
+'''go
+func f1(a int, b string,) (x bool, y int,) {
+	return true, 789
+}
+var f2 func (a int, b string) (x bool, y int)
+var f3 func (a int, b string, // the last comma is required
+) (x bool, y int,             // the last comma is required
+)
+var _ = []int{2, 3, 5, 7, 9,} // the last comma is optional
+var _ = []int{2, 3, 5, 7, 9,  // the last comma is required
+}
+var _ = []int{2, 3, 5, 7, 9}
+var _, _ = f1(123, "Go",) // the last comma is optional
+var _, _ = f1(123, "Go",  // the last comma is required
+)
+var _, _ = f1(123, "Go")
+// The same for explicit conversions.
+var _ = string(65,) // the last comma is optional
+var _ = string(65,  // the last comma is required
+)
+'''
+
+However, the following code snippet is invalid,
+for compilers will insert a semicolon for each line in the code,
+except the second line.
+There are three lines which will cause `unexpected newline` syntax errors.
+
+@@@ .line-numbers;must-line-numbers
+'''go
+func f1(a int, b string,) (x bool, y int // error
+) {
+	return true, 789
+}
+var _ = []int{2, 3, 5, 7 // error: unexpected newline
+}
+var _, _ = f1(123, "Go" // error: unexpected newline
+)
+'''
+
+
+
+###+++++++++++ Final Words
+
+
+
+At the end, let's describe the line break rules in Go according to the above explanations.
+
+@@@ .alert;alert-success
+{
+In Go, a line break is okay (will not affect code behavior) if:
+*
+	it happens immediately after a keyword other than `break`, `continue` and `return`,
+	or after any of the three keywords which are not followed by labels or return results;
+*
+	it happens immediately after a semicolon, whether the semicolon is inserted explicitly or implicitly;
+*
+	it doesn't lead to an implicit semicolon will be inserted.
+}
+
+Like some other design details in Go,
+there are both praises and criticisms for the semicolon insertion rules.
+Some programmers don't like the rules,
+for they think the rules limit the freedom of code styles.
+Praisers think the rules make code compile faster, and make the code written
+by different programmers look similar, so that it is easy to understand
+the code written by each other.
+
+
+
+
+

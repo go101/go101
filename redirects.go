@@ -7,10 +7,10 @@ import (
 )
 
 var redirectPages = map[[2]string][2]string{
-	{"fundamentals", "go-sdk.html"}:     {"fundamentals", "go-toolchain.html"},
-	{"fundamentals", "tools.html"}:      {"apps-and-libs", "101.html"},
-	{"fundamentals", "tool-gold.html"}:  {"apps-and-libs", "golds.html"},
-	{"fundamentals", "tool-golds.html"}: {"apps-and-libs", "golds.html"},
+	{"fundamentals", "go-sdk.html"}:                   {"fundamentals", "go-toolchain.html"},
+	{"fundamentals", "tools.html"}:                    {"apps-and-libs", "101.html"},
+	{"fundamentals", "tool-gold.html"}:                {"apps-and-libs", "golds.html"},
+	{"fundamentals", "tool-golds.html"}:               {"apps-and-libs", "golds.html"},
 	{"fundamentals", "bounds-check-elimination.html"}: {"optimizations", "5-bce.html"},
 }
 
