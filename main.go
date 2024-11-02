@@ -19,6 +19,8 @@ var genFlag = flag.Bool("gen", false, "HTML generation mode?")
 var themeFlag = flag.String("theme", "", "theme (dark | light)")
 var nobFlag = flag.Bool("nob", false, "not open browswer?")
 
+var listenConfig net.ListenConfig
+
 func main() {
 	log.SetFlags(0)
 	flag.Parse()
@@ -34,7 +36,8 @@ func main() {
 	}
 
 Retry:
-	l, err := net.ListenTCP("tcp", addr)
+	//l, err := net.ListenTCP("tcp", addr)
+	l, err := listenConfig.Listen(context.Background(), "tcp", addr.String())
 	if err != nil {
 		if strings.Index(err.Error(), "bind: address already in use") >= 0 {
 			addr.Port++
