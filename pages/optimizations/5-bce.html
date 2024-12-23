@@ -62,7 +62,7 @@ func main() {}
 
 <p>Note that: Go toolchains with version smaller than 1.21 failed to remove the bound checks in the <code>f1g</code> function.</p>
 
-<p>And note that, up to now (Go toolchain v1.23.n), the official standard compiler
+<p>And note that, up to now (Go toolchain v1.24.n), the official standard compiler
 doesn't check BCE for an operation in a generic function if the operation
 involves type parameters and the generic function is never instantiated.
 For example, the command <code>go run -gcflags=-d=ssa/check_bce bar.go</code> will report nothing.</p>
@@ -144,36 +144,21 @@ Yes, the official standard Go compiler is so clever that it finds all bound chec
 <pre><code>$ go run -gcflags=&quot;-d=ssa/check_bce&quot; example2.go
 </code></pre>
 
-<p>There are still some small imperfections. If we modify the <code>f2g</code> and <code>f2h</code> functions as that shown in the following code, then the compiler (v1.23.n) fails to remove the bound checks for the two subslice operations.</p>
+<p>Note: prior to v1.24, the standard Go compiler failed to remove the bound checks
+in the following two loops.</p>
 
-<pre><code class="language-Go">// example2b.go
-package main
-
-func f2g(s []int) {
+<pre><code class="language-Go">func f2g(s []int) {
 	for i := len(s) - 1; i &gt;= 0; i-- {
-		//_ = s[i]
-		_ = s[:i+1] // line 7: Found IsSliceInBounds
+		_ = s[:i+1]
 	}
 }
 
 func f2h(s []int) {
 	for i := 0; i &lt;= len(s) - 1; i++ {
-		//_ = s[i]
-		_ = s[:i+1] // line 14: Found IsSliceInBounds
+		_ = s[:i+1]
 	}
 }
-
-func main() {}
 </code></pre>
-
-<p>Run it, we will get the following output:</p>
-
-<pre><code>$ go run -gcflags=&quot;-d=ssa/check_bce&quot; example2b.go
-./example2b.go:7:8: Found IsSliceInBounds
-./example2b.go:14:8: Found IsSliceInBounds
-</code></pre>
-
-<p>We may give the compiler some hints by turning on the comment lines to remove these bound checks.</p>
 
 <h2 id="example-3">Example 3</h2>
 
@@ -262,22 +247,45 @@ func f5d(isa []int, isb []int) {
 
 <p>The next section shows more cases which need compiler hints to avoid some unnecessary bound checks.</p>
 
-<h2>Sometimes, the compiler needs some hints to remove some bound checks</h2>
+<h2 id="example-5">Example 5</h2>
 
-<p>The official standard Go compiler is still not smart enough to remove all unnecessary bound checks.
-Sometimes, the compiler needs to be given some hints to remove some bound checks.</p>
+<p>Prior to Go toolchain v1.24, there are some unnecessary bound checks
+in the following code:</p>
 
-<p>In the following example, by adding one hint line in the function <code>f4b</code>, all bound checks in the loop are eliminated.</p>
+<pre><code class="language-Go">func fz(s, x, y []byte) {
+	n := copy(s, x)
+	copy(s[n:], y) // Found IsSliceInBounds (1.24-)
+	_ = x[n:]      // Found IsSliceInBounds (1.24-)
+}
 
-<pre><code class="language-Go">func f4a(is []int, bs []byte) {
-	if len(is) &gt;= 256 {
-		for _, n := range bs {
-			_ = is[n] // Found IsInBounds
-		}
+func fy(a, b []byte) {
+    for i := range min(len(a), len(b)) {
+        _ = a[i] // Found IsInBounds (1.24-)
+        _ = b[i] // Found IsInBounds (1.24-)
+    }
+}
+
+func fx(a [256]byte) {
+	for i := 0; i &lt; 128; i++ {
+		_ = a[2*i] // Found IsInBounds (1.24-)
 	}
 }
 
-func f4b(is []int, bs []byte) {
+func f4a(is []int, bs []byte) {
+	if len(is) &gt;= 256 {
+		for _, n := range bs {
+			_ = is[n] // Found IsInBounds (1.24-)
+		}
+	}
+}
+</code></pre>
+
+<p>Since version 1.24, all of them are removed.</p>
+
+<p>Before version 1.24, we have to add a hint line to remove the bound check
+in the <code>f4a</code> function:</p>
+
+<pre><code class="language-Go">func f4a(is []int, bs []byte) {
 	if len(is) &gt;= 256 {
 		is = is[:256] // a successful hint
 		for _, n := range bs {
@@ -285,27 +293,14 @@ func f4b(is []int, bs []byte) {
 		}
 	}
 }
-
-func f4c(is []int, bs []byte) {
-	if len(is) &gt;= 256 {
-		_ = is[:256] // a non-workable hint
-		for _, n := range bs {
-			_ = is[n] // Found IsInBounds
-		}
-	}
-}
-
-func f4d(is []int, bs []byte) {
-	if len(is) &gt;= 256 {
-		_ = is[255] // a non-workable hint
-		for _, n := range bs {
-			_ = is[n] // Found IsInBounds
-		}
-	}
-}
 </code></pre>
 
-<p>Please note that, as of Go toolchain v1.23.n, the two hints used in the <code>f4c</code> and <code>f4d</code> functions are not workable (but they should).</p>
+<p>Since version 1.24, the hint line becomes unnecessary.</p>
+
+<h2>Sometimes, the compiler needs some hints to remove some bound checks</h2>
+
+<p>The official standard Go compiler is still not smart enough to remove all unnecessary bound checks.
+Sometimes, the compiler needs to be given some hints to remove some bound checks.</p>
 
 <p>In the following example, by adding a redundant <code>if</code> code block in the function <code>NumSameBytes_2</code>, all bound checks in the loop are eliminated.</p>
 
@@ -344,7 +339,7 @@ func NumSameBytes_2(x, y T) int {
 </code></pre>
 
 <p>The above hint works when <code>T</code> is either a string type or a slice type,
-whereas each of the following two hints only works for one case (as of Go toolchain v1.23.n).</p>
+whereas each of the following two hints only works for one case (as of Go toolchain v1.24.n).</p>
 
 <pre><code class="language-Go">func NumSameBytes_3(x, y T) int {
 	if len(x) &gt; len(y) {
@@ -615,15 +610,9 @@ more BCE-unfriendly code might become BCE-friendly later.</p>
 
 <h2>The current official standard Go compiler fails to eliminate some unnecessary bound checks</h2>
 
-<p>As of Go toolchain v1.23.n, the official standard Go compiler doesn't eliminate the following unnecessary bound checks.</p>
+<p>As of Go toolchain v1.24.n, the official standard Go compiler doesn't eliminate the following unnecessary bound checks.</p>
 
-<pre><code class="language-Go">func fb(s, x, y []byte) {
-	n := copy(s, x)
-	copy(s[n:], y) // Found IsSliceInBounds
-	_ = x[n:]      // Found IsSliceInBounds
-}
-
-func fd(data []int, check func(int) bool) []int {
+<pre><code class="language-Go">func fd(data []int, check func(int) bool) []int {
 	var k = 0
 	for _, v := range data {
 		if check(v) {
@@ -633,6 +622,7 @@ func fd(data []int, check func(int) bool) []int {
 	}
 	return data[:k] // Found IsSliceInBounds
 }
+
 
 // For the only bound check in the following function,
 // * if N == 1, it will be always removed.
@@ -650,6 +640,17 @@ func ff(s []byte) {
 	for i := 0; i &lt; len(s); i++ {
 		_ = s[i/2] // Found IsInBounds
 		_ = s[i/3] // Found IsInBounds
+	}
+}
+
+func fg(src, dst []byte) {
+	dst = dst[:len(src)]
+	for len(src) &gt;= 4 {
+		dst[1] = // Found IsInBounds
+			src[0]
+		dst[0] = src[1]
+		src = src[4:]
+		dst = dst[4:] // Found IsSliceInBounds
 	}
 }
 </code></pre>

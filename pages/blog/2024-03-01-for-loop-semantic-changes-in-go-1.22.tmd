@@ -685,10 +685,11 @@ $ gotv 1.22. vet demo-nocopy1.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.1/bin/go vet demo-nocopy1.go
 '''
 
-Note that the `go vet` command in Go 1.22 toolchain can't catch such implicit duplication
+Note that the `go vet` command in Go toolchain versions prior to 1.24 can't catch such implicit duplication
 of no-copy values, regardless of whether the loop variable `wg` is captured in the loop body or not.
 
 Certain `no-copy` checks occur during run time.
+The `go vet` command in Go toolchain v1.24+ still can't catch such cases.
 Let's view an example which uses `strings.Builder` (each `strings.Builder` value
 contains a pointer field which should point to itself):
 
@@ -696,17 +697,27 @@ contains a pointer field which should point to itself):
 // demo-nocopy2.go
 package main
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
+import "fmt"
 
-const Debug = true
+func foo(pb *strings.Builder) {}
 
-func a2z(callback func(*strings.Builder)) string {
+var bar = foo
+
+func a2z_foo() string {
 	for b, i := (strings.Builder{}), byte('a'); ; i++ {
 		b.WriteByte(i)
-		if (Debug) { callback(&b) }
+		foo(&b) // <- difference is here
+		if i == 'z' {
+			return b.String()
+		}
+	}
+}
+
+func a2z_bar() string {
+	for b, i := (strings.Builder{}), byte('a'); ; i++ {
+		b.WriteByte(i)
+		bar(&b) // <- difference is here
 		if i == 'z' {
 			return b.String()
 		}
@@ -714,10 +725,8 @@ func a2z(callback func(*strings.Builder)) string {
 }
 
 func main() {
-	debugProcess := func(pb *strings.Builder) {
-		//fmt.Println(pb.String()) // do nothing
-	}
-	fmt.Println(a2z(debugProcess))
+	fmt.Println("foo:", a2z_foo())
+	fmt.Println("bar:", a2z_bar())
 }
 '''
 
@@ -725,45 +734,39 @@ Run it with different Go toolchains, we get:
 '''
 $ gotv 1.21. run demo-nocopy2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run demo-nocopy2.go
-abcdefghijklmnopqrstuvwxyz
+foo: abcdefghijklmnopqrstuvwxyz
+bar: abcdefghijklmnopqrstuvwxyz
 $ gotv 1.22. run demo-nocopy2.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo-nocopy2.go
+foo: abcdefghijklmnopqrstuvwxyz
 panic: strings: illegal use of non-zero Builder copied by value
 
 goroutine 1 [running]:
 ...
 '''
 
-Yes, the run-time `no-copy` check works.
-Since Go 1.22, when the loop variable of type `strings.Builder` gets
-duplicated, a panic is created.
-Prior to Go 1.22, this duplication will not happen, so there will be no panic.
+The outputs show that:
+* prior to Go 1.22, the behaviors of the two `a2z` functions are consistent.
+  No loop variables duplication happens, so there will be no panic.
+* since Go 1.22, as fresh-declared loop variables implicitly get copied
+  at the start of each loop iteration, the run-time `no-copy` check functions.
+  But the check only works for the `a2z_bar` function,
+  not for the `a2z_foo` function.
 
-Note that, starting from Go 1.22, a Go compiler might optimize freshly-declared loop variables
-to be instantiated only once for the entire loop, even though their semantics suggest
-per-iteration instantiation.
-This optimization occurs when the compiler determines that each instance of
-the loop variable is used solely within the corresponding iteration's lifetime.
-
-Let's change the `Debug` constant in the above example to `false`,
-then run the example again with the 1.22 toolchain.
-
-'''
-$ gotv 1.22. run demo-nocopy.go
-[Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run demo-nocopy.go
-abcdefghijklmnopqrstuvwxyz
-'''
-
-We can find that no panic occurs now. Why? Because now the
-`if (Debug) { callback(&b) }` line becomes into dead code
-so that the compiler thinks that each instance of the loop variable `b`
-is used solely within the corresponding iteration's lifetime.
-So the loop variable `b` is instantiated only once for the entire loop
-and no duplication happens for the only instance.
+But why doesn't the run-time `no-copy` check work for the `a2z_foo` function?
+Because of two compiler optimizations.
+In one optimization, the compiler omits the `foo(&b)` line in the `a2z_foo` function.
+The optimization is actually valid.
+The optimization is conservative so that the compiler doesn't omits
+the `bar(&b)` line in the `a2z_bar` function.
+The consequence is, in the other optimization, the compiler (mistakenly) thinks
+the fresh-declared loop variable `b` in the `a2z_foo` function can be instantiated
+only once for the entire loop, even though its semantics suggest per-iteration instantiation.
 
 However, the compiler is too smart to __make a bad decision__ here.
 The compiler incorrectly implements the semantics.
-The example program should panic regardless of the value of the `Debug` constant.
+The behaviors of the two `a2z` functions in the above program should be still consistent since Go 1.22.
+They should both panic. 
 
 The Go core team __refused to fix this bug__, which raises the alarm that
 unexpected behavior may happen in other similar scenarios.
@@ -771,11 +774,19 @@ unexpected behavior may happen in other similar scenarios.
   // __make a bad decision `` https://github.com/golang/go/issues/66070
   // __refused to fix this bug `` https://github.com/golang/go/issues/66070#issuecomment-1981642904
 
+The `go vet` command in the latest Go toolchain versions still can't catch such implicit duplication
+of no-copy values.
+
+Note: in the standard library, there are some other types, such as the `bytes.Buffer` type,
+which values should also not be copied.
+However, neither compile-time checks or run-time checks are made for them.
+
 The safe advice is try not to declare no-copy values as loop variables.
 This is just a suggestion, not a mandatory rule,
 because copying no-copy values does not always cause damage
 (but the damage may be exposed later when the code is refactored in some way).
 
+@@@ #large-size-loop-vars
 ###++++++++++++++
 	Warning: the performance of your Go programs might be degraded silently
 
@@ -800,24 +811,24 @@ import (
 	"time"
 )
 
-type Large [1<<10]byte
+const N = 1 << 18
 
-func foo(constFunc func(*Large, int)) {
-	a := Large{}
+func foo(f func([]byte, int)) {
+	a := [N]byte{}
 	for i := 0; i < len(a); i++ {
-		constFunc(&a, i)
+		f(a[:], i)
 	}
 }
 
-func bar(constFunc func(*Large, int)) {
-	for a, i := (Large{}), 0; i < len(a); i++ {
-		constFunc(&a, i)
+func bar(f func([]byte, int)) {
+	for a, i := [N]byte{}, 0; i < len(a); i++ {
+		f(a[:], i)
 	}
 }
 
 func main() {
-	readonly := func(x *Large, k int) {}
-	bench := func(f func(func(*Large, int))) time.Duration {
+	readonly := func(x []byte, k int) {}
+	bench := func(f func(func([]byte, int))) time.Duration {
 		start := time.Now()
 		f(readonly)
 		return time.Since(start)
@@ -831,26 +842,29 @@ Its outputs:
 '''
 $ gotv 1.21. run aaa.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.7/bin/go run aaa.go
-foo time: 3.573µs
-bar time: 3.267µs
+foo time: 689.79µs
+bar time: 690.988µs
 $ gotv 1.22. run aaa.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.0/bin/go run aaa.go
-foo time: 3.819µs
-bar time: 552.246µs
+foo time: 734.85µs
+bar time: 18.795043596s
 '''
 
 The benchmark results reveal a significant performance regression
-in the `bar` function between Go 1.21 and 1.22. 
+in the `bar` function between Go 1.21 and 1.22 (note that 1s == 1,000,000us). 
 Why? Because, with the official standard Go compiler 1.22,
 the loop variable `a` in the `bar` function is duplicated in each iteration.
 Whereas in prior versions, such duplication is always needless.
 
-The performance degradation issue does not affect the correctness of the code logic,
-Therefore, it may not be detected in time.
+The performance degradation problem does not affect the correctness of the code logic
+(at least for the above specified example).
+And the degree of performance degradation depends on the value size of the array loop variable.
+Therefore, it might not be detected in time for some Go projects
+when they are upgraded from a version prior to 1.22 and to a 1.22+ version.
 
 Suggestions to avoid such performance degradation issue:
 *. Try not to declare large-size values as loop variables,
-   even if the syntax allows.
+   even if the syntax allows to do so.
 *. In certain situations, consider declaring loop variables outside
    the loop itself to optimize performance. This is beneficial if you can
    guarantee that the variables don't need to be instantiated in each iteration.
@@ -1044,10 +1058,13 @@ Found gold 3145728
 😳😳😳... %%(Consider that the title of the proposal to make the semantic change is
 "Proposal: Less Error-Prone Loop Variable Scoping".)
 
-How to fix the new data-racy code mentioned in this section?
-We can still use the old trick: just add an `i := i` line at the start of the loop body.
-Yes, this is still the best suggestion to avoid data race for such situations in the Go 1.22+ era.
-Is this a mockery of the new semantics (of `for;;` loops)?
+How to fix the (since-1.22-)data-racy code?
+* To merely avoid the race condition, we can still use the old trick:
+  just add an `i := i` line at the start of the loop body.
+  Yes, this is still the best suggestion to avoid data race for such situations in the Go 1.22+ era.
+  Is this a mockery of the new semantics (of `for;;` loops)?
+* To avoid the race condition and correct the logic,
+  the variable `i` should be declared outside the loop block (since Go 1.22).
 
 ###==============================================
 	Advice and suggestions

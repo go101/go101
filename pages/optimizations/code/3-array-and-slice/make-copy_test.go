@@ -13,35 +13,35 @@ var t = struct{x []int}{s}
 var r []int
 
 func Benchmark________________(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r = make([]int, len(s))
 		copy(r, s)
 	}
 }
 
 func Benchmark_MakeCopy(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r = make([]int, len(s))
 		copy(r, s)
 	}
 }
 
 func Benchmark_MakeCopy_b(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r = make([]int, len(s), len(s))
 		copy(r, s)
 	}
 }
 
 func Benchmark_MakeCopy_c(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r = make([]int, len(a[0]))
 		copy(r, a[0])
 	}
 }
 
 func Benchmark_MakeCopy_d(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r = make([]int, len(t.x))
 		copy(r, t.x)
 	}
@@ -49,7 +49,7 @@ func Benchmark_MakeCopy_d(b *testing.B) {
 
 func Benchmark_MakeCopy_e(b *testing.B) {
 	f := func(interface{}) {}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r = make([]int, len(s))
 		f(copy(r, s))
 	}
@@ -57,7 +57,7 @@ func Benchmark_MakeCopy_e(b *testing.B) {
 
 func Benchmark_MakeCopy_f(b *testing.B) {
 	var k interface{}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r = make([]int, len(s))
 		k = copy(r, s)
 	}
@@ -65,7 +65,7 @@ func Benchmark_MakeCopy_f(b *testing.B) {
 }
 
 func Benchmark_MakeCopy_g(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r = make([]int, len(s))
 		_ = copy(r, s)
 	}
@@ -74,7 +74,7 @@ func Benchmark_MakeCopy_g(b *testing.B) {
 var x, y []int
 
 func Benchmark_MakeCopy2(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x, y = s[:len(s)], s[len(s):]
 		r = make([]int, len(x))
 		copy(r, x)
@@ -83,7 +83,7 @@ func Benchmark_MakeCopy2(b *testing.B) {
 }
 
 func Benchmark_MakeCopy3(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x, y = s[:len(s)/2], s[len(s)/2:]
 		r = make([]int, len(s))
 		copy(r, x)
@@ -92,7 +92,7 @@ func Benchmark_MakeCopy3(b *testing.B) {
 }
 
 func Benchmark_MakeCopy4(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x, y = s[:0], s[0:]
 		r = make([]int, len(s))
 		copy(r, x)

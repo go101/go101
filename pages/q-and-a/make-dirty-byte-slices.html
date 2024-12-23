@@ -1,29 +1,22 @@
-
 <p></p>
-
 <h1 class="tmd-header-1">
-How to dirtily make a byte slice (without zeroing its byte elements)?</h1>
-
+How to dirtily make a byte slice (without zeroing its byte elements)?
+</h1>
 <p></p>
-
 <div class="tmd-usual">
 Prior to Go 1.21, there is no way to achieve this, even if with unsafe ways.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
-Since Go 1.21, the implmentation of <code class="tmd-code-span">strings.Builder.Grow</code> calls an internal <code class="tmd-code-span">bytealg.MakeNoZero</code> function instead of the built-in <code class="tmd-code-span">make</code> function the old implementation called. For most cases, the built-in <code class="tmd-code-span">make</code> function will zero the elements of the result slice, so it is often comparatively slower.
+Since Go 1.21, the implmentation of <code class="tmd-code-span">strings.Builder.Grow</code> calls an  internal <code class="tmd-code-span">bytealg.MakeNoZero</code> function instead of the built-in <code class="tmd-code-span">make</code>  function the old implementation called.  For most cases, the built-in <code class="tmd-code-span">make</code> function will zero the elements  of the result slice, so it is often comparatively slower.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
-With the 1.21+ implementation, now we get a chance to create byte slices without initializing their elements to zero (though achieving this functionality requires the use of  <code class="tmd-code-span">unsafe</code> functions).
+With the 1.21+ implementation, now we get a chance to create byte slices without  initializing their elements to zero (though achieving this functionality  requires the use of  <code class="tmd-code-span">unsafe</code> functions).
 </div>
-
 <p></p>
-<pre class="tmd-code"><code class="language-Go">import (
+<pre class="tmd-code">
+<code class="language-Go">import (
 	"strings"
 	"unsafe"
 )
@@ -35,15 +28,13 @@ func MakeDirtyByteSlice(n int) []byte {
 	return unsafe.Slice(p, n)
 }
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
-However, for an unknown reason (which should be releted to the official compiler/runtime implementation), benchmark results show that the function is not as faster as expected when the length of the created byte slice is not large.
+However, for an unknown reason (which should be releted to the official  compiler/runtime implementation), benchmark results show that  the function is not as faster as expected  when the length of the created byte slice is not large.
 </div>
-
 <p></p>
-<pre class="tmd-code"><code class="language-Go">package ttt
+<pre class="tmd-code">
+<code class="language-Go">package ttt
 
 import (
 	"strings"
@@ -112,13 +103,12 @@ func Benchmark_make_append(tb *testing.B) {
 	}
 }
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
 Benchmark results:
 </div>
-<pre class="tmd-code">$ gotv . test -bench=. -benchmem
+<pre class="tmd-code">
+$ gotv . test -bench=. -benchmem
 [Run]: $HOME/.cache/gotv/tag_go1.23rc1/bin/go test -bench=. -benchmem
 =============== Len = 4000
 goos: linux
@@ -142,5 +132,4 @@ Benchmark_make-4                 	  320997	      3404 ns/op	   20480 B/op	      
 Benchmark_MakeByteSlice-4        	  262684	      4213 ns/op	   20480 B/op	       1 allocs/op
 Benchmark_make_append-4          	  246081	      4525 ns/op	   20480 B/op	       1 allocs/op
 </pre>
-
 <p></p>

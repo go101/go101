@@ -1,364 +1,253 @@
-
 <h1 class="tmd-header-1">
-How to clone slices?</h1>
-
+How to clone slices?
+</h1>
 <p></p>
-
 <h2 class="tmd-header-2">
-The approaches</h2>
-
+The approaches
+</h2>
 <p></p>
-
 <div class="tmd-usual">
 There are several ways to do the task.
 </div>
-
 <p></p>
-
 <h3 class="tmd-header-3">
-Way 1: use <code class="tmd-code-span">make</code> and <code class="tmd-code-span">copy</code></h3>
-
+Way 1: use <code class="tmd-code-span">make</code> and <code class="tmd-code-span">copy</code>
+</h3>
 <p></p>
-<pre class="tmd-code"><code class="language-Go">	cloned := make(SliceType, len(aSlice))
+<pre class="tmd-code">
+<code class="language-Go">	cloned := make(SliceType, len(aSlice))
 	copy(cloned, aSlice)
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
 Note:
 </div>
-
 <ul class="tmd-list">
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
-since Go toolchain v1.15, this way is optimized specifically so that the elements of the cloned slice will not get zeroed in the <code class="tmd-code-span">make</code> call.
+since Go toolchain v1.15, this way is optimized specifically so that  the elements of the cloned slice will not get zeroed in the <code class="tmd-code-span">make</code> call.
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
-the capacity of the cloned slice is not aligned to a memory class size. <span class="tmd-italic">(Memory class sizes are mentioned in </span><a href="https://go101.org/optimizations/0.3-memory-allocations.html"><span class="tmd-italic">Go Optimizations 101</span></a><span class="tmd-italic">.)</span>
+the capacity of the cloned slice is not aligned to a memory class size.  <span class="tmd-italic">(Memory class sizes are mentioned in </span><a href="https://go101.org/optimizations/0.3-memory-allocations.html"><span class="tmd-italic">Go Optimizations 101</span></a><span class="tmd-italic">.)</span>
 </div>
-
 </li>
-
 </ul>
-
 <p></p>
-
 <div class="tmd-usual">
 For the two reasons, thw way is the fastest approach.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
 The drawbacks of this approach:
 </div>
-
 <ol class="tmd-list">
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 If the source slice <code class="tmd-code-span">aSlice</code> is nil, the cloned slice is not nil. Sometimes, this matters.
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 It is a little verbose (it needs two lines).
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 It can't be used as a sub-expression in statements.
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 It needs to import the containing package of type <code class="tmd-code-span">SliceType</code> if <code class="tmd-code-span">SliceType</code> is declared in another package.
 </div>
-
 </li>
-
 </ol>
-
 <p></p>
-
 <h3 class="tmd-header-3">
-Way 2: the more verbose form of way 1</h3>
-
+Way 2: the more verbose form of way 1
+</h3>
 <p></p>
-<pre class="tmd-code"><code class="language-Go">	var cloned SliceType
+<pre class="tmd-code">
+<code class="language-Go">	var cloned SliceType
 	if aSlice != nil {
 		cloned = make(SliceType, len(aSlice))
 		copy(cloned, aSlice)
 	}
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
 Excpet for the first drawback of the way 1, the verbose way offers similar benefits and drawbacks to way 1.
 </div>
-
 <p></p>
-
 <h3 class="tmd-header-3">
-Way 3: use <code class="tmd-code-span">make</code> and <code class="tmd-code-span">append</code></h3>
-
+Way 3: use <code class="tmd-code-span">make</code> and <code class="tmd-code-span">append</code>
+</h3>
 <p></p>
-<pre class="tmd-code"><code class="language-Go">	append(make(SliceType, 0, len(aSlice)), aSlice...)
+<pre class="tmd-code">
+<code class="language-Go">	append(make(SliceType, 0, len(aSlice)), aSlice...)
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
 The approach can be used as a sub-expression in statements.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
 Note:
 </div>
-
 <ul class="tmd-list">
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 the <code class="tmd-code-span">make</code> call will <a href="https://github.com/golang/go/issues/46079">unnecessarily zeros the elements of the cloned slice</a>,
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
-with the official toolchain, the capacity of the cloned slice is aligned to a memory class size. This might make it even slower. <span class="tmd-italic">(Memory class sizes are mentioned in </span><a href="https://go101.org/optimizations/0.3-memory-allocations.html"><span class="tmd-italic">Go Optimizations 101</span></a><span class="tmd-italic">.)</span>
+with the official toolchain, the capacity of the cloned slice is aligned to a memory class size.  This might make it even slower.  <span class="tmd-italic">(Memory class sizes are mentioned in </span><a href="https://go101.org/optimizations/0.3-memory-allocations.html"><span class="tmd-italic">Go Optimizations 101</span></a><span class="tmd-italic">.)</span>
 </div>
-
 </li>
-
 </ul>
-
 <p></p>
-
 <div class="tmd-usual">
 The drawbacks of this approach:
 </div>
-
 <ol class="tmd-list">
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 For the two reasons, currently, thw way is the slowest way.
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 If the source slice <code class="tmd-code-span">aSlice</code> is nil, the cloned slice is not nil. Sometimes, this matters.
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 It needs to import the containing package of type <code class="tmd-code-span">SliceType</code> if <code class="tmd-code-span">SliceType</code> is declared in another package.
 </div>
-
 </li>
-
 </ol>
-
 <p></p>
-
 <h3 class="tmd-header-3">
-Way 4: use <code class="tmd-code-span">append</code></h3>
-
+Way 4: use <code class="tmd-code-span">append</code>
+</h3>
 <p></p>
-<pre class="tmd-code"><code class="language-Go">	append(SliceType(nil), aSlice...) // manner 1
+<pre class="tmd-code">
+<code class="language-Go">	append(SliceType(nil), aSlice...) // manner 1
 	// or
 	append(SliceType{}, aSlice...) // manner 2
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
 Similar to the last one, the approach can be used as a sub-expression in statements.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
 Note:
 </div>
-
 <ul class="tmd-list">
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 this approach doesn't unnecessarily zeros elements, so it is performant.
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
-with the official toolchain, the capacity of the cloned slice is aligned to a memory class size. This makes it not always as fast as the way 1 approach. <span class="tmd-italic">(Memory class sizes are mentioned in </span><a href="https://go101.org/optimizations/0.3-memory-allocations.html"><span class="tmd-italic">Go Optimizations 101</span></a><span class="tmd-italic">.)</span>
+with the official toolchain, the capacity of the cloned slice is aligned to a memory class size.  This makes it not always as fast as the way 1 approach.  <span class="tmd-italic">(Memory class sizes are mentioned in </span><a href="https://go101.org/optimizations/0.3-memory-allocations.html"><span class="tmd-italic">Go Optimizations 101</span></a><span class="tmd-italic">.)</span>
 </div>
-
 </li>
-
 </ul>
-
 <p></p>
-
 <div class="tmd-usual">
 The drawbacks of this approach:
 </div>
-
 <ol class="tmd-list">
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 For the two reasons, thw way is slower than other ones.
 </div>
-
 <ul class="tmd-list">
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 for manner 1, if the source slice <code class="tmd-code-span">aSlice</code> is a non-nil blank slice, the cloned slice is nil.
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 for manner 2, if the source slice <code class="tmd-code-span">aSlice</code> is a nil slice, the cloned slice is not nil.
 </div>
-
 </li>
-
 </ul>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 It needs to import the containing package of type <code class="tmd-code-span">SliceType</code> if <code class="tmd-code-span">SliceType</code> is declared in another package.
 </div>
-
 </li>
-
 </ol>
-
 <p></p>
-
 <h3 class="tmd-header-3">
-Way 5: use <code class="tmd-code-span">append</code> cleverly</h3>
-
+Way 5: use <code class="tmd-code-span">append</code> cleverly
+</h3>
 <p></p>
-<pre class="tmd-code"><code class="language-Go">	append(aSlice[:0:0], aSlice...)
+<pre class="tmd-code">
+<code class="language-Go">	append(aSlice[:0:0], aSlice...)
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
-This approach improves on the last one by avoiding the two drawbacks listed above, which means:
+This approach improves on the last one by avoiding the two drawbacks listed above,  which means:
 </div>
-
 <ul class="tmd-list">
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 If the source slice <code class="tmd-code-span">aSlice</code> is a non-nil blank slice, the cloned slice is also a non-nil blank slice.
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 If the source slice <code class="tmd-code-span">aSlice</code> is a nil slice, the cloned slice is also nil.
 </div>
-
 </li>
-
 <li class="tmd-list-item">
-
 <div class="tmd-usual">
 It never needs to import the containing package of type <code class="tmd-code-span">SliceType</code>.
 </div>
-
 </li>
-
 </ul>
-
 <p></p>
-
 <div class="tmd-usual">
-This might be the cleanest implementation while still maintaining great performance. It is almost perfect. But it has one (potential tiny) drawback: if the source slice <code class="tmd-code-span">aSlice</code> is a non-nil blank slice, then the cloned slice (also a non-nil blank slice) references the same underlying element memory block as the source slice. This might prevent (or delay) the collection of the element memory block when the source slice become unused.
+This might be the cleanest implementation while still maintaining great performance.  It is almost perfect. But it has one (potential tiny) drawback:  if the source slice <code class="tmd-code-span">aSlice</code> is a non-nil blank slice,  then the cloned slice (also a non-nil blank slice) references the same underlying element memory block  as the source slice. This might prevent (or delay) the collection of the element memory block  when the source slice become unused.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
-The tiny drawback can be removed by <a href="https://github.com/golang/go/issues/68488#issuecomment-2267179883">improving the official Go runtime implementation</a>. But up to now, the improvement has not been made.
+The tiny drawback can be removed by <a href="https://github.com/golang/go/issues/68488#issuecomment-2267179883">improving the official  Go runtime implementation</a>.  But up to now, the improvement has not been made.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
 
 </div>
-
 <p></p>
-
 <h3 class="tmd-header-3">
-Way 6: use <code class="tmd-code-span">slices.Clone</code> (since Go 1.21)</h3>
-
+Way 6: use <code class="tmd-code-span">slices.Clone</code> (since Go 1.21)
+</h3>
 <p></p>
-<pre class="tmd-code"><code class="language-Go">import "slices"
+<pre class="tmd-code">
+<code class="language-Go">import "slices"
 
 	slices.Clone(aSlice)
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
-The current implementation of <code class="tmd-code-span">slices.Clone</code> simply uses the way 5 approach. So it offers similar benefits and drawbacks to way 5. And it has one more drawback: it needs to import the "slices" stdandard package.
+The current implementation of <code class="tmd-code-span">slices.Clone</code> simply uses the way 5 approach.  So it offers similar benefits and drawbacks to way 5.  And it has one more drawback: it needs to import the "slices" stdandard package.
 </div>
-
 <p></p>
-
 <h2 class="tmd-header-2">
-So?</h2>
-
+So?
+</h2>
 <p></p>
-
 <div class="tmd-usual">
-There's no single perfect way to clone slices in Go. Just choose the way that best suits your situation.
+There's no single perfect way to clone slices in Go.  Just choose the way that best suits your situation.
 </div>
-
 <p></p>

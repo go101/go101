@@ -1,17 +1,14 @@
-
 <p></p>
-
 <h1 class="tmd-header-1">
-It Is a Pity That Byte Elements of Go Constant Strings Are Not Constants. And It Is a Luck</h1>
-
+It Is a Pity That Byte Elements of Go Constant Strings Are Not Constants. And It Is a Luck
+</h1>
 <p></p>
-
 <div class="tmd-usual">
 Does the following Go program compile okay?
 </div>
-
 <p></p>
-<pre class="tmd-code"><code class="language-Go">package main
+<pre class="tmd-code">
+<code class="language-Go">package main
 
 const S = "Go"
 
@@ -19,27 +16,21 @@ const G = S[0]
 
 func main() {}
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
-Many gophers might think it should compile okay. But it fails to compile. Because element values of a string are always non-constant in Go, even if the string is a constant.
+Many gophers might think it should compile okay.  But it fails to compile.  Because element values of a string are always non-constant in Go,  even if the string is a constant.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
 It is a pity that Go 1.0 didn't specify that elements of constant strings are also constants.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
-For backward-compatibility, the pity is hard to make up. For example, currently, the following program compiles okay. It prints <code class="tmd-code-span">185</code> (-71 + 256).
+For backward-compatibility, the pity is hard to make up.  For example, currently, the following program compiles okay.  It prints <code class="tmd-code-span">185</code> (-71 + 256).
 </div>
-
 <p></p>
-<pre class="tmd-code"><code class="language-Go">package main
+<pre class="tmd-code">
+<code class="language-Go">package main
 
 const S = "Go" // S[0] == 71
 
@@ -47,91 +38,70 @@ func main() {
 	println(-S[0])
 }
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
-But if elements of constant strings become into constants, then the program will not compile, because the type of <code class="tmd-code-span">-S[0]</code> is <code class="tmd-code-span">byte</code> (aka. <code class="tmd-code-span">uint8</code>), whereas <code class="tmd-code-span">-71</code> owerflows the range of <code class="tmd-code-span">byte</code>.
+But if elements of constant strings become into constants, then the program will not compile,  because the type of <code class="tmd-code-span">-S[0]</code> is <code class="tmd-code-span">byte</code> (aka. <code class="tmd-code-span">uint8</code>), whereas <code class="tmd-code-span">-71</code> owerflows the range of <code class="tmd-code-span">byte</code>.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
 It is a pity, it is also a luck.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
-If elements of constant strings are constants, then there will be parsing ambiguities in Go custom generic age. Since Go 1.18, the following line will be treated as generic type declaration, in which <code class="tmd-code-span">S</code> is a type parameter and <code class="tmd-code-span">[4]*int</code> is its constraint.
+If elements of constant strings are constants, then there will be parsing ambiguities in Go custom generic age.  Since Go 1.18, the following line will be treated as generic type declaration,  in which <code class="tmd-code-span">S</code> is a type parameter and <code class="tmd-code-span">[4]*int</code> is its constraint.
 </div>
-
 <p></p>
-<pre class="tmd-code"><code class="language-Go">type T [S [4]*int] struct{}
+<pre class="tmd-code">
+<code class="language-Go">type T [S [4]*int] struct{}
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
-However, if elements of constant strings are constants, then <code class="tmd-code-span">S [4]</code> may be treated as constant <code class="tmd-code-span">byte</code> value if <code class="tmd-code-span">S</code> is a constant string. In the parsing phase, the compiler doesn't know what the identifier <code class="tmd-code-span">int</code> denotes. A type or an integer constant? If it denotes an integer constant, and <code class="tmd-code-span">S [4]</code> may be treated as constant <code class="tmd-code-span">byte</code> value, then the above line is a valid ordinary array type declaration.
+However, if elements of constant strings are constants,  then <code class="tmd-code-span">S [4]</code> may be treated as constant <code class="tmd-code-span">byte</code> value if <code class="tmd-code-span">S</code> is a constant string.  In the parsing phase, the compiler doesn't know what the identifier <code class="tmd-code-span">int</code> denotes.  A type or an integer constant? If it denotes an integer constant,  and <code class="tmd-code-span">S [4]</code> may be treated as constant <code class="tmd-code-span">byte</code> value,  then the above line is a valid ordinary array type declaration.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
-Luckily, now, Go compiler knows <code class="tmd-code-span">S [4]</code> will never be constant, so it always tries to think the above line is not an ordinary array type declaration. No ambiguities happen here. Were elements of constant strings constants, the simplified type parameter declaration syntax couldn't be possible.
+Luckily, now, Go compiler knows <code class="tmd-code-span">S [4]</code> will never be constant,  so it always tries to think the above line is not an ordinary array type declaration.  No ambiguities happen here.  Were elements of constant strings constants, the simplified type parameter declaration syntax couldn't be possible.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
-There is <a href="https://github.com/golang/go/issues/6386">a proposal</a> to let Go support constant arrays (and other constant composite values). However, the Go custom generics design has almost sentenced that proposal to death. Because, similarly, the following code will lead to parsing ambiguities if array values may be declared as constants.
+There is <a href="https://github.com/golang/go/issues/6386">a proposal</a> to let Go support constant arrays (and other constant composite values).  However, the Go custom generics design has almost sentenced that proposal to death.  Because, similarly, the following code will lead to parsing ambiguities  if array values may be declared as constants.
 </div>
-
 <p></p>
-<pre class="tmd-code"><code class="language-Go">const A = [2]int{1, 2}
+<pre class="tmd-code">
+<code class="language-Go">const A = [2]int{1, 2}
 type BoolArray [A [1] * int]bool
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
 
 </div>
-
 <p></p>
-
 <h2 class="tmd-header-2">
-BTW, substrings are also never constants</h2>
-
+BTW, substrings are also never constants
+</h2>
 <p></p>
-
 <div class="tmd-usual">
 The following code line doesn't compile in Go:
 </div>
-
 <p></p>
-<pre class="tmd-code"><code class="language-Go">const _ = "Google"[:2]
+<pre class="tmd-code">
+<code class="language-Go">const _ = "Google"[:2]
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
 Instead, the following line compiles:
 </div>
-
 <p></p>
-<pre class="tmd-code"><code class="language-Go">var _ = "Google"[:2]
+<pre class="tmd-code">
+<code class="language-Go">var _ = "Google"[:2]
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
 By this fact, the following program will print <code class="tmd-code-span">128 0</code> (the reason is explained <a href="https://go101.org/quizzes/operator-3.html">here</a>).
 </div>
-
 <p></p>
-<pre class="tmd-code"><code class="language-Go">package main
+<pre class="tmd-code">
+<code class="language-Go">package main
 
 const S = "Go"
 
@@ -142,17 +112,12 @@ func main() {
 	println(a, b) // 128 0
 }
 </code></pre>
-
 <p></p>
-
 <div class="tmd-usual">
 So <a href="https://github.com/golang/go/issues/28591#issuecomment-697357430">making substrings of constant strings constant will also break backward-compatibility</a>.
 </div>
-
 <p></p>
-
 <div class="tmd-usual">
 
 </div>
-
 <p></p>

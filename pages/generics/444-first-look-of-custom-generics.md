@@ -238,6 +238,25 @@ func (l *Lockable[_]) DoNothing() {
 }
 ```
 
+## Generic type aliases
+
+Generic type aliases are supported since Go 1.24.
+
+```Go
+type TreeMap[K comparable, E any] struct {
+	// ... unexported fields
+}
+
+// Several generic type aliases:
+type TreeSet[K comparable] = TreeMap[K, struct{}]
+type TreeMapWithIntKey[E any] = TreeMap[int, E]
+type TreeMapWithStringKey[E any] = TreeMap[string, E]
+```
+
+<!--
+https://github.com/golang/go/issues/46477
+-->
+
 ## A generic function example
 
 Now, let's view an example of how to declare and use generic (non-method) functions.

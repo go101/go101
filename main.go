@@ -47,6 +47,7 @@ Retry:
 		}
 		log.Fatal(err)
 	}
+	defer l.Close()
 
 	go101.theme = *themeFlag
 
@@ -92,11 +93,10 @@ Retry:
 		return
 	}
 
-	go runServer()
-
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	<-c
 
+	go runServer()
+	<-c
 	shutdownServer()
 }
