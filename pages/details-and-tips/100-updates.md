@@ -1,10 +1,14 @@
 
 # Go Details & Tips 101 Update History
 
+### v1.24.a (2024/Dec/16)
+
+* "
+
 ### v1.23.a (2024/Oct/16)
 
-* "Syntax and Semantics Related" chapter:
-  * add a "`for {...}` and `for true {...}` are not always equivalent to each other" detail.
+* "Standard and User Packages Related" chapter:
+  * add "The `N` function in the Go 1.22 introduced `math/rand/v2` standard package provides much convenience in some scenarios"
 
 ### v1.22.a (2024/Mar/18)
 

@@ -1,6 +1,11 @@
 
 # Go Optimizations 101 Update History
 
+### v1.24.a (2024/Dec/16)
+
+* The "BCE (Bound Check Elimination)" chapter is modified according Go toolchain go1.24rc1.
+* In "Stack and Escape Analysis" chapter, some thresholds are modified according Go toolchain go1.24rc1.
+
 ### v1.23.a (2024/Oct/16)
 
 * The "BCE (Bound Check Elimination)" chapter is modified according https://github.com/golang/go/issues/40704

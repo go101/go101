@@ -1,6 +1,10 @@
 
 # Go Generics 101 Update History
 
+### v1.24.a (2023/Dec/23)
+
+* mention generic type aliases are supported since Go 1.24.
+
 ### v1.21.a (2023/Oct/11)
 
 * add examples for type inference enhancements made in Go 1.21.
