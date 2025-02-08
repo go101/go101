@@ -1,42 +1,43 @@
-﻿<h1>Syntax/Semantics Exceptions in Go</h1>
-
-<p>
-This article will list all kinds of syntax/semantics exceptions in Go.
-Some of these exceptions are syntactic sugars to make programming convenient,
-some are caused built-in generic privileges,
-some exists for history reasons, and some exists for other reasons in logic.
-</p>
-
-<a class="anchor" id="nest-function-calls"></a>
-<h3>Nested function calls</h3>
-
-<div>
+<h1 class="tmd-header-1">
+Syntax/Semantics Exceptions in Go
+</h1>
+<p></p>
+<div class="tmd-usual">
+This article will list all kinds of syntax/semantics exceptions in Go. Some of these exceptions are syntactic sugars to make programming convenient, some are caused built-in generic privileges, some exists for history reasons, and some exists for other reasons in logic.
+</div>
+<p></p>
+<h3 id="nest-function-calls" class="tmd-header-3">
+Nested function calls
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-If the number of the return results of a function call is not zero,
-and the return results can be used as the whole arguments of another function call,
-then the former function call can be nested in the latter function call,
-the former nested call can't mix up with other arguments of the latter nesting call.
 </div>
-
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+If the number of the return results of a function call is not zero, and the return results can be used as the whole arguments of another function call, then the former function call can be nested in the latter function call, the former nested call can't mix up with other arguments of the latter nesting call.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Sugar:
-<div class="alert alert-success">
-If a function call returns exactly one result,
-then the function call can be always be used as a single-value argument in other function calls,
-the single-result function call can mix up with other arguments of the nesting function calls.
 </div>
-
-<!--
-Exception (before Go Toolchain 1.15):
-<div class="alert alert-success">
-For the standard Go compiler (but not for gccgo),
-the basic rule doesn't apply to nesting calls to built-in <code>print</code> and <code>println</code> functions.
-Calls to these functions can't nest multi-result function calls as arguments.
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+If a function call returns exactly one result, then the function call can be always be used as a single-value argument in other function calls, the single-result function call can mix up with other arguments of the nesting function calls.
 </div>
--->
-
+</div>
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -79,41 +80,39 @@ func main() {
 	_ = complex(I(T{}).m())
 }
 </code></pre>
-</div>
-
-<!--
-<h3>Unused variables</h3>
-
-<div>
+<p></p>
+<p></p>
+<h3 class="tmd-header-3">
+Select struct fields
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-Local variables can't be declared but not used.
 </div>
-
-Exception:
-<div class="alert alert-success">
-Function parameter and result variables,
-which can also be viewed as local variables,
-are allowed to be not used.
-</div>
-</div>
--->
-
-<h3>Select struct fields</h3>
-
-<div>
-The basic rule:
-<div class="alert alert-info">
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Pointer values have no fields.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Sugar:
-<div class="alert alert-success">
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 We can select the fields of a struct value through pointers of the struct value.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type T struct {
 	x int
@@ -121,31 +120,45 @@ type T struct {
 
 func main() {
 	var t T
-	var p = &t
+	var p = &amp;t
 
 	p.x *= 2
 	// The above line is a sugar of the following line.
 	(*p).x *= 2
 }
 </code></pre>
-</div>
-
-<h3>Receiver arguments of method calls</h3>
-
-<div>
+<p></p>
+<h3 class="tmd-header-3">
+Receiver arguments of method calls
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-The methods explicitly declared for type <code>*T</code> are not methods of type <code>T</code> for sure.
 </div>
-
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The methods explicitly declared for type <code class="tmd-code-span">*T</code> are not methods of type <code class="tmd-code-span">T</code> for sure.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Sugar:
-<div class="alert alert-success">
-Although the methods explicitly declared for type <code>*T</code> are not methods of type <code>T</code>,
-addressable values of type <code>T</code> can be used as the receiver arguments of calls to these methods.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+Although the methods explicitly declared for type <code class="tmd-code-span">*T</code> are not methods of type <code class="tmd-code-span">T</code>, addressable values of type <code class="tmd-code-span">T</code> can be used as the receiver arguments of calls to these methods.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type T struct {
 	x int
@@ -162,58 +175,94 @@ func main() {
 
 	t.Double() // t.x == 6 now
 	// The above line is a sugar of the following line.
-	(&t).Double() // t.x == 12 now
+	(&amp;t).Double() // t.x == 12 now
 }
 </code></pre>
-</div>
-
-<h3>Take addresses of composite literal values</h3>
-
-<div>
+<p></p>
+<h3 class="tmd-header-3">
+Take addresses of composite literal values
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Literal values are unaddressable and unaddressable values can't be taken addresses.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Sugar:
-<div class="alert alert-success">
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Although composite literal values are not addressable, they can be taken addresses explicitly.
 </div>
-
-<p>
-Please read <a href="struct.html#take-composite-literal-address">structs</a>
-and <a href="container.html#take-composite-literal-address">containers</a> for details.
-</p>
 </div>
+</div>
+<p></p>
+<div class="tmd-usual">
+Please read <a href="struct.html#take-composite-literal-address">structs</a> and <a href="container.html#take-composite-literal-address">containers</a> for details.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>Selectors on named one-Level pointers</h3>
-
-<div>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Selectors on named one-Level pointers
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Generally, selectors can't be used on values of <a href="type-system-overview.html#underlying-type">named</a> pointer types.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Sugar:
-<div class="alert alert-info">
-If <code>x</code> is a value of a named one-level pointer type,
-and selector <code>(*x).f</code> is a legal selector,
-then the <code>x.f</code> is also a legal selector, it can be viewed as a shorthand of <code>(*x).f</code>.
 </div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+If <code class="tmd-code-span">x</code> is a value of a named one-level pointer type, and selector <code class="tmd-code-span">(*x).f</code> is a legal selector, then the <code class="tmd-code-span">x.f</code> is also a legal selector, it can be viewed as a shorthand of <code class="tmd-code-span">(*x).f</code>.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Selectors can never be used on values of <b>multi-level</b> pointer types,
-no matter whether the multi-level pointer types are named or not.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
+Selectors can never be used on values of <span class="tmd-bold">multi-level</span> pointer types, no matter whether the multi-level pointer types are named or not.
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception of the sugar:
-<div class="alert alert-success">
-The sugar is only valid if <code>f</code> denotes a struct field,
-it is not valid if <code>f</code> denotes a method.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The sugar is only valid if <code class="tmd-code-span">f</code> denotes a struct field, it is not valid if <code class="tmd-code-span">f</code> denotes a method.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type T struct {
 	x int
@@ -227,9 +276,9 @@ type PP **T // a multi-level pointer type
 
 func main() {
 	var t T
-	var p P = &t
-	var pt = &t   // type of pt is *T
-	var ppt = &pt // type of ppt is **T
+	var p P = &amp;t
+	var pt = &amp;t   // type of pt is *T
+	var ppt = &amp;pt // type of ppt is **T
 	var pp PP = ppt
 	_ = pp
 
@@ -248,122 +297,98 @@ func main() {
 	*/
 }
 </code></pre>
-</div>
-
-<!--
-<h3>Precedence of unary operators</h3>
-
-<div>
+<p></p>
+<p></p>
+<h3 class="tmd-header-3">
+The addressability of a container and its elements
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-For any operand, its post operator has a higher precedence than its pre operator if the post operator
-is not a <a href="https://golang.org/ref/spec#Operators">binary operator</a>.
 </div>
-
-Sugar:
-<div class="alert alert-success">
-Assume operand <code>ptr</code> is a pointer value, in <code>*ptr++</code>, operator <code>*</code> has
-a higher precedence than operator <code>++</code>, a.k.a., <code>*ptr++</code> is equivalent to
-<code>(*ptr)++</code>, for pointer arithmetic is not supported in Go.
-</div>
-
-Example:
-<pre class="line-numbers"><code class="language-go">package main
-
-import (
-	"fmt"
-)
-
-type T struct{}
-
-func (t T) M() *int {
-	var v = 123
-	return &v
-}
-
-func main() {
-	var t = &T{}
-	var a = *t.M()
-	var b = *(t.M())
-	// The above two lines are equivalent.
-	var c = (*t).M()
-	fmt.Printf("%T %T %T\n", a, b, c) // int int *int
-
-	var s = [...]int{0, 1, 2}
-	var u = &s[0]
-	var v = &(s[0])
-	// The above two lines are equivalent.
-	var w = (&s)[0]
-	fmt.Printf("%T %T %T\n", u, v, w) // *int *int int
-
-	// sugar
-
-	var x = new(int)
-	*x++ // *x == 1 now
-	// The Above line is a sugar for
-	(*x)++
-}
-</code></pre>
-</div>
--->
-
-<h3>The addressability of a container and its elements</h3>
-
-<div>
-The basic rule:
-<div class="alert alert-info">
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 If a container is addressable, then its elements are also addressable.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Elements of a map are always unaddressable, even if the map itself is addressable.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Sugar:
-<div class="alert alert-success">
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Elements of a slice are always addressable, even if the slice itself is not addressable.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var m = map[string]int{"abc": 123}
-	_ = &m // okay
+	_ = &amp;m // okay
 
 	// The exception:
-	// p = &m["abc"] // error: map elements are unaddressable
+	// p = &amp;m["abc"] // error: map elements are unaddressable
 
 	// The sugar:
 	f := func() []int { // return results are unaddressable
 		return []int{0, 1, 2}
 	}
-	// _ = &f() // error: f() is unaddressable
-	_ = &f()[2] // okay
+	// _ = &amp;f() // error: f() is unaddressable
+	_ = &amp;f()[2] // okay
 }
 </code></pre>
-</div>
-
-<h3>Modify unaddressable values</h3>
-
-<div>
+<p></p>
+<h3 class="tmd-header-3">
+Modify unaddressable values
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-Unaddressable values can't be modified.
-In other words, unaddressable values shouldn't appear in assignments as destination values.
 </div>
-
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+Unaddressable values can't be modified. In other words, unaddressable values shouldn't appear in assignments as destination values.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-Although map element values are unaddressable, they can be modified
-and appear in assignments as destination values.
-(But map elements can't be modified partially,
-they can only be overwritten wholly, a.k.a., replaced.)
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+Although map element values are unaddressable, they can be modified and appear in assignments as destination values. (But map elements can't be modified partially, they can only be overwritten wholly, a.k.a., replaced.)
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	type T struct {
@@ -372,87 +397,124 @@ func main() {
 
 	var mt = map[string]T{"abc": {123}}
 	// Map elements are unaddressable.
-	// _ = &mt["abc"] // error
+	// _ = &amp;mt["abc"] // error
 	// Partial modification is not allowed.
 	// mt["abc"].x = 456 // error
 	// It is ok to replace a map element as a whole.
 	mt["abc"] = T{x: 789}
 }
 </code></pre>
-</div>
-
-<h3>Function Parameters</h3>
-
-<div>
+<p></p>
+<h3 class="tmd-header-3">
+Function Parameters
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Each parameter is a value of some type.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-The first parameters of the built-in <code>make</code> and <code>new</code> functions are types.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The first parameters of the built-in <code class="tmd-code-span">make</code> and <code class="tmd-code-span">new</code> functions are types.
 </div>
-
-<h3>Function names in one package</h3>
-
-<div>
+</div>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Function names in one package
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Names of declared functions can't be duplicated in one package.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-There can be multiple functions declared with names as <code>init</code>
-(and types as <code>func()</code>).
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+There can be multiple functions declared with names as <code class="tmd-code-span">init</code> (and types as <code class="tmd-code-span">func()</code>).
 </div>
-
-<h3>Function calls</h3>
-
-<div>
+</div>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Function calls
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Functions whose names are not the blank identifier can be called in user code.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-<code>init</code> functions can't be called in user code.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+<code class="tmd-code-span">init</code> functions can't be called in user code.
 </div>
-
-<h3>Functions being used as values</h3>
-
-<div>
+</div>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Functions being used as values
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Declared functions can be used as function values.
 </div>
-
-<!--
-Exception 1:
-<div class="alert alert-success">
-None of the built-in functions, which are documented in the <code>builtin</code> and <code>unsafe</code>
-standard packages, can be used as function values.
 </div>
-
-	var _ = panic
-	var _ = unsafe.Sizeof
--->
-
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-<code>init</code> functions can not be used as function values.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+<code class="tmd-code-span">init</code> functions can not be used as function values.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "unsafe"
@@ -468,91 +530,135 @@ func main() {
 	var _ = init
 }
 </code></pre>
-</div>
-
-<a class="anchor" id="generic-arguments-passing"></a>
-<h3>The manners of type argument passing</h3>
-
-<div>
+<p></p>
+<h3 id="generic-arguments-passing" class="tmd-header-3">
+The manners of type argument passing
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-In a type argument list, all type arguments are enclosed in square brackets
-and they are separated by commas in the list.
 </div>
-
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+In a type argument list, all type arguments are enclosed in square brackets and they are separated by commas in the list.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-The manners of type argument lists passed to built-in generic type instantiations
-vary in different forms. Each key type argument of instantiated map types is
-individually enclosed in square brackets. Other type arguments are not enclosed.
-The type argument of an instantiation of built-in <code>new</code> generic function is enclosed in parentheses.
-The type argument of an instantiation of the built-in <code>make</code> generic function is mixed with value arguments
-and these type and value arguments are enclosed in parentheses.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The manners of type argument lists passed to built-in generic type instantiations vary in different forms. Each key type argument of instantiated map types is individually enclosed in square brackets. Other type arguments are not enclosed. The type argument of an instantiation of built-in <code class="tmd-code-span">new</code> generic function is enclosed in parentheses. The type argument of an instantiation of the built-in <code class="tmd-code-span">make</code> generic function is mixed with value arguments and these type and value arguments are enclosed in parentheses.
 </div>
-
-<a class="anchor" id="discard-return-results"></a>
-<h3>Discard return values of function calls</h3>
-
-<div>
-
+</div>
+</div>
+<p></p>
+<h3 id="discard-return-results" class="tmd-header-3">
+Discard return values of function calls
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 The return values of a function call can be discarded altogether.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-The return values of calls to the built-in functions
-which are documented in the <code>builtin</code> and <code>unsafe</code>
-standard packages, can't be discarded, if the called function has return results.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The return values of calls to the built-in functions which are documented in the <code class="tmd-code-span">builtin</code> and <code class="tmd-code-span">unsafe</code> standard packages, can't be discarded, if the called function has return results.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception in exception:
-<div class="alert alert-success">
-The return values of a call to the built-in
-<code>copy</code> and <code>recover</code> functions
-can be all discarded, even if the two functions have return results.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The return values of a call to the built-in <code class="tmd-code-span">copy</code> and <code class="tmd-code-span">recover</code> functions can be all discarded, even if the two functions have return results.
 </div>
-
-<h3>Declared variables</h3>
-
-<div>
+</div>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Declared variables
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Declared variables are always addressable.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-The <a href="https://golang.org/pkg/builtin/#pkg-variables">predeclared <code>nil</code></a> variable is not addressable.
 </div>
-
-So, <code>nil</code> is an immutable variable.
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The <a href="https://golang.org/pkg/builtin/#pkg-variables">predeclared <code class="tmd-code-span">nil</code></a> variable is not addressable.
 </div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
+So, <code class="tmd-code-span">nil</code> is an immutable variable.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>Argument passing</h3>
-
-<div>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Argument passing
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-An argument can be passed to the corresponding function parameter
-only if the argument is assignable to the corresponding function parameter type.
 </div>
-
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+An argument can be passed to the corresponding function parameter only if the argument is assignable to the corresponding function parameter type.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Sugar:
-<div class="alert alert-success">
-If the first slice argument of a <code>copy</code> and <code>append</code> function call
-is a byte slice, then the second argument can be a string,
-whereas a string value is not assignable to the second parameter type (also a byte slice).
-(For an <code>append</code> call, assume the second argument is passed with the form <code>arg...</code>.)
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+If the first slice argument of a <code class="tmd-code-span">copy</code> and <code class="tmd-code-span">append</code> function call is a byte slice, then the second argument can be a string, whereas a string value is not assignable to the second parameter type (also a byte slice). (For an <code class="tmd-code-span">append</code> call, assume the second argument is passed with the form <code class="tmd-code-span">arg...</code>.)
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var bs = []byte{1, 2, 3}
@@ -569,23 +675,38 @@ func main() {
 	bs = append(bs, []byte(s)...)
 }
 </code></pre>
-</div>
-
-<h3>Comparisons</h3>
-
-<div>
+<p></p>
+<h3 class="tmd-header-3">
+Comparisons
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Map, slice and function types don't support comparison.
 </div>
-
-Exception:
-<div class="alert alert-success">
-Map, slice and function values can be compared to the predeclared untyped <code>nil</code> identifier.
 </div>
-
+</div>
+<p></p>
+<div class="tmd-usual">
+Exception:
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+Map, slice and function values can be compared to the predeclared untyped <code class="tmd-code-span">nil</code> identifier.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var s1 = []int{1, 2, 3}
@@ -607,77 +728,73 @@ func main() {
 	_ = f2 == nil
 }
 </code></pre>
-</div>
-
-<h3>Comparisons 2</h3>
-
-<div>
+<p></p>
+<h3 class="tmd-header-3">
+Comparisons 2
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 If a value can be implicitly converted to a comparable type, then the value can be compared to the values of the comparable type.
 </div>
-
-Exception:
-<div class="alert alert-success">
-The values of a non-interface incomparable type can't be compared to values of an interface type,
-even if the non-interface incomparable type implements the interface type
-(so values of the non-interface incomparable type can be implicitly converted to the interface type).
 </div>
-
+</div>
+<p></p>
+<div class="tmd-usual">
+Exception:
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The values of a non-interface incomparable type can't be compared to values of an interface type, even if the non-interface incomparable type implements the interface type (so values of the non-interface incomparable type can be implicitly converted to the interface type).
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="value-conversions-assignments-and-comparisons.html#comparison-rules">comparison rules</a> for examples.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<!--
-<h3>Comparing interface values</h3>
-
-<div>
+</div>
+<p></p>
+<p></p>
+<h3 class="tmd-header-3">
+Blank composite literals
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-Comparing interface values with incomparable dynamic values will panic.
 </div>
-
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+If the values of a type <code class="tmd-code-span">T</code> can be represented with composite literals, then <code class="tmd-code-span">T{}</code> is its zero value.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-If the dynamic types of two interface values are not the same one,
-then comparing them will never panic,
-even if either of the two dynamic values are incomparable.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+For a map or a slice type <code class="tmd-code-span">T</code>, <code class="tmd-code-span">T{}</code> isn't its zero value. Its zero value is represented with <code class="tmd-code-span">nil</code>.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
-
-func main() {
-	var s = []int{1, 2, 3}
-	var m = map[string]int{}
-	var x interface{} = s
-	var y interface{} = m
-	var z interface{} = nil
-	// The dynamic values of x and y are both incomparable.
-	//_ = x == x // will panic
-	//_ = y == y // will panic
-	_ = x == z // false, will not panic
-	_ = x == y // false, will not panic
-}
-</code></pre>
 </div>
--->
-
-<h3>Blank composite literals</h3>
-
-<div>
-The basic rule:
-<div class="alert alert-info">
-If the values of a type <code>T</code> can be represented with composite literals, then <code>T{}</code> is its zero value.
-</div>
-
-Exception:
-<div class="alert alert-success">
-For a map or a slice type <code>T</code>, <code>T{}</code> isn't its zero value.
-Its zero value is represented with <code>nil</code>.
-</div>
-
-Example:
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -697,121 +814,176 @@ func main() {
 	fmt.Println( T3{} == nil ) // false
 }
 </code></pre>
-</div>
-
-<h3>Container element iterations</h3>
-
-<div>
+<p></p>
+<h3 class="tmd-header-3">
+Container element iterations
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-Only container values can be ranged, the iterated values are container elements.
-The element key/index will also be returned alongside of each iterated element.
 </div>
-
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+Only container values can be ranged, the iterated values are container elements. The element key/index will also be returned alongside of each iterated element.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception 1:
-<div class="alert alert-success">
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 The iterated values are runes if the ranged containers are strings, instead of the byte elements of strings.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception 2:
-<div class="alert alert-success">
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 The element index (order) will not be returned alongside of each iterated element when iterating channels.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Sugar:
-<div class="alert alert-success">
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Array pointers can also be ranged to iterate array elements, though pointers are not containers.
 </div>
-
 </div>
-
-<h3>Methods of built-in types</h3>
-
-<div>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Methods of built-in types
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Generally, built-in types have no methods.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-The built-in <code>error</code> type has a <code>Error() string</code> method.
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The built-in <code class="tmd-code-span">error</code> type has a <code class="tmd-code-span">Error() string</code> method.
 </div>
 </div>
-
-<!--
-<h3>Identifier visibility</h3>
-
-<div>
+</div>
+<p></p>
+<p></p>
+<h3 class="tmd-header-3">
+Types of values
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-The identifiers not starting with Unicode upper case letters can't be exported.
 </div>
-
-Exception:
-<div class="alert alert-success">
-Identifiers starting with Unicode lower case letter in the <code>builtin</code> package
-can be exported.
-</div>
-</div>
--->
-
-<h3>Types of values</h3>
-
-<div>
-The basic rule:
-<div class="alert alert-info">
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Each value has either a type or a default type.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-Untyped <code>nil</code> has neither a type nor a default type.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+Untyped <code class="tmd-code-span">nil</code> has neither a type nor a default type.
 </div>
-
-<h3>Constant values</h3>
-
-<div>
+</div>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Constant values
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-Constant values never change.
-Constants can be assigned to variables.
 </div>
-
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+Constant values never change. Constants can be assigned to variables.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
-Predeclared <code>iota</code> is a built-in constant which is bound with <code>0</code>,
-but its value is not constant. Its value will start from <code>0</code>
-and increase one constant specification by constant specification in a constant declaration,
-though the increments happen at compile time.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+Predeclared <code class="tmd-code-span">iota</code> is a built-in constant which is bound with <code class="tmd-code-span">0</code>, but its value is not constant. Its value will start from <code class="tmd-code-span">0</code> and increase one constant specification by constant specification in a constant declaration, though the increments happen at compile time.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception 2:
-<div class="alert alert-success">
-<code>iota</code> can only be used within constant declarations.
-It can't be assigned to variables in variable declarations.
 </div>
-
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+<code class="tmd-code-span">iota</code> can only be used within constant declarations. It can't be assigned to variables in variable declarations.
 </div>
-
-<a class="anchor" id="behaviors-on-missing-optional-result"></a>
-<h3>Behavior change caused by discarding the optional evaluation results of expressions</h3>
-
-<div>
+</div>
+</div>
+<p></p>
+<h3 id="behaviors-on-missing-optional-result" class="tmd-header-3">
+Behavior change caused by discarding the optional evaluation results of expressions
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
+</div>
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Whether or not the optional evaluation result of an expression presents will not affect program behavior.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Exception:
-<div class="alert alert-success">
+</div>
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
 Missing the optional result value in a type assertion will make current goroutine panic if the type assertion fails.
 </div>
-
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var ok bool
@@ -821,35 +993,48 @@ func main() {
 	_ = m[123]     // will not panic
 
 	var c = make(chan int, 2)
-	c <- 123
+	c &lt;- 123
 	close(c)
-	_, ok = <-c // will not panic
-	_ = <-c     // will not panic
+	_, ok = &lt;-c // will not panic
+	_ = &lt;-c     // will not panic
 
 	var v interface{} = "abc"
 	_, ok = v.(int) // will not panic
 	_ = v.(int)     // will panic!
 }
 </code></pre>
-
-</div>
-
-<a class="anchor" id="code-block-following-else"></a>
-<h3><code>else</code> keyword followed by a code block</h3>
-
-<div>
+<p></p>
+<h3 id="code-block-following-else" class="tmd-header-3">
+<code class="tmd-code-span">else</code> keyword followed by a code block
+</h3>
+<p></p>
+<div class="tmd-usual">
 The basic rule:
-<div class="alert alert-info">
-The <code>else</code> keyword must be followed by an explicit code block <code>{...}</code>.
 </div>
-
+<div class="tmd-notice alert alert-info">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The <code class="tmd-code-span">else</code> keyword must be followed by an explicit code block <code class="tmd-code-span">{...}</code>.
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Sugar:
-<div class="alert alert-success">
-The <code>else</code> keyword may be followed by a <code>if</code> code block (which is implicit).
 </div>
-
-For example, in the following code, function <code>foo</code> compiles okay, but function <code>bar</code> doesn't.
-<pre class="line-numbers"><code class="language-go">func f() []int {
+<div class="tmd-notice alert alert-success">
+<div class="tmd-notice-content">
+<div class="tmd-usual">
+The <code class="tmd-code-span">else</code> keyword may be followed by a <code class="tmd-code-span">if</code> code block (which is implicit).
+</div>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
+For example, in the following code, function <code class="tmd-code-span">foo</code> compiles okay, but function <code class="tmd-code-span">bar</code> doesn't.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func f() []int {
 	return nil
 }
 
@@ -885,7 +1070,4 @@ func bar() {
 	}
 }
 </code></pre>
-
-</div>
-
-
+<p></p>

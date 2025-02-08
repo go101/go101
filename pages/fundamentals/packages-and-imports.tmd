@@ -1,0 +1,699 @@
+### Code Packages and Package Imports
+
+Like many modern programming languages,
+Go code is also organized as code packages.
+To use the exported code elements (functions, types, variables and named constants,
+etc) in a specified package, the package must first be imported,
+except the `builtin` standard code package (which is a universe package).
+This article will explain code packages and package imports in Go.
+
+@@@ #import
+###+++++++++++ Introduction of Package Import
+
+Let's view a small program which imports a standard code package.
+(Assume the source code of this program is stored in a file named `simple-import-demo.go`.)
+
+@@@ .line-numbers;must-line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Go has", 25, "keywords.")
+}
+'''
+
+Some explanations:
+*
+	The first line specifies the name of the package containing the source file `simple-import-demo.go`.
+	The `main` entry function of a program must be put in a package named `main`.
+*
+	The third line imports the `fmt` standard package by using the `import` keyword.
+	The identifier `fmt` is the package name.
+	It is also used as the import name of, and represents, this standard package in the scope of containing source file.
+	(Import names will be explained a below section.)
+	There are many format functions declared in this standard package for other packages to use.
+	The `Println` function is one of them.
+	It will print the string representations of
+	an arbitrary number of arguments to the standard output.
+*
+	The sixth line calls the `Println` function.
+	Note that the function name is prefixed with a `fmt.` in the call,
+	where `fmt` is the name of the package which contains the called function.
+	The form `aImportName.AnExportedIdentifier` is called a
+	__qualified identifier__.
+	`AnExportedIdentifier` is called an unqualified identifier.
+*
+	A `fmt.Println` function call has no requirements
+	for its arguments, so in this program, its three arguments
+	will be deduced as values of their respective default types,
+	`string`, `int` and `string`.
+*
+	For each `fmt.Println` call,
+	a space character is inserted between
+	each two consecutive string representations
+	and a newline character is printed at the end.
+
+// __ qualified identifier :: https://golang.org/ref/spec#Qualified_identifiers
+
+Running this program, you will get the following output:
+@@@ .output
+'''
+$ go run simple-import-demo.go
+Go has 25 keywords.
+'''
+
+Please note, only exported code elements in a package can be used
+in the source file which imports the package.
+An exported code element uses an
+__exported identifier__ as its name.
+For example, the first character of the identifier `Println`
+is an upper case letter (so the `Println` function is exported),
+which is why the `Println` function
+declared in the `fmt` standard package can be used
+in the above example program.
+
+// __ exported identifier :: keywords-and-identifiers.html#identifier
+
+The built-in functions, `print` and `println`,
+have similar functionalities as the corresponding functions in the
+`fmt` standard package.
+Built-in functions can be used without importing any packages.
+
+Note, the two built-in functions, `print` and `println`,
+are not recommended to be used in the production environment,
+for they are not guaranteed to stay in the future Go versions.
+
+All standard packages are listed
+__here`` https://golang.org/pkg/__ (the official one) or
+__here`` https://docs.go101.org/std/index.html__ (an unofficial one,
+maintained by Go 101).
+We can also __run a local server__ to view Go documentation.
+
+// __ run a local server :: go-toolchain.html#doc
+
+A package import is also called an import declaration formally in Go.
+An import declaration is only visible to the source file which contains the import declaration.
+It is not visible to other source files in the same package.
+
+Let's view another example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "math/rand"
+
+func main() {
+	fmt.Printf("Next pseudo-random number is %v.\n", rand.Uint32())
+}
+'''
+
+This example imports one more standard package, the `math/rand` package,
+which is a sub-package of the `math` standard package.
+This package provides some functions to produce pseudo-random numbers.
+
+Some explanations:
+*
+	In this example, the package name `rand` is used as the import name
+	of the imported `math/rand` standard package.
+	A `rand.Uint32()` call will return
+	a random `uint32` integer number.
+*
+	`Printf` is another commonly used function
+	in the `fmt` standard package.
+	A call to the `Printf` function must take at least one argument.
+	The first argument of a `Printf` function call must be a `string` value,
+	which specifies the format of the printed result.
+	The `%v` in the first argument is called a format verb,
+	it will be replaced with the string representation of the second argument.
+	As we have learned in the article
+	__basic types and their literals__, the `\n` in a double-quoted
+	string literal will be escaped as a newline character.
+
+// __ basic types and their literals :: basic-types-and-value-literals.html
+
+The above program will always output:
+@@@ .output
+'''
+Next pseudo-random number is 2596996162.
+'''
+
+Note: before Go 1.20,
+if we expect the above program to produce a different random number at each run,
+we should set a different seed by calling the `rand.Seed` function
+when the program just starts.
+
+If multiple packages are imported into a source file,
+we can group them in one import declaration by enclosing
+them in a `()`.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+// Multiple packages can be imported together.
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	// Set the random seed (only needed before Go 1.20).
+	rand.Seed(time.Now().UnixNano())
+	fmt.Printf("Next pseudo-random number is %v.\n", rand.Uint32())
+}
+'''
+
+Some explanations:
+*
+	this example imports one more package,
+	the `time` standard package,
+	which provides many time related utilities.
+*
+	function `time.Now()` returns the current time,
+	as a value of type `time.Time`.
+*
+	`UnixNano` is a method of the `time.Time` type.
+	The method call `aTime.UnixNano()` returns the number of nanoseconds
+	elapsed since January 1, 1970 UTC to the time denoted by `aTime`.
+	The return result is a value of type `int64`,
+	which is also the parameter type of the `rand.Seed` function
+	(note: the `rand.Seed` function has been deprecated since Go 1.20).
+	Methods are special functions. We can learn methods in the article
+	__methods in Go__ for details later.
+
+// __ methods in Go :: method.html
+
+###+++++++++++ More About `fmt.Printf` Format Verbs
+
+As the above has mentioned, if there is one format verb in the first argument
+of a `fmt.Printf` call, it will be replaced with the string
+representation of the second argument.
+In fact, there can be multiple format verbs in the first `string`
+argument. The second format verb will be replaced with the string representation
+of the third argument, and so on.
+
+In Go 101, only the following listed format verbs will be used.
+*
+	`%v`, which will be replaced with the general string representation of the corresponding argument.
+*
+	`%T`, which will be replaced with the type name or type literal of the corresponding argument.
+*
+	`%x`, which will be replaced with the hex string representation of the corresponding argument.
+	Note, the hex string representations for values of some kinds of types are not defined.
+	Generally, the corresponding arguments of `%x` should be strings, integers,
+	integer arrays or integer slices (arrays and slices will be explained in a later article).
+*
+	`%s`, which will be replaced with the string representation of the corresponding argument.
+	The corresponding argument should be a string or byte slice.
+*
+	Format verb `%%` represents a percent sign.
+
+An example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	a, b := 123, "Go"
+	fmt.Printf("a == %v == 0x%x, b == %s\n", a, a, b)
+	fmt.Printf("type of a: %T, type of b: %T\n", a, b)
+	fmt.Printf("1%% 50%% 99%%\n")
+}
+'''
+
+Output:
+@@@ .output
+'''
+a == 123 == 0x7b, b == Go
+type of a: int, type of b: string
+1% 50% 99%
+'''
+
+For more `Printf` format verbs, please read the online __`fmt` package documentation__,
+or view the same documentation by running a local documentation server.
+We can also run `go doc fmt` to view the documentation of the `fmt` standard package,
+and run `go doc fmt.Printf` to view the documentation of the `fmt.Printf` function,
+in a terminal.
+
+// __ `fmt` package documentation :: https://golang.org/pkg/fmt/
+
+@@@ #package
+###+++++++++++ Package Folder, Package Import Path and Package Dependencies
+
+A code package may consist of several source files.
+These source files are located in the same folder.
+The source files in a folder (not including subfolders) must belong to the same package.
+So, a folder corresponds to a code package, and vice versa.
+The folder containing the source files of a code package is called the folder of the package.
+
+For Go Toolchain, a package whose import path containing an `internal` folder name
+is viewed as a special package. It can only be imported by the packages
+in and under the direct parent directory of the `internal` folder.
+For example, package `.../a/b/c/internal/d/e/f` and `.../a/b/c/internal`
+can only be imported by the packages whose import paths have a `.../a/b/c` prefix.
+
+{//
+Depending on different scenarios, a folder with name `vendor` might be also viewed
+as a special package folder. The following paragraphs will explain when this happens.
+
+Go Toolchain 1.11 introduced a modules feature.
+A module can be viewed as a collection of packages which have a common root (a package tree).
+Each module is associated with an root import path and __a semantic version__.
+The major version should be contained in the root import path,
+execpt the `v0` or `v1` major versions.
+Modules with different root import paths are viewed as different modules.
+
+// __ a semantic version :: https://semver.org/
+
+Go Toolchain 1.11 also introduced a `GO111MODULE` environment variable.
+Its value can be `auto`, `on` and `off`.
+Up to now (Go Toolchain v1.15), its default (and recommended) value is `auto`.
+By context, different Go Toolchain versions interpret `auto`
+as either `on` or `off` by different rules.
+Please check __the official wiki__ for details.
+
+// __ the official wiki :: https://github.com/golang/go/wiki/Modules
+
+If a package is contained within a `GOPATH/src` directory,
+and the modules feature is off, then its import path is the relative path to
+either the `GOPATH/src` directory or the closest `vendor` folder
+which containing the package.
+
+For example, when the modules feature is off, then for the following hierarchical directory structure,
+*
+	the import paths of the two `foo` packages are both `w/foo`.
+*
+	the import paths of the `x`, `y` and `z` packages
+	are `x`, `x/y` and `x/z`, respectively.
+
+Note,
+*
+	when the file `y.go` imports a package with import path as `w/foo`,
+	the imported package is the package with folder `GOPATH/src/x/y/vendor/w/foo`.
+*
+	when the `x.go` or `z.go` file imports a package with import path `w/foo`,
+	the imported package is the package with folder `GOPATH/src/x/vendor/w/foo`.
+
+@@@ .disable-line-numbers111
+'''go
+_ GOPATH
+  |_ src
+     |_ x
+        |_ vendor
+        |  |_ w
+        |     |_ foo
+        |        |_ foo.go    // package foo
+        |_ y
+        |  |_ vendor
+        |  |  |_ w
+        |  |     |_ foo
+        |  |        |_ foo.go // package foo
+        |  |_ y.go            // package y
+        |_ z
+        |  |_ z.go            // package z
+        |_ x.go               // package x
+'''
+
+When the modules feature is on, the root import path of a module is
+often (but not required to be) specified in a `go.mod` file
+which is directly contained in the root package folder of the module.
+We often use the root import path to identify the module.
+The root import path is the common prefix of all packages in the module.
+
+Only the `vendor` folder directly under the root path of a module is viewed as a special folder.
+
+For example, when the modules feature is on, then in the module identified with `example.com/mypkg` shown blow,
+*
+	the import path of the first `foo` package is `w/foo`.
+	The `MyProject/vendor` folder is viewed as a special folder.
+*
+	the import path of the other  `foo` package is`example.com/mypkg/x/y/vendor/w/foo`.
+	Note, the `MyProject/x/y/vendor` folder is viewed as a normal package folder.
+*
+	the import paths of the `x`, `y` and `z` packages
+	are `example.com/mypkg/x`, `example.com/mypkg/x/y` and `example.com/mypkg/x/z`, respectively.
+
+Note, when the `x.go`, `y.go` or `z.go` files import a package with import path `w/foo`,
+the imported package is always the package with folder `MyProject/vendor/w/foo`.
+
+@@@ .disable-line-numbers111
+'''go
+_ MyProject
+     |_ go.mod                // module example.com/mypkg
+     |_ vendor
+     |  |_ w
+     |     |_ foo
+     |        |_ foo.go       // package foo
+     |_ x
+        |_ y
+        |  |_ vendor
+        |  |  |_ w
+        |  |     |_ foo
+        |  |        |_ foo.go // package foo
+        |  |_ y.go            // package y
+        |_ z
+        |  |_ z.go            // package z
+        |_ x.go               // package x
+'''
+
+}
+
+When one source file in a package imports another package,
+we say the importing package depends on the imported package.
+
+Go doesn't support circular package dependencies.
+If package `a` depends on package `b`
+and package `b` depends on package `c`,
+then source files in package `c` can't import package `a` and `b`,
+and source files in package `b` can't import package `a`.
+
+Surely, source files in a package can't, and don't need to, import the package itself.
+
+{//
+Similar to package dependencies, a module might also depend on some other modules.
+The direct module dependencies and their versions are often specified in the `go.mod` file of the module.
+Circular module dependencies are supported, though such scenarios are rare in practice.
+}
+
+Later, we will call the packages named with `main`
+and containing `main` entry functions as **program packages** (or **command packages**),
+and call other packages as **library packages**.
+Program packages are not importable.
+Each Go program should contain one and only one program package.
+
+The name of the folder of a package is not required to be the same as the package name.
+However, for a library package, it will make package users confused if the name
+of the package is different from the name of the folder of the package.
+The cause of the confusion is that the default import path of a package is the name of the package
+but what is contained in the import path of the package is the folder name of the package.
+So please try to make the two names identical for each library package.
+
+On the other hand, it is recommended to give each program package folder
+a meaningful name other than its package name, `main`.
+
+@@@ #init
+###+++++++++++ The `init` Functions
+
+There can be multiple functions named as `init` declared in a package,
+even in a source code file.
+The functions named as `init` must have not any
+input parameters and return results.
+
+Note, at the top package-level block, the `init` identifier
+can only be used in function declarations.
+We can't declare package-level variable/constants/types which names are `init`.
+
+At run time, each `init` function will be (sequentially) invoked once
+and only once (before invoking the `main` entry function).
+So the meaning of the `init` functions are much like the static initializer blocks in Java.
+
+Here is a simple example which contains two `init` functions:
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func init() {
+	fmt.Println("hi,", bob)
+}
+
+func main() {
+	fmt.Println("bye")
+}
+
+func init() {
+	fmt.Println("hello,", smith)
+}
+
+func titledName(who string) string {
+	return "Mr. " + who
+}
+
+var bob, smith = titledName("Bob"), titledName("Smith")
+'''
+
+The output of this program:
+@@@ .output
+'''
+hi, Mr. Bob
+hello, Mr. Smith
+bye
+'''
+
+@@@ #initialization-order
+###+++++++++++ Resource Initialization Order
+
+At run time, a package will be loaded after all its dependency packages.
+Each package will be loaded once and only once.
+
+All `init` functions in all involved packages in a program
+will be invoked sequentially.
+An `init` function in an importing package
+will be invoked after all the `init` functions
+declared in the dependency packages of the importing package for sure.
+All `init` functions will be invoked
+before invoking the `main` entry function.
+
+The invocation order of the `init` functions in the same source file
+is from top to bottom. Go specification recommends, but doesn't require, to invoke
+the `init` functions in different source files of the same package
+by the alphabetical order of filenames of their containing source files.
+So it is not a good idea to have dependency relations between
+two `init` functions in two different source files.
+
+All package-level variables declared in a package are initialized before
+any `init` function declared in the same package is invoked.
+
+Go runtime will try to initialize package-level variables in a package
+by their declaration order, but a package-level variable will be
+initialized after all of its depended variables for sure.
+For example, in the following code snippet, the initializations the four
+package-level variables happen in the order `y`, `z`,
+`x`, and `w`.
+
+@@@ .line-numbers
+'''go
+func f() int {
+	return z + y
+}
+
+func g() int {
+	return y/2
+}
+
+var (
+	w       = x
+	x, y, z = f(), 123, g()
+)
+'''
+
+About more detailed rule of the initialization order of package-level variables,
+please read the article __expression evaluation order__.
+
+// __ expression evaluation order :: evaluation-orders.html#package-level-variables
+
+###+++++++++++ Full Package Import Forms
+
+In fact, the full form of an import declaration is
+
+@@@ .disable-line-numbers111
+'''go
+import importname "path/to/package"
+'''
+
+where `importname` is optional,
+its default value is the name (not the folder name) of the imported package.
+
+In fact, in the above used import declarations,
+the `importname` portions are all omitted,
+for they are identical to the respective package names.
+These import declarations are equivalent to the following ones:
+
+@@@ .disable-line-numbers111
+'''go
+import fmt "fmt"        // <=> import "fmt"
+import rand "math/rand" // <=> import "math/rand"
+import time "time"      // <=> import "time"
+'''
+
+If the `importname` portion presents in an import declaration,
+then the prefix tokens used in qualified identifiers must be `importname`
+instead of the name of the imported package.
+
+The full import declaration form is not used widely.
+However, sometimes we must use it.
+For example, if a source file imports two packages with the same name,
+to avoid making compiler confused, we must use the full import form
+to set a custom `importname` for at least one package in the two.
+
+Here is an example of using full import declaration forms.
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	format "fmt"
+	random "math/rand"
+	"time"
+)
+
+func main() {
+	random.Seed(time.Now().UnixNano())
+	format.Print("A random number: ", random.Uint32(), "\n")
+
+	// The following line fails to compile,
+	// for "rand" is not identified.
+	/*
+	fmt.Print("A random number: ", rand.Uint32(), "\n")
+	*/
+}
+'''
+
+Some explanations:
+*
+	we must use `format` and `random` as the
+	prefix token in qualified identifiers, instead of the real package names
+	`fmt` and `rand`.
+*
+	`Print` is another function in the `fmt` standard package.
+	Like `Println` function calls,
+	a `Print` function call can take an arbitrary number of arguments.
+	It will print the string representations of the passed arguments, one by one.
+	If two consecutive arguments are both not string values,
+	then a space character will be automatically inserted between them in the print result.
+
+The `importname` in the full form import declaration can be a dot
+(`.`). Such imports are called dot imports.
+To use the exported elements in the packages being dot imported,
+the prefix part in qualified identifiers must be omitted.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	. "fmt"
+	. "time"
+)
+
+func main() {
+	Println("Current time:", Now())
+}
+'''
+
+In the above example, `Println` instead of `fmt.Println`,
+and `Now` instead of `time.Now` must be used.
+
+Generally, dot imports reduce code readability, so they are not recommended to be used in formal projects.
+
+The `importname` in the full form import declaration can be the blank identifier
+(`_`). Such imports are called anonymous imports (some articles elsewhere also call them blank imports).
+The importing source files can't use the exported code elements in anonymously imported packages.
+The purpose of anonymous imports is to initialize the imported packages
+(each of `init` functions in the anonymously imported packages will be called once).
+
+In the following example, all `init` functions declared in
+__the `net/http/pprof` standard package__ will be called before the
+`main` entry function is called.
+
+// __ the `net/http/pprof` standard package :: https://golang.org/pkg/net/http/pprof/
+
+@@@ .line-numbers
+'''go
+package main
+
+import _ "net/http/pprof"
+
+func main() {
+	... // do somethings
+}
+'''
+
+###+++++++++++ Each Non-Anonymous Import Must Be Used at Least Once
+
+Except anonymous imports, other imports must be used at least once.
+For example, the following example fails to compile.
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"net/http" // error: imported and not used
+	. "time"   // error: imported and not used
+)
+
+import (
+	format "fmt"  // okay: it is used once below
+	_ "math/rand" // okay: it is not required to be used
+)
+
+func main() {
+	format.Println() // use the imported "fmt" package
+}
+'''
+
+
+{//
+###+++++++++++ Package Import Paths
+
+todo: it is some a chaos currently. It would be good to finish this section at Go 1.12.
+
+Before Go Toolchain 1.11, the __href="go-toolchain.html">official Go tools__ recommend,
+and often require, the folder containing a third-party package to be put in the `src`
+folder under any path specified in the `GOPATH` environment variable.
+The import path of the third-party package is the relative path of
+the package folder to the `src` folder.
+The separators in the path must be always `/` and can't be `\`.
+For example, if the path of a package is `OneGoPath/src/a/b/pkg`
+(or `OneGoPath\src\a\b\pkg` on Windows),
+then its import path is `a/b/pkg`.
+
+Since Go Toolchain 1.6 (experimented since 1.5), each code package folder
+can contain a `vendor` subfolder, which is used to store
+the dependency packages of that code package.
+The packages under the `vendor` subfolder have a higher priority
+in package look-up.
+
+Since version 1.11, Go Toolchain starts to support modules.
+The `GOPATH` environment variable is still kept
+but Go package source code can be put anywhere.
+A new environment variable `GO111MODULE` is used to
+
+Go source code can be put anywhere and `GOPATH` environment variable is not required
+
+GO111MODULE
+
+A standard package has a higher import priority than a third-party package
+if their import paths are identical.
+So please try to avoid using the import path of a standard package
+as the import path of a third-party package.
+
+
+go tools will ignore the files under directories named "testdata".
+
+}
+
+###+++++++++++ Modules
+
+A module is a collection of several packages.
+After being downloaded to local, these packages are all contained in the same folder,
+which is called the root folder of the module.
+A module may has many versions, which
+follow __Semantic Versioning__ specification.
+About more modules related concepts and how to manage and use modules,
+please read the __official documentation__.
+
+// __ Semantic Versioning :: https://semver.org/
+// __ official documentation :: https://golang.org/ref/mod
+
+

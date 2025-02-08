@@ -1,221 +1,366 @@
-<h1>Go Value Copy Costs</h1>
+<h1 class="tmd-header-1">
+Go Value Copy Costs
+</h1>
+<p></p>
+<div class="tmd-usual">
+Value copying happens frequently in Go programming. Values assignments, argument passing and channel value send operations are all value copying involved. This article will talk about the copy costs of values of all kinds of types.
+</div>
+<p></p>
+<h3 id="value-sizes" class="tmd-header-3">
+Value Sizes
+</h3>
+<p></p>
+<div class="tmd-usual">
+The size of a value means how many bytes the <a href="value-part.html">direct part</a> of the value will occupy in memory. The indirect underlying parts of a value don't contribute to the size of the value.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Value copying happens frequently in Go programming.
-Values assignments, argument passing and channel value send operations
-are all value copying involved.
-This article will talk about the copy costs of values of all kinds of types.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+In Go, if the types of two values belong to the same <a href="type-system-overview.html#type-kinds">kind</a>, and the type kind is not string kind, interface kind, array kind and struct kind, then the sizes of the two value are always equal.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="value-sizes"></a>
-<h3>Value Sizes</h3>
+</div>
+<p></p>
+<div class="tmd-usual">
+In fact, for the standard Go compiler/runtime, the sizes of two string values are also always equal. The same relation is for the sizes of two interface values.
+</div>
+<p></p>
+<div class="tmd-usual">
+Up to present (Go Toolchain 1.23.n), for the standard Go compiler (and gccgo), values of a specified type always have the same value size. So, often, we call the size of a value as the size of the type of the value.
+</div>
+<p></p>
+<div class="tmd-usual">
+The size of an array type depends on the element type size and the length of the array type. The array type size is the product of the size of the array element type and the array length.
+</div>
+<p></p>
+<div class="tmd-usual">
+The size of a struct type depends on all of the sizes and the order of its fields. For there may be some <a href="memory-layout.html#size-and-padding">padding bytes</a> being inserted between two adjacent struct fields to guarantee certain memory address alignment requirements of these fields, so the size of a struct type must be not smaller than (and often larger than) the sum of the respective type sizes of its fields.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The size of a value means how many bytes the
-<a href="value-part.html">direct part</a> of the value will occupy in memory.
-The indirect underlying parts of a value don't contribute to the size of the value.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+The following table lists the value sizes of all kinds of types (for the standard Go compiler v1.23.n). In the table, one word means one native word, which is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-In Go, if the types of two values belong to the same
-<a href="type-system-overview.html#type-kinds">kind</a>,
-and the type kind is not string kind,
-interface kind, array kind and struct kind,
-then the sizes of the two value are always equal.
-</p>
-
-<p>
-In fact, for the standard Go compiler/runtime,
-the sizes of two string values are also always equal.
-The same relation is for the sizes of two interface values.
-</p>
-
-<p>
-Up to present (Go Toolchain 1.23.n), for the standard Go compiler (and gccgo),
-values of a specified type always have the same value size.
-So, often, we call the size of a value as the size of the type of the value.
-</p>
-
-<p>
-The size of an array type depends on the element type size and the length
-of the array type. The array type size is the product of the size of
-the array element type and the array length.
-</p>
-
-<p>
-The size of a struct type depends on all of the sizes and the order of its fields.
-For there may be some <a href="memory-layout.html#size-and-padding">padding bytes</a> being inserted
-between two adjacent struct fields to guarantee certain memory address alignment requirements of these fields,
-so the size of a struct type must be not smaller than (and often larger than) the sum of the respective type sizes
-of its fields.
-</p>
-
-<p>
-The following table lists the value sizes of all kinds of types
-(for the standard Go compiler v1.23.n).
-In the table, one word means one native word,
-which is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
-</p>
-
-<table border="1" class="table table-bordered text-center" style="width: auto !important;">
-	<thead>
-		<tr>
-			<th class="text-center" valign="bottom" align="center">Kinds of Types</th>
-			<th class="text-center" valign="bottom" align="center">Value Size</th>
-			<th class="text-center" valign="bottom" align="center">
-				<a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">Required</a>
-				by <a href="https://golang.org/ref/spec#Numeric_types">Go Specification</a>
-			</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">bool</th>
-			<td valign="middle" align="center">1 byte</td>
-			<td valign="middle" align="center">not specified</td>
-		</tr>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">int8, uint8 (byte)</th>
-			<td valign="middle" align="center">1 byte</td>
-			<td valign="middle" align="center">1 byte</td>
-		</tr>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">int16, uint16</th>
-			<td valign="middle" align="center">2 bytes</td>
-			<td valign="middle" align="center">2 bytes</td>
-		</tr>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">int32 (rune), uint32, float32</th>
-			<td valign="middle" align="center">4 bytes</td>
-			<td valign="middle" align="center">4 bytes</td>
-		</tr>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">int64, uint64, float64, complex64
-			</th>
-			<td valign="middle" align="center">8 bytes</td>
-			<td valign="middle" align="center">8 bytes</td>
-		</tr>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">complex128</th>
-			<td valign="middle" align="center">16 bytes</td>
-			<td valign="middle" align="center">16 bytes</td>
-		</tr>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">int, uint</th>
-			<td valign="middle" align="center">1 word</td>
-			<td valign="middle" align="center">architecture dependent, 4 bytes on 32-bit architectures and 8 bytes
-				on 64-bit architectures</td>
-		</tr>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">uintptr</th>
-			<td valign="middle" align="center">1 word</td>
-			<td valign="middle" align="center">large enough to store the uninterpreted bits of a pointer value
-			</td>
-		</tr>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">string</th>
-			<td valign="middle" align="center">2 words</td>
-			<td valign="middle" align="center">not specified</td>
-		</tr>
-		<tr>
-			<th scope="row" class="text-center" valign="middle" align="center">pointer (safe or unsafe)</th>
-			<td valign="middle" align="center">1 word</td>
-			<td valign="middle" align="center">not specified</td>
-		</tr>
-		<tr>
-			<th scope="row" class="text-center" valign="middle" align="center">slice</th>
-			<td valign="middle" align="center">3 words</td>
-			<td valign="middle" align="center">not specified</td>
-		</tr>
-		<tr>
-			<th scope="row" class="text-center" valign="middle" align="center">map</th>
-			<td valign="middle" align="center">1 word</td>
-			<td valign="middle" align="center">not specified</td>
-		</tr>
-		<tr>
-			<th scope="row" class="text-center" valign="middle" align="center">channel</th>
-			<td valign="middle" align="center">1 word</td>
-			<td valign="middle" align="center">not specified</td>
-		</tr>
-		<tr>
-			<th scope="row" class="text-center" valign="middle" align="center">function</th>
-			<td valign="middle" align="center">1 word</td>
-			<td valign="middle" align="center">not specified</td>
-		</tr>
-		<tr>
-			<th scope="row" class="text-center" valign="middle" align="center">interface</th>
-			<td valign="middle" align="center">2 words</td>
-			<td valign="middle" align="center">not specified</td>
-		</tr>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">struct</th>
-			<td valign="middle" align="center">(the sum of sizes of all fields) + (the number of
-				<a href="memory-layout.html#size-and-padding">padding</a> bytes)
-			</td>
-			<td valign="middle" align="center">the size of a <b>struct</b> type is zero if it contains no fields
-				that have a size greater than zero</td>
-		</tr>
-		<tr class="active">
-			<th scope="row" class="text-center" valign="middle" align="center">array</th>
-			<td valign="middle" align="center">(element value size) * (array length)</td>
-			<td valign="middle" align="center">the size of an <b>array</b> type is zero if its element type
-				has zero size</td>
-		</tr>
-	</tbody>
+</div>
+<p></p>
+<table class="tmd-table">
+<tr>
+<th>
+Kinds of Types
+</th>
+<th>
+Value Size
+</th>
+<th>
+<a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">Required</a> by <a href="https://golang.org/ref/spec#Numeric_types">Go Specification</a>
+</th>
+</tr>
+<tr>
+<th>
+bool
+</th>
+<td>
+<div class="tmd-usual">
+1 byte
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+not specified
+</div>
+</td>
+</tr>
+<tr>
+<th>
+int8, uint8 (byte)
+</th>
+<td>
+<div class="tmd-usual">
+1 byte
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+1 byte
+</div>
+</td>
+</tr>
+<tr>
+<th>
+int16, uint16
+</th>
+<td>
+<div class="tmd-usual">
+2 bytes
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+2 bytes
+</div>
+</td>
+</tr>
+<tr>
+<th>
+int32 (rune), uint32, float32
+</th>
+<td>
+<div class="tmd-usual">
+4 bytes
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+4 bytes
+</div>
+</td>
+</tr>
+<tr>
+<th>
+int64, uint64, float64, complex64
+</th>
+<td>
+<div class="tmd-usual">
+8 bytes
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+8 bytes
+</div>
+</td>
+</tr>
+<tr>
+<th>
+complex128
+</th>
+<td>
+<div class="tmd-usual">
+16 bytes
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+16 bytes
+</div>
+</td>
+</tr>
+<tr>
+<th>
+int, uint
+</th>
+<td>
+<div class="tmd-usual">
+1 word
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+architecture dependent, 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures
+</div>
+</td>
+</tr>
+<tr>
+<th>
+uintptr
+</th>
+<td>
+<div class="tmd-usual">
+1 word
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+large enough to store the uninterpreted bits of a pointer value
+</div>
+</td>
+</tr>
+<tr>
+<th>
+string
+</th>
+<td>
+<div class="tmd-usual">
+2 words
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+not specified
+</div>
+</td>
+</tr>
+<tr>
+<th>
+pointer (safe or unsafe)
+</th>
+<td>
+<div class="tmd-usual">
+1 word
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+not specified
+</div>
+</td>
+</tr>
+<tr>
+<th>
+slice
+</th>
+<td>
+<div class="tmd-usual">
+3 words
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+not specified
+</div>
+</td>
+</tr>
+<tr>
+<th>
+map
+</th>
+<td>
+<div class="tmd-usual">
+1 word
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+not specified
+</div>
+</td>
+</tr>
+<tr>
+<th>
+channel
+</th>
+<td>
+<div class="tmd-usual">
+1 word
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+not specified
+</div>
+</td>
+</tr>
+<tr>
+<th>
+function
+</th>
+<td>
+<div class="tmd-usual">
+1 word
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+not specified
+</div>
+</td>
+</tr>
+<tr>
+<th>
+interface
+</th>
+<td>
+<div class="tmd-usual">
+2 words
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+not specified
+</div>
+</td>
+</tr>
+<tr>
+<th>
+struct
+</th>
+<td>
+<div class="tmd-usual">
+(the sum of sizes of all fields) + (the number of <a href="memory-layout.html#size-and-padding">padding bytes</a>)
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+the size of a <span class="tmd-bold">struct</span> type is zero if it contains no fields that have a size greater than zero
+</div>
+</td>
+</tr>
+<tr>
+<th>
+array
+</th>
+<td>
+<div class="tmd-usual">
+(element value size) * (array length)
+</div>
+</td>
+<td>
+<div class="tmd-usual">
+the size of an <span class="tmd-bold">array</span> type is zero if its element type has zero size
+</div>
+</td>
+</tr>
 </table>
-
-<a class="anchor" id="copy-costs"></a>
-<h3>Value Copy Costs</h3>
-
-<div>
-<p>
-Generally speaking, the cost to copy a value is proportional to the size of the value.
-However, value sizes are not the only factor determining value copy costs.
-Different CPU models and compiler versions may specially optimize value copying for values with specific sizes.
-</p>
-
-<p>
-In practice, we can view struct values with less than 5 fields and with sizes not larger than
-four native words as small-size values. The costs of copying small-size values are small.
-</p>
-
-<p>
-For the standard Go compiler,
-except values of large-size struct and array types,
-other types in Go are all small-size types.
-</p>
-
-<p>
-To avoid large value copy costs in argument passing and channel value send
-and receive operations, we should try to avoid using large-size
-struct and array types as function and method parameter types
-(including method receiver types) and channel element types.
-We can use pointer types whose base types are large-size types instead for such scenarios.
-</p>
-
-<p>
-On the other hand, we should also consider the fact that too many pointers
-will increase the pressure of garbage collectors at run time.
-So whether large-size struct and array types or their corresponding pointer
-types should be used relies on specific circumstances.
-</p>
-
-<p>
-Generally, in practice, we seldom use pointer types whose base types are
-slice types, map types, channel types, function types, string types and interface types.
-The costs of copying values of these assumed base types are very small.
-</p>
-
-<p>
-We should also try to avoid using the two-iteration-variable forms to
-iterate array and slice elements if the element types are large-size types,
-for each element value will be copied to the second iteration variable
-in the iteration process.
-</p>
-
+<p></p>
+<h3 id="copy-costs" class="tmd-header-3">
+Value Copy Costs
+</h3>
+<p></p>
+<div class="tmd-usual">
+Generally speaking, the cost to copy a value is proportional to the size of the value. However, value sizes are not the only factor determining value copy costs. Different CPU models and compiler versions may specially optimize value copying for values with specific sizes.
+</div>
+<p></p>
+<div class="tmd-usual">
+In practice, we can view struct values with less than 5 fields and with sizes not larger than four native words as small-size values. The costs of copying small-size values are small.
+</div>
+<p></p>
+<div class="tmd-usual">
+For the standard Go compiler, except values of large-size struct and array types, other types in Go are all small-size types.
+</div>
+<p></p>
+<div class="tmd-usual">
+To avoid large value copy costs in argument passing and channel value send and receive operations, we should try to avoid using large-size struct and array types as function and method parameter types (including method receiver types) and channel element types. We can use pointer types whose base types are large-size types instead for such scenarios.
+</div>
+<p></p>
+<div class="tmd-usual">
+On the other hand, we should also consider the fact that too many pointers will increase the pressure of garbage collectors at run time. So whether large-size struct and array types or their corresponding pointer types should be used relies on specific circumstances.
+</div>
+<p></p>
+<div class="tmd-usual">
+Generally, in practice, we seldom use pointer types whose base types are slice types, map types, channel types, function types, string types and interface types. The costs of copying values of these assumed base types are very small.
+</div>
+<p></p>
+<div class="tmd-usual">
+We should also try to avoid using the two-iteration-variable forms to iterate array and slice elements if the element types are large-size types, for each element value will be copied to the second iteration variable in the iteration process.
+</div>
+<p></p>
+<div class="tmd-usual">
 The following is an example which benchmarks different ways to iterate slice elements.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "testing"
 
@@ -226,16 +371,16 @@ var sZ = make([]S, 1000)
 var sumX, sumY, sumZ int64
 
 func Benchmark_Loop(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for i := 0; i &lt; b.N; i++ {
 		sumX = 0
-		for j := 0; j < len(sX); j++ {
+		for j := 0; j &lt; len(sX); j++ {
 			sumX += sX[j][0]
 		}
 	}
 }
 
 func Benchmark_Range_OneIterVar(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for i := 0; i &lt; b.N; i++ {
 		sumY = 0
 		for j := range sY {
 			sumY += sY[j][0]
@@ -244,7 +389,7 @@ func Benchmark_Range_OneIterVar(b *testing.B) {
 }
 
 func Benchmark_Range_TwoIterVar(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for i := 0; i &lt; b.N; i++ {
 		sumZ = 0
 		for _, v := range sZ {
 			sumZ += v[0]
@@ -252,21 +397,18 @@ func Benchmark_Range_TwoIterVar(b *testing.B) {
 	}
 }
 </code></pre>
-
-Run the benchmarks in the directory of the test file,
-we will get a result similar to:
-
-<pre class="output"><code>Benchmark_Loop-4             424342 2708 ns/op
+<p></p>
+<div class="tmd-usual">
+Run the benchmarks in the directory of the test file, we will get a result similar to:
+</div>
+<p></p>
+<pre class="tmd-code output">
+Benchmark_Loop-4             424342 2708 ns/op
 Benchmark_Range_OneIterVar-4 407905 2808 ns/op
 Benchmark_Range_TwoIterVar-4 214860 3915 ns/op
-</code></pre>
-
-<p>
-We can find that the efficiency of the two-iteration-variable form is much
-lower than the other two.
-But please note that, some compilers might make special optimizations
-to remove the performance differences between these forms.
-The above benchmark result is based on the standard Go compiler v1.23.n.
-</p>
-
+</pre>
+<p></p>
+<div class="tmd-usual">
+We can find that the efficiency of the two-iteration-variable form is much lower than the other two. But please note that, some compilers might make special optimizations to remove the performance differences between these forms. The above benchmark result is based on the standard Go compiler v1.23.n.
 </div>
+<p></p>

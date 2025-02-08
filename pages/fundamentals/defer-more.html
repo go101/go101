@@ -1,34 +1,32 @@
-﻿<h1>More about Deferred Function Calls</h1>
+<h1 class="tmd-header-1">
+More about Deferred Function Calls
+</h1>
+<p></p>
+<div class="tmd-usual">
+Deferred function calls have been <a href="control-flows-more.html#defer">introduced before</a>. Due to the limited Go knowledge at that time, some more details and use cases of deferred functions calls are not touched in that article. These details and use cases will be touched in the remaining of this article.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Deferred function calls have been
-<a href="control-flows-more.html#defer">introduced before</a>.
-Due to the limited Go knowledge at that time,
-some more details and use cases of deferred functions calls
-are not touched in that article.
-These details and use cases will be touched in the remaining of this article.
-</p>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Calls to Many Built-in Functions With Return Results Can't Be Deferred
+</h3>
+<p></p>
+<div class="tmd-usual">
+In Go, the result values of a call to custom functions can be all absent (discarded). However, for built-in functions with non-blank return result lists, the result values of their calls <a href="exceptions.html#discard-return-results">mustn't be absent</a> (up to Go 1.23), except the calls to the built-in <code class="tmd-code-span">copy</code> and <code class="tmd-code-span">recover</code> functions. On the other hand, we have learned that the result values of a deferred function call must be discarded, so the calls to many built-in functions can't be deferred.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>Calls to Many Built-in Functions With Return Results Can't Be Deferred</h3>
-
-<div>
-<p>
-In Go, the result values of a call to custom functions can be all absent (discarded).
-However, for built-in functions with non-blank return result lists,
-the result values of their calls <a href="exceptions.html#discard-return-results">mustn't be absent</a>
-(up to Go 1.23),
-except the calls to the built-in <code>copy</code> and <code>recover</code> functions.
-On the other hand, we have learned that the result values of a deferred function call must be discarded,
-so the calls to many built-in functions can't be deferred.
-</p>
-
-Fortunately, the needs to defer built-in function calls
-(with non-blank return result lists) are rare in practice.
-As far as I know, only the calls to the built-in <code>append</code> function
-may needed to be deferred sometimes.
-For this case, we can defer a call to an anonymous function
-which wraps the <code>append</code> call.
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+Fortunately, the needs to defer built-in function calls (with non-blank return result lists) are rare in practice. As far as I know, only the calls to the built-in <code class="tmd-code-span">append</code> function may needed to be deferred sometimes. For this case, we can defer a call to an anonymous function which wraps the <code class="tmd-code-span">append</code> call.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -41,17 +39,17 @@ func main() {
 	}()
 }
 </code></pre>
+<p></p>
+<h3 id="function-evaluation-time" class="tmd-header-3">
+The Evaluation Moment of Deferred Function Values
+</h3>
+<p></p>
+<div class="tmd-usual">
+The called function (value) in a deferred function call is evaluated when the call is pushed into the defer-call stack of the current goroutine. For example, the following program will print <code class="tmd-code-span">false</code>.
 </div>
-
-<a class="anchor" id="function-evaluation-time"></a>
-<h3>The Evaluation Moment of Deferred Function Values</h3>
-
-<div>
-The called function (value) in a deferred function call is evaluated
-when the call is pushed into the defer-call stack of the current goroutine.
-For example, the following program will print <code>false</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -65,14 +63,12 @@ func main() {
 	}
 }
 </code></pre>
-
 <p></p>
-
-The called function in a deferred function call may be a nil function value.
-For such a case, the panic will occur when the call to the nil function is invoked,
-instead of when the call is pushed into the defer-call stack of the current goroutine.
-An example:
-<pre class="line-numbers"><code class="language-go">package main
+<div class="tmd-usual">
+The called function in a deferred function call may be a nil function value. For such a case, the panic will occur when the call to the nil function is invoked, instead of when the call is pushed into the defer-call stack of the current goroutine. An example:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -85,26 +81,25 @@ func main() {
 	f = func() {} // useless to avoid panicking
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 class="tmd-header-3">
+The Evaluation Moment of Receiver Arguments of Deferred Method Calls
+</h3>
+<p></p>
+<div class="tmd-usual">
+As explained before, the arguments of a deferred function call are <a href="control-flows-more.html#argument-evaluation-moment">also evaluated when</a> the deferred call is pushed into the defer-call stack of the current goroutine.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>The Evaluation Moment of Receiver Arguments of Deferred Method Calls</h3>
-
-<div>
-
-<p>
-As explained before, the arguments of a deferred function call are
-<a href="control-flows-more.html#argument-evaluation-moment">also evaluated when</a>
-the deferred call is pushed into the defer-call stack
-of the current goroutine.
-</p>
-
-Method receiver arguments are also not exceptions.
-For example, the following program prints <code>1342</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+Method receiver arguments are also not exceptions. For example, the following program prints <code class="tmd-code-span">1342</code>.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type T int
 
@@ -122,16 +117,17 @@ func main() {
 	t.M(3).M(4)
 }
 </code></pre>
-
 <p></p>
-</div>
-
-<h3>Deferred Calls Make Code Cleaner and Less Bug Prone</h3>
-
-<div>
+<h3 class="tmd-header-3">
+Deferred Calls Make Code Cleaner and Less Bug Prone
+</h3>
+<p></p>
+<div class="tmd-usual">
 Example:
-
-<pre class="line-numbers"><code class="language-go">import "os"
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">import "os"
 
 func withoutDefers(filepath string, head, body []byte) error {
 	f, err := os.Open(filepath)
@@ -187,23 +183,18 @@ func withDefers(filepath string, head, body []byte) error {
 	return f.Sync()
 }
 </code></pre>
-
-<!--
-https://joeshaw.org/dont-defer-close-on-writable-files/
--->
-
-<p>
-Which one looks cleaner? Apparently, the one with the deferred calls, though a little.
-And it is less bug prone, for there are so many <code>f.Close()</code> calls in the
-function without deferred calls that it has a higher possibility to miss one of them.
-</p>
-
-The following is another example to show deferred calls can make code less bug prone.
-If the <code>doSomething</code> calls panic in the following example,
-the function <code>f2</code> will exit without unlocking the <code>Mutex</code> value.
-So the function <code>f1</code> is less bug prone.
-
-<pre class="line-numbers"><code class="language-go">var m sync.Mutex
+<p></p>
+<p></p>
+<div class="tmd-usual">
+Which one looks cleaner? Apparently, the one with the deferred calls, though a little. And it is less bug prone, for there are so many <code class="tmd-code-span">f.Close()</code> calls in the function without deferred calls that it has a higher possibility to miss one of them.
+</div>
+<p></p>
+<div class="tmd-usual">
+The following is another example to show deferred calls can make code less bug prone. If the <code class="tmd-code-span">doSomething</code> calls panic in the following example, the function <code class="tmd-code-span">f2</code> will exit without unlocking the <code class="tmd-code-span">Mutex</code> value. So the function <code class="tmd-code-span">f1</code> is less bug prone.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var m sync.Mutex
 
 func f1() {
 	m.Lock()
@@ -217,82 +208,30 @@ func f2() {
 	m.Unlock()
 }
 </code></pre>
-
+<p></p>
+<h3 class="tmd-header-3">
+Performance Losses Caused by Deferring Function Calls
+</h3>
+<p></p>
+<div class="tmd-usual">
+It is not always good to use deferred function calls. For the official Go compiler, before version 1.13, deferred function calls will cause a few performance losses at run time. Since Go Toolchain 1.13, some common defer use cases have got optimized much, so that generally we don't need to care about the performance loss problem caused by deferred calls. Thank Dan Scales for making the great optimizations.
 </div>
-
-<h3>Performance Losses Caused by Deferring Function Calls</h3>
-
-<div>
-<p>
-It is not always good to use deferred function calls.
-For the official Go compiler, before version 1.13,
-deferred function calls will cause a few performance losses at run time.
-Since Go Toolchain 1.13, some common defer use cases have got optimized much,
-so that generally we don't need to care about the performance loss problem caused by deferred calls.
-Thank Dan Scales for making the great optimizations.
-</p>
-
-<!--
-For example, in the following example, the methods <code>CounterB</code>
-and <code>IncreaseB</code> are much more efficient than the methods
-<code>CounterA</code> and <code>IncreaseA</code>.
-
-<pre class="line-numbers"><code class="language-go">import "sync"
-
-type T struct {
-	mu sync.Mutex
-	n  int64
-}
-
-func (t *T) CounterA() int64 {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	return t.n
-}
-
-func (t *T) CounterB() (count int64) {
-	t.mu.Lock()
-	count = t.n
-	t.mu.Unlock()
-	return
-}
-
-func (t *T) IncreaseA() {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.n++
-}
-
-func (t *T) IncreaseB() {
-	t.mu.Lock()
-	t.n++ // this line will not panic for sure
-	t.mu.Unlock()
-}
-</code></pre>
-
-<p>
-In the B-version functions, we should guarantee that the code between the
-<code>Lock</code> and <code>Unlock</code> calls will never panic.
-Generally, the A-version functions are recommended to be used in practice.
-We should only adopt the B versions when we really care about
-the performance of the involved functions.
-</p>
--->
-
+<p></p>
+<p></p>
+<h3 id="kind-of-resource-leaking" class="tmd-header-3">
+Kind-of Resource Leaking by Deferring Function Calls
+</h3>
+<p></p>
+<div class="tmd-usual">
+A very large defer-call stack may also consume much memory, and some resources might not get released in time if some calls are delayed too much.
 </div>
-
-<a class="anchor" id="kind-of-resource-leaking"></a>
-<h3>Kind-of Resource Leaking by Deferring Function Calls</h3>
-
-<div>
-
-A very large defer-call stack may also consume much memory,
-and some resources might not get released in time if some calls are delayed too much.
-
-For example, if there are many files needed to be handled in a call to the following function,
-then a large number of file handlers will be not get released before the function exits.
-
-<pre class="line-numbers"><code class="language-go">func writeManyFiles(files []File) error {
+<p></p>
+<div class="tmd-usual">
+For example, if there are many files needed to be handled in a call to the following function, then a large number of file handlers will be not get released before the function exits.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func writeManyFiles(files []File) error {
 	for _, file := range files {
 		f, err := os.Open(file.path)
 		if err != nil {
@@ -314,12 +253,13 @@ then a large number of file handlers will be not get released before the functio
 	return nil
 }
 </code></pre>
-
-For such cases, we can use an anonymous function to enclose the deferred calls
-so that the deferred function calls will get executed earlier. For example,
-the above function can be rewritten and improved as
-
-<pre class="line-numbers"><code class="language-go">func writeManyFiles(files []File) error {
+<p></p>
+<div class="tmd-usual">
+For such cases, we can use an anonymous function to enclose the deferred calls so that the deferred function calls will get executed earlier. For example, the above function can be rewritten and improved as
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func writeManyFiles(files []File) error {
 	for _, file := range files {
 		if err := func() error {
 			f, err := os.Open(file.path)
@@ -344,10 +284,4 @@ the above function can be rewritten and improved as
 	return nil
 }
 </code></pre>
-
-<p>
-</p>
-
-</div>
-
-
+<p></p>

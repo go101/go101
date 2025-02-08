@@ -1,0 +1,582 @@
+### Some Simple Summaries
+
+Index:
+
+@@@ #summaries.html .summaries
+* __Types whose values may have indirect underlying parts`` #type-with-underlyings__.
+* __Types which values can be used as arguments of built-in `len` function
+	(and `cap`, `close`, `delete`, `make` functions)`` #have-length-types__.
+* __Comparison of built-in container types`` #container-types__.
+* __Types which values can be represented with composite literals (`T{...}`)`` #composite-literals-types__.
+* __Value sizes of all kinds of types`` #type-sizes__.
+* __Types which zero values can be represented with `nil``` #nil-zero-value-types__.
+* __Types we can implement methods for`` #types-can-have-methods__.
+* __Types which can be embedded in struct types`` #types-can-be-embedded__.
+* __Functions whose calls will/may be evaluated at compile time`` #compile-time-evaluation__.
+* __Values that can't be taken addresses`` #not-addressable__.
+* __Types which don't support comparisons`` #not-comparable__.
+* __Which code elements are allowed to be declared but not used`` #declared-but-unused__.
+* __Named source code elements which can be declared together within `()``` #groupable-elements__.
+* __Named source code elements which can be declared both inside functions and outside any functions`` #declaration-places__.
+* __Expressions which evaluation results may contain optional additional values`` #additional-return__.
+* __Ways to block the current goroutine ‎forever by using the channel mechanism`` #block-forever__.
+* __Ways to concatenate strings`` #concatenate-strings__.
+* __Optimizations made by the standard Go compiler`` #compiler-optimizations__.
+* __Run-time panic and crash cases`` #panic-cases__.
+
+
+@@@ .summaries-items
+{
+
+@@@ #type-with-underlyings
+###+++++++++++ 
+	Types whose values may have indirect underlying parts
+
+Types whose values may have indirect underlying parts:
+* string types
+* function types
+* slice types
+* map types
+* channel types
+* interface types
+
+The answer is based on the implementation of the standard Go compiler/runtime.
+In fact, whether or not function values may have indirect underlying parts is hardly to prove,
+and string values and interface values should be viewed as values without indirect underlying parts in logic.
+Please read __value parts__ for details.
+
+// __ value parts :: value-part.html
+
+@@@ #have-length-types
+###+++++++++++ 
+	Types which values can be used as arguments of built-in `len` function
+	(and `cap`, `close`, `delete`, `make` functions)
+
+# ###
+  ### len
+  ### cap
+  ### close
+  ### delete
+  ### make
+  -----
+  ### string
+  ;;; Yes
+  ;;;
+  ;;;
+  ;;;
+  ;;;
+  -----
+  ### array
+      \\ (and array pointer)
+  ;;; Yes
+  ;;; Yes
+  ;;;
+  ;;;
+  ;;;
+  -----
+  ### slice
+  ;;; Yes
+  ;;; Yes
+  ;;;
+  ;;;
+  ;;; Yes
+  -----
+  ### map
+  ;;; Yes
+  ;;;
+  ;;;
+  ;;; Yes
+  ;;; Yes
+  -----
+  ### channel
+  ;;; Yes
+  ;;; Yes
+  ;;; Yes
+  ;;;
+  ;;; Yes
+
+Values of above types can also be ranged over in for-range loops.
+
+Types which values can be used as arguments of built-in function `len`
+can be called container types in broad sense.
+
+@@@ #container-types
+###+++++++++++ 
+	Comparison of built-in container types
+
+# ### Type
+  ### Can New Elements Be Added into Values?
+  ### Are Elements of Values Replaceable?
+  ### Are Elements of Values Addressable?
+  ### Will Element Accesses Modify Value Lengths?
+  ### May Values Have Underlying Parts
+  -----
+  ### string
+  ;;; No
+  ;;; No
+  ;;; No
+  ;;; No
+  ;;; Yes^$$(1)$$
+  -----
+  ### array
+  ;;; No
+  ;;; Yes^$$(2)$$
+  ;;; Yes^$$(2)$$
+  ;;; No
+  ;;; No
+  -----
+  ### slice
+  ;;; No^$$(3)$$
+  ;;; Yes
+  ;;; Yes
+  ;;; No
+  ;;; Yes
+  -----
+  ### map
+  ;;; Yes
+  ;;; Yes
+  ;;; No
+  ;;; No
+  ;;; Yes
+  -----
+  ### channel
+  ;;; Yes^$$(4)$$
+  ;;; No
+  ;;; No
+  ;;; Yes
+  ;;; Yes
+  
+  
+
+
+^$$(1)$$ For the standard Go compiler/runtime.
+\\
+^$$(2)$$ For addressable array values only.
+\\
+^$$(3)$$ Generally, a slice value are modified by assigned another slice value to it by overwriting it.
+Here, such cases are not viewed as "add new elements".
+In fact, slice lengths can also be modified separately by calling the `reflect.SetLen` function.
+Increase the length of a slice by this way is kind of adding new elements into the slice.
+But the `reflect.SetLen` function is slow, so it is rarely used.
+\\
+^$$(4)$$ For buffered channels which are still not full.
+
+@@@ #composite-literals-types
+###+++++++++++ 
+	Types which values can be represented with composite literals (`T{...}`)
+
+Values of the following four kinds of types can be represented with composite literals:
+
+# ### Type (`T`)
+  ### Is `T{}` a Zero Value of `T`?
+  -----
+  ### struct
+  ;;; Yes
+  -----
+  ### array
+  ;;; Yes
+  -----
+  ### slice
+  ;;; No
+      \\ (zero value is `nil`)
+  -----
+  ### map
+  ;;; No
+      \\ (zero value is `nil`)
+
+@@@ #type-sizes
+###+++++++++++ 
+	Value sizes of all kinds of types
+
+Please read __value copy cost__ for details. 
+
+// __ value copy cost :: value-copy-cost.html
+
+@@@ #nil-zero-value-types
+###+++++++++++ 
+	Types which zero values can be represented with `nil`
+
+The zero values of the following types can be represented with `nil`.
+
+# ### Type (`T`)
+  ### Size of `T(nil)`
+  -----
+  ### pointer
+  ;;; 1 word
+  -----
+  ### slice
+  ;;; 3 words
+  -----
+  ### map
+  ;;; 1 word
+  -----
+  ### channel
+  ;;; 1 word
+  -----
+  ### function
+  ;;; 1 word
+  -----
+  ### interface
+  ;;; 2 words
+
+The above listed sizes are for the standard Go compiler.
+One word means 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
+and __the indirect underlying parts__
+of a value don't contribute to the size of the value.
+
+// __ the indirect underlying parts :: value-part.html
+
+The size of a zero value of a type is the same as any other values of the same type.
+
+@@@ #types-can-have-methods
+###+++++++++++ 
+	Types we can implement methods for
+
+Please read __methods in Go__ for details.
+
+// __ methods in Go :: method.html
+
+@@@ #types-can-be-embedded
+###+++++++++++ 
+	Types which can be embedded in struct types
+
+Please read __which types can be embedded__ for details.
+
+// __ which types can be embedded :: type-embedding.html#embeddable-types
+
+@@@ #compile-time-evaluation
+###+++++++++++ 
+	Functions whose calls will/may be evaluated at compile time
+
+If a function call is evaluated at compile time,
+its return results must be constants.
+
+# ### Function
+  ### Return Type
+  ### Are Calls Always Evaluated at Compile Time?
+  -----
+  ### unsafe.Sizeof
+  {>< :3
+   `uintptr`
+  }
+  {:3
+    {><
+	Yes, always. 
+	}
+	
+	%% 
+	But please note that the result of such a call is not viewed as
+	a constant if the argument type of the call is a __type parameter__.
+	
+	// __ type parameter :: https://go101.org/generics/555-type-constraints-and-parameters.html
+  }
+  -----
+  ### unsafe.Alignof
+  -----
+  ### unsafe.Offsetof
+  -----
+  ### len
+  {>< :2
+   `int`
+  }
+  {:2
+    {><
+	Not always.
+	}
+	
+	From __Go specification__:
+	*
+		the expression `len(s)` is constant if `s` is a string constant.
+	*
+		the expressions `len(s)` and `cap(s)` are constants
+		if the type of `s` is an array or pointer to an array
+		and the expression `s` does not contain channel receives or (non-constant) function calls.
+
+	%% 
+	Please note that, even if such a function call is evaluated at compile-time,
+	the evaluation result is not viewed as a constant if the argument type of the call is a
+	__type parameter__.
+	
+	// __ Go specification :: https://golang.org/ref/spec#Length_and_capacity
+	// __ type parameter :: https://go101.org/generics/555-type-constraints-and-parameters.html
+  }
+  -----
+  ### cap
+  -----
+  ### real
+  {>< :2
+   The result is an untyped value. Its default type is `float64`.
+  }
+  {:2
+    {><
+	Not always.
+	}
+		
+	From __Go spec__:
+	the expressions `real(s)` and `imag(s)` are constants
+	if `s` is a complex constant.
+	
+	// __ Go spec :: https://golang.org/ref/spec#Constants
+  }
+  -----
+  ### imag
+  -----
+  ### complex
+  ;;; The result is an untyped value. Its default type is `complex128`.
+  {
+    {><
+	Not always.
+	}
+		
+	From __Go spec__:
+	the expression `complex(sr, si)` is constant
+	if both `sr` and `si` are numeric constants.
+  }
+
+@@@ #not-addressable
+###+++++++++++ 
+	Addressable and unaddressable values
+
+Please read __this FAQ item__
+to get which values are addressable or unaddressable.
+
+// __ this FAQ item :: unofficial-faq.html#unaddressable-values
+
+@@@ #not-comparable
+###+++++++++++ 
+	Types which don't support comparisons
+
+Please read __this FAQ item__
+to get which values are addressable or unaddressable.
+
+// __ this FAQ item :: unofficial-faq.html#incomparable-types
+
+@@@ #declared-but-unused
+###+++++++++++ 
+	Which code elements are allowed to be declared but not used
+
+# ###
+  ### Allowed to Be Declared but Not Used?
+  -----
+  ### import
+  ;;; No
+  -----
+  ### type
+  ;;; Yes
+  -----
+  ### variable
+  ;;; Yes for package-level variables.
+      \\ No for local variables (for the standard compiler).
+  -----
+  ### constant
+  ;;; Yes
+  -----
+  ### function
+  ;;; Yes
+  -----
+  ### label
+  ;;; No
+
+@@@ #groupable-elements
+###+++++++++++ 
+	Named source code elements which can be declared together within `()`
+
+Following source code elements (of the same kind) can be declared together within `()`:
+* import
+* type
+* variable
+* constant
+
+Functions can't be declared together within `()`. Also labels.
+
+@@@ #declaration-places
+###+++++++++++ 
+	Named source code elements which can be declared both inside functions and outside any functions
+
+Following named source code elements can be declared both inside functions and outside any functions:
+* type
+* variable
+* constant
+
+Imports must be declared before declarations of other elements (and after the package clause).
+Functions can only be declared outside any functions.
+Anonymous functions can be defined inside other function bodies,
+but such definitions are not function declarations.
+Labels must be declared inside functions.
+
+@@@ #additional-return
+###+++++++++++ 
+	Expressions which evaluation results may contain optional additional values
+
+The evaluation results of the following expressions may contain optional additional values:
+
+# ###
+  ### Syntax
+  ### Meaning of The Optional Value (`ok` in the syntax examples)
+  ### Will Omitting the Optional Result Affect Program Behavior?
+  -----
+  ### map element access
+  ;;; `e, ok = aMap[key]`
+  ;;; whether or not the accessed key is present in the map
+  ;;; No
+  -----
+  ### channel value receive
+  ;;; `e, ok = <- aChannel`
+  ;;; whether or not the received value was sent before the channel was closed
+  ;;; No
+  -----
+  ### type assertion
+  ;;; `v, ok = anInterface.(T)`
+  ;;; whether or not the dynamic type of the interface value matches the asserted type
+  ;;; Yes
+      \\ (when the optional bool result is omitted,
+	  a panic occurs if the assertion fails.)
+
+@@@ #block-forever
+###+++++++++++ 
+	Ways to block the current goroutine ‎forever by using the channel mechanism
+
+Without importing any package, we can use the following ways to make the current goroutine ‎enter (and stay in) blocking state forever:
+
+*. send a value to a channel which no ones will receive values from
+   @@@ .disable-line-numbers111
+'''go
+make(chan struct{}) <- struct{}{}
+// or
+make(chan<- struct{}) <- struct{}{}
+'''
+	
+*. receive a value from a never-closed channel which no values have been and will be sent to
+   @@@ .disable-line-numbers111
+'''go
+<-make(chan struct{})
+// or
+<-make(<-chan struct{})
+// or
+for range make(<-chan struct{}) {}
+'''
+	
+*. receive a value from (or send a value to) a nil channel
+   @@@ .disable-line-numbers111
+'''go
+chan struct{}(nil) <- struct{}{}
+// or
+<-chan struct{}(nil)
+// or
+for range chan struct{}(nil) {}
+'''
+
+*. use a bare select block
+   @@@ .disable-line-numbers111
+'''go
+select{}
+'''
+
+@@@ #concatenate-strings
+###+++++++++++ 
+	Ways to concatenate strings
+
+Please read __strings in Go__ for details.
+
+// __ strings in Go :: string.html#string-concatenation
+
+@@@ #compiler-optimizations
+###+++++++++++ 
+	Optimizations made by the standard Go compiler
+
+Please read __the Go 101 wiki article__ for this summary.
+
+// __ the Go 101 wiki article :: https://github.com/go101/go101/wiki/The-perceivable-optimizations-made-by-the-standard-Go-compiler-%28gc%29
+
+@@@ #panic-cases
+###+++++++++++ 
+	Run-time panic and crash cases
+
+Please read __the Go 101 wiki article__ for this summary.
+
+// __ the Go 101 wiki article :: https://github.com/go101/go101/wiki/Panic-and-crash-cases
+
+}
+
+"""""//
+
+Fatal errors which can be recovered:
+* https://play.golang.org/p/bYrfLTzXpc_o bad Mutex.Unlock call. unlock of unlocked lock
+* create goroutine with nil function
+* memory allocation fails, out of memory, alloc too large
+* stack overflow
+* map data race operation
+  * concurrent map iteration and map write
+  * concurrent map read and map write
+  * concurrent map writes
+* cgo callback before cgo call
+* thread exhaustion
+	package main
+	import "runtime/debug"
+	import "runtime"
+	func main() {
+		debug.SetMaxThreads(10)
+		c := make(chan int)
+		for i := 0; i < 100; i++ {
+			go func() {
+				runtime.LockOSThread()
+				c <- 0
+				select {}
+			}()
+			<-c
+		}
+	}
+* load bad Go plugins
+* all goroutines are blocked.
+* string concatenation too long
+
+
+short and standard variable declaration comparison
+
+differences between built-in functions and custom functions.
+  * generic
+  * built-in function returns can't be omitted
+  * built-in functions can't be used as values, they have no types.
+  * built-in doon't need to be imported before using them, even their identifiers starts with lower..
+  *
+
+built-in function list
+
+	"append":  predeclaredFunction,
+	"cap":     predeclaredFunction,
+	"close":   predeclaredFunction,
+	"complex": predeclaredFunction,
+	"copy":    predeclaredFunction,
+	"delete":  predeclaredFunction,
+	"imag":    predeclaredFunction,
+	"len":     predeclaredFunction,
+	"make":    predeclaredFunction,
+	"new":     predeclaredFunction,
+	"panic":   predeclaredFunction,
+	"print":   predeclaredFunction,
+	"println": predeclaredFunction,
+	"real":    predeclaredFunction,
+	"recover": predeclaredFunction,
+
+
+#returns-discardable
+return results of calls to which built-in functions can be discarded.
+
+values of which kinds of types can be for-ranged.
+
+ways to return a function: naturally return, return keyword, panic, runtime.Goexit()
+
+the form `v[k]` can be used to access elements of values of which kinds of types?
+
+
+} // .summaries-items
+
+"""""//
+todo:
+	kinds of control flow blocks
+	control flow statements
+		return, break, fallthrough, continue, goto
+	which control flow statements can be followed a label.
+	which control flow statements can appear in which control flow blocks
+
+

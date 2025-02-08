@@ -1,0 +1,587 @@
+### Expression Evaluation Orders
+
+This article will explain __expression__
+evaluation orders in all kinds of scenarios.
+
+// __ expression :: expressions-and-statements.html
+
+###+++++++++++ An Expression Is Evaluated After the Expressions It Depends on
+
+This is easy to comprehend.
+An apparent example is an expression is evaluated later than its sub-expressions.
+For example, in a function call `f(x, y[n])`,
+*
+	`f()` is evaluated later than its depended expressions,
+	including `f`, `x` and `y[n]`.
+*
+	the evaluation of the expression `y[n]` is later than
+	the evaluations of `n` and `y`.
+
+Please read __program code element initialization order__
+for another example on package-level variable initialization orders.
+
+// __ program code element initialization order :: packages-and-imports.html#initialization-order
+
+@@@ #package-level-variables
+###+++++++++++ Initialization Order of Package-Level Variables
+
+When a package is loaded at run time, Go runtime
+will try to initialize uninitialized package-level variables
+which have no dependencies on uninitialized variables,
+by their declaration order,
+until no variables are initialized in such a process.
+For a successfully compiled Go program, there should be
+no uninitialized variables after all such processes end.
+
+Package-level variables appearing as blank identifiers are
+treated like any other variables in the initialization process.
+
+For example, in the following program,
+variable `a` depends `b`,
+and variables `c` and `_` depend on `a`.
+So
+*.
+	The first initialized variable is `b`,
+	which is the first package-level variable without dependencies on other package-level variables.
+*.
+	The second initialized variable is `a`.
+	After `b` is initialized,
+	`a` is the first package-level variable
+	without dependencies on uninitialized package-level variables.
+*.
+	The third and fourth initialized variables are `_` and `c`.
+	After `a` and `b` are initialized,
+	`_` and `c` both don't depend on uninitialized package-level variables.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+var (
+	_ = f()
+	a = b / 2
+	b = 6
+	c = f()
+)
+
+func f() int {
+	a++
+	return a
+}
+
+func main() {
+	fmt.Println(a, b, c) // 5 6 5
+}
+'''
+
+The above program prints `5 6 5`.
+
+{//
+@@@ .line-numbers
+'''go
+package main
+
+var (
+	_ = f("w", x)
+	x = f("x", z)
+	y = f("y")
+	z = f("z")
+)
+
+func f(s string, deps ...int) int {
+	print(s)
+	return 0
+}
+
+func main() {
+	f("\n")
+}
+'''
+
+(Note, before Go Toolchain 1.13, the standard Go compiler
+__href="https://github.com/golang/go/issues/22326">didn't implement the rule correctly__.
+If the above program is compiled with the standard Go compiler version 1.12, it will print `zxwy`.)
+}
+
+{//
+https://github.com/golang/go/issues/31292
+https://github.com/golang/go/commit/451cf3e2cd8950571f436896a3987343f8c2d7f6
+}
+
+Multiple variables on the left-hand side of a variable specification
+initialized by single multi-valued expression on the right-hand side
+are initialized together. For example, for a package-level variable
+declaration `var x, y = f()`, variables `x` and `y`
+will be initialized together. In other words, no other variables will
+be initialized between them.
+
+A package-level variable declaration with multiple source value expressions
+will be disassembled into multiple single-source-value variable declarations
+before initializing all package-level variables.
+For example,
+
+@@@ .line-numbers
+'''go
+var m, n = expr1, expr2
+'''
+
+is equivalent to 
+
+@@@ .line-numbers
+'''go
+var m = expr1
+var n = expr2
+'''
+
+If hidden dependencies exist between variables,
+the initialization order between those variables is unspecified.
+In the following example (copied from Go specification),
+*
+	the variable `a` will be initialized after `b` for sure,
+*
+	but whether `x` is initialized before `b`, between
+	`b` and `a`, or after `a`, is not specified.
+*
+	and the moment at which function `sideEffect()` is called (before
+	or after `x` is initialized) is also not specified.
+
+@@@ .line-numbers
+'''go
+// x has a hidden dependency on a and b
+var x = I(T{}).ab()
+// Assume sideEffect is unrelated to x, a, and b.
+var _ = sideEffect()
+var a = b
+var b = 42
+
+type I interface    { ab() []int }
+type T struct{}
+func (T) ab() []int { return []int{a, b} }
+'''
+
+Please note that, Go specification doesn't compulsively specify the compilation order of the source files
+in a package, so try not to put some package-level variables into different source files in a package
+if there are complicate dependency relations between those variables; otherwise a variable might be
+initialzied to different values by different Go compilers.
+
+And please be aware of that some Go Toolchain versions don't correctly implement
+the above rules described in the current section. For example:
+
+*
+__a bug`` https://github.com/golang/go/issues/66575__ in Go Toolchain 1.22.0 - 1.22.4.
+*
+__a bug`` https://github.com/golang/go/issues/66585__ in Go Toolchain versions prior to 1.23.
+
+###+++++++++++ Operand Evaluation Orders in Logical Operations
+
+In a bool expression `a && b`, the right operand expression `b` will be evaluated
+only if the left operand expression `a` is evaluated as `true`.
+So `b` will be evaluated, if it needs to be evaluated, after the evaluation of `a`.
+
+In a bool expression `a || b`, the right operand expression `b` will be evaluated
+only if the left operand expression `a` is evaluated as `false`.
+So `b` will be evaluated, if it needs to be evaluated, after the evaluation of `a`.
+
+###+++++++++++ The Usual Order
+
+For the evaluations within a function body, Go specification says
+
+>
+	...,
+	when evaluating the operands of an expression, assignment, or return statement,
+	all function calls, method calls, and (channel) communication operations
+	are evaluated in lexical left-to-right order.
+
+The just described order is called **%% the usual order %%**.
+
+Please note that an explicit value conversion `T(v)` is not a function call.
+
+For example, in an expression `[]int{x, fa(), fb(), y}`,
+assume `x` and `y` are two variables,
+`fa` and `fb` are two functions, then the call `fa()`
+is guaranteed to be evaluated (executed) before `fb()`.
+However, the following the evaluation orders are unspecified in Go specification:
+*
+	the evaluation order of `x` (or `y`) and `fa()` (or `fb()`).
+*
+	the evaluation order of `x`, `y`, `fa` and `fb`.
+
+Another example, the following assignment, is demoed in Go specification.
+
+@@@ .disable-line-numbers111
+'''go
+y[z.f()], ok = g(h(a, b), i()+x[j()], <-c), k()
+'''
+
+where
+*
+	`c` is a channel expression and will be evaluated to a channel value.
+*
+	`g`, `h`, `i`, `j` and `k`
+	are function expressions.
+*
+	`f` is a method of expression `z`.
+
+Also considering the rule mentioned in the last section, compilers should guarantee the following evaluation orders at run time.
+*
+	The function calls, method calls and channel communication operations
+	happen in the order `z.f()`→`h()`→`i()`→`j()`→`<-c`→`g()`→`k()`.
+*
+	`h()` is evaluated after the evaluations of expressions `h`, `a` and `b`.
+*
+	`y[]` is evaluated after the evaluation of `z.f()`.
+*
+	`z.f()` is evaluated after the evaluation of expression `z`.
+*
+	`x[]` is evaluated after the evaluation of `j()`.
+
+However, the following orders (and more others) are not specified.
+*
+	The evaluation order of `y`, `z`, `g`,
+	`h`, `a`, `b`, `x`,
+	`i`, `j`, `c` and `k`.
+*
+	The evaluation order of `y[]`, `x[]` and `<-c`.
+
+By the usual order, we know the following declared variables `x`,
+`m` and `n` (also demoed in Go specification)
+will be initialized with ambiguous values.
+
+@@@ .line-numbers
+'''go
+	a := 1
+	f := func() int { a++; return a }
+
+	// x may be [1, 2] or [2, 2]: evaluation order
+	// between a and f() is not specified.
+	x := []int{a, f()}
+
+	// m may be {2: 1} or {2: 2}: evaluation order
+	// between the two map element assignments is
+	// not specified.
+	m := map[int]int{a: 1, a: 2}
+
+	// n may be {2: 3} or {3: 3}: evaluation order
+	// between the key and the value is unspecified.
+	n := map[int]int{a: f()}
+'''
+
+@@@ #value-assignment
+###+++++++++++ Evaluation and Assignment Orders in Assignment Statements
+
+Beside the above introduced rules, Go specification specifies more on the expression evaluation order
+the order of individual assignments in an assignment statement:
+
+> 
+	The assignment proceeds in two phases.
+	First, the operands of index expressions and pointer indirection
+	(including implicit pointer indirection in selectors) on the left
+	and the expressions on the right are all evaluated in the usual order.
+	Second, the assignments are carried out in left-to-right order.
+
+Later, we may call the first phase as evaluation phase and the second phase as carry-out phase.
+
+Go specification doesn't specify clearly whether or not the assignments carried-out
+during the second phase may affect the expression evaluation results got in the first phase,
+which ever caused __some__ __disputes__.
+So, here, this article will explain more on the evaluation orders in value assignments.
+
+// __ some :: https://github.com/golang/go/issues/23188#issuecomment-403951267
+// __ disputes :: https://github.com/golang/go/issues/15620
+
+Firstly, let's clarify that the assignments carried-out during the second phase
+don't affect the expression evaluation results got at the end of the first phase.
+
+To make the following explanations convenient, we assume that
+the container (slice or map) value of an index destination expression in an assignment is always addressable.
+If it is not, we can think the container value has already been saved in and
+replaced by a temporary addressable container value before carrying out the second phase.
+
+At the time of the end of the evaluation phase and just before the carry-out phase starts,
+each destination expression on the left of an assignment
+has been evaluated as its elementary form.
+Different destination expressions have different elementary forms.
+*
+	If a destination expression is a blank identifier, then its elementary form is still a blank identifier.
+*
+	If a destination expression is a container (array, slice or map) index expression `c[k]`,
+	then its elementary form is `(*cAddr)[k]`,
+	where `cAddr` is a pointer pointing to `c`.
+*
+	For other cases, the destination expression must result an addressable value,
+	then its elementary form is a dereference to the address of the destination expression evaluation result.
+
+Assume `a` and `b` are two addressable variables of the same type, the following assignment
+
+@@@ .line-numbers
+'''go
+	a, b = b, a
+'''
+
+will be executed like the following steps:
+
+@@@ .line-numbers
+'''go
+// The evaluation phase:
+P0 := &a; P1 := &b
+R0 := b; R1 := a 
+
+// The elementary form: *P0, *P1 = R0, R1
+
+// The carry-out phase:
+*P0 = R0
+*P1 = R1
+'''
+
+Here is another example, in which `x[0]` instead of `x[1]` is modified.
+
+@@@ .line-numbers;must-line-numbers
+'''go
+	x := []int{0, 0}
+	i := 0
+	i, x[i] = 1, 2
+	fmt.Println(x) // [2 0]
+'''
+
+The decomposed execution steps for the line %% 3 %% shown below are like:
+
+@@@ .line-numbers
+'''go
+// The evaluation phase:
+P0 := &i; P1 := &x; T2 := i
+R0 := 1; R1 := 2
+// Now, T2 == 0
+
+// The elementary form: *P0, (*P1)[T2] = R0, R1
+
+// The carry-out phase:
+*P0 = R0
+(*P1)[T2] = R1
+'''
+
+An example which is a little more complex.
+
+@@@ .line-numbers;must-line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	m := map[string]int{"Go": 0}
+	s := []int{1, 1, 1}; olds := s
+	n := 2
+	p := &n
+	s, m["Go"], *p, s[n] = []int{2, 2, 2}, s[1], m["Go"], 5
+	fmt.Println(m, s, n) // map[Go:1] [2 2 2] 0
+	fmt.Println(olds)    // [1 1 5]
+}
+'''
+
+The decomposed execution steps for the line %% 10 %% shown below are like:
+
+@@@ .line-numbers
+'''go
+// The evaluation phase:
+P0 := &s; PM1 := &m; K1 := "Go"; P2 := p; PS3 := &s; T3 := 2
+R0 := []int{2, 2, 2}; R1 := s[1]; R2 := m["Go"]; R3 := 5
+// now, R1 == 1, R2 == 0
+
+// The elementary form:
+//     *P0, (*PM1)[K1], *P2, (*PS3)[T3] = R0, R1, R2, R3
+
+// The carry-out phase:
+*P0 = R0
+(*PM1)[K1] = R1
+*P2 = R2
+(*PS3)[T3] = R3
+'''
+
+The following example rotates all elements in a slice for one index.
+
+@@@ .line-numbers
+'''go
+	x := []int{2, 3, 5, 7, 11}
+	t := x[0]
+	var i int
+	for i, x[i] = range x {}
+	x[i] = t
+	fmt.Println(x) // [3 5 7 11 2]
+'''
+
+Another example:
+
+@@@ .line-numbers
+'''go
+	x := []int{123}
+	x, x[0] = nil, 456        // will not panic
+	x, x[0] = []int{123}, 789 // will panic
+'''
+
+Although it is legal, it is not recommended to use complex multi-value assignments in Go,
+for their readabilities are not good and they have negative effects on both compilation speed and execution performance.
+
+As mentioned above,
+not all orders are specified in Go specification for value assignments,
+so some bad written code may produce different results.
+In the following example, the expression order of
+`x+1` and `f(&x)` is not specified.
+So the example may print `100 99` or `1 99`.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	f := func (p *int) int {
+		*p = 99
+		return *p
+	}
+
+	x := 0
+	y, z := x+1, f(&x)
+	fmt.Println(y, z)
+}
+'''
+
+The following is another example which will print ambiguous results.
+It may print `1 7 2`, `1 8 2` or `1 9 2`,
+depending on different compiler implementations.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	x, y := 0, 7
+	f := func() int {
+		x++
+		y++
+		return x
+	}
+	fmt.Println(f(), y, f())
+}
+'''
+
+###+++++++++++ Expression Evaluation Orders in `switch-case` Code Blocks
+
+The expression evaluation order in a `switch-case` code block has been __described before__.
+Here just shows an example.
+Simply speaking, before a branch code block is entered, the `case` expressions
+will be evaluated and compared with the switch expression one by one,
+until a comparison results in `true`.
+
+// __ described before :: control-flows.html#switch-case
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	f := func(n int) int {
+		fmt.Printf("f(%v) is called.\n", n)
+		return n
+	}
+
+	switch x := f(3); x + f(4) {
+	default:
+	case f(5):
+	case f(6), f(7), f(8):
+	case f(9), f(10):
+	}
+}
+'''
+
+At run time, the `f()` calls will be evaluated by the order
+from top to bottom and from left to right,
+until a comparison results in `true`.
+So `f(8)`, `f(9)` and `f(10)`
+will be not evaluated in this example.
+
+The output:
+@@@ .output
+'''
+f(3) is called.
+f(4) is called.
+f(5) is called.
+f(6) is called.
+f(7) is called.
+'''
+
+###+++++++++++ Expression Evaluation Orders in `select-case` Code Blocks
+
+When executing a `select-case` code block, before entering a branch code block,
+all the channel operands of receive operations and the operands of send statements
+involved in the `select-case` code block are evaluated exactly once,
+in source order (from top to bottom, from left to right).
+
+Note, the target expression being assigned to by a receive `case`
+operation will only be evaluated if that receive operation is selected later.
+
+In the following example, the expression `*fptr("aaa")` will never get evaluated,
+for its corresponding receive operation `<-fchan("bbb", nil)` will not be selected.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	c := make(chan int, 1)
+	c <- 0
+	fchan := func(info string, c chan int) chan int {
+		fmt.Println(info)
+		return c
+	}
+	fptr := func(info string) *int {
+		fmt.Println(info)
+		return new(int)
+	}
+
+	select {
+	case *fptr("aaa") = <-fchan("bbb", nil): // blocking
+	case *fptr("ccc") = <-fchan("ddd", c):   // non-blocking
+	case fchan("eee", nil) <- *fptr("fff"):  // blocking
+	case fchan("ggg", nil) <- *fptr("hhh"):  // blocking
+	}
+}
+'''
+
+The output of the above program:
+@@@ .output
+'''
+bbb
+ddd
+eee
+fff
+ggg
+hhh
+ccc
+'''
+
+Note that the expression `*fptr("ccc")` is the last evaluated expression in the above example.
+It is evaluated after its corresponding receive operation `<-fchan("ddd", c)` is selected.
+
+{//
+
+var y, z = string(x),  f()
+
+and
+
+var y = string(x)
+var z = f()
+
+Those two code snippets are equivalent in the package block. They are not guaranteed to be equivalent within a function body.
+
+https://github.com/golang/go/issues/43216#issuecomment-750923219
+}
+

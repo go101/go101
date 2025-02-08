@@ -1,140 +1,116 @@
-﻿<h1>Arrays, Slices and Maps in Go</h1>
-
-<p>
-Strictly speaking, there are three kinds of first-class citizen
-container types in Go, array, slice and map.
-Sometimes, strings and channels can also be viewed as container types,
-but this article will not touch the two kinds of types.
-All container types talked about in the current article are
-arrays, slices and maps.
-</p>
-
-<p>
-There are many container related details in Go.
-This article will list them one by one.
-</p>
-
-<h3>Simple Overview of Container Types and Values</h3>
-
-<div>
-<p>
-Each value of the three kinds of types is used to
-store a collection of element values.
-The types of all the elements stored in a container value are identical.
-The identical type is called the element type of
-(the container type of) the container value.
-</p>
-
-<p>
-Each element in a container has an associated key.
-An element value can be accessed or modified through its associated key.
-The key types of map types must be
-<a href="type-system-overview.html#types-not-support-comparison">comparable types</a>.
-The key types of array and slice types are all the built-in type <code>int</code>.
-The keys of the elements of an array or slice are non-negative integers
-which mark the positions of these elements in the array or slice.
-The non-negative integer keys are often called indexes.
-</p>
-
-<p>
-Each container value has a length property,
-which indicates how many elements are stored in that container.
-The valid range of the integer keys of an array or slice value is
-from zero (inclusive) to the length (exclusive) of the array or slice.
-For each value of a map type, the key values of that map value can be
-an arbitrary value of the key type of the map type.
-</p>
-
-<p>
-There are also many differences between the three kinds of container types.
-Most of the differences originate from the differences between
-the value memory layouts of the three kinds of types.
-From the last article, <a href="value-part.html">value parts</a>,
-we learned that an array value consists of only one direct part,
-however a slice or map value may have an underlying part,
-which is referenced by the direct part of the slice or map value.
-</p>
-
-<p>
-Elements of an array or a slice are both stored
-contiguously in a continuous memory segment.
-For an array, the continuous memory segment
-hosts the direct part of the array.
-For a slice, the continuous memory segment
-hosts the underlying indirect part of the slice.
-The map implementation of the standard Go compiler/runtime
-adopts the hashtable algorithm.
-So all elements of a map are also stored in an underlying
-continuous memory segment, but they may be not contiguous.
-There may be many holes (gaps) within the continuous memory segment.
-Another common map implementation algorithm is the binary tree algorithm.
-Whatever algorithm is used, the keys associated with the elements of a map
-are also stored in (the underlying parts of) the map.
-</p>
-
-We can access an element through its key.
-The time complexities of element accesses on all container values
-are all <code><i>O</i>(1)</code>,
-though, generally map element accesses are several times
-slower than array and slice element accesses.
-But maps have two advantages over arrays and slices:
-<ul>
-<li>
-	the key types of maps can be any comparable types.
-</li>
-<li>
-	maps consume much less memory than arrays and slices if most elements are zero values.
-</li>
-</ul>
-
-<p>
-From the last article, we have learned that the underlying parts of a value
-will not get copied when the value is copied.
-In other words, if a value has underlying parts,
-a copy of the value will share the underlying parts with the value.
-This is the root reason of many behavior differences
-between array and slice/map values.
-These behavior differences will be introduced below.
-</p>
+<h1 class="tmd-header-1">
+Arrays, Slices and Maps in Go
+</h1>
+<p></p>
+<div class="tmd-usual">
+Strictly speaking, there are three kinds of first-class citizen container types in Go, array, slice and map. Sometimes, strings and channels can also be viewed as container types, but this article will not touch the two kinds of types. All container types talked about in the current article are arrays, slices and maps.
+</div>
+<p></p>
+<div class="tmd-usual">
+There are many container related details in Go. This article will list them one by one.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Simple Overview of Container Types and Values
+</h3>
+<p></p>
+<div class="tmd-usual">
+Each value of the three kinds of types is used to store a collection of element values. The types of all the elements stored in a container value are identical. The identical type is called the element type of (the container type of) the container value.
+</div>
+<p></p>
+<div class="tmd-usual">
+Each element in a container has an associated key. An element value can be accessed or modified through its associated key. The key types of map types must be <a href="type-system-overview.html#types-not-support-comparison">comparable types</a>. The key types of array and slice types are all the built-in type <code class="tmd-code-span">int</code>. The keys of the elements of an array or slice are non-negative integers which mark the positions of these elements in the array or slice. The non-negative integer keys are often called indexes.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<div class="tmd-usual">
+Each container value has a length property, which indicates how many elements are stored in that container. The valid range of the integer keys of an array or slice value is from zero (inclusive) to the length (exclusive) of the array or slice. For each value of a map type, the key values of that map value can be an arbitrary value of the key type of the map type.
+</div>
+<p></p>
+<div class="tmd-usual">
+There are also many differences between the three kinds of container types. Most of the differences originate from the differences between the value memory layouts of the three kinds of types. From the last article, <a href="value-part.html">value parts</a>, we learned that an array value consists of only one direct part, however a slice or map value may have an underlying part, which is referenced by the direct part of the slice or map value.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>Literal Representations of Unnamed Container Types</h3>
-
-<div>
+</div>
+<p></p>
+<div class="tmd-usual">
+Elements of an array or a slice are both stored contiguously in a continuous memory segment. For an array, the continuous memory segment hosts the direct part of the array. For a slice, the continuous memory segment hosts the underlying indirect part of the slice. The map implementation of the standard Go compiler/runtime adopts the hashtable algorithm. So all elements of a map are also stored in an underlying continuous memory segment, but they may be not contiguous. There may be many holes (gaps) within the continuous memory segment. Another common map implementation algorithm is the binary tree algorithm. Whatever algorithm is used, the keys associated with the elements of a map are also stored in (the underlying parts of) the map.
+</div>
+<p></p>
+<div class="tmd-usual">
+We can access an element through its key. The time complexities of element accesses on all container values are all <span class="tmd-italic"><code class="tmd-code-span">O(1)</code></span>, though, generally map element accesses are several times slower than array and slice element accesses. But maps have two advantages over arrays and slices:
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the key types of maps can be any comparable types.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+maps consume much less memory than arrays and slices if most elements are zero values.
+</div>
+</li>
+</ul>
+<p></p>
+<div class="tmd-usual">
+From the last article, we have learned that the underlying parts of a value will not get copied when the value is copied. In other words, if a value has underlying parts, a copy of the value will share the underlying parts with the value. This is the root reason of many behavior differences between array and slice/map values. These behavior differences will be introduced below.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Literal Representations of Unnamed Container Types
+</h3>
+<p></p>
+<div class="tmd-usual">
 The literal representations of the three kinds of unnamed container types:
-<ul>
-<li>array types: <code>[N]T</code></li>
-<li>slice types: <code>[]T</code></li>
-<li>map types: <code>map[K]T</code></li>
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+array types: <code class="tmd-code-span">[N]T</code>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+slice types: <code class="tmd-code-span">[]T</code>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+map types: <code class="tmd-code-span">map[K]T</code> where
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">T</code> is an arbitrary type. It specifies the element type of a container type. Only values of the specified element type can be stored as element values of values of the container type.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">N</code> must be a non-negative integer constant. It specifies the number of elements stored in any value of an array type, and it can be called the length of the array type. This means the length of an array type is the inherent part of the array type. For example, <code class="tmd-code-span">[5]int</code> and <code class="tmd-code-span">[8]int</code> are two distinct array types.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">K</code> is an arbitrary comparable type. It specifies the key type of a map type. Most types in Go are comparable, incomparable types are <a href="type-system-overview.html#types-not-support-comparison">listed here</a>.
+</div>
+</li>
 </ul>
+<p></p>
+<div class="tmd-usual">
 
-where
-<ul>
-<li>
-	<code>T</code> is an arbitrary type.
-	It specifies the element type of a container type.
-	Only values of the specified element type can be stored
-	as element values of values of the container type.
-</li>
-<li>
-	<code>N</code> must be a non-negative integer constant.
-	It specifies the number of elements stored in any value of an array type,
-	and it can be called the length of the array type.
-	This means the length of an array type is the inherent part of the array type.
-	For example, <code>[5]int</code> and <code>[8]int</code>
-	are two distinct array types.
-</li>
-<li>
-	<code>K</code> is an arbitrary comparable type.
-	It specifies the key type of a map type.
-	Most types in Go are comparable, incomparable types are
-	<a href="type-system-overview.html#types-not-support-comparison">listed here</a>.
-</li>
-</ul>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 Here are some container type literal representation examples:
-<pre class="line-numbers must-line-numbers"><code class="language-go">const Size = 32
+</div>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">const Size = 32
 
 type Person struct {
 	name string
@@ -171,29 +147,24 @@ map[bool][]string
 // and key type is a struct type.
 map[struct{x int}]*int8
 </code></pre>
-
-<p>
-</p>
-
-<p>
-The <a href="type-system-overview.html#value-size">sizes</a> of all slice types are the same.
-The sizes of all map types are also the same.
-The size of an array type depends on its length and the size of its element type.
-The size of a zero-length array type or an array type
-with a zero-size element type is zero.
-</p>
+<p></p>
+<div class="tmd-usual">
+The <a href="type-system-overview.html#value-size">sizes</a> of all slice types are the same. The sizes of all map types are also the same. The size of an array type depends on its length and the size of its element type. The size of a zero-length array type or an array type with a zero-size element type is zero.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="value-literals"></a>
-<h3>Container Value Literals</h3>
-
-<div>
-Like struct values, container values can also be represented
-with composite literals, <code>T{...}</code>, where <code>T</code> denotes container type
-(except the zero values of slice and map types).
-Here are some examples:
-<pre class="line-numbers"><code class="language-go">// An array value containing four bool values.
+<p></p>
+<h3 id="value-literals" class="tmd-header-3">
+Container Value Literals
+</h3>
+<p></p>
+<div class="tmd-usual">
+Like struct values, container values can also be represented with composite literals, <code class="tmd-code-span">T{...}</code>, where <code class="tmd-code-span">T</code> denotes container type (except the zero values of slice and map types). Here are some examples:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// An array value containing four bool values.
 [4]bool{false, true, true, false}
 
 // A slice value which contains three words.
@@ -202,13 +173,16 @@ Here are some examples:
 // A map value containing some key-value pairs.
 map[string]int{"C": 1972, "Python": 1991, "Go": 2009}
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Each key-element pair between the braces of a map composite literal is also called an entry.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 There are several variants for array and slice composite literals:
-<pre class="line-numbers"><code class="language-go">
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">
 // The followings slice composite literals
 // are equivalent to each other.
 []string{"break", "continue", "fallthrough"}
@@ -225,43 +199,43 @@ There are several variants for array and slice composite literals:
 [...]bool{false, true, true, false}
 [...]bool{3: false, 1: true, true}
 </code></pre>
-
-<p>
-In the last two literals, the <code>...</code>s mean we want to let compilers
-deduce the lengths for the corresponding array values.
-</p>
-
-<!--
-<p>
-The element values in a container composite literal must
-be assignable to the corresponding container element type.
-The key values in a map composite literal must
-be assignable to the corresponding map key type.
-</p>
--->
-
-From the above examples, we know that element indexes (keys) are optional
-in array and slice composite literals. In an array or slice composite literal,
-<ul>
-<li>
-	if an index is present,
-	it is not needed to be a typed value of the key type <code>int</code>,
-	but it must be a non-negative constant representable as a value of type <code>int</code>.
-	And if it is typed, its type must be a <a href="basic-types-and-value-literals.html#overview">basic integer type</a>.
+<p></p>
+<div class="tmd-usual">
+In the last two literals, the <code class="tmd-code-span">...</code>s mean we want to let compilers deduce the lengths for the corresponding array values.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+From the above examples, we know that element indexes (keys) are optional in array and slice composite literals. In an array or slice composite literal,
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if an index is present, it is not needed to be a typed value of the key type <code class="tmd-code-span">int</code>, but it must be a non-negative constant representable as a value of type <code class="tmd-code-span">int</code>. And if it is typed, its type must be a <a href="basic-types-and-value-literals.html#overview">basic integer type</a>.
+</div>
 </li>
-<li>
-	<b>an element which index is absent uses the previous element's index plus one as its index.</b>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<span class="tmd-bold">an element which index is absent uses the previous element's index plus one as its index.</span>
+</div>
 </li>
-<li>
-	if the index of the first element is absent, its index is zero.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if the index of the first element is absent, its index is zero.
+</div>
 </li>
 </ul>
+<p></p>
+<div class="tmd-usual">
 
-<p>
+</div>
+<p></p>
+<div class="tmd-usual">
 The keys of entries in a map literal must not be absent, they can be non-constants.
-</p>
-
-<pre class="line-numbers"><code class="language-go">var a uint = 1
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var a uint = 1
 var _ = map[uint]int {a : 123} // okay
 
 // The following two lines fail to compile,
@@ -269,115 +243,111 @@ var _ = map[uint]int {a : 123} // okay
 var _ = []int{a: 100}  // error
 var _ = [5]int{a: 100} // error
 </code></pre>
-
-<p>
-</p>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Constant keys in one specific composite literal <a href="details.html#constant-keys-in-composite-literals">can't be duplicate</a>.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<h3 class="tmd-header-3">
+Literal Representations of Zero Values of Container Types
+</h3>
+<p></p>
+<div class="tmd-usual">
+Like structs, the zero value of an array type <code class="tmd-code-span">A</code> can be represented with the composite literal <code class="tmd-code-span">A{}</code>. For example, the zero value of type <code class="tmd-code-span">[100]int</code> can be denoted as <code class="tmd-code-span">[100]int{}</code>. All elements stored in the zero value of an array type are zero values of the element type of the array type.
+</div>
+<p></p>
+<div class="tmd-usual">
+Like pointer types, zero values of all slice and map types are represented with the predeclared <code class="tmd-code-span">nil</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+BTW, there are some other kinds of types whose zero values are also represented by <code class="tmd-code-span">nil</code>, including later to be introduced function, channel and interface types.
+</div>
+<p></p>
+<div class="tmd-usual">
+When an array variable is declared without being specified an initial value, memory has been allocated for the elements of the zero array value. The memory for the elements of a nil slice or map value has not been allocated yet.
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note, <code class="tmd-code-span">[]T{}</code> represents a blank slice value (with zero elements) of slice type <code class="tmd-code-span">[]T</code>, it is different from <code class="tmd-code-span">[]T(nil)</code>. The same situation is for <code class="tmd-code-span">map[K]T{}</code> and <code class="tmd-code-span">map[K]T(nil)</code>.
+</div>
+<p></p>
+<h3 id="take-composite-literal-address" class="tmd-header-3">
+Composite Literals Are Unaddressable but Can Be Taken Addresses
+</h3>
+<p></p>
+<div class="tmd-usual">
+We have learned that <a href="struct.html#take-composite-literal-address">struct composite literals can be taken addresses directly</a> before. Container composite literals have no exceptions here.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>Literal Representations of Zero Values of Container Types</h3>
-
-<p>
-Like structs, the zero value of an array type <code>A</code> can be represented
-with the composite literal <code>A{}</code>.
-For example, the zero value of type <code>[100]int</code>
-can be denoted as <code>[100]int{}</code>.
-All elements stored in the zero value of an array type
-are zero values of the element type of the array type.
-</p>
-
-<p>
-Like pointer types, zero values of all slice and map types are represented
-with the predeclared <code>nil</code>.
-</p>
-
-<p>
-BTW, there are some other kinds of types whose zero values are also represented by <code>nil</code>,
-including later to be introduced function, channel and interface types.
-</p>
-
-<p>
-When an array variable is declared without being specified an initial value,
-memory has been allocated for the elements of the zero array value.
-The memory for the elements of a nil slice or map value has not been allocated yet.
-</p>
-
-<p>
-Please note, <code>[]T{}</code> represents a blank slice value (with zero elements)
-of slice type <code>[]T</code>, it is different from <code>[]T(nil)</code>.
-The same situation is for <code>map[K]T{}</code> and <code>map[K]T(nil)</code>.
-</p>
-
-<a class="anchor" id="take-composite-literal-address"></a>
-<h3>Composite Literals Are Unaddressable but Can Be Taken Addresses</h3>
-
-<div>
-<p>
-We have learned that
-<a href="struct.html#take-composite-literal-address">struct composite literals
-can be taken addresses directly</a> before.
-Container composite literals have no exceptions here.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	pm := &map[string]int{"C": 1972, "Go": 2009}
-	ps := &[]string{"break", "continue"}
-	pa := &[...]bool{false, true, true, false}
+	pm := &amp;map[string]int{"C": 1972, "Go": 2009}
+	ps := &amp;[]string{"break", "continue"}
+	pa := &amp;[...]bool{false, true, true, false}
 	fmt.Printf("%T\n", pm) // *map[string]int
 	fmt.Printf("%T\n", ps) // *[]string
 	fmt.Printf("%T\n", pa) // *[4]bool
 }
 </code></pre>
-<p>
-</p>
+<p></p>
+<h3 id="composite-literal-simplification" class="tmd-header-3">
+Nested Composite Literals Can Be Simplified
+</h3>
+<p></p>
+<div class="tmd-usual">
+If a composite literal nested many other composite literals, then those nested composited literals can simplified to the form <code class="tmd-code-span">{...}</code>.
 </div>
-
-<a class="anchor" id="composite-literal-simplification"></a>
-<h3>Nested Composite Literals Can Be Simplified</h3>
-
-<div>
-<p>
-If a composite literal nested many other composite literals, then those nested
-composited literals can simplified to the form <code>{...}</code>.
-</p>
-
+<p></p>
+<div class="tmd-usual">
 For example, the slice value literal
-
-<pre class="line-numbers"><code class="language-go">
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">
 // A slice value of a type whose element type is
 // *[4]byte. The element type is a pointer type
 // whose base type is [4]byte. The base type is
 // an array type whose element type is "byte".
 var heads = []*[4]byte{
-	&[4]byte{'P', 'N', 'G', ' '},
-	&[4]byte{'G', 'I', 'F', ' '},
-	&[4]byte{'J', 'P', 'E', 'G'},
+	&amp;[4]byte{'P', 'N', 'G', ' '},
+	&amp;[4]byte{'G', 'I', 'F', ' '},
+	&amp;[4]byte{'J', 'P', 'E', 'G'},
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 can be simplified to
-
-<pre class="line-numbers"><code class="language-go">var heads = []*[4]byte{
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var heads = []*[4]byte{
 	{'P', 'N', 'G', ' '},
 	{'G', 'I', 'F', ' '},
 	{'J', 'P', 'E', 'G'},
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 The array value literal in the following example
-<pre class="line-numbers"><code class="language-go">type language struct {
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type language struct {
 	name string
 	year int
 }
@@ -388,21 +358,24 @@ var _ = [...]language{
 	language{"Go", 2009},
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 can be simplified to
-
-<pre class="line-numbers"><code class="language-go">var _ = [...]language{
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var _ = [...]language{
 	{"C", 1972},
 	{"Python", 1991},
 	{"Go", 2009},
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 And the map value literal in the following example
-<pre class="line-numbers"><code class="language-go">type LangCategory struct {
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type LangCategory struct {
 	dynamic bool
 	strong  bool
 }
@@ -427,10 +400,13 @@ var _ = map[LangCategory]map[string]int{
 	},
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 can be simplified to
-
-<pre class="line-numbers"><code class="language-go">var _ = map[LangCategory]map[string]int{
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var _ = map[LangCategory]map[string]int{
 	{true, true}: {
 		"Python": 1991,
 		"Erlang": 1986,
@@ -447,48 +423,48 @@ can be simplified to
 	},
 }
 </code></pre>
-
-<p>
-Please notes, in the above several examples, the comma following the last item
-in each composite literal can't be omitted.
-Please read <a href="line-break-rules.html">the line break rules in Go</a>
-for more information later.
-</p>
+<p></p>
+<div class="tmd-usual">
+Please notes, in the above several examples, the comma following the last item in each composite literal can't be omitted. Please read <a href="line-break-rules.html">the line break rules in Go</a> for more information later.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<h3 id="comparison" class="tmd-header-3">
+Compare Container Values
+</h3>
+<p></p>
+<div class="tmd-usual">
+As which has mentioned in the article <a href="type-system-overview.html#types-not-support-comparison">overview of Go type system</a>, map and slice types are incomparable types. So map and slice types can't be used as map key types.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="comparison"></a>
-<h3>Compare Container Values</h3>
+</div>
+<p></p>
+<div class="tmd-usual">
+Although a slice or map value can't be compared with another slice or map value (or itself), it can be compared to the bare untyped <code class="tmd-code-span">nil</code> identifier to check whether or not the slice or map value is a zero value.
+</div>
+<p></p>
+<div class="tmd-usual">
+Most array types are comparable, except the ones whose element types are incomparable types.
+</div>
+<p></p>
+<div class="tmd-usual">
+When comparing two array values, each pair of the corresponding elements will be compared. We can think element pairs are compared by their index order. The two array values are equal only if all of their corresponding elements are equal. The comparison stops in advance when a pair of elements is found unequal or <a href="interface.html#comparison">a panic occurs</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-As which has mentioned in the article
-<a href="type-system-overview.html#types-not-support-comparison">overview of
-Go type system</a>, map and slice types are incomparable types.
-So map and slice types can't be used as map key types.
-</p>
-
-<p>
-Although a slice or map value can't be compared with another slice or map value
-(or itself), it can be compared to the bare untyped <code>nil</code> identifier
-to check whether or not the slice or map value is a zero value.
-</p>
-
-<p>
-Most array types are comparable,
-except the ones whose element types are incomparable types.
-</p>
-
-<p>
-When comparing two array values, each pair of the corresponding elements will be compared.
-We can think element pairs are compared by their index order.
-The two array values are equal only if all of their corresponding elements are equal.
-The comparison stops in advance when a pair of elements is found unequal
-or <a href="interface.html#comparison">a panic occurs</a>.
-</p>
-
-<div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -516,45 +492,28 @@ func main() {
 	*/
 }
 </code></pre>
-<p>
-</p>
+<p></p>
+<h3 id="cap-len" class="tmd-header-3">
+Check Lengths and Capacities of Container Values
+</h3>
+<p></p>
+<div class="tmd-usual">
+Besides the length property, each container value also has a capacity property. The capacity of an array is always equal to the length of the array. The capacity of a non-nil map can be viewed as unlimited. So, in practice, only capacities of slice values are meaningful. The capacity of a slice is always equal to or larger than the length of the slice. The meaning of slice capacities will be explained in the section after next.
 </div>
-
-<a class="anchor" id="cap-len"></a>
-<h3>Check Lengths and Capacities of Container Values</h3>
-
-<p>
-Besides the length property, each container value also has a capacity property.
-The capacity of an array is always equal to the length of the array.
-The capacity of a non-nil map can be viewed as unlimited.
-So, in practice, only capacities of slice values are meaningful.
-The capacity of a slice is always equal to or larger than the length of the slice.
-The meaning of slice capacities will be explained in the section after next.
-</p>
-
-<p>
-We can use the built-in <code>len</code> function to get the length of
-a container value, and use the built-in <code>cap</code> function to
-get the capacity of a container value.
-Each of the two functions returns an <code>int</code> typed result
-or an untyped result which default type is <code>int</code>,
-depending on whether or not the passed argument is a constant expression.
-As the capacity of any map value is unlimited,
-the built-in <code>cap</code> function doesn't apply to map values.
-</p>
-
-<p>
-The length and capacity of an array value can never change.
-The lengths and capacities of all values of an array type always equal to the length of the array type.
-The length and capacity of a slice value may change at run time.
-So slices can be viewed as dynamic arrays.
-Slices are much more flexible than arrays
-and are used more popularly than arrays in practice.
-</p>
-
-<div>
+<p></p>
+<div class="tmd-usual">
+We can use the built-in <code class="tmd-code-span">len</code> function to get the length of a container value, and use the built-in <code class="tmd-code-span">cap</code> function to get the capacity of a container value. Each of the two functions returns an <code class="tmd-code-span">int</code> typed result or an untyped result which default type is <code class="tmd-code-span">int</code>, depending on whether or not the passed argument is a constant expression. As the capacity of any map value is unlimited, the built-in <code class="tmd-code-span">cap</code> function doesn't apply to map values.
+</div>
+<p></p>
+<div class="tmd-usual">
+The length and capacity of an array value can never change. The lengths and capacities of all values of an array type always equal to the length of the array type. The length and capacity of a slice value may change at run time. So slices can be viewed as dynamic arrays. Slices are much more flexible than arrays and are used more popularly than arrays in practice.
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -572,77 +531,75 @@ func main() {
 	fmt.Println(len(m), len(m2)) // 2 0
 }
 </code></pre>
-
-<p>
-The length and capacity of each slice shown in the above specified example value are equal.
-This is not true for every slice value.
-We will use some slices whose respective lengths and capacities are not equal in the following sections.
-</p>
+<p></p>
+<div class="tmd-usual">
+The length and capacity of each slice shown in the above specified example value are equal. This is not true for every slice value. We will use some slices whose respective lengths and capacities are not equal in the following sections.
 </div>
-
-<a class="anchor" id="element-access"></a>
-<h3>Retrieve and Modify Container Elements</h3>
-
-<div>
-<p>
-The element associated to key <code>k</code> stored in a container value
-<code>v</code> is represented with the element indexing syntax form <code>v[k]</code>.
-
-</p>
-
-For a use of <code>v[k]</code>, assume <code>v</code> is an array or slice,
-<ul>
-<li>
-	if <code>k</code> is a constant, then it must satisfy
-	<a href="#value-literals">the requirements described above</a>
-	for the indexes in container composite literals.
-	In addition, if <code>v</code> is an array, the
-	<code>k</code> must be smaller than the length of the array.
+<p></p>
+<h3 id="element-access" class="tmd-header-3">
+Retrieve and Modify Container Elements
+</h3>
+<p></p>
+<div class="tmd-usual">
+The element associated to key <code class="tmd-code-span">k</code> stored in a container value <code class="tmd-code-span">v</code> is represented with the element indexing syntax form <code class="tmd-code-span">v[k]</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+For a use of <code class="tmd-code-span">v[k]</code>, assume <code class="tmd-code-span">v</code> is an array or slice,
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if <code class="tmd-code-span">k</code> is a constant, then it must satisfy <a href="#value-literals">the requirements described above</a> for the indexes in container composite literals. In addition, if <code class="tmd-code-span">v</code> is an array, the <code class="tmd-code-span">k</code> must be smaller than the length of the array.
+</div>
 </li>
-<li>
-	if <code>k</code> is a non-constant value, it must be a value of any basic integer type.
-	In addition, it must be larger than or equal to zero and smaller than <code>len(v)</code>,
-	otherwise, a run-time panic will occur.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if <code class="tmd-code-span">k</code> is a non-constant value, it must be a value of any basic integer type. In addition, it must be larger than or equal to zero and smaller than <code class="tmd-code-span">len(v)</code>, otherwise, a run-time panic will occur.
+</div>
 </li>
-<li>
-	if <code>v</code> is a nil slice,
-	a run-time panic will occur.
-</li>
-</ul>
-
-For a use of <code>v[k]</code>, assume <code>v</code> is a map,
-then <code>k</code> must be assignable to values of
-the element type of the map type, and
-<ul>
-<li>
-	if <code>k</code> is an interface value whose dynamic type is incomparable,
-	a panic will occur at run time.
-</li>
-<li>
-	if <code>v[k]</code> is used as a destination value in an assignment and <code>v</code> is a nil map,
-	a panic will occur at run time.
-</li>
-<li>
-	if <code>v[k]</code> is used to retrieve the element value corresponding key <code>k</code> in map <code>v</code>,
-	then no panics will occur, even if <code>v</code> is a nil map.
-	(Assume the evaluation of <code>k</code> will not panic.)
-</li>
-<li>
-	if <code>v[k]</code> is used to retrieve the element value corresponding key <code>k</code> in map <code>v</code>,
-	and the map <code>v</code> doesn't contain an entry with
-	key <code>k</code>, <code>v[k]</code> results in a zero value of
-	the element type of the corresponding map type of <code>v</code>.
-	Generally, <code>v[k]</code> is viewed as a single-value
-	expression. However, when <code>v[k]</code> is used as the only source
-	value expression in an assignment, it can be viewed as a multi-value
-	expression and result a second optional untyped boolean value,
-	which indicates whether or not the map <code>v</code> contains an entry
-	with key <code>k</code>.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if <code class="tmd-code-span">v</code> is a nil slice, a run-time panic will occur.
+</div>
 </li>
 </ul>
+<p></p>
+<div class="tmd-usual">
 
+</div>
+<p></p>
+<div class="tmd-usual">
+For a use of <code class="tmd-code-span">v[k]</code>, assume <code class="tmd-code-span">v</code> is a map, then <code class="tmd-code-span">k</code> must be assignable to values of the element type of the map type, and
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if <code class="tmd-code-span">k</code> is an interface value whose dynamic type is incomparable, a panic will occur at run time.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if <code class="tmd-code-span">v[k]</code> is used as a destination value in an assignment and <code class="tmd-code-span">v</code> is a nil map, a panic will occur at run time.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if <code class="tmd-code-span">v[k]</code> is used to retrieve the element value corresponding key <code class="tmd-code-span">k</code> in map <code class="tmd-code-span">v</code>, then no panics will occur, even if <code class="tmd-code-span">v</code> is a nil map. (Assume the evaluation of <code class="tmd-code-span">k</code> will not panic.)
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if <code class="tmd-code-span">v[k]</code> is used to retrieve the element value corresponding key <code class="tmd-code-span">k</code> in map <code class="tmd-code-span">v</code>, and the map <code class="tmd-code-span">v</code> doesn't contain an entry with key <code class="tmd-code-span">k</code>, <code class="tmd-code-span">v[k]</code> results in a zero value of the element type of the corresponding map type of <code class="tmd-code-span">v</code>. Generally, <code class="tmd-code-span">v[k]</code> is viewed as a single-value expression. However, when <code class="tmd-code-span">v[k]</code> is used as the only source value expression in an assignment, it can be viewed as a multi-value expression and result a second optional untyped boolean value, which indicates whether or not the map <code class="tmd-code-span">v</code> contains an entry with key <code class="tmd-code-span">k</code>.
+</div>
+</li>
+</ul>
+<p></p>
+<div class="tmd-usual">
 An example of container element accesses and modifications:
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -673,136 +630,105 @@ func main() {
 	m["hello"] = 555 // panic: assign to entry in nil map
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 class="tmd-header-3">
+Recall the Internal Structure Definition of Slice Types
+</h3>
+<p></p>
+<div class="tmd-usual">
+To understand slice types and values better and explain slices easier, we need to have an impression on the internal structure of slice types. From the last article, <a href="value-part.html">value parts</a>, we learned that the internal structure of slice types defined by the standard Go compiler/runtime is like
 </div>
-
-<h3>Recall the Internal Structure Definition of Slice Types</h3>
-
-<div>
-To understand slice types and values better and explain slices easier,
-we need to have an impression on the internal structure of slice types.
-From the last article, <a href="value-part.html">value parts</a>,
-we learned that the internal structure of slice types
-defined by the standard Go compiler/runtime is like
-<pre class="line-numbers must-line-numbers"><code class="language-go">type _slice struct {
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">type _slice struct {
 	elements unsafe.Pointer // referencing underlying elements
 	len      int            // length
 	cap      int            // capacity
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The internal structure definitions used by other compilers/runtimes
-implementations may be not the exact same but would be similar.
-The following explanations are based on the official slice implementation.
-</p>
-
-<p>
-The above shown internal structure explains the memory layouts of
-the direct parts of slice values.
-The <code>len</code> field of the direct part of a slice indicates
-the length of the slice, and the <code>cap</code> field indicates
-the capacity of the slice.
-The following picture depicts one possible memory layout of a slice value.
-</p>
-
-<div class="text-center">
-<img src="res/slice-internal.png" alt="slice internal"></img>
 </div>
-
-<p>
-Although the underlying memory segment which hosts the elements of a slice
-may be very large, the slice may be only aware of a sub-segment of the
-memory segment. For example, in the above picture, the slice is only
-aware of the middle grey sub-segment of the whole memory segment.
-</p>
-
-<p>
-For the slice depicted in the above picture, the elements from
-index <code>len</code> to index <code>cap</code> (exclusive)
-don't belong to the elements of the slice.
-They are just some redundant element slots for the depicted slice,
-but they may be effective elements of other slices or another array.
-</p>
-
-<p>
-The next section will explain how to append elements to a base slice and yield
-a new slice by using the built-in <code>append</code> function.
-The result slice of an <code>append</code> function call may share starting
-elements with the base slice or not, depending on the capacity (and length)
-of the base slice and how many elements are appended.
-</p>
-
-When the slice is used as the base slice in an <code>append</code> function call,
-<ul>
-<li>
-	if the number of appended elements is larger than the number of
-	the redundant element slots of the base slice,
-	a new underlying memory segment will be allocated for the result slice,
-	thus the result slice and the base slice will not share any elements.
+<p></p>
+<div class="tmd-usual">
+The internal structure definitions used by other compilers/runtimes implementations may be not the exact same but would be similar. The following explanations are based on the official slice implementation.
+</div>
+<p></p>
+<div class="tmd-usual">
+The above shown internal structure explains the memory layouts of the direct parts of slice values. The <code class="tmd-code-span">len</code> field of the direct part of a slice indicates the length of the slice, and the <code class="tmd-code-span">cap</code> field indicates the capacity of the slice. The following picture depicts one possible memory layout of a slice value.
+</div>
+<p></p>
+<div class="tmd-base tmd-align-center">
+<div class="tmd-usual">
+<img src="res/slice-internal.png" class="tmd-media"/>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
+Although the underlying memory segment which hosts the elements of a slice may be very large, the slice may be only aware of a sub-segment of the memory segment. For example, in the above picture, the slice is only aware of the middle grey sub-segment of the whole memory segment.
+</div>
+<p></p>
+<div class="tmd-usual">
+For the slice depicted in the above picture, the elements from index <code class="tmd-code-span">len</code> to index <code class="tmd-code-span">cap</code> (exclusive) don't belong to the elements of the slice. They are just some redundant element slots for the depicted slice, but they may be effective elements of other slices or another array.
+</div>
+<p></p>
+<div class="tmd-usual">
+The next section will explain how to append elements to a base slice and yield a new slice by using the built-in <code class="tmd-code-span">append</code> function. The result slice of an <code class="tmd-code-span">append</code> function call may share starting elements with the base slice or not, depending on the capacity (and length) of the base slice and how many elements are appended.
+</div>
+<p></p>
+<div class="tmd-usual">
+When the slice is used as the base slice in an <code class="tmd-code-span">append</code> function call,
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if the number of appended elements is larger than the number of the redundant element slots of the base slice, a new underlying memory segment will be allocated for the result slice, thus the result slice and the base slice will not share any elements.
+</div>
 </li>
-<li>
-	otherwise, no new underlying memory segments will be allocated
-	for the result slice, and the elements of the base slice also
-	belong to the elements of the result slice.
-	In other words, the two slices share some elements and all of
-	their elements are hosted on the same underlying memory segment.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+otherwise, no new underlying memory segments will be allocated for the result slice, and the elements of the base slice also belong to the elements of the result slice. In other words, the two slices share some elements and all of their elements are hosted on the same underlying memory segment.
+</div>
 </li>
 </ul>
-
-<p>
-The section after next will show a picture which describes both of
-the two possible cases in appending slice elements.
-</p>
-
-<p>
-There are more routes which lead to the elements of two slices
-are hosted on the same underlying memory segment.
-Such as assignments and the below to be introduced subslice operations.
-</p>
-
-<p>
-Note, generally, we can't modify the three fields of a slice value individually,
-except through the <a href="#modify-slice-length-and-capacity">reflection</a>
-and <a href="unsafe.html">unsafe</a> ways.
-In other words, generally, to modify a slice value,
-its three fields must be modified together.
-Generally, this is achieved by assigning another slice value
-(of the same slice type) to the slice which needs to be modified.
-</p>
+<p></p>
+<div class="tmd-usual">
+The section after next will show a picture which describes both of the two possible cases in appending slice elements.
+</div>
+<p></p>
+<div class="tmd-usual">
+There are more routes which lead to the elements of two slices are hosted on the same underlying memory segment. Such as assignments and the below to be introduced subslice operations.
+</div>
+<p></p>
+<div class="tmd-usual">
+Note, generally, we can't modify the three fields of a slice value individually, except through the <a href="#modify-slice-length-and-capacity">reflection</a> and <a href="unsafe.html">unsafe</a> ways. In other words, generally, to modify a slice value, its three fields must be modified together. Generally, this is achieved by assigning another slice value (of the same slice type) to the slice which needs to be modified.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="assignment"></a>
-<h3>Container Assignments</h3>
-
-<div>
-
-<p>
-If a map is assigned to another map, then the two maps will
-share all (underlying) elements.
-Appending elements into (or deleting elements from) one map
-will reflect on the other map.
-</p>
-
-<p>
-Like map assignments, if a slice is assigned to another slice,
-they will share all (underlying) elements.
-Their respective lengths and capacities equal to each other.
-However, if the length/capacity of one slice changes later,
-the change will not reflect on the other slice.
-</p>
-
-<p>
-When an array is assigned to another array,
-all the elements are copied from the source one to the destination one.
-The two arrays don't share any elements.
-</p>
-
+<p></p>
+<h3 id="assignment" class="tmd-header-3">
+Container Assignments
+</h3>
+<p></p>
+<div class="tmd-usual">
+If a map is assigned to another map, then the two maps will share all (underlying) elements. Appending elements into (or deleting elements from) one map will reflect on the other map.
+</div>
+<p></p>
+<div class="tmd-usual">
+Like map assignments, if a slice is assigned to another slice, they will share all (underlying) elements. Their respective lengths and capacities equal to each other. However, if the length/capacity of one slice changes later, the change will not reflect on the other slice.
+</div>
+<p></p>
+<div class="tmd-usual">
+When an array is assigned to another array, all the elements are copied from the source one to the destination one. The two arrays don't share any elements.
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -823,51 +749,35 @@ func main() {
 	fmt.Println(a0, a1) // [7 8 9] [2 8 9]
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="element-addition-deletion" class="tmd-header-3">
+Append and Delete Container Elements
+</h3>
+<p></p>
+<div class="tmd-usual">
+The syntax of appending a key-element pair (an entry) to a map is the same as the syntax of modifying a map element. For example, for a non-nil map value <code class="tmd-code-span">m</code>, the following line
 </div>
-
-<a class="anchor" id="element-addition-deletion"></a>
-<h3>Append and Delete Container Elements</h3>
-
-<div>
-The syntax of appending a key-element pair (an entry)
-to a map is the same as the syntax of modifying a map element.
-For example, for a non-nil map value <code>m</code>,
-the following line
-<pre class="disable-line-numbers111"><code class="language-go">m[k] = e
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">m[k] = e
 </code></pre>
-
-<p>
-put the key-element pair <code>(k, e)</code> into the map <code>m</code>
-if <code>m</code> doesn't contain an entry with key <code>k</code>,
-or modify the element value associated with <code>k</code>
-if <code>m</code> contains an entry with key <code>k</code>.
-</p>
-
-<!--
-<p>
-The underlying continuous memory segment of a map might need reallocated
-to hold more and more elements if a new entry is put into the map.
-</p>
--->
-
-There is a built-in <code>delete</code> function
-which is used to delete an entry from a map.
-For example, the following line will delete the entry with key
-<code>k</code> from the map <code>m</code>.
-If the map <code>m</code> doesn't contain an entry with key <code>k</code>,
-it is a no-op, no panics will occur,
-even if <code>m</code> is a nil map.
-<pre class="disable-line-numbers111"><code class="language-go">delete(m, k)
+<p></p>
+<div class="tmd-usual">
+put the key-element pair <code class="tmd-code-span">(k, e)</code> into the map <code class="tmd-code-span">m</code> if <code class="tmd-code-span">m</code> doesn't contain an entry with key <code class="tmd-code-span">k</code>, or modify the element value associated with <code class="tmd-code-span">k</code> if <code class="tmd-code-span">m</code> contains an entry with key <code class="tmd-code-span">k</code>.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+There is a built-in <code class="tmd-code-span">delete</code> function which is used to delete an entry from a map. For example, the following line will delete the entry with key <code class="tmd-code-span">k</code> from the map <code class="tmd-code-span">m</code>. If the map <code class="tmd-code-span">m</code> doesn't contain an entry with key <code class="tmd-code-span">k</code>, it is a no-op, no panics will occur, even if <code class="tmd-code-span">m</code> is a nil map.
+</div>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">delete(m, k)
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 An example shows how to append (put) entries to and delete entries from maps:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -881,37 +791,33 @@ func main() {
 	fmt.Println(m)    // map[C:1972 Go:2009]
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Please note, before Go 1.12, the entry print order of a map is unspecified.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+Array elements can neither be appended nor deleted, though elements of addressable arrays can be modified.
+</div>
+<p></p>
+<div class="tmd-usual">
+We can use the built-in <code class="tmd-code-span">append</code> function to append multiple elements into a base slice and result a new slice. The result new slice contains the elements of the base slice and the appended elements. Please note, the base slice is not modified by the <code class="tmd-code-span">append</code> function call. Surely, if we expect (and often in practice), we can assign the result slice to the base slice to modify the base slice.
+</div>
+<p></p>
+<div class="tmd-usual">
+There is not a built-in way to delete an element from a slice. We must use the <code class="tmd-code-span">append</code> function and the subslice feature introduced below together to achieve this goal. Slice element deletions and insertions will be demoed in the below <a href="#slice-manipulations">more slice manipulations</a> section. Here, the following example only shows how to use the <code class="tmd-code-span">append</code> function.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Array elements can neither be appended nor deleted,
-though elements of addressable arrays can be modified.
-</p>
-
-<p>
-We can use the built-in <code>append</code> function
-to append multiple elements into a base slice and result a new slice.
-The result new slice contains the elements of the base slice and the appended elements.
-Please note, the base slice is not modified by the <code>append</code> function call.
-Surely, if we expect (and often in practice), we can assign the result slice
-to the base slice to modify the base slice.
-</p>
-
-<p>
-There is not a built-in way to delete an element from a slice.
-We must use the <code>append</code> function and
-the subslice feature introduced below together to achieve this goal.
-Slice element deletions and insertions will be demoed in the below
-<a href="#slice-manipulations">more slice manipulations</a> section.
-Here, the following example only shows how to use the <code>append</code> function.
-</p>
-
-An example showing how to use the <code>append</code> function:
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+An example showing how to use the <code class="tmd-code-span">append</code> function:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -922,7 +828,7 @@ func main() {
 	fmt.Println(s1, cap(s1)) // [2 3 5 7] 6
 	s2 := append(s1, 11, 13) // append two elements
 	fmt.Println(s2, cap(s2)) // [2 3 5 7 11 13] 6
-	s3 := append(s0)         // <=> s3 := s0
+	s3 := append(s0)         // &lt;=&gt; s3 := s0
 	fmt.Println(s3, cap(s3)) // [2 3 5] 3
 	s4 := append(s0, s0...)  // double s0 as s4
 	fmt.Println(s4, cap(s4)) // [2 3 5 2 3 5] 6
@@ -931,101 +837,91 @@ func main() {
 	fmt.Println(s2[0], s3[0], s4[0]) // 789 99 2
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+Note, the built-in <code class="tmd-code-span">append</code> function is a <a href="function.html#variadic-function">variadic function</a>. It has two parameters, the second one is a <a href="function.html#variadic-parameter">variadic parameter</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+Variadic functions will be explained in the article after next. Currently, we only need to know that there are two manners to pass variadic arguments. In the above example, line <span class="tmd-italic">8</span>, line <span class="tmd-italic">10</span> and line <span class="tmd-italic">12</span> use one manner and line <span class="tmd-italic">14</span> uses the other manner. For the former manner, we can pass zero or more element values as the variadic arguments. For the latter manner, we must pass a slice as the only variadic argument and which must be followed by three dots <code class="tmd-code-span">...</code>. We can learn how to call variadic functions from the <a href="function.html#variadic-call">the article after next</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Note, the built-in <code>append</code> function is a
-<a href="function.html#variadic-function">variadic function</a>.
-It has two parameters, the second one is a
-<a href="function.html#variadic-parameter">variadic parameter</a>.
-</p>
-
-<p>
-Variadic functions will be explained in the article after next.
-Currently, we only need to know that there are two manners to pass variadic arguments.
-In the above example, line <i>8</i>, line <i>10</i> and line <i>12</i> use
-one manner and line <i>14</i> uses the other manner.
-For the former manner, we can pass zero or more element values as the variadic arguments.
-For the latter manner, we must pass a slice as the only variadic argument and
-which must be followed by three dots <code>...</code>.
-We can learn how to call variadic functions from the <a href="function.html#variadic-call">the article after next</a>.
-</p>
-
-In the above example, line <i>14</i> is equivalent to
-
-<pre class="disable-line-numbers111"><code class="language-go">	s4 := append(s0, s0[0], s0[1], s0[2])
+</div>
+<p></p>
+<div class="tmd-usual">
+In the above example, line <span class="tmd-italic">14</span> is equivalent to
+</div>
+<p></p>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">	s4 := append(s0, s0[0], s0[1], s0[2])
 </code></pre>
-<p>
-</p>
-
-line <i>8</i> is equivalent to
-
-<pre class="disable-line-numbers111"><code class="language-go">	s1 := append(s0, []int{7}...)
+<p></p>
+<div class="tmd-usual">
+line <span class="tmd-italic">8</span> is equivalent to
+</div>
+<p></p>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">	s1 := append(s0, []int{7}...)
 </code></pre>
-<p>
-</p>
-
-and line <i>10</i> is equivalent to
-
-<pre class="disable-line-numbers111"><code class="language-go">	s2 := append(s1, []int{11, 13}...)
+<p></p>
+<div class="tmd-usual">
+and line <span class="tmd-italic">10</span> is equivalent to
+</div>
+<p></p>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">	s2 := append(s1, []int{11, 13}...)
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+For the three-dot <code class="tmd-code-span">...</code> manner, the <code class="tmd-code-span">append</code> function doesn't require the variadic argument must be a slice with the same type as the first slice argument, but their element types must be identical. In other words, the two argument slices must share the same <a href="type-system-overview.html#underlying-type">underlying type</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-</p>
-
-<p>
-For the three-dot <code>...</code> manner, the <code>append</code> function doesn't
-require the variadic argument must be a slice with the same type as the first
-slice argument, but their element types must be identical.
-In other words, the two argument slices must share the same
-<a href="type-system-overview.html#underlying-type">underlying type</a>.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 In the above program,
-<ul>
-<li>
-	the <code>append</code> call at line <i>8</i> will allocate a new
-	underlying memory segment for slice <code>s1</code>,
-	for slice <code>s0</code> doesn't have enough redundant element slots
-	to store the new appended element. The same situation is for the
-	<code>append</code> call at line <i>14</i>.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the <code class="tmd-code-span">append</code> call at line <span class="tmd-italic">8</span> will allocate a new underlying memory segment for slice <code class="tmd-code-span">s1</code>, for slice <code class="tmd-code-span">s0</code> doesn't have enough redundant element slots to store the new appended element. The same situation is for the <code class="tmd-code-span">append</code> call at line <span class="tmd-italic">14</span>.
+</div>
 </li>
-<li>
-	the <code>append</code> call at line <i>10</i> will not allocate a new
-	underlying memory segment for slice <code>s2</code>,
-	for slice <code>s1</code> has enough redundant element slots
-	to store the new appended elements.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the <code class="tmd-code-span">append</code> call at line <span class="tmd-italic">10</span> will not allocate a new underlying memory segment for slice <code class="tmd-code-span">s2</code>, for slice <code class="tmd-code-span">s1</code> has enough redundant element slots to store the new appended elements.
+</div>
 </li>
 </ul>
-
-<p>
-So, <code>s1</code> and <code>s2</code> share some elements,
-<code>s0</code> and <code>s3</code> share all elements,
-and <code>s4</code> doesn't share elements with others.
-The following picture depicted the statuses of these slices
-at the end of the above program.
-</p>
-
-<div class="text-center">
-<img src="res/slice-append.png" alt="slice statuses"></img>
+<p></p>
+<div class="tmd-usual">
+So, <code class="tmd-code-span">s1</code> and <code class="tmd-code-span">s2</code> share some elements, <code class="tmd-code-span">s0</code> and <code class="tmd-code-span">s3</code> share all elements, and <code class="tmd-code-span">s4</code> doesn't share elements with others. The following picture depicted the statuses of these slices at the end of the above program.
 </div>
-
-<p>
-Please note that, when an <code>append</code> call allocate a new underlying memory segment
-for the result slice, the capacity of the result slice is compiler dependent.
-For the standard Go compiler, if the capacity of the base slice is small,
-the capacity of the result slice will be at least the double of the base slice,
-to avoid allocating underlying memory segments frequently when the result slice is
-used as the base slices in later possible <code>append</code> calls.
-</p>
-
-As mentioned above, we can assign the result slice to the base slice
-in an <code>append</code> call to append elements into the base slice.
-For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-base tmd-align-center">
+<div class="tmd-usual">
+<img src="res/slice-append.png" class="tmd-media"/>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note that, when an <code class="tmd-code-span">append</code> call allocate a new underlying memory segment for the result slice, the capacity of the result slice is compiler dependent. For the standard Go compiler, if the capacity of the base slice is small, the capacity of the result slice will be at least the double of the base slice, to avoid allocating underlying memory segments frequently when the result slice is used as the base slices in later possible <code class="tmd-code-span">append</code> calls.
+</div>
+<p></p>
+<div class="tmd-usual">
+As mentioned above, we can assign the result slice to the base slice in an <code class="tmd-code-span">append</code> call to append elements into the base slice. For example,
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1041,73 +937,65 @@ func main() {
 	fmt.Println(cap(s)) // 4
 }
 </code></pre>
-
-<p>
-The first argument of an <code>append</code> function
-call can't be an untyped <code>nil</code> (up to Go 1.23).
-</p>
+<p></p>
+<div class="tmd-usual">
+The first argument of an <code class="tmd-code-span">append</code> function call can't be an untyped <code class="tmd-code-span">nil</code> (up to Go 1.23).
+</div>
+<p></p>
+<h3 id="make" class="tmd-header-3">
+Create Slices and Maps With the Built-in <code class="tmd-code-span">make</code> Function
+</h3>
+<p></p>
+<div class="tmd-usual">
+Besides using composite literals to create map and slice values, we can also use the built-in <code class="tmd-code-span">make</code> function to create map and slice values. The built-in <code class="tmd-code-span">make</code> function can't be used to create array values.
+</div>
+<p></p>
+<div class="tmd-usual">
+<span class="tmd-italic">BTW, the built-in <code class="tmd-code-span">make</code> function can also be used to create channels, which will be explained in the article </span><a href="channel.html"><span class="tmd-italic">channels in Go</span></a><span class="tmd-italic"> later.</span>
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="make"></a>
-<h3>Create Slices and Maps With the Built-in <code>make</code> Function</h3>
-
-<div>
-<p>
-Besides using composite literals to create map and slice values,
-we can also use the built-in <code>make</code> function to create map and slice values.
-The built-in <code>make</code> function can't be used to create array values.
-</p>
-
-<p><i>
-BTW, the built-in <code>make</code> function can also be used to create
-channels, which will be explained in the article
-<a href="channel.html">channels in Go</a> later.
-</i></p>
-
-Assume <code>M</code> is a map type and <code>n</code> is an integer,
-we can use the following two forms to create new maps of type <code>M</code>.
-<pre class="line-numbers"><code class="language-go">make(M, n)
+<p></p>
+<div class="tmd-usual">
+Assume <code class="tmd-code-span">M</code> is a map type and <code class="tmd-code-span">n</code> is an integer, we can use the following two forms to create new maps of type <code class="tmd-code-span">M</code>.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">make(M, n)
 make(M)
 </code></pre>
-
-<p>
-The first form creates a new empty map which is allocated with enough space to
-hold at least <code>n</code> entries without reallocating memory again.
-The second form only takes one argument,
-in which case a new empty map with enough space to
-hold a small number of entries without reallocating memory again.
-The small number is compiler dependent.
-</p>
-
-<p>
-Note: the second argument <code>n</code> may be negative or zero, in which case it will be ignored.
-</p>
-
-Assume <code>S</code> is a slice type, <code>length</code> and
-<code>capacity</code> are two non-negative integers,
-<code>length</code> is not larger than <code>capacity</code>,
-we can use the following two forms to create new slices of type <code>S</code>.
-(The types of <code>length</code> and <code>capacity</code> are not required to be identical.)
-
-<pre class="line-numbers"><code class="language-go">make(S, length, capacity)
+<p></p>
+<div class="tmd-usual">
+The first form creates a new empty map which is allocated with enough space to hold at least <code class="tmd-code-span">n</code> entries without reallocating memory again. The second form only takes one argument, in which case a new empty map with enough space to hold a small number of entries without reallocating memory again. The small number is compiler dependent.
+</div>
+<p></p>
+<div class="tmd-usual">
+Note: the second argument <code class="tmd-code-span">n</code> may be negative or zero, in which case it will be ignored.
+</div>
+<p></p>
+<div class="tmd-usual">
+Assume <code class="tmd-code-span">S</code> is a slice type, <code class="tmd-code-span">length</code> and <code class="tmd-code-span">capacity</code> are two non-negative integers, <code class="tmd-code-span">length</code> is not larger than <code class="tmd-code-span">capacity</code>, we can use the following two forms to create new slices of type <code class="tmd-code-span">S</code>. (The types of <code class="tmd-code-span">length</code> and <code class="tmd-code-span">capacity</code> are not required to be identical.)
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">make(S, length, capacity)
 make(S, length)
 </code></pre>
-
-<p>
-The first form creates a new slice with the specified length and capacity.
-The second form only takes two arguments, in which case the capacity of
-the new created slice is the same as its length.
-</p>
-
-<p>
-All the elements in the result slice of a <code>make</code> function call
-are initialized as the zero value (of the slice element type).
-</p>
-
-An example on how to use the built-in <code>make</code> function
-to create maps and slices:
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The first form creates a new slice with the specified length and capacity. The second form only takes two arguments, in which case the capacity of the new created slice is the same as its length.
+</div>
+<p></p>
+<div class="tmd-usual">
+All the elements in the result slice of a <code class="tmd-code-span">make</code> function call are initialized as the zero value (of the slice element type).
+</div>
+<p></p>
+<div class="tmd-usual">
+An example on how to use the built-in <code class="tmd-code-span">make</code> function to create maps and slices:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1127,131 +1015,128 @@ func main() {
 	fmt.Println(s, len(s), cap(s)) // [0 0] 2 2
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="new" class="tmd-header-3">
+Allocate Containers With the Built-in <code class="tmd-code-span">new</code> Function
+</h3>
+<p></p>
+<div class="tmd-usual">
+From the article <a href="pointer.html">pointers in Go</a>, we learned that we can also call the built-in <code class="tmd-code-span">new</code> function to allocate a value of any type and get a pointer which references the allocated value. The allocated value is a zero value of its type. For this reason, it is a nonsense to use <code class="tmd-code-span">new</code> function to create map and slice values.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="new"></a>
-<h3>Allocate Containers With the Built-in <code>new</code> Function</h3>
-
-<div>
-<p>
-From the article <a href="pointer.html">pointers in Go</a>, we learned that
-we can also call the built-in <code>new</code> function to allocate
-a value of any type and get a pointer which references the allocated value.
-The allocated value is a zero value of its type.
-For this reason, it is a nonsense to use <code>new</code> function to
-create map and slice values.
-</p>
-
-<p>
-It is not totally a nonsense to allocate a zero value of an array type
-with the built-in <code>new</code> function.
-However, it is seldom to do this in practice,
-for it is more convenient to use composite literals to allocate arrays.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+It is not totally a nonsense to allocate a zero value of an array type with the built-in <code class="tmd-code-span">new</code> function. However, it is seldom to do this in practice, for it is more convenient to use composite literals to allocate arrays.
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	m := *new(map[string]int)   // <=> var m map[string]int
+	m := *new(map[string]int)   // &lt;=&gt; var m map[string]int
 	fmt.Println(m == nil)       // true
-	s := *new([]int)            // <=> var s []int
+	s := *new([]int)            // &lt;=&gt; var s []int
 	fmt.Println(s == nil)       // true
-	a := *new([5]bool)          // <=> var a [5]bool
+	a := *new([5]bool)          // &lt;=&gt; var a [5]bool
 	fmt.Println(a == [5]bool{}) // true
 }
 </code></pre>
-
-<p>
-</p>
-
-</div>
-
-<a class="anchor" id="addressability"></a>
-<h3>Addressability of Container Elements</h3>
-
-<div>
+<p></p>
+<h3 id="addressability" class="tmd-header-3">
+Addressability of Container Elements
+</h3>
+<p></p>
+<div class="tmd-usual">
 Following are some facts about the addressabilities of container elements.
-<ul>
-<li>
-	Elements of addressable array values are also addressable.
-	Elements of unaddressable array values are also unaddressable.
-	The reason is each array value only consists of one <a href="value-part.html">direct part</a>.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Elements of addressable array values are also addressable. Elements of unaddressable array values are also unaddressable. The reason is each array value only consists of one <a href="value-part.html">direct part</a>.
+</div>
 </li>
-<li>
-	Elements of any slice value are always addressable,
-	whether or not that slice value is addressable.
-	This is because the elements of a slice are stored in
-	the underlying (indirect) value part of the slice and the underlying part
-	is always hosted on an allocated memory segment.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Elements of any slice value are always addressable, whether or not that slice value is addressable. This is because the elements of a slice are stored in the underlying (indirect) value part of the slice and the underlying part is always hosted on an allocated memory segment.
+</div>
 </li>
-<li>
-	Elements of map values are always unaddressable.
-	Please read <a href="unofficial-faq.html#maps-are-unaddressable">this FAQ item</a> for reasons.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Elements of map values are always unaddressable. Please read <a href="unofficial-faq.html#maps-are-unaddressable">this FAQ item</a> for reasons.
+</div>
 </li>
 </ul>
+<p></p>
+<div class="tmd-usual">
 
+</div>
+<p></p>
+<div class="tmd-usual">
 For example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
 func main() {
 	a := [5]int{2, 3, 5, 7}
 	s := make([]bool, 2)
-	pa2, ps1 := &a[2], &s[1]
+	pa2, ps1 := &amp;a[2], &amp;s[1]
 	fmt.Println(*pa2, *ps1) // 5 false
 	a[2], s[1] = 99, true
 	fmt.Println(*pa2, *ps1) // 99 true
-	ps0 := &[]string{"Go", "C"}[0]
+	ps0 := &amp;[]string{"Go", "C"}[0]
 	fmt.Println(*ps0) // Go
 
 	m := map[int]bool{1: true}
 	_ = m
 	// The following lines fail to compile.
 	/*
-	_ = &[3]int{2, 3, 5}[0]
-	_ = &map[int]bool{1: true}[1]
-	_ = &m[1]
+	_ = &amp;[3]int{2, 3, 5}[0]
+	_ = &amp;map[int]bool{1: true}[1]
+	_ = &amp;m[1]
 	*/
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-Unlike most other unaddressable values, which direct parts can not be modified,
-the direct part of a map element values can be modified,
-but can only be modified (overwritten) as a whole.
-For most kinds of element types, this is not a big issue.
-However, if the element type of map type is an array type or struct type,
-things become some counter-intuitive.
-</p>
-
-From the last article, <a href="value-part.html">value parts</a>, we learned
-that each of struct and array values only consists of one direct part.
-So
-<ul>
-<li>
-	if the element type of a map is a struct type,
-	we can not individually modify each field of an element (which is a struct) of the map.
+<p></p>
+<div class="tmd-usual">
+Unlike most other unaddressable values, which direct parts can not be modified, the direct part of a map element values can be modified, but can only be modified (overwritten) as a whole. For most kinds of element types, this is not a big issue. However, if the element type of map type is an array type or struct type, things become some counter-intuitive.
+</div>
+<p></p>
+<div class="tmd-usual">
+From the last article, <a href="value-part.html">value parts</a>, we learned that each of struct and array values only consists of one direct part. So
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if the element type of a map is a struct type, we can not individually modify each field of an element (which is a struct) of the map.
+</div>
 </li>
-<li>
-	if the element type of a map is an array type,
-	we can not individually modify each element of an element
-	(which is an array) of the map.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if the element type of a map is an array type, we can not individually modify each element of an element (which is an array) of the map.
+</div>
 </li>
 </ul>
+<p></p>
+<div class="tmd-usual">
 
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1274,17 +1159,13 @@ func main() {
 	fmt.Println(mt["John"].age) // 29
 }
 </code></pre>
-
-<p>
-</p>
-
-To make any expected modification work in the above example,
-the corresponding map element should be saved in a temporary variable firstly,
-then the temporary variable is modified as needed, in the end
-the corresponding map element is overwritten by the temporary variable.
-For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+To make any expected modification work in the above example, the corresponding map element should be saved in a temporary variable firstly, then the temporary variable is modified as needed, in the end the corresponding map element is overwritten by the temporary variable. For example,
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1306,121 +1187,131 @@ func main() {
 	fmt.Println(ma[1][1], mt["John"].age) // 123 30
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Note: the just mentioned limit <a href="https://github.com/golang/go/issues/3117">might be lifted later</a>.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="subslice"></a>
-<h3>Derive Slices From Arrays and Slices</h3>
-
-<div>
-<p>
-We can derive a new slice from another (base) slice or a base addressable array
-by using the subslice syntax forms (Go specification calls them as slice syntax forms).
-The process is also often called as reslicing.
-The elements of the derived slice and the base array or slice
-are hosted on the same memory segment.
-In other words, the derived slice and the base array or slice
-may share some contiguous elements.
-</p>
-
-There are two subslice syntax forms (<code>baseContainer</code> is an array or slice):
-<pre class="line-numbers"><code class="language-go">baseContainer[low : high]       // two-index form
+<p></p>
+<h3 id="subslice" class="tmd-header-3">
+Derive Slices From Arrays and Slices
+</h3>
+<p></p>
+<div class="tmd-usual">
+We can derive a new slice from another (base) slice or a base addressable array by using the subslice syntax forms (Go specification calls them as slice syntax forms). The process is also often called as reslicing. The elements of the derived slice and the base array or slice are hosted on the same memory segment. In other words, the derived slice and the base array or slice may share some contiguous elements.
+</div>
+<p></p>
+<div class="tmd-usual">
+There are two subslice syntax forms (<code class="tmd-code-span">baseContainer</code> is an array or slice):
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">baseContainer[low : high]       // two-index form
 baseContainer[low : high : max] // three-index form
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The two-index form is equivalent to
-<pre class="disable-line-numbers111"><code class="language-go">baseContainer[low : high : cap(baseContainer)]
+</div>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">baseContainer[low : high : cap(baseContainer)]
 </code></pre>
-
-<p>
-So the two-index form is a special case of the three-index form.
-The two-index form is used much more popularly
-than the three-index form in practice.
-</p>
-
-<p>
+<p></p>
+<div class="tmd-usual">
+So the two-index form is a special case of the three-index form. The two-index form is used much more popularly than the three-index form in practice.
+</div>
+<p></p>
+<div class="tmd-usual">
 Note, the three-index form is only supported since Go 1.2.
-</p>
-
-In a subslice expression, the <code>low</code>, <code>high</code> and
-<code>max</code> indexes must satisfy the following relation requirements.
-
-<pre class="disable-line-numbers111"><code class="language-go">// two-index form
-0 <= low <= high <= cap(baseContainer)
+</div>
+<p></p>
+<div class="tmd-usual">
+In a subslice expression, the <code class="tmd-code-span">low</code>, <code class="tmd-code-span">high</code> and <code class="tmd-code-span">max</code> indexes must satisfy the following relation requirements.
+</div>
+<p></p>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">// two-index form
+0 &lt;= low &lt;= high &lt;= cap(baseContainer)
 
 // three-index form
-0 <= low <= high <= max <= cap(baseContainer)
+0 &lt;= low &lt;= high &lt;= max &lt;= cap(baseContainer)
 </code></pre>
-
-<p>
-Indexes not satisfying these requirements may make the subslice expression
-fail to compile at compile time or panic at run time,
-depending on the base container type kind and whether or not the indexes are constants.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Indexes not satisfying these requirements may make the subslice expression fail to compile at compile time or panic at run time, depending on the base container type kind and whether or not the indexes are constants.
+</div>
+<p></p>
+<div class="tmd-usual">
 Note,
-<ul>
-<li>
-	the <code>low</code> and <code>high</code> indexes can be both larger than
-	<code>len(baseContainer)</code>, as long as the above relations are all satisfied.
-	But the two indexes must not be larger than <code>cap(baseContainer)</code>.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the <code class="tmd-code-span">low</code> and <code class="tmd-code-span">high</code> indexes can be both larger than <code class="tmd-code-span">len(baseContainer)</code>, as long as the above relations are all satisfied. But the two indexes must not be larger than <code class="tmd-code-span">cap(baseContainer)</code>.
+</div>
 </li>
-<li>
-	a subslice expression will not cause a panic if <code>baseContainer</code>
-	is a nil slice and all indexes used in the expression are zero.
-	The result slice derived from a nil slice is still a nil slice.
-</li>
-</ul>
-
-<p>
-The length of the result derived slice is equal to <code>high - low</code>, and
-the capacity of the result derived slice is equal to <code>max - low</code>.
-The length of a derived slice may be larger than the base container,
-but the capacity will never be larger than the base container.
-</p>
-
-In practice, for simplicity, we often omitted some indexes in subslice syntax forms.
-The omission rules are:
-<ul>
-<li>
-	if the <code>low</code> index is equal to zero, it can be omitted,
-	either for two-index or three-index forms.
-</li>
-<li>
-	if the <code>high</code> is equal to <code>len(baseContainer)</code>,
-	it can be omitted, but only for two-index forms.
-</li>
-<li>
-	the <code>max</code> can never be omitted in three-index forms.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+a subslice expression will not cause a panic if <code class="tmd-code-span">baseContainer</code> is a nil slice and all indexes used in the expression are zero. The result slice derived from a nil slice is still a nil slice.
+</div>
 </li>
 </ul>
-
+<p></p>
+<div class="tmd-usual">
+The length of the result derived slice is equal to <code class="tmd-code-span">high - low</code>, and the capacity of the result derived slice is equal to <code class="tmd-code-span">max - low</code>. The length of a derived slice may be larger than the base container, but the capacity will never be larger than the base container.
+</div>
+<p></p>
+<div class="tmd-usual">
+In practice, for simplicity, we often omitted some indexes in subslice syntax forms. The omission rules are:
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if the <code class="tmd-code-span">low</code> index is equal to zero, it can be omitted, either for two-index or three-index forms.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if the <code class="tmd-code-span">high</code> is equal to <code class="tmd-code-span">len(baseContainer)</code>, it can be omitted, but only for two-index forms.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the <code class="tmd-code-span">max</code> can never be omitted in three-index forms.
+</div>
+</li>
+</ul>
+<p></p>
+<div class="tmd-usual">
 For example, the following expressions are equivalent.
-<pre class="line-numbers"><code class="language-go">baseContainer[0 : len(baseContainer)]
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">baseContainer[0 : len(baseContainer)]
 baseContainer[: len(baseContainer)]
 baseContainer[0 :]
 baseContainer[:]
 baseContainer[0 : len(baseContainer) : cap(baseContainer)]
 baseContainer[: len(baseContainer) : cap(baseContainer)]
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 An example of using subslice syntax forms:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
 func main() {
 	a := [...]int{0, 1, 2, 3, 4, 5, 6}
-	s0 := a[:]     // <=> s0 := a[0:7:7]
-	s1 := s0[:]    // <=> s1 := s0
-	s2 := s1[1:3]  // <=> s2 := a[1:3]
-	s3 := s1[3:]   // <=> s3 := s1[3:7]
-	s4 := s0[3:5]  // <=> s4 := s0[3:5:7]
-	s5 := s4[:2:2] // <=> s5 := s0[3:5:5]
+	s0 := a[:]     // &lt;=&gt; s0 := a[0:7:7]
+	s1 := s0[:]    // &lt;=&gt; s1 := s0
+	s2 := s1[1:3]  // &lt;=&gt; s2 := a[1:3]
+	s3 := s1[3:]   // &lt;=&gt; s3 := s1[3:7]
+	s4 := s0[3:5]  // &lt;=&gt; s4 := s0[3:5:7]
+	s5 := s4[:2:2] // &lt;=&gt; s5 := s0[3:5:5]
 	s6 := append(s4, 77)
 	s7 := append(s5, 88)
 	s8 := append(s7, 66)
@@ -1434,56 +1325,50 @@ func main() {
 	fmt.Println(len(s8), cap(s8), s8) // 4 4 [3 4 88 66]
 }
 </code></pre>
-
-<p>
-</p>
-
-The following picture depicts the final memory layouts of the array
-and slice values used in the above example.
-
-<div class="text-center">
-<img src="res/slice-subslice-2.png" alt="array and slice statuses"></img>
+<p></p>
+<div class="tmd-usual">
+The following picture depicts the final memory layouts of the array and slice values used in the above example.
 </div>
-
-<p>
-From the picture, we know that the elements of slice <code>s7</code> and <code>s8</code>
-are hosted on a different underlying memory segment than the other containers.
-The elements of the other slices are hosted on the same memory segment
-hosting the array <code>a</code>.
-</p>
-
-Please note that, subslice operations may cause kind-of memory leaking.
-For example, half of the memory allocated for the return slice of a call
-to the following function will be wasted unless the returned slice becomes
-unreachable (if no other slices share the underlying element memory segment with the returned slice).
-
-<pre class="line-numbers"><code class="language-go">func f() []int {
+<p></p>
+<div class="tmd-base tmd-align-center">
+<div class="tmd-usual">
+<img src="res/slice-subslice-2.png" class="tmd-media"/>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
+From the picture, we know that the elements of slice <code class="tmd-code-span">s7</code> and <code class="tmd-code-span">s8</code> are hosted on a different underlying memory segment than the other containers. The elements of the other slices are hosted on the same memory segment hosting the array <code class="tmd-code-span">a</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note that, subslice operations may cause kind-of memory leaking. For example, half of the memory allocated for the return slice of a call to the following function will be wasted unless the returned slice becomes unreachable (if no other slices share the underlying element memory segment with the returned slice).
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func f() []int {
 	s := make([]int, 10, 100)
 	return s[50:60]
 }
 </code></pre>
-
-<p>
-Please note that, in the above function,
-the lower index (<code>50</code>) is larger than the length (<code>10</code>) of <code>s</code>,
-which is allowed.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Please note that, in the above function, the lower index (<code class="tmd-code-span">50</code>) is larger than the length (<code class="tmd-code-span">10</code>) of <code class="tmd-code-span">s</code>, which is allowed.
 </div>
-
-<a class="anchor" id="slice-to-array-pointer"></a>
-<h3>Convert Slice to Array Pointer</h3>
-
-<div>
-<p>
-Since Go 1.17, a slice may be converted to an array pointer.
-In such a conversion, if the length of the base array type of the pointer type
-is larger than the length of the slice, a panic occurs.
-</p>
-
+<p></p>
+<h3 id="slice-to-array-pointer" class="tmd-header-3">
+Convert Slice to Array Pointer
+</h3>
+<p></p>
+<div class="tmd-usual">
+Since Go 1.17, a slice may be converted to an array pointer. In such a conversion, if the length of the base array type of the pointer type is larger than the length of the slice, a panic occurs.
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type S []int
 type A [2]int
@@ -1511,27 +1396,22 @@ func main() {
 	var _ = (*[4]int)(z) // will panic
 }
 </code></pre>
-
+<p></p>
+<h3 id="slice-to-array" class="tmd-header-3">
+Convert Slice to Array
+</h3>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+Since Go 1.20, a slice may be converted to an array. In such a conversion, if the length of the array type is larger than the length of the slice, a panic occurs. The slice and the result array don't share any element.
 </div>
-
-<a class="anchor" id="slice-to-array"></a>
-<h3>Convert Slice to Array</h3>
-
-<!--
-https://github.com/golang/go/issues/46505
--->
-
-<div>
-<p>
-Since Go 1.20, a slice may be converted to an array.
-In such a conversion, if the length of the array type
-is larger than the length of the slice, a panic occurs.
-The slice and the result array don't share any element.
-</p>
-
+<p></p>
+<div class="tmd-usual">
 An example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1545,32 +1425,24 @@ func main() {
 	_ = [3]int(s[:2]) // panic
 }
 </code></pre>
-
+<p></p>
+<h3 id="copy-slice-elements" class="tmd-header-3">
+Copy Slice Elements With the Built-in <code class="tmd-code-span">copy</code> Function
+</h3>
+<p></p>
+<div class="tmd-usual">
+We can use the built-in <code class="tmd-code-span">copy</code> function to copy elements from one slice to another, the types of the two slices are not required to be identical, but their element types must be identical. In other words, the two argument slices must share the same underlying type. The first parameter of the <code class="tmd-code-span">copy</code> function is the destination slice and the second one is the source slice. The two parameters can overlap some elements. <code class="tmd-code-span">copy</code> function returns the number of elements copied, which will be the smaller one of the lengths of the two parameters.
 </div>
-
-<a class="anchor" id="copy-slice-elements"></a>
-<h3>Copy Slice Elements With the Built-in <code>copy</code> Function</h3>
-
-<div>
-<p>
-We can use the built-in <code>copy</code> function to copy elements from one
-slice to another, the types of the two slices are not required to be identical,
-but their element types must be identical.
-In other words, the two argument slices must share the same underlying type.
-The first parameter of the <code>copy</code> function is the destination slice
-and the second one is the source slice.
-The two parameters can overlap some elements.
-<code>copy</code> function returns the number of elements copied,
-which will be the smaller one of the lengths of the two parameters.
-</p>
-
-<p>
-With the help of the subslice syntax, we can use the <code>copy</code> function to
-copy elements between two arrays or between an array and a slice.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+With the help of the subslice syntax, we can use the <code class="tmd-code-span">copy</code> function to copy elements between two arrays or between an array and a slice.
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1591,95 +1463,54 @@ func main() {
 	fmt.Println(n, a) // 2 [7 8 7 8]
 }
 </code></pre>
-
-<p>
-</p>
-
-<!--
-
-In fact, the <code>copy</code> function is not very essential.
-We can implement it by using the built-in <code>append</code> function.
-
-<pre class="line-numbers"><code class="language-go">// Assume element type is T.
-func Copy(dest, src []T) int {
-	if len(dest) < len(src) {
-		_ = append(dest[:0], src[:len(dest)]...)
-		return len(dest)
-	} else {
-		_ = append(dest[:0], src...)
-		return len(src)
-	}
-}
-</code></pre>
-
-<p>
-Although the <code>copy</code> function is not an essential function in Go,
-for many circumstances, it is more convenient that the just shown way.
-</p>
-
-<p>
-From another point of view, the <code>append</code> function can also be viewed
-as a non-essential function (whereas <code>copy</code> is viewed as an
-essential function), for all its uses can be implemented with
-<code>make</code> and <code>copy</code> function calls.
-</p>
-
--->
-
-<p>
-Note, as a special case, the built-in <code>copy</code> function
-can be used to <a href="string.html#use-string-as-byte-slice">copy bytes
-from a string to a byte slice</a>.
-</p>
-
-<p>
-Neither of the two arguments of a <code>copy</code>
-function call can be an untyped <code>nil</code> value (up to Go 1.23).
-</p>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+Note, as a special case, the built-in <code class="tmd-code-span">copy</code> function can be used to <a href="string.html#use-string-as-byte-slice">copy bytes from a string to a byte slice</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="iteration"></a>
-<h3>Container Element Iterations</h3>
-
-<div>
-
-In Go, keys and elements of a container value can be iterated with
-the following syntax:
-<pre class="disable-line-numbers111"><code class="language-go">for key, element = range aContainer {
+<p></p>
+<div class="tmd-usual">
+Neither of the two arguments of a <code class="tmd-code-span">copy</code> function call can be an untyped <code class="tmd-code-span">nil</code> value (up to Go 1.23).
+</div>
+<p></p>
+<h3 id="iteration" class="tmd-header-3">
+Container Element Iterations
+</h3>
+<p></p>
+<div class="tmd-usual">
+In Go, keys and elements of a container value can be iterated with the following syntax:
+</div>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">for key, element = range aContainer {
 	// use key and element ...
 }
 </code></pre>
-
-<p>
-where <code>for</code> and <code>range</code> are two keywords,
-<code>key</code> and <code>element</code> are called iteration variables.
-If <code>aContainer</code> is a slice or an array (or an array pointer, see below),
-then the type of <code>key</code> must be built-in type <code>int</code>.
-</p>
-
-<p>
-The assignment sign <code>=</code> can be a short variable declaration sign
-<code>:=</code>, in which case the two iteration variables are both two new declared
-variables which are only visible within the <code>for-range</code> code block body,
-if <code>aContainer</code> is a slice or an array (or an array pointer),
-then the type of <code>key</code> is deduced as <code>int</code>.
-</p>
-
-<p>
-Like the traditional <code>for</code> loop block, each <code>for-range</code>
-loop block creates two code blocks, an implicit one and an explicit one
-which is formed by using <code>{}</code>.
-The explicit one is nested in the implicit one.
-</p>
-
-<p>
-Like <code>for</code> loop blocks, <code>break</code> and <code>continue</code>
-statements can also be used in <code>for-range</code> loop blocks,
-</p>
-
+<p></p>
+<div class="tmd-usual">
+where <code class="tmd-code-span">for</code> and <code class="tmd-code-span">range</code> are two keywords, <code class="tmd-code-span">key</code> and <code class="tmd-code-span">element</code> are called iteration variables. If <code class="tmd-code-span">aContainer</code> is a slice or an array (or an array pointer, see below), then the type of <code class="tmd-code-span">key</code> must be built-in type <code class="tmd-code-span">int</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+The assignment sign <code class="tmd-code-span">=</code> can be a short variable declaration sign <code class="tmd-code-span">:=</code>, in which case the two iteration variables are both two new declared variables which are only visible within the <code class="tmd-code-span">for-range</code> code block body, if <code class="tmd-code-span">aContainer</code> is a slice or an array (or an array pointer), then the type of <code class="tmd-code-span">key</code> is deduced as <code class="tmd-code-span">int</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+Like the traditional <code class="tmd-code-span">for</code> loop block, each <code class="tmd-code-span">for-range</code> loop block creates two code blocks, an implicit one and an explicit one which is formed by using <code class="tmd-code-span">{}</code>. The explicit one is nested in the implicit one.
+</div>
+<p></p>
+<div class="tmd-usual">
+Like <code class="tmd-code-span">for</code> loop blocks, <code class="tmd-code-span">break</code> and <code class="tmd-code-span">continue</code> statements can also be used in <code class="tmd-code-span">for-range</code> loop blocks,
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1700,12 +1531,12 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-</p>
-
-The form <code>for-range</code> code block syntax has several variants:
-<pre class="line-numbers"><code class="language-go">// Ignore the key iteration variable.
+<p></p>
+<div class="tmd-usual">
+The form <code class="tmd-code-span">for-range</code> code block syntax has several variants:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// Ignore the key iteration variable.
 for _, element = range aContainer {
 	// ...
 }
@@ -1734,99 +1565,102 @@ for range aContainer {
 	// This variant is not much useful.
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Iterating over nil maps or nil slices is allowed. Such iterations are no-ops.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 Some details about iterations over maps are listed here.
-<ul>
-<li>
-	For a map, the entry order in an iteration is not guaranteed to be the
-	same as the next iteration, even if the map is not modified between
-	the two iterations. By Go specification, the order is unspecified (kind-of randomized).
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+For a map, the entry order in an iteration is not guaranteed to be the same as the next iteration, even if the map is not modified between the two iterations. By Go specification, the order is unspecified (kind-of randomized).
+</div>
 </li>
-<li>
-	If a map entry (a key-element pair) which has not yet been reached
-	is removed during an iteration, then the entry will not
-	iterated in the same iteration for sure.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+If a map entry (a key-element pair) which has not yet been reached is removed during an iteration, then the entry will not iterated in the same iteration for sure.
+</div>
 </li>
-<li>
-	If a map entry is created during an iteration,
-	that entry may be iterated during the same iteration, or not.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+If a map entry is created during an iteration, that entry may be iterated during the same iteration, or not.
+</div>
 </li>
 </ul>
-
-If it is promised that there are no other goroutines
-manipulating a map <code>m</code>, then the following code is guaranteed to
-clear all entries (but the ones with keys as <code>NaN</code>) stored in the map <code>m</code>:
-<pre class="line-numbers"><code class="language-go">for key := range m {
+<p></p>
+<div class="tmd-usual">
+If it is promised that there are no other goroutines manipulating a map <code class="tmd-code-span">m</code>, then the following code is guaranteed to clear all entries (but the ones with keys as <code class="tmd-code-span">NaN</code>) stored in the map <code class="tmd-code-span">m</code>:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">for key := range m {
 	delete(m, key)
 }
 </code></pre>
-
-<i>
-(Note: Go 1.21 introduced a <a href="#clear"><code>clear</code> builtin function</a>,
-which may be used to clear all entries of a map, including those with keys as <code>NaN</code>.)
-</i>
-
-<p>
-</p>
-
-Surely, array and slice elements can also be iterated by using the traditional <code>for</code> loop block:
-<pre class="line-numbers"><code class="language-go">for i := 0; i < len(anArrayOrSlice); i++ {
+<p></p>
+<div class="tmd-usual">
+<span class="tmd-italic">(Note: Go 1.21 introduced a </span><span class="tmd-broken-link"><span class="tmd-italic">href="#clear"&gt;<code class="tmd-code-span">clear</code> builtin function</span></span><span class="tmd-italic">, which may be used to clear all entries of a map, including those with keys as <code class="tmd-code-span">NaN</code>.)</span>
+</div>
+<p></p>
+<div class="tmd-usual">
+Surely, array and slice elements can also be iterated by using the traditional <code class="tmd-code-span">for</code> loop block:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">for i := 0; i &lt; len(anArrayOrSlice); i++ {
 	// ... use anArrayOrSlice[i]
 }
 </code></pre>
-
-<p>
-</p>
-
-For a <code>for-range</code> loop block (whether <code>=</code> or <code>:=</code> before <code>range</code>)
-
-<pre class="disable-line-numbers111"><code class="language-go">for key, element = range aContainer {...}
+<p></p>
+<div class="tmd-usual">
+For a <code class="tmd-code-span">for-range</code> loop block (whether <code class="tmd-code-span">=</code> or <code class="tmd-code-span">:=</code> before <code class="tmd-code-span">range</code>)
+</div>
+<p></p>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">for key, element = range aContainer {...}
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 there are two important facts.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<ol>
-<li>
-	The ranged container is <b>a copy</b> of <code>aContainer</code>.
-	Please note, <a href="value-part.html#about-value-copy">only
-	the direct part of <code>aContainer</code> is copied</a>.
-	The container copy is anonymous, so there are no ways to modify it.
-	<ul>
-	<li>
-		If the <code>aContainer</code> is an array, then the
-		modifications made on the array elements during the iteration
-		will not be reflected to the iteration variables.
-		The reason is that the copy of the array doesn't
-		share elements with the array.
-	</li>
-	<li>
-		If the <code>aContainer</code> is a slice or map, then the
-		modifications made on the slice or map elements during
-		the iteration will be reflected to the iteration variables.
-		The reason is that the clone of the slice (or map)
-		shares all elements (entries) with the slice (or map).
-	</li>
-	</ul>
+</div>
+<p></p>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+The ranged container is <span class="tmd-bold">a copy</span> of <code class="tmd-code-span">aContainer</code>. Please note, <a href="value-part.html#about-value-copy">only the direct part of <code class="tmd-code-span">aContainer</code> is copied</a>. The container copy is anonymous, so there are no ways to modify it.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+If the <code class="tmd-code-span">aContainer</code> is an array, then the modifications made on the array elements during the iteration will not be reflected to the iteration variables. The reason is that the copy of the array doesn't share elements with the array.
+</div>
 </li>
-<li>
-	A key-element pair of the copy of <code>aContainer</code> will be
-	assigned (copied) to the iteration variable pair at each iteration step,
-	so the modifications made on <b>the direct parts</b>
-	of the iteration variables will not be reflected to the elements
-	(and keys for maps) stored in <code>aContainer</code>.
-	(For this fact, and as using <code>for-range</code> loop blocks is the only way
-	to iterate map keys and elements, it is recommended not to use large-size types
-	as map key and element types, to avoid large copy burdens.)
+<li class="tmd-list-item">
+<div class="tmd-usual">
+If the <code class="tmd-code-span">aContainer</code> is a slice or map, then the modifications made on the slice or map elements during the iteration will be reflected to the iteration variables. The reason is that the clone of the slice (or map) shares all elements (entries) with the slice (or map).
+</div>
+</li>
+</ul>
+<p></p>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+A key-element pair of the copy of <code class="tmd-code-span">aContainer</code> will be assigned (copied) to the iteration variable pair at each iteration step, so the modifications made on <span class="tmd-bold">the direct parts</span> of the iteration variables will not be reflected to the elements (and keys for maps) stored in <code class="tmd-code-span">aContainer</code>. (For this fact, and as using <code class="tmd-code-span">for-range</code> loop blocks is the only way to iterate map keys and elements, it is recommended not to use large-size types as map key and element types, to avoid large copy burdens.)
+</div>
 </li>
 </ol>
-
+<p></p>
+<div class="tmd-usual">
 An example which proves the first and second facts.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1849,24 +1683,25 @@ func main() {
 		// copy of a copy of one persons element.
 		p.age = 31
 	}
-	fmt.Println("persons:", &persons)
+	fmt.Println("persons:", &amp;persons)
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The output:
-<pre class="output"><code>0 {Alice 28}
+</div>
+<pre class="tmd-code output">
+0 {Alice 28}
 1 {Bob 25}
-persons: &[{Alice 28} {Jack 25}]
-</code></pre>
-
-<p>
-</p>
-
-If we change the array in the above to a slice, then the modification on the
-slice during the iteration has effects on the iteration, but
-the modification on the iteration variable still has no effects on the slice.
-
-<pre class="line-numbers"><code class="language-go">...
+persons: &amp;[{Alice 28} {Jack 25}]
+</pre>
+<p></p>
+<div class="tmd-usual">
+If we change the array in the above to a slice, then the modification on the slice during the iteration has effects on the iteration, but the modification on the iteration variable still has no effects on the slice.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">...
 
 	// A slice.
 	persons := []Person {{"Alice", 28}, {"Bob", 25}}
@@ -1881,21 +1716,24 @@ the modification on the iteration variable still has no effects on the slice.
 		// any real effects.
 		p.age = 31
 	}
-	fmt.Println("persons:", &persons)
+	fmt.Println("persons:", &amp;persons)
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The output becomes to:
-<pre class="output"><code>0 {Alice 28}
+</div>
+<pre class="tmd-code output">
+0 {Alice 28}
 1 {Jack 25}
-persons: &[{Alice 28} {Jack 25}]
-</code></pre>
-
-<p>
-</p>
-
+persons: &amp;[{Alice 28} {Jack 25}]
+</pre>
+<p></p>
+<div class="tmd-usual">
 The following example proves the second facts.
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1916,28 +1754,17 @@ func main() {
 	fmt.Println(m[2]) // {false false}
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-The cost of a slice or map assignment is small, but the cost of an array assignment
-is large if the size of the array type is large.
-So, generally, it is not a good idea to range over a large array.
-We can range over a slice derived from the array, or range over a pointer
-to the array (see the next section for details).
-</p>
-
-For an array or slice, if the size of its element type is large, then,
-generally, it is also not a good idea to use the second iteration variable to
-store the iterated element at each loop step.
-For such arrays and slices, we should use the one-iteration-variable
-<code>for-range</code> loop variant or the traditional <code>for</code>
-loop to iterate their elements.
-In the following example, the loop in function <code>fa</code> is much less
-efficient than the loop in function <code>fb</code>.
-
-<pre class="line-numbers"><code class="language-go">type Buffer struct {
+<p></p>
+<div class="tmd-usual">
+The cost of a slice or map assignment is small, but the cost of an array assignment is large if the size of the array type is large. So, generally, it is not a good idea to range over a large array. We can range over a slice derived from the array, or range over a pointer to the array (see the next section for details).
+</div>
+<p></p>
+<div class="tmd-usual">
+For an array or slice, if the size of its element type is large, then, generally, it is also not a good idea to use the second iteration variable to store the iterated element at each loop step. For such arrays and slices, we should use the one-iteration-variable <code class="tmd-code-span">for-range</code> loop variant or the traditional <code class="tmd-code-span">for</code> loop to iterate their elements. In the following example, the loop in function <code class="tmd-code-span">fa</code> is much less efficient than the loop in function <code class="tmd-code-span">fb</code>.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type Buffer struct {
 	start, end int
 	data       [1024]byte
 }
@@ -1958,25 +1785,25 @@ func fb(buffers []Buffer) int {
 	return numUnreads
 }
 </code></pre>
-
-<p>
-</p>
-
-Prior to Go 1.22, when a <code>for-range</code> loop block
-(note the sign before before <code>range</code> is <code>:=</code>)
-
-<pre class="line-numbers"><code class="language-go">for key, element := range aContainer {...}
-</code></pre>
-
-is executed, all key-element pairs will be assigned to <b>the same</b> iteration variable instance pair.
-However, since Go 1.22, each key-element pair will be assigned to a <b>distinctive</b> iteration variable instance pair
-(a.k.a. a distinctive instance will be created for each iteration variable in each loop iteration).
-
 <p></p>
-
+<div class="tmd-usual">
+Prior to Go 1.22, when a <code class="tmd-code-span">for-range</code> loop block (note the sign before before <code class="tmd-code-span">range</code> is <code class="tmd-code-span">:=</code>)
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">for key, element := range aContainer {...}
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+is executed, all key-element pairs will be assigned to <span class="tmd-bold">the same</span> iteration variable instance pair. However, since Go 1.22, each key-element pair will be assigned to a <span class="tmd-bold">distinctive</span> iteration variable instance pair (a.k.a. a distinctive instance will be created for each iteration variable in each loop iteration).
+</div>
+<p></p>
+<div class="tmd-usual">
 The following example shows the behavior differences between 1.21- and 1.22+ Go versions.
-
-<pre class="line-numbers"><code class="language-go">// forrange1.go
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// forrange1.go
 package main
 
 import "fmt"
@@ -1989,13 +1816,17 @@ func main() {
 	}
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+Use different Go Toolchain versions to run the code (<a href="https://go101.org/apps-and-libs/gotv.html">gotv</a> is a tool used to manage and use multiple coexisting installations of official Go toolchain versions), we will get different outputs:
+</div>
+<p></p>
+<div class="tmd-usual">
 
-Use different Go Toolchain versions to run the code
-(<a href="https://go101.org/apps-and-libs/gotv.html">gotv</a> is a tool used to
-manage and use multiple coexisting installations of official Go toolchain versions),
-we will get different outputs:
-
-<pre class="line-numbers"><code class="language-go">$ gotv 1.21. run forrange1.go
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">$ gotv 1.21. run forrange1.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.8/bin/go run forrange1.go
 2 2
 2 2
@@ -2006,12 +1837,13 @@ $ gotv 1.22. run forrange1.go
 1 1
 0 0
 </code></pre>
-
 <p></p>
-
+<div class="tmd-usual">
 Another example:
-
-<pre class="line-numbers"><code class="language-go">// forrange2.go
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// forrange2.go
 package main
 
 import "fmt"
@@ -2019,46 +1851,43 @@ import "fmt"
 func main() {
 	var m = map[*int]uint32{}
 	for i, n := range []int{1, 2, 3} {
-		m[&i]++
-		m[&n]++
+		m[&amp;i]++
+		m[&amp;n]++
 	}
 	fmt.Println(len(m))
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 Use different Go Toolchain versions, we will get the following outputs:
-
-<pre class="line-numbers"><code class="language-go">$ gotv 1.21. run forrange2.go
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">$ gotv 1.21. run forrange2.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.8/bin/go run forrange2.go
 2
 $ gotv 1.22. run forrange2.go
 [Run]: $HOME/.cache/gotv/tag_go1.22.1/bin/go run forrange2.go
 6
 </code></pre>
-
-<p>
-Therefore, this is a semantic change which breaks backward compatibility.
-But the new semantic is actually more in line with people's expectations.
-And in theory, no old code that was found to be logically correct
-would be broken by this change.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Therefore, this is a semantic change which breaks backward compatibility. But the new semantic is actually more in line with people's expectations. And in theory, no old code that was found to be logically correct would be broken by this change.
 </div>
-
-<a class="anchor" id="use-pointer-as-array"></a>
-<h3>Use Array Pointers as Arrays</h3>
-
-<div>
-<p>
+<p></p>
+<h3 id="use-pointer-as-array" class="tmd-header-3">
+Use Array Pointers as Arrays
+</h3>
+<p></p>
+<div class="tmd-usual">
 In many scenarios, we can use a pointer to an array as the array.
-</p>
-
-We can range over a pointer to an array to iterate the elements of the array.
-For arrays with large lengths, this way is much more efficient, for copying
-a pointer is much more efficient than copying a large-size array.
-In the following example, the two loop blocks are equivalent
-and both are efficient.
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+We can range over a pointer to an array to iterate the elements of the array. For arrays with large lengths, this way is much more efficient, for copying a pointer is much more efficient than copying a large-size array. In the following example, the two loop blocks are equivalent and both are efficient.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -2066,7 +1895,7 @@ func main() {
 	var a [100]int
 
 	// Copying a pointer is cheap.
-	for i, n := range &a {
+	for i, n := range &amp;a {
 		fmt.Println(i, n)
 	}
 
@@ -2076,16 +1905,13 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-</p>
-
-If the second iteration in a <code>for-range</code> loop is neither ignored nor omitted,
-then range over a nil array pointer will panic.
-In the following example, each of the first two loop
-blocks will print five indexes, however, the last one will produce a panic.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+If the second iteration in a <code class="tmd-code-span">for-range</code> loop is neither ignored nor omitted, then range over a nil array pointer will panic. In the following example, each of the first two loop blocks will print five indexes, however, the last one will produce a panic.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -2105,38 +1931,36 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-</p>
-
-Array pointers can also used to index array elements.
-Indexing array elements through a nil array pointer produces a panic.
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+Array pointers can also used to index array elements. Indexing array elements through a nil array pointer produces a panic.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
 func main() {
 	a := [5]int{2, 3, 5, 7, 11}
-	p := &a
+	p := &amp;a
 	p[0], p[1] = 17, 19
 	fmt.Println(a) // [17 19 5 7 11]
 	p = nil
 	_ = p[0] // panic
 }
 </code></pre>
-
-<p>
-</p>
-
-We can also derive slices from array pointers.
-Deriving slices from a nil array pointer produce a panic.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+We can also derive slices from array pointers. Deriving slices from a nil array pointer produce a panic.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	pa := &[5]int{2, 3, 5, 7, 11}
+	pa := &amp;[5]int{2, 3, 5, 7, 11}
 	s := pa[1:3]
 	fmt.Println(s) // [3 5]
 	pa = nil
@@ -2145,69 +1969,61 @@ func main() {
 	_ = (*[0]byte)(nil)[:]
 }
 </code></pre>
-
-<p>
-</p>
-
-We can also pass array pointers as the arguments of the built-in
-<code>len</code> and <code>cap</code> functions.
-Nil array pointer arguments for the two functions will not produce panics.
-
-<pre class="line-numbers"><code class="language-go">var pa *[5]int // == nil
+<p></p>
+<div class="tmd-usual">
+We can also pass array pointers as the arguments of the built-in <code class="tmd-code-span">len</code> and <code class="tmd-code-span">cap</code> functions. Nil array pointer arguments for the two functions will not produce panics.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var pa *[5]int // == nil
 fmt.Println(len(pa), cap(pa)) // 5 5
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h3 id="memclr" class="tmd-header-3">
+The <code class="tmd-code-span">memclr</code> Optimization
+</h3>
+<p></p>
+<div class="tmd-usual">
+Assume <code class="tmd-code-span">t0</code> is a literal presentation of the zero value of type <code class="tmd-code-span">T</code>, and <code class="tmd-code-span">a</code> is an array or slice which element type is <code class="tmd-code-span">T</code>, then the standard Go compiler will translate the following one-iteration-variable <code class="tmd-code-span">for-range</code> loop block
 </div>
-
-<a class="anchor" id="memclr"></a>
-<h3>The <code>memclr</code> Optimization</h3>
-
-<div>
-Assume <code>t0</code> is a literal presentation of the zero value of
-type <code>T</code>, and <code>a</code> is an array or slice which element type
-is <code>T</code>, then the standard Go compiler will translate the following
-one-iteration-variable <code>for-range</code> loop block
-<pre class="line-numbers"><code class="language-go">for i := range a {
+<pre class="tmd-code line-numbers">
+<code class="language-go">for i := range a {
 	a[i] = t0
 }
 </code></pre>
-<p>
-to an <a href="https://github.com/golang/go/issues/5373">internal
-<code>memclr</code> call</a>, generally which is faster
-than resetting each element one by one.
-</p>
-
-<p>
-The optimization was adopted in the standard Go compiler 1.5.
-</p>
-
-<p>
-Since Go Toolchain 1.19, the optimization also works if the ranged value is an array pointer.
-</p>
-
-<p>
-Note: Go 1.21 introduced a <code>clear</code> builtin function,
-which can be used to clear map entries and reset slice elements.
-We should try to use that function instead of relying on this optimization
-to reset slice/array elements.
-Please read the next section for the <code>clear</code> builtin function.
-</p>
+<div class="tmd-usual">
+to an <a href="https://github.com/golang/go/issues/5373">internal <code class="tmd-code-span">memclr</code> call</a>, generally which is faster than resetting each element one by one.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="clear"></a>
-<h3>Use the built-in <code>clear</code> function to clear map entries and reset slice elements</h3>
-
-<div>
-<p>
-Go 1.21 introduced <code>clear</code> builtin function.
-This function is used to clear map entries and reset slice elements.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
+The optimization was adopted in the standard Go compiler 1.5.
+</div>
+<p></p>
+<div class="tmd-usual">
+Since Go Toolchain 1.19, the optimization also works if the ranged value is an array pointer.
+</div>
+<p></p>
+<div class="tmd-usual">
+Note: Go 1.21 introduced a <code class="tmd-code-span">clear</code> builtin function, which can be used to clear map entries and reset slice elements. We should try to use that function instead of relying on this optimization to reset slice/array elements. Please read the next section for the <code class="tmd-code-span">clear</code> builtin function.
+</div>
+<p></p>
+<h3 id="clear" class="tmd-header-3">
+Use the built-in <code class="tmd-code-span">clear</code> function to clear map entries and reset slice elements
+</h3>
+<p></p>
+<div class="tmd-usual">
+Go 1.21 introduced <code class="tmd-code-span">clear</code> builtin function. This function is used to clear map entries and reset slice elements.
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -2234,26 +2050,24 @@ func main() {
 	fmt.Println(len(m)) // 0
 }
 </code></pre>
-
-<p>
-We can find that the <code>clear</code> function can even delete map entries with keys as <code>NaN</code>.
-</p>
+<p></p>
+<div class="tmd-usual">
+We can find that the <code class="tmd-code-span">clear</code> function can even delete map entries with keys as <code class="tmd-code-span">NaN</code>.
 </div>
-
-<a class="anchor" id="compile-time-evaluation"></a>
-<h3>Calls to the Built-in <code>len</code> and <code>cap</code> Functions May Be Evaluated at Compile Time</h3>
-
-<div>
-<p>
-If the argument passed to a built-in function <code>len</code> or
-<code>cap</code> function call is an array or an array pointer value,
-then the call is evaluated at compile time and the result of the call
-is a typed constant with type as the built-in type <code>int</code>.
-The result can be bound to named constants.
-</p>
-
+<p></p>
+<h3 id="compile-time-evaluation" class="tmd-header-3">
+Calls to the Built-in <code class="tmd-code-span">len</code> and <code class="tmd-code-span">cap</code> Functions May Be Evaluated at Compile Time
+</h3>
+<p></p>
+<div class="tmd-usual">
+If the argument passed to a built-in function <code class="tmd-code-span">len</code> or <code class="tmd-code-span">cap</code> function call is an array or an array pointer value, then the call is evaluated at compile time and the result of the call is a typed constant with type as the built-in type <code class="tmd-code-span">int</code>. The result can be bound to named constants.
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -2269,27 +2083,24 @@ func main() {
 	fmt.Println(M) // 7
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="modify-slice-length-and-capacity" class="tmd-header-3">
+Modify the Length and Capacity Properties of a Slice Individually
+</h3>
+<p></p>
+<div class="tmd-usual">
+Above has mentioned, generally, the length and capacity of a slice value can't be modified individually. A slice value can only be overwritten as a whole by assigning another slice value to it. However, we can modify the length and capacity of a slice individually by using reflections. Reflection will be explained in <a href="reflection.html">a later article</a> in detail.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="modify-slice-length-and-capacity"></a>
-<h3>Modify the Length and Capacity Properties of a Slice Individually</h3>
-
-<div>
-<p>
-Above has mentioned, generally, the length and capacity of
-a slice value can't be modified individually.
-A slice value can only be overwritten as a whole
-by assigning another slice value to it.
-However, we can modify the length and capacity of a slice
-individually by using reflections.
-Reflection will be explained in <a href="reflection.html">a later article</a> in detail.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -2300,60 +2111,57 @@ func main() {
 	s := make([]int, 2, 6)
 	fmt.Println(len(s), cap(s)) // 2 6
 
-	reflect.ValueOf(&s).Elem().SetLen(3)
+	reflect.ValueOf(&amp;s).Elem().SetLen(3)
 	fmt.Println(len(s), cap(s)) // 3 6
 
-	reflect.ValueOf(&s).Elem().SetCap(5)
+	reflect.ValueOf(&amp;s).Elem().SetCap(5)
 	fmt.Println(len(s), cap(s)) // 3 5
 }
 </code></pre>
-
-<p>
-The second argument passed to the <code>reflect.SetLen</code> function must not
-be larger than the current capacity of the argument slice <code>s</code>.
-The second argument passed to the <code>reflect.SetCap</code> function must not
-be smaller than the current length of the argument slice <code>s</code> and
-larger than the current capacity of the argument slice <code>s</code>.
-Otherwise, a panic will occur.
-</p>
-
-<p>
-The reflection way is very inefficient, it is slower than a slice assignment.
-</p>
+<p></p>
+<div class="tmd-usual">
+The second argument passed to the <code class="tmd-code-span">reflect.SetLen</code> function must not be larger than the current capacity of the argument slice <code class="tmd-code-span">s</code>. The second argument passed to the <code class="tmd-code-span">reflect.SetCap</code> function must not be smaller than the current length of the argument slice <code class="tmd-code-span">s</code> and larger than the current capacity of the argument slice <code class="tmd-code-span">s</code>. Otherwise, a panic will occur.
 </div>
-
-<a class="anchor" id="slice-manipulations"></a>
-<h3>More Slice Manipulations</h3>
-
-<p>
-Go doesn't support more built-in slice operations,
-such as slice clone, element deletion and insertion.
-We must compose the built-in ways to achieve those operations.
-</p>
-
-<p>
-In the following examples in the current section,
-assume <code>s</code> is the talked slice,
-<code>T</code> is its element type and <code>t0</code>
-is a zero value literal representation of <code>T</code>.
-</p>
-
-<h4>Clone slices</h4>
-
-<div>
+<p></p>
+<div class="tmd-usual">
+The reflection way is very inefficient, it is slower than a slice assignment.
+</div>
+<p></p>
+<h3 id="slice-manipulations" class="tmd-header-3">
+More Slice Manipulations
+</h3>
+<p></p>
+<div class="tmd-usual">
+Go doesn't support more built-in slice operations, such as slice clone, element deletion and insertion. We must compose the built-in ways to achieve those operations.
+</div>
+<p></p>
+<div class="tmd-usual">
+In the following examples in the current section, assume <code class="tmd-code-span">s</code> is the talked slice, <code class="tmd-code-span">T</code> is its element type and <code class="tmd-code-span">t0</code> is a zero value literal representation of <code class="tmd-code-span">T</code>.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Clone slices
+</h4>
+<p></p>
+<div class="tmd-usual">
 For the current Go version (1.23), the simplest way to clone a slice is:
-<pre class="disable-line-numbers111"><code class="language-go">sClone := append(s[:0:0], s...)
+</div>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">sClone := append(s[:0:0], s...)
 </code></pre>
-
-We can also use the following line instead, but comparing with the above way, it has one imperfection.
-If the source slice <code>s</code> is blank non-nil slice, then the result slice is nil.
-<pre class="disable-line-numbers111"><code class="language-go">sClone := append([]T(nil), s...)
+<p></p>
+<div class="tmd-usual">
+We can also use the following line instead, but comparing with the above way, it has one imperfection. If the source slice <code class="tmd-code-span">s</code> is blank non-nil slice, then the result slice is nil.
+</div>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">sClone := append([]T(nil), s...)
 </code></pre>
-
-The above append ways have one drawback.
-They both might allocate (then initialize) more elements than needed.
-We can also use the following ways to avoid this drawback:
-<pre class="disable-line-numbers111"><code class="language-go">// The two-line make+copy way.
+<p></p>
+<div class="tmd-usual">
+The above append ways have one drawback. They both might allocate (then initialize) more elements than needed. We can also use the following ways to avoid this drawback:
+</div>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">// The two-line make+copy way.
 sClone := make([]T, len(s))
 copy(sClone, s)
 
@@ -2362,127 +2170,89 @@ copy(sClone, s)
 // slower than the above two-line make+copy way.
 sClone := append(make([]T, 0, len(s)), s...)
 </code></pre>
-
-<p>
-</p>
-
-The "make" ways have a drawback that if <code>s</code> is a nil slice,
-then they both result a non-nil blank slice.
-However, in practice, we often needn't to pursue the perfection.
-If we do, then three more lines are needed:
-
-<pre class="disable-line-numbers111"><code class="language-go">var sClone []T
+<p></p>
+<div class="tmd-usual">
+The "make" ways have a drawback that if <code class="tmd-code-span">s</code> is a nil slice, then they both result a non-nil blank slice. However, in practice, we often needn't to pursue the perfection. If we do, then three more lines are needed:
+</div>
+<p></p>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">var sClone []T
 if s != nil {
 	sClone = make([]T, len(s))
 	copy(sClone, s)
 }
 </code></pre>
-
-<p>
-</p>
-
-<!--
-Before Go Toolchain 1.15, for some common cases, the "append" ways are
-<a href="https://github.com/go101/go101/wiki/How-to-efficiently-clone-a-slice%3F">much more efficient than</a>
-the "make+copy" way. However, since version 1.15, the "make+copy" way has been specially optimized by the
-official Go compiler so that this way becomes always more efficient than the "append" ways.
-But please note that, the optimization only works if the cloned slice presents as a pure or
-qualified identifier in code and the <code>make</code> call only take two arguments.
-For example, it only works for the first case in the following code:
-
-<pre class="disable-line-numbers111"><code class="language-go">	// case 1:
-	var s = make([]byte, 10000)
-	y = make([]T, len(s)) // works
-	copy(y, s)
-
-	// case 2:
-	var s = make([]byte, 10000)
-	y = make([]T, len(s), len(s)) // not work
-	copy(y, s)
-
-	// case 3:
-	var a = [1][]byte{s}
-	y = make([]T, len(a[0])) // not work
-	copy(y, a[0])
-
-	// case 4:
-	type T struct {x []byte}
-	var t = T{x: s}
-	y = make([]T, len(t.x)) // not work
-	copy(y, t.x)
-</code></pre>
--->
-
+<p></p>
+<p></p>
+<h4 id="delete-slice-elements" class="tmd-header-4">
+Delete a segment of slice elements
+</h4>
+<p></p>
+<div class="tmd-usual">
+Above has mentioned that the elements a slice are stored contiguously in memory and there are no gaps between any two adjacent elements of the slice. So when a slice element is removed,
 </div>
-
-<a class="anchor" id="delete-slice-elements"></a>
-<h4>Delete a segment of slice elements</h4>
-
-<div>
-Above has mentioned that the elements a slice are stored contiguously
-in memory and there are no gaps between any two adjacent elements of the slice.
-So when a slice element is removed,
-<ul>
-<li>
-	if the element order must be preserved,
-	then each of the subsequent elements followed the removed elements
-	must be moved forwards.
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if the element order must be preserved, then each of the subsequent elements followed the removed elements must be moved forwards.
+</div>
 </li>
-<li>
-	if the element order doesn't need to be preserved,
-	then we can move the last elements in the slice to the removed indexes.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if the element order doesn't need to be preserved, then we can move the last elements in the slice to the removed indexes.
+</div>
 </li>
 </ul>
-
-In the following example, assume <code>from</code> and <code>to</code> are
-two legal indexes, <code>from</code> is not larger than <code>to</code>,
-and the <code>to</code> index is exclusive.
-<pre class="line-numbers"><code class="language-go">// way 1 (preserve element orders):
+<p></p>
+<div class="tmd-usual">
+In the following example, assume <code class="tmd-code-span">from</code> and <code class="tmd-code-span">to</code> are two legal indexes, <code class="tmd-code-span">from</code> is not larger than <code class="tmd-code-span">to</code>, and the <code class="tmd-code-span">to</code> index is exclusive.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// way 1 (preserve element orders):
 s = append(s[:from], s[to:]...)
 
 // way 2 (preserve element orders):
 s = s[:from + copy(s[from:], s[to:])]
 
 // Don't preserve element orders:
-if n := to-from; len(s)-to < n {
+if n := to-from; len(s)-to &lt; n {
 	copy(s[from:to], s[to:])
 } else {
 	copy(s[from:to], s[len(s)-n:])
 }
 s = s[:len(s)-(to-from)]
 </code></pre>
-
-If the slice elements reference other values, we should reset
-tail elements (on the just freed-up slots) to avoid memory leaking.
-
-<pre class="line-numbers"><code class="language-go">// "len(s)+to-from" is the old slice length.
+<p></p>
+<div class="tmd-usual">
+If the slice elements reference other values, we should reset tail elements (on the just freed-up slots) to avoid memory leaking.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// "len(s)+to-from" is the old slice length.
 temp := s[len(s):len(s)+to-from]
 for i := range temp {
 	temp[i] = t0
 }
 </code></pre>
-
-<p>
-As mentioned above, the <code>for-range</code> loop code block will be
-optimized as a <code>memclr</code> call by the standard Go compiler.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+As mentioned above, the <code class="tmd-code-span">for-range</code> loop code block will be optimized as a <code class="tmd-code-span">memclr</code> call by the standard Go compiler.
 </div>
-
-<a class="anchor" id="delete-one-slice-element"></a>
-<h4>Delete one slice element</h4>
-
-<div>
-<p>
-Deleting one element is similar to, and also simpler than,
-deleting a segment of elements.
-</p>
-
-In the following example,
-assume <code>i</code> the index of the element to be removed
-and <code>i</code> is a legal index.
-
-<pre class="line-numbers"><code class="language-go">// Way 1 (preserve element orders):
+<p></p>
+<h4 id="delete-one-slice-element" class="tmd-header-4">
+Delete one slice element
+</h4>
+<p></p>
+<div class="tmd-usual">
+Deleting one element is similar to, and also simpler than, deleting a segment of elements.
+</div>
+<p></p>
+<div class="tmd-usual">
+In the following example, assume <code class="tmd-code-span">i</code> the index of the element to be removed and <code class="tmd-code-span">i</code> is a legal index.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// Way 1 (preserve element orders):
 s = append(s[:i], s[i+1:]...)
 
 // Way 2 (preserve element orders):
@@ -2495,28 +2265,26 @@ s = s[:i + copy(s[i:], s[i+1:])]
 s[i] = s[len(s)-1]
 s = s[:len(s)-1]
 </code></pre>
-
-<p>
-</p>
-
-If the slice elements contain pointers, then after the deletion action,
-we should reset the last element of the old slice value
-to avoid memory leaking:
-<pre class="line-numbers"><code class="language-go">s[len(s):len(s)+1][0] = t0
+<p></p>
+<div class="tmd-usual">
+If the slice elements contain pointers, then after the deletion action, we should reset the last element of the old slice value to avoid memory leaking:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">s[len(s):len(s)+1][0] = t0
 // or
 s[:len(s)+1][len(s)] = t0
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<h4>Delete slice elements conditionally</h4>
-
-<div>
+<p></p>
+<h4 class="tmd-header-4">
+Delete slice elements conditionally
+</h4>
+<p></p>
+<div class="tmd-usual">
 Sometimes, we may need to delete slice elements by some conditions.
-
-<pre class="line-numbers"><code class="language-go">// Assume T is a small-size type.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// Assume T is a small-size type.
 func DeleteElements(s []T, keep func(T) bool, clear bool) []T {
 	//result := make([]T, 0, len(s))
 	result := s[:0] // without allocating a new slice
@@ -2535,23 +2303,25 @@ func DeleteElements(s []T, keep func(T) bool, clear bool) []T {
 	return result
 }
 </code></pre>
-
-<p>
-Please note, if <code>T</code> is not a small-size type, then generally
-we should <a href="value-copy-cost.html#copy-costs">try to</a> avoid
-using <code>T</code> as function parameter types and using two-iteration-variable
-<code>for-range</code> block form to iterate slices with element types as <code>T</code>.
-</p>
+<p></p>
+<div class="tmd-usual">
+Please note, if <code class="tmd-code-span">T</code> is not a small-size type, then generally we should <a href="value-copy-cost.html#copy-costs">try to</a> avoid using <code class="tmd-code-span">T</code> as function parameter types and using two-iteration-variable <code class="tmd-code-span">for-range</code> block form to iterate slices with element types as <code class="tmd-code-span">T</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h4>Insert all elements of a slice into another slice</h4>
-
-<div>
-Assume the insertion position is a legal index <code>i</code>
-and <code>elements</code> is the slice whose elements are to be inserted.
-
-<pre class="line-numbers"><code class="language-go">// One-line implementation:
+<p></p>
+<h4 class="tmd-header-4">
+Insert all elements of a slice into another slice
+</h4>
+<p></p>
+<div class="tmd-usual">
+Assume the insertion position is a legal index <code class="tmd-code-span">i</code> and <code class="tmd-code-span">elements</code> is the slice whose elements are to be inserted.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// One-line implementation:
 s = append(s[:i], append(elements, s[i:]...)...)
 
 // The one-line way always copies s[i:] twice and
@@ -2564,7 +2334,7 @@ s = append(s[:i], append(elements, s[i:]...)...)
 // way is more efficient than the one-line way
 // only for small slices now.
 
-if cap(s) >= len(s) + len(elements) {
+if cap(s) &gt;= len(s) + len(elements) {
 	s = s[:len(s)+len(elements)]
 	copy(s[i+len(elements):], s[i:])
 	copy(s[i:], elements)
@@ -2582,27 +2352,25 @@ s = append(s, elements...)
 // Unshift (insert at the beginning):
 s = append(elements, s...)
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 class="tmd-header-4">
+Insert several individual elements
+</h4>
+<p></p>
+<div class="tmd-usual">
+Inserting several individual elements is similar to inserting all elements of a slice. We can construct a slice with a slice composite literal with the elements to be inserted, then use the above ways to insert these elements.
 </div>
-
-<h4>Insert several individual elements</h4>
-
-<p>
-Inserting several individual elements is similar to inserting all elements of a slice.
-We can construct a slice with a slice composite literal with the elements
-to be inserted, then use the above ways to insert these elements.
-</p>
-
-<h4>Special deletions and insertions: push front/back, pop front/back</h4>
-
-<div>
-Assume the pushed or popped element is <code>e</code> and slice
-<code>s</code> has at least one element.
-
-<pre class="line-numbers"><code class="language-go">// Pop front (shift):
+<p></p>
+<h4 class="tmd-header-4">
+Special deletions and insertions: push front/back, pop front/back
+</h4>
+<p></p>
+<div class="tmd-usual">
+Assume the pushed or popped element is <code class="tmd-code-span">e</code> and slice <code class="tmd-code-span">s</code> has at least one element.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// Pop front (shift):
 s, e = s[1:], s[0]
 // Pop back:
 s, e = s[:len(s)-1], s[len(s)-1]
@@ -2611,63 +2379,36 @@ s = append([]T{e}, s...)
 // Push back:
 s = append(s, e)
 </code></pre>
-
-<p>
-Please note, using <code>append</code> to insert elements is often inefficient,
-for all the elements after the insertion position need to be move backwards,
-and a larger space needs to be allocated to store all the elements if the free capacity is insufficient.
-These might be not serious problems for small slices, but for large slices,
-they often are. So if the number of the elements needing to be moved is large,
-it is best to use a linked list to do the insertions.
-</p>
+<p></p>
+<div class="tmd-usual">
+Please note, using <code class="tmd-code-span">append</code> to insert elements is often inefficient, for all the elements after the insertion position need to be move backwards, and a larger space needs to be allocated to store all the elements if the free capacity is insufficient. These might be not serious problems for small slices, but for large slices, they often are. So if the number of the elements needing to be moved is large, it is best to use a linked list to do the insertions.
 </div>
+<p></p>
+<h4 class="tmd-header-4">
+More slice operations
+</h4>
+<p></p>
+<div class="tmd-usual">
+In reality, the needs are varied. For some specific cases, it is possible none of the above ways shown in the above examples are the most efficient way. And sometimes, the above ways may not satisfy some specific requirements in practice. So, please learn and apply elastically. This may be the reason why Go doesn't support the more operations introduced above in the built-in way.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Use Maps to Simulate Sets
+</h3>
+<p></p>
+<div class="tmd-usual">
+Go doesn't support built-in <span class="tmd-bold">set</span> types. However, it is easy to use a map type to simulate a set type. In practice, we often use the map type <code class="tmd-code-span">map[K]struct{}</code> to simulate a set type with element type <code class="tmd-code-span">K</code>. The size of the map element type <code class="tmd-code-span">struct{}</code> is zero, elements of values of such map types don't occupy memory space.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Container Related Operations Are Not Synchronized Internally
+</h3>
+<p></p>
+<div class="tmd-usual">
+Please note that, all container operations are not synchronized internally. Without making using of any data synchronization technique, it is okay for multiple goroutines to read a container concurrently, but it is not okay for multiple goroutines to manipulate a container concurrently and at least one goroutine modifies the container. The latter case will cause data races, even make goroutines panic. We must synchronize the container operations manually. Please read the articles on <a href="concurrent-synchronization-overview.html">data synchronizations</a> for details.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h4>More slice operations</h4>
-
-<p>
-In reality, the needs are varied.
-For some specific cases, it is possible none of the above ways shown
-in the above examples are the most efficient way. And sometimes,
-the above ways may not satisfy some specific requirements in practice.
-So, please learn and apply elastically.
-This may be the reason why Go doesn't support the more operations
-introduced above in the built-in way.
-</p>
-
-<h3>Use Maps to Simulate Sets</h3>
-
-<p>
-Go doesn't support built-in <b>set</b> types.
-However, it is easy to use a map type to simulate a set type.
-In practice, we often use the map type <code>map[K]struct{}</code>
-to simulate a set type with element type <code>K</code>.
-The size of the map element type <code>struct{}</code> is zero,
-elements of values of such map types don't occupy memory space.
-</p>
-
-<h3>Container Related Operations Are Not Synchronized Internally</h3>
-
-<p>
-Please note that, all container operations are not synchronized internally.
-Without making using of any data synchronization technique,
-it is okay for multiple goroutines to read a container concurrently,
-but it is not okay for multiple goroutines to manipulate a container
-concurrently and at least one goroutine modifies the container.
-The latter case will cause data races, even make goroutines panic.
-We must synchronize the container operations manually.
-Please read the articles on
-<a href="concurrent-synchronization-overview.html">data synchronizations</a>
-for details.
-</p>
-
-
-
-
-
-
-
-
-
-
-
-verbose
+</div>
+<p></p>

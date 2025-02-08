@@ -1,86 +1,67 @@
-﻿<h1>Memory Layouts</h1>
-
-<!--
-https://groups.google.com/forum/#!topic/golang-nuts/XDfQUn4U_g8
-https://groups.google.com/forum/#!topic/golang-nuts/YSxEBt9kzuc
-https://groups.google.com/forum/#!topic/golang-nuts/HaxJMtSngOo
--->
-
-<p>
-This articles will introduce type alignment and size guarantees in Go.
-It is essential to know the guarantees to estimate the sizes of struct types
-and properly use the 64-bit functions in <code>sync/atomic</code> standard package.
-</p>
-
-<p>
+<h1 class="tmd-header-1">
+Memory Layouts
+</h1>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+This articles will introduce type alignment and size guarantees in Go. It is essential to know the guarantees to estimate the sizes of struct types and properly use the 64-bit functions in <code class="tmd-code-span">sync/atomic</code> standard package.
+</div>
+<p></p>
+<div class="tmd-usual">
 Go is a C family language, so many concepts talked in this article are shared with C language.
-</p>
+</div>
+<p></p>
+<h3 id="alignment-guarantee" class="tmd-header-3">
+Type Alignment Guarantees in Go
+</h3>
+<p></p>
+<div class="tmd-usual">
+To fully utilize CPU directives and get the best performance, the (starting) addresses of the memory blocks allocated for values of a specified type must be aligned as multiples of an integer N, then N is called the value address alignment guarantee of the type, or simply the alignment guarantee of the type. We can also say the addresses of addressable values of the type are guaranteed to be N-byte aligned.
+</div>
+<p></p>
+<div class="tmd-usual">
+In fact, each type has two alignment guarantees, one is for when it is used as field types of other (struct) types, the other is for other cases (when it is used for a variable declaration, array element type, etc). We call the former one the field alignment guarantee of that type, and call the latter one the general alignment guarantee of that type.
+</div>
+<p></p>
+<div class="tmd-usual">
+For a type <code class="tmd-code-span">T</code>, we can call <code class="tmd-code-span">unsafe.Alignof(t)</code> to get its general alignment guarantee, where <code class="tmd-code-span">t</code> is a non-field value of type <code class="tmd-code-span">T</code>, and call <code class="tmd-code-span">unsafe.Alignof(x.t)</code> to get its field alignment guarantee, where <code class="tmd-code-span">x</code> is a struct value and <code class="tmd-code-span">t</code> is a field value of type <code class="tmd-code-span">T</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+Calls to the functions in the <code class="tmd-code-span">unsafe</code> standard code packages are always evaluated at compile time.
+</div>
+<p></p>
+<div class="tmd-usual">
+At run time, for a value <code class="tmd-code-span">t</code> of type <code class="tmd-code-span">T</code>, we can call <code class="tmd-code-span">reflect.TypeOf(t).Align()</code> to get the general alignment guarantee of type <code class="tmd-code-span">T</code>, and call <code class="tmd-code-span">reflect.TypeOf(t).FieldAlign()</code> to get the field alignment guarantee of type <code class="tmd-code-span">T</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+For the current standard Go compiler (v1.23.n), the field alignment guarantee and the general alignment guarantee of a type are always equal. For gccgo compiler, the statement is false.
+</div>
+<p></p>
+<div class="tmd-usual">
+Go specification only mentions <a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">a little on type alignment guarantees</a>:
+</div>
+<div class="tmd-quotation">
+<div class="tmd-usual">
+The following minimal alignment properties are guaranteed:<br/>1. For a variable <code class="tmd-code-span">x</code> of any type: <code class="tmd-code-span">unsafe.Alignof(x)</code> is at least <code class="tmd-code-span">1</code>.<br/>2. For a variable <code class="tmd-code-span">x</code> of struct type: <code class="tmd-code-span">unsafe.Alignof(x)</code> is the largest of all the values <code class="tmd-code-span">unsafe.Alignof(x.f)</code> for each field <code class="tmd-code-span">f</code> of <code class="tmd-code-span">x</code>, but at least <code class="tmd-code-span">1</code>.<br/>3. For a variable <code class="tmd-code-span">x</code> of array type: <code class="tmd-code-span">unsafe.Alignof(x)</code> is the same as the alignment of a variable of the array's element type.
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="alignment-guarantee"></a>
-<h3>Type Alignment Guarantees in Go</h3>
-
-<div>
-<p>
-To fully utilize CPU directives and get the best performance,
-the (starting) addresses of the memory blocks allocated for values
-of a specified type must be aligned as multiples of an integer N,
-then N is called the value address alignment guarantee of the type, or simply the alignment guarantee of the type.
-We can also say the addresses of addressable values of the type are guaranteed to be N-byte aligned.
-</p>
-
-<p>
-In fact, each type has two alignment guarantees, one is for when it is used as field types of other (struct) types,
-the other is for other cases (when it is used for a variable declaration, array element type, etc).
-We call the former one the field alignment guarantee of that type,
-and call the latter one the general alignment guarantee of that type.
-</p>
-
-<p>
-For a type <code>T</code>, we can call <code>unsafe.Alignof(t)</code> to
-get its general alignment guarantee, where <code>t</code> is a non-field value of type <code>T</code>,
-and call <code>unsafe.Alignof(x.t)</code> to
-get its field alignment guarantee, where <code>x</code> is a struct value
-and <code>t</code> is a field value of type <code>T</code>.
-</p>
-
-<p>
-Calls to the functions in the <code>unsafe</code> standard code packages are always evaluated at compile time.
-</p>
-
-<p>
-At run time, for a value <code>t</code> of type <code>T</code>,
-we can call <code>reflect.TypeOf(t).Align()</code> to get the general alignment guarantee
-of type <code>T</code>, and call <code>reflect.TypeOf(t).FieldAlign()</code> to get
-the field alignment guarantee of type <code>T</code>.
-</p>
-
-<p>
-For the current standard Go compiler (v1.23.n), the field alignment guarantee and the general alignment guarantee
-of a type are always equal. For gccgo compiler, the statement is false.
-</p>
-
-Go specification only mentions <a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">a little
-on type alignment guarantees</a>:
-<blockquote>
-<small>
-The following minimal alignment properties are guaranteed:<br/>
-1. For a variable <code>x</code> of any type: <code>unsafe.Alignof(x)</code> is at least <code>1</code>.<br/>
-2. For a variable <code>x</code> of struct type: <code>unsafe.Alignof(x)</code> is the largest of all the values <code>unsafe.Alignof(x.f)</code> for each field <code>f</code> of <code>x</code>, but at least <code>1</code>.<br/>
-3. For a variable <code>x</code> of array type: <code>unsafe.Alignof(x)</code> is the same as the alignment of a variable of the array's element type.
-</small>
-</blockquote>
-
-<p>
-So Go specification doesn't specify the exact alignment guarantees for any types.
-It just specifies some minimal requirements.
-</p>
-
-For the same compiler, the exact type alignment guarantees may be different
-between different architectures and between different compiler versions.
-For the current version (v1.23.n) of the standard Go compiler,
-the alignment guarantees are listed here.
-
-<pre class="fixed-width"><code class="language-go">type                      alignment guarantee
+</div>
+<p></p>
+<div class="tmd-usual">
+So Go specification doesn't specify the exact alignment guarantees for any types. It just specifies some minimal requirements.
+</div>
+<p></p>
+<div class="tmd-usual">
+For the same compiler, the exact type alignment guarantees may be different between different architectures and between different compiler versions. For the current version (v1.23.n) of the standard Go compiler, the alignment guarantees are listed here.
+</div>
+<p></p>
+<pre class="tmd-code fixed-width">
+<code class="language-go">type                      alignment guarantee
 ------                    ------
 bool, uint8, int8         1
 uint16, int16             2
@@ -90,36 +71,29 @@ arrays                    depend on element types
 structs                   depend on field types
 other types               size of a native word
 </code></pre>
-<p>
-Here, the size of a native word (or machine word) is 4-byte
-on 32-bit architectures and 8-byte on 64-bit architectures.
-</p>
-
-<!--
-todo: above assertion may be not correct for some architectures?
--->
-
-<p>
-This means, for the current version of the standard Go compiler,
-the alignment guarantees of other types may be either <code>4</code> or <code>8</code>,
-depends on different build target architectures.
-This is also true for gccgo.
-</p>
-
-<p>
-Generally, we don't need to care about the value address alignments in Go programming,
-except that we want to optimizing memory consumption, or write portable programs which
-using the 64-bit functions from <code>sync/atomic</code> package.
-Please read the following two sections for details.
-</p>
+<p></p>
+<div class="tmd-usual">
+Here, the size of a native word (or machine word) is 4-byte on 32-bit architectures and 8-byte on 64-bit architectures.
 </div>
-
-<a class="anchor" id="size-and-padding"></a>
-<h3>Type Sizes and Structure Padding</h3>
-
-<div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+This means, for the current version of the standard Go compiler, the alignment guarantees of other types may be either <code class="tmd-code-span">4</code> or <code class="tmd-code-span">8</code>, depends on different build target architectures. This is also true for gccgo.
+</div>
+<p></p>
+<div class="tmd-usual">
+Generally, we don't need to care about the value address alignments in Go programming, except that we want to optimizing memory consumption, or write portable programs which using the 64-bit functions from <code class="tmd-code-span">sync/atomic</code> package. Please read the following two sections for details.
+</div>
+<p></p>
+<h3 id="size-and-padding" class="tmd-header-3">
+Type Sizes and Structure Padding
+</h3>
+<p></p>
+<div class="tmd-usual">
 Go specification only makes following <a href="https://golang.org/ref/spec#Size_and_alignment_guarantees">type size guarantees</a>:
-<pre class="fixed-width"><code class="language-go">type                    size in bytes
+</div>
+<pre class="tmd-code fixed-width">
+<code class="language-go">type                    size in bytes
 ------                  ------
 uint8, int8             1
 uint16, int16           2
@@ -136,50 +110,56 @@ uintptr                 implementation-specific,
                         the uninterpreted bits
                         of a pointer value.
 </code></pre>
-<p>
-Go specification doesn't make value size guarantees for other kinds of types.
-The full list of sizes of different types settled
-by the standard Go compiler are listed in
-<a href="value-copy-cost.html#value-sizes">value copy costs</a>.
-</p>
+<p></p>
+<div class="tmd-usual">
+Go specification doesn't make value size guarantees for other kinds of types. The full list of sizes of different types settled by the standard Go compiler are listed in <a href="value-copy-cost.html#value-sizes">value copy costs</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The standard Go compiler (and gccgo) will ensure the size of values of a type
-is a multiple of the alignment guarantee of the type.
-</p>
-
-<p>
-To satisfy type alignment guarantee rules mentioned previously,
-Go compilers may pad some bytes between fields of struct values.
-This makes the value size of a struct type may be not a simple
-sum of the sizes of all fields of the type.
-</p>
-
-The following is an example showing how bytes are padded between struct fields.
-We have already learned that
-<ul>
-<li>
-	the alignment guarantee and size of the built-in type <code>int8</code> are both one byte.
+</div>
+<p></p>
+<div class="tmd-usual">
+The standard Go compiler (and gccgo) will ensure the size of values of a type is a multiple of the alignment guarantee of the type.
+</div>
+<p></p>
+<div class="tmd-usual">
+To satisfy type alignment guarantee rules mentioned previously, Go compilers may pad some bytes between fields of struct values. This makes the value size of a struct type may be not a simple sum of the sizes of all fields of the type.
+</div>
+<p></p>
+<div class="tmd-usual">
+The following is an example showing how bytes are padded between struct fields. We have already learned that
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the alignment guarantee and size of the built-in type <code class="tmd-code-span">int8</code> are both one byte.
+</div>
 </li>
-<li>
-	the alignment guarantee and size of the built-in type <code>int16</code> are both two bytes.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the alignment guarantee and size of the built-in type <code class="tmd-code-span">int16</code> are both two bytes.
+</div>
 </li>
-<li>
-	the size of the built-in type <code>int64</code> is 8 bytes, the alignment guarantee
-	of type <code>int64</code> is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the size of the built-in type <code class="tmd-code-span">int64</code> is 8 bytes, the alignment guarantee of type <code class="tmd-code-span">int64</code> is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
+</div>
 </li>
-<li>
-	the alignment guarantees of the types <code>T1</code> and <code>T2</code>
-	are their respective largest field alignment guarantees, a.k.a., the alignment guarantee of the <code>int64</code> field.
-	So their alignment guarantees are both 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the alignment guarantees of the types <code class="tmd-code-span">T1</code> and <code class="tmd-code-span">T2</code> are their respective largest field alignment guarantees, a.k.a., the alignment guarantee of the <code class="tmd-code-span">int64</code> field. So their alignment guarantees are both 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
+</div>
 </li>
-<li>
-	the sizes of the types <code>T1</code> and <code>T2</code> must be multiples of their respective alignment guarantees,
-	a.k.a., 4N bytes on 32-bit architectures and 8N bytes on 64-bit architectures.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the sizes of the types <code class="tmd-code-span">T1</code> and <code class="tmd-code-span">T2</code> must be multiples of their respective alignment guarantees, a.k.a., 4N bytes on 32-bit architectures and 8N bytes on 64-bit architectures.
+</div>
 </li>
 </ul>
-
-<pre class="line-numbers"><code class="language-go">type T1 struct {
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type T1 struct {
 	a int8
 
 	// On 64-bit architectures, to make field b
@@ -222,119 +202,88 @@ type T2 struct {
 // bytes on 64-bit architectures, and is 12
 // (= 1 + 1 + 2 + 8) on 32-bit architectures.
 </code></pre>
-
-<p>
-Although <code>T1</code> and <code>T2</code> have the same field set, their sizes are different.
-</p>
-
-<p>
-One interesting fact for the standard Go compiler is that sometimes zero sized fields may affect structure padding.
-Please read <a href="unofficial-faq.html#final-zero-size-field">this question in the unofficial Go FAQ</a> for details.
-</p>
+<p></p>
+<div class="tmd-usual">
+Although <code class="tmd-code-span">T1</code> and <code class="tmd-code-span">T2</code> have the same field set, their sizes are different.
 </div>
+<p></p>
+<div class="tmd-usual">
+One interesting fact for the standard Go compiler is that sometimes zero sized fields may affect structure padding. Please read <a href="unofficial-faq.html#final-zero-size-field">this question in the unofficial Go FAQ</a> for details.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="64bit-atomic-operation"></a>
-<h3>The Alignment Requirement for 64-bit Word Atomic Operations</h3>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+The Alignment Requirement for 64-bit Word Atomic Operations
+</h3>
+<p></p>
+<div class="tmd-usual">
+<span class="tmd-bold"><span class="tmd-italic">64-bit words</span></span> mean values of types whose underlying types are <code class="tmd-code-span">int64</code> or <code class="tmd-code-span">uint64</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+The article <a href="concurrent-atomic-operation.html">atomic operations</a> mentions a fact that 64-bit atomic operations on a 64-bit word require the address of the 64-bit word must be 8-byte aligned. This is not a problem for the current 64-bit architectures supported by the standard Go compiler, because 64-bit words on these 64-bit architectures are always 8-byte aligned.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<div>
-<p>
-<b><i>64-bit words</i></b> mean values of types whose underlying types are <code>int64</code> or <code>uint64</code>.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+However, on 32-bit architectures, the alignment guarantee made by the standard Go compiler for 64-bit words is only 4 bytes. 64-bit atomic operations on a 64-bit word which is not 8-byte aligned will panic at runtime. Worse, on very old CPU architectures, 64-bit atomic functions are not supported.
+</div>
+<p></p>
+<div class="tmd-usual">
+At the end of the <a href="https://golang.org/pkg/sync/atomic/#pkg-note-BUG"><code class="tmd-code-span">sync/atomic</code> documentation</a>, it mentions:
+</div>
+<div class="tmd-quotation">
+<div class="tmd-usual">
+On x86-32, the 64-bit functions use instructions unavailable before the Pentium MMX.<br/><br/>On non-Linux ARM, the 64-bit functions use instructions unavailable before the ARMv6k core.<br/><br/>On both ARM and x86-32, it is the caller's responsibility to arrange for 64-bit alignment of 64-bit words accessed atomically. The first word in a variable or in an allocated struct, array, or slice can be relied upon to be 64-bit aligned.
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The article <a href="concurrent-atomic-operation.html">atomic operations</a> mentions a fact that
-64-bit atomic operations on a 64-bit word require the address of the 64-bit word must be 8-byte aligned.
-This is not a problem for the current 64-bit architectures supported by the standard Go compiler,
-because 64-bit words on these 64-bit architectures are always 8-byte aligned.
-
-</p>
-
-<p>
-However, on 32-bit architectures, the alignment guarantee made by the standard Go compiler for 64-bit words is only 4 bytes.
-64-bit atomic operations on a 64-bit word which is not 8-byte aligned will panic at runtime.
-Worse, on very old CPU architectures, 64-bit atomic functions are not supported.
-</p>
-
-At the end of the <a href="https://golang.org/pkg/sync/atomic/#pkg-note-BUG"><code>sync/atomic</code> documentation</a>,
-it mentions:
-
-<blockquote>
-<small>
-On x86-32, the 64-bit functions use instructions unavailable before the Pentium MMX.
-<br/><br/>
-On non-Linux ARM, the 64-bit functions use instructions unavailable before the ARMv6k core.
-<br/><br/>
-On both ARM and x86-32, it is the caller's responsibility to
-arrange for 64-bit alignment of 64-bit words accessed atomically.
-The first word in a variable or in an allocated struct,
-array, or slice can be relied upon to be 64-bit aligned.
-</small>
-</blockquote>
-
-<!--
-<p><i>
-(Note, although the above quoted texts shown in the bug zone of that documentation,
-what they describe are not bugs.)
-</i></p>
--->
-
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
 So, things are not very bad for two reasons.
-<ol>
-<li>
-	The very old CPU architectures are not mainstream architectures nowadays.
-	If a program needs to do synchronization for 64-bit words on these architectures,
-	there are <a href="concurrent-synchronization-more.html">other synchronization techniques</a> to rescue.
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+The very old CPU architectures are not mainstream architectures nowadays. If a program needs to do synchronization for 64-bit words on these architectures, there are <a href="concurrent-synchronization-more.html">other synchronization techniques</a> to rescue.
+</div>
 </li>
-<li>
-	On other not-very-old 32-bit architectures,
-	there are some ways to ensure some 64-bit words are relied upon to be 64-bit aligned.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+On other not-very-old 32-bit architectures, there are some ways to ensure some 64-bit words are relied upon to be 64-bit aligned.
+</div>
 </li>
 </ol>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The ways are described as
-<b>the first (64-bit) word in a variable or in an allocated struct,
-array, or slice can be relied upon to be 64-bit aligned</b>.
-What does the word <b><i>allocated</i></b> mean?
-We can think an <b><i>allocated value</i></b> as a <b><i>declared</i></b> variable,
-a value returned by the built-in <code>make</code> function,
-or the value referenced by a value returned by the built-in <code>new</code> function.
-If a slice value derives from an allocated array and
-the first element of the slice is the first element of the array,
-then the slice value can also be viewed as an allocated value.
-</p>
-
-<p>
-The description of which 64-bit words can be relied upon to be 64-bit aligned
-on 32-bit architectures is some conservative.
-There are more 64-bit words which can be relied upon to be 8-byte aligned.
-In fact, if the first element of an array or slice which element type
-is a 64-bit word type can be relied upon to be 64-bit aligned,
-then all elements in the array/slice can also be accessed atomically.
-It is just some subtle and verbose to make a simple clear description to include
-all the 64-bit words can be relied upon to be 64-bit aligned on 32-bit architectures,
-so the official documentation just makes a conservative description.
-</p>
-
-<!--p>
-And <b><i>be relied upon to be 8-byte aligned</i></b> doesn't mean the address of
-the first 64-bit word in a global variable or in an allocated struct or array
-is always 8-byte aligned on 32-bit architectures.
-It just means if the first 64-bit word in such a value is ever accessed atomically,
-then compilers must guarantee the memory address of that value is 8-byte aligned at run time.
-If it is never accessed atomically, its address is not guaranteed to be 8-byte aligned.
-</p>
-
-<p>
-There are more other 64-bit words which can also be accessed atomically.
-It is just some subtle and verbose to make a simple clear definition in wording,
-so official documentation just makes conservative guarantees.
-</p-->
-
-Here is an example which lists some 64-bit words which are safe or unsafe
-to be accessed atomically on both 64-bit and 32-bit architectures.
-
-<pre class="line-numbers"><code class="language-go">type (
+</div>
+<p></p>
+<div class="tmd-usual">
+The ways are described as <span class="tmd-bold">the first (64-bit) word in a variable or in an allocated struct, array, or slice can be relied upon to be 64-bit aligned</span>. What does the word <span class="tmd-bold"><span class="tmd-italic">allocated</span></span> mean? We can think an <span class="tmd-bold"><span class="tmd-italic">allocated value</span></span> as a <span class="tmd-bold"><span class="tmd-italic">declared</span></span> variable, a value returned by the built-in <code class="tmd-code-span">make</code> function, or the value referenced by a value returned by the built-in <code class="tmd-code-span">new</code> function. If a slice value derives from an allocated array and the first element of the slice is the first element of the array, then the slice value can also be viewed as an allocated value.
+</div>
+<p></p>
+<div class="tmd-usual">
+The description of which 64-bit words can be relied upon to be 64-bit aligned on 32-bit architectures is some conservative. There are more 64-bit words which can be relied upon to be 8-byte aligned. In fact, if the first element of an array or slice which element type is a 64-bit word type can be relied upon to be 64-bit aligned, then all elements in the array/slice can also be accessed atomically. It is just some subtle and verbose to make a simple clear description to include all the 64-bit words can be relied upon to be 64-bit aligned on 32-bit architectures, so the official documentation just makes a conservative description.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+Here is an example which lists some 64-bit words which are safe or unsafe to be accessed atomically on both 64-bit and 32-bit architectures.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type (
 	T1 struct {
 		v uint64
 	}
@@ -368,7 +317,7 @@ func f() {
 	// Here, d.y.v and e.y[0] are both safe,
 	// for *d.y and *e.y are both allocated.
 	d.y = new(T1)
-	e.y = &[6]int64{}
+	e.y = &amp;[6]int64{}
 
 	_, _, _ = f, g, h
 }
@@ -377,22 +326,17 @@ func f() {
 // safe to be accessed atomically, though Go
 // official documentation never makes the guarantees.
 </code></pre>
-
-<p>
-If a 64-bit word field (generally the first one) of a struct type
-will be accessed atomically in code, we should always use allocated values of the struct type
-to guarantee the atomically accessed fields always can
-be relied upon to be 8-byte aligned on 32-bit architectures.
-When this struct type is used as the type of a field of another struct type,
-we should arrange the field as the first field of the other struct type,
-and always use allocated values of the other struct type.
-</p>
-
-Sometimes, if we can't make sure whether or not a 64-bit word can be accessed atomically,
-we can use a value of type <code>[15]byte</code> to determine
-the address for the 64-bit word at run time. For example,
-
-<pre class="line-numbers"><code class="language-go">package mylib
+<p></p>
+<div class="tmd-usual">
+If a 64-bit word field (generally the first one) of a struct type will be accessed atomically in code, we should always use allocated values of the struct type to guarantee the atomically accessed fields always can be relied upon to be 8-byte aligned on 32-bit architectures. When this struct type is used as the type of a field of another struct type, we should arrange the field as the first field of the other struct type, and always use allocated values of the other struct type.
+</div>
+<p></p>
+<div class="tmd-usual">
+Sometimes, if we can't make sure whether or not a 64-bit word can be accessed atomically, we can use a value of type <code class="tmd-code-span">[15]byte</code> to determine the address for the 64-bit word at run time. For example,
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package mylib
 
 import (
 	"unsafe"
@@ -406,7 +350,7 @@ type Counter struct {
 func (c *Counter) xAddr() *uint64 {
 	// The return must be 8-byte aligned.
 	return (*uint64)(unsafe.Pointer(
-		(uintptr(unsafe.Pointer(&c.x)) + 7)/8*8))
+		(uintptr(unsafe.Pointer(&amp;c.x)) + 7)/8*8))
 }
 
 func (c *Counter) Add(delta uint64) {
@@ -418,40 +362,24 @@ func (c *Counter) Value() uint64 {
 	return atomic.LoadUint64(c.xAddr())
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+By using this solution, the <code class="tmd-code-span">Counter</code> type can be embedded in other user types freely and safely, even on 32-bit architectures. The drawback of this solution is there are seven bytes being wasted for every value of <code class="tmd-code-span">Counter</code> type and it uses unsafe pointers.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-By using this solution, the <code>Counter</code> type can be embedded in other user types freely and safely,
-even on 32-bit architectures.
-The drawback of this solution is there are seven bytes being wasted for every value of <code>Counter</code> type
-and it uses unsafe pointers.
-<!--
-The <code>sync</code> standard package uses
-<a href="https://github.com/golang/go/blob/master/src/sync/waitgroup.go#L23">a <code>[3]uint32</code> value to do this trick instead</a>.
-This trick assumes that the alignment guarantee of the <code>uint32</code> type is a multiple of 4 bytes.
-The assumption is true for both the standard Go compiler and gccgo compiler.
-However, it might <a href="https://github.com/golang/go/issues/27577">be false for another third-party Go compiler</a>.
--->
-</p>
-
-<!--
-<p>
-https://github.com/golang/go/issues/36606
-</p>
--->
-
-Go 1.19 introduced a more elegant way to guarantee 8-byte alignments for some values.
-Go 1.19 added <a href="concurrent-atomic-operation.html#overview-1.19">several atomic types</a>
-in the <code>sync/atomic</code> standard package.
-The types include <code>atomic.Int64</code> and <code>atomic.Uint64</code>,
-which values are guaranteed to be 8-byte aligned, even on 32-bit architectures.
-We may make use of this fact to make some 64-bit words always 8-byte aligned on 32-bit architectures.
-For example, in the following code, the <code>x</code> field of any value of the type <code>T</code>
-is always 8-byte aligned, in any situations, either on 64-bit or 32-bit architectures.
-
-<pre class="line-numbers"><code class="language-go">type T struct {
+</div>
+<p></p>
+<div class="tmd-usual">
+Go 1.19 introduced a more elegant way to guarantee 8-byte alignments for some values. Go 1.19 added <a href="concurrent-atomic-operation.html#overview-1.19">several atomic types</a> in the <code class="tmd-code-span">sync/atomic</code> standard package. The types include <code class="tmd-code-span">atomic.Int64</code> and <code class="tmd-code-span">atomic.Uint64</code>, which values are guaranteed to be 8-byte aligned, even on 32-bit architectures. We may make use of this fact to make some 64-bit words always 8-byte aligned on 32-bit architectures. For example, in the following code, the <code class="tmd-code-span">x</code> field of any value of the type <code class="tmd-code-span">T</code> is always 8-byte aligned, in any situations, either on 64-bit or 32-bit architectures.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type T struct {
 	_ [0]atomic.Int64
 	x int64
 }
 </code></pre>
-
-</div>
+<p></p>

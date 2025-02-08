@@ -1,86 +1,87 @@
-﻿<h1>Concurrency Synchronization Techniques Provided in the <code>sync</code> Standard Package</h1>
+<h1 class="tmd-header-1">
+Concurrency Synchronization Techniques Provided in the <code class="tmd-code-span">sync</code> Standard Package
+</h1>
+<p></p>
+<div class="tmd-usual">
+The <a href="channel-use-cases.html">channel use cases</a> article introduces many use cases in which channels are used to do data synchronizations among goroutines. In fact, channels are not the only synchronization techniques provided in Go. There are some other synchronization techniques supported by Go. For some specified circumstances, using the synchronization techniques other than channel are more efficient and readable than using channels. Below will introduce the synchronization techniques provided in the <code class="tmd-code-span">sync</code> standard package.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The <a href="channel-use-cases.html">channel use cases</a> article introduces
-many use cases in which channels are used to do data synchronizations among goroutines.
-In fact, channels are not the only synchronization techniques provided in Go.
-There are some other synchronization techniques supported by Go.
-For some specified circumstances, using the synchronization techniques
-other than channel are more efficient and readable than using channels.
-Below will introduce the synchronization techniques provided
-in the <code>sync</code> standard package.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">sync</code> standard package provides several types which can be used to do synchronizations for some specialized circumstances and guarantee some specialized memory orders. For the specialized circumstances, these techniques are more efficient, and look cleaner, than the channel ways.
+</div>
+<p></p>
+<div class="tmd-usual">
+<span class="tmd-italic">(Please note, to avoid abnormal behaviors, it is best never to copy the values of the types in the <code class="tmd-code-span">sync</code> standard package.)</span>
+</div>
+<p></p>
+<h3 id="waitgroup" class="tmd-header-3">
+The <code class="tmd-code-span">sync.WaitGroup</code> Type
+</h3>
+<p></p>
+<div class="tmd-usual">
+Each <code class="tmd-code-span">sync.WaitGroup</code> value maintains a counter internally. The initial value of the counter is zero.
+</div>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">*WaitGroup</code> type has <a href="https://golang.org/pkg/sync/#WaitGroup">three methods</a>: <code class="tmd-code-span">Add(delta int)</code>, <code class="tmd-code-span">Done()</code> and <code class="tmd-code-span">Wait()</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The <code>sync</code> standard package provides several types
-which can be used to do synchronizations for some specialized circumstances
-and guarantee some specialized memory orders.
-For the specialized circumstances, these techniques are more efficient,
-and look cleaner, than the channel ways.
-</p>
-
-<p><i>
-(Please note, to avoid abnormal behaviors, it is best never to copy
-the values of the types in the <code>sync</code> standard package.)
-</i></p>
-
-<a class="anchor" id="waitgroup"></a>
-<h3>The <code>sync.WaitGroup</code> Type</h3>
-
-<div>
-<p>
-Each <code>sync.WaitGroup</code> value maintains a counter internally.
-The initial value of the counter is zero.
-</p>
-
-<p>
-The <code>*WaitGroup</code> type has
-<a href="https://golang.org/pkg/sync/#WaitGroup">three methods</a>:
-<code>Add(delta int)</code>, <code>Done()</code> and <code>Wait()</code>.
-</p>
-
-For an addressable <code>WaitGroup</code> value <code>wg</code>,
-<ul>
-<li>
-	we can call the <code>wg.Add(delta)</code> method to
-	change the counter value maintained by <code>wg</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+For an addressable <code class="tmd-code-span">WaitGroup</code> value <code class="tmd-code-span">wg</code>,
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+we can call the <code class="tmd-code-span">wg.Add(delta)</code> method to change the counter value maintained by <code class="tmd-code-span">wg</code>.
+</div>
 </li>
-<li>
-	the method call <code>wg.Done()</code> is totally equivalent to
-	the method call <code>wg.Add(-1)</code>.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the method call <code class="tmd-code-span">wg.Done()</code> is totally equivalent to the method call <code class="tmd-code-span">wg.Add(-1)</code>.
+</div>
 </li>
-<li>
-	if a call <code>wg.Add(delta)</code> (or <code>wg.Done()</code>) modifies
-	the counter maintained by <code>wg</code> to negative,  panic will happen.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if a call <code class="tmd-code-span">wg.Add(delta)</code> (or <code class="tmd-code-span">wg.Done()</code>) modifies the counter maintained by <code class="tmd-code-span">wg</code> to negative,  panic will happen.
+</div>
 </li>
-<li>
-	when a goroutine calls <code>wg.Wait()</code>,
-	<ul>
-	<li>
-		if the counter maintained by <code>wg</code> is already zero,
-		then the call <code>wg.Wait()</code> can be viewed as a no-op.
-	</li>
-	<li>
-		otherwise (the counter is positive), the goroutine will enter blocking state.
-		It will enter running state again (a.k.a., the call <code>wg.Wait()</code> returns)
-		when another goroutine modifies the counter to zero,
-		generally by calling <code>wg.Done()</code>.
-	</li>
-	</ul>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+when a goroutine calls <code class="tmd-code-span">wg.Wait()</code>,
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+if the counter maintained by <code class="tmd-code-span">wg</code> is already zero, then the call <code class="tmd-code-span">wg.Wait()</code> can be viewed as a no-op.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+otherwise (the counter is positive), the goroutine will enter blocking state. It will enter running state again (a.k.a., the call <code class="tmd-code-span">wg.Wait()</code> returns) when another goroutine modifies the counter to zero, generally by calling <code class="tmd-code-span">wg.Done()</code>.
+</div>
 </li>
 </ul>
-
-<p>
-Please note that <code>wg.Add(delta)</code>, <code>wg.Done()</code> and <code>wg.Wait()</code>
-are shorthands of <code>(&amp;wg).Add(delta)</code>, <code>(&amp;wg).Done()</code>
-and <code>(&amp;wg).Wait()</code>, respectively.
-</p>
-
-Generally, a <code>WaitGroup</code> value is used for the scenario that
-one goroutine waits until all of several other goroutines finish their respective jobs.
-An example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</li>
+</ul>
+<p></p>
+<div class="tmd-usual">
+Please note that <code class="tmd-code-span">wg.Add(delta)</code>, <code class="tmd-code-span">wg.Done()</code> and <code class="tmd-code-span">wg.Wait()</code> are shorthands of <code class="tmd-code-span">(&amp;wg).Add(delta)</code>, <code class="tmd-code-span">(&amp;wg).Done()</code> and <code class="tmd-code-span">(&amp;wg).Wait()</code>, respectively.
+</div>
+<p></p>
+<div class="tmd-usual">
+Generally, a <code class="tmd-code-span">WaitGroup</code> value is used for the scenario that one goroutine waits until all of several other goroutines finish their respective jobs. An example:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"log"
@@ -97,12 +98,12 @@ func main() {
 
 	var wg sync.WaitGroup
 	wg.Add(N)
-	for i := 0; i < N; i++ {
+	for i := 0; i &lt; N; i++ {
 		i := i
 		go func() {
 			values[i] = 50 + rand.Int31n(50)
 			log.Println("Done:", i)
-			wg.Done() // <=> wg.Add(-1)
+			wg.Done() // &lt;=&gt; wg.Add(-1)
 		}()
 	}
 
@@ -112,22 +113,26 @@ func main() {
 	log.Println("values:", values)
 }
 </code></pre>
-
-In the above example, the main goroutine waits until all other <code>N</code> goroutines
-have populated their respective element value in <code>values</code> array.
-Here is one possible output result:
-<pre class="output"><code>Done: 4
+<p></p>
+<div class="tmd-usual">
+In the above example, the main goroutine waits until all other <code class="tmd-code-span">N</code> goroutines have populated their respective element value in <code class="tmd-code-span">values</code> array. Here is one possible output result:
+</div>
+<pre class="tmd-code output">
+Done: 4
 Done: 1
 Done: 3
 Done: 0
 Done: 2
 values: [71 89 50 62 60]
-</code></pre>
-
-We can split the only <code>Add</code> method call in the above example into multiple ones.
-<pre class="line-numbers"><code class="language-go">...
+</pre>
+<p></p>
+<div class="tmd-usual">
+We can split the only <code class="tmd-code-span">Add</code> method call in the above example into multiple ones.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">...
 	var wg sync.WaitGroup
-	for i := 0; i < N; i++ {
+	for i := 0; i &lt; N; i++ {
 		wg.Add(1) // will be invoked N times
 		i := i
 		go func() {
@@ -137,14 +142,13 @@ We can split the only <code>Add</code> method call in the above example into mul
 	}
 ...
 </code></pre>
-
-<p>
-</p>
-
-The <code>Wait</code> method can be called in multiple goroutines.
-When the counter becomes zero, all of them will be notified, in a broadcast way.
-
-<pre class="line-numbers"><code class="language-go">func main() {
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">Wait</code> method can be called in multiple goroutines. When the counter becomes zero, all of them will be notified, in a broadcast way.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func main() {
 	rand.Seed(time.Now().UnixNano()) // needed before Go 1.20
 
 	const N = 5
@@ -154,7 +158,7 @@ When the counter becomes zero, all of them will be notified, in a broadcast way.
 	wgA.Add(N)
 	wgB.Add(1)
 
-	for i := 0; i < N; i++ {
+	for i := 0; i &lt; N; i++ {
 		i := i
 		go func() {
 			wgB.Wait() // wait a notification
@@ -165,7 +169,7 @@ When the counter becomes zero, all of them will be notified, in a broadcast way.
 
 	// The loop is guaranteed to finish before
 	// any above wg.Wait calls returns.
-	for i := 0; i < N; i++ {
+	for i := 0; i &lt; N; i++ {
 		values[i] = 50 + rand.Int31n(50)
 	}
 	// Make a broadcast notification.
@@ -173,51 +177,36 @@ When the counter becomes zero, all of them will be notified, in a broadcast way.
 	wgA.Wait()
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-A <code>WaitGroup</code> value can be reused after one call to its <code>Wait</code> method returns.
-But please note that each <code>Add</code> method call with a positive delta that occurs
-when the counter is zero must happen before any <code>Wait</code> call starts,
-otherwise, data races may happen.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+A <code class="tmd-code-span">WaitGroup</code> value can be reused after one call to its <code class="tmd-code-span">Wait</code> method returns. But please note that each <code class="tmd-code-span">Add</code> method call with a positive delta that occurs when the counter is zero must happen before any <code class="tmd-code-span">Wait</code> call starts, otherwise, data races may happen.
 </div>
-
-<a class="anchor" id="once"></a>
-<h3>The <code>sync.Once</code> Type</h3>
-
-<div>
-<p>
-A <code>*sync.Once</code> value has a <code>Do(f func())</code> method,
-which takes a solo parameter with type <code>func()</code>.
-</p>
-
-<p>
-For an addressable <code>Once</code> value <code>o</code>,
-the method call <code>o.Do()</code>, which is a shorthand of <code>(&amp;o).Do()</code>,
-can be concurrently executed multiple times, in multiple goroutines.
-The arguments of these <code>o.Do()</code> calls should
-(but are not required to) be the same function value.
-</p>
-
-<p>
-Among these <code>o.Do</code> method calls, only exact one argument function will be invoked.
-The invoked argument function is guaranteed to exit before
-any <code>o.Do</code> method call returns.
-In other words, the code in the invoked argument function
-is guaranteed to be executed before any <code>o.Do</code> method call returns.
-</p>
-
-<p>
-Generally, a <code>Once</code> value is used to ensure that
-a piece of code will be executed exactly once in concurrent programming.
-</p>
-
+<p></p>
+<h3 id="once" class="tmd-header-3">
+The <code class="tmd-code-span">sync.Once</code> Type
+</h3>
+<p></p>
+<div class="tmd-usual">
+A <code class="tmd-code-span">*sync.Once</code> value has a <code class="tmd-code-span">Do(f func())</code> method, which takes a solo parameter with type <code class="tmd-code-span">func()</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+For an addressable <code class="tmd-code-span">Once</code> value <code class="tmd-code-span">o</code>, the method call <code class="tmd-code-span">o.Do()</code>, which is a shorthand of <code class="tmd-code-span">(&amp;o).Do()</code>, can be concurrently executed multiple times, in multiple goroutines. The arguments of these <code class="tmd-code-span">o.Do()</code> calls should (but are not required to) be the same function value.
+</div>
+<p></p>
+<div class="tmd-usual">
+Among these <code class="tmd-code-span">o.Do</code> method calls, only exact one argument function will be invoked. The invoked argument function is guaranteed to exit before any <code class="tmd-code-span">o.Do</code> method call returns. In other words, the code in the invoked argument function is guaranteed to be executed before any <code class="tmd-code-span">o.Do</code> method call returns.
+</div>
+<p></p>
+<div class="tmd-usual">
+Generally, a <code class="tmd-code-span">Once</code> value is used to ensure that a piece of code will be executed exactly once in concurrent programming.
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"log"
@@ -235,7 +224,7 @@ func main() {
 
 	var wg sync.WaitGroup
 	var once sync.Once
-	for i := 0; i < 5; i++ {
+	for i := 0; i &lt; 5; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -248,57 +237,44 @@ func main() {
 	log.Println("x =", x) // x = 1
 }
 </code></pre>
-
-<p>
-In the above example, <code>Hello</code> will be printed once,
-but <code>world!</code> will be printed five times.
-And <code>Hello</code> is guaranteed to be printed before all five <code>world!</code>.
-</p>
+<p></p>
+<div class="tmd-usual">
+In the above example, <code class="tmd-code-span">Hello</code> will be printed once, but <code class="tmd-code-span">world!</code> will be printed five times. And <code class="tmd-code-span">Hello</code> is guaranteed to be printed before all five <code class="tmd-code-span">world!</code>.
+</div>
+<p></p>
+<h3 id="mutex" class="tmd-header-3">
+The <code class="tmd-code-span">sync.Mutex</code> and <code class="tmd-code-span">sync.RWMutex</code> Types
+</h3>
+<p></p>
+<div class="tmd-usual">
+Both of the <code class="tmd-code-span">*sync.Mutex</code> and <code class="tmd-code-span">*sync.RWMutex</code> types implement <a href="https://golang.org/pkg/sync/#Locker">the <code class="tmd-code-span">sync.Locker</code> interface</a>. So they both have two methods, <code class="tmd-code-span">Lock</code> and <code class="tmd-code-span">Unlock</code>, to prevent multiple data users from using a piece of data concurrently.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="mutex"></a>
-<h3>The <code>sync.Mutex</code> and <code>sync.RWMutex</code> Types</h3>
-
-<div>
-<p>
-Both of the <code>*sync.Mutex</code> and <code>*sync.RWMutex</code> types implement
-<a href="https://golang.org/pkg/sync/#Locker">the <code>sync.Locker</code> interface</a>.
-So they both have two methods, <code>Lock</code> and <code>Unlock</code>,
-to prevent multiple data users from using a piece of data concurrently.
-</p>
-
-<p>
-Besides the <code>Lock</code> and <code>Unlock</code> methods,
-the <code>*RWMutex</code> type has two other methods,
-<code>RLock</code> and <code>RUnlock</code>,
-to avoid some data users (either writers or readers) and one data writer using a piece of data at the same time
-but allow some data readers to access the piece of data at the same time.
-</p>
-
-<p><i>
-(Note, here the terminologies <b><i>data reader</i></b> and <b><i>data writer</i></b>
-should not be interpreted from literal. They are just used for explanation purpose.
-A data reader might modify data and a data writer might only read data.)
-</i></p>
-
-<p>
-A <code>Mutex</code> value is often called a mutual exclusion lock.
-A zero <code>Mutex</code> value is an unlocked mutex.
-A <code>Mutex</code> value can only be locked when it is in unlocked status.
-In other words, once an addressable <code>Mutex</code> value <code>m</code> is locked successfully
-(a.k.a., a <code>m.Lock()</code> method call returns),
-a new attempt by a goroutine to lock the <code>Mutex</code> value will make the goroutine enter blocking state,
-until the <code>Mutex</code> value is unlocked (through a later <code>m.Unlock()</code> call).
-</p>
-
-<p>
-Please note that <code>m.Lock()</code> and <code>m.Unlock()</code>
-are shorthands of <code>(&amp;m).Lock()</code> and <code>(&amp;m).Unlock()</code>, respectively.
-</p>
-
-An example of using <code>sync.Mutex</code>:
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+Besides the <code class="tmd-code-span">Lock</code> and <code class="tmd-code-span">Unlock</code> methods, the <code class="tmd-code-span">*RWMutex</code> type has two other methods, <code class="tmd-code-span">RLock</code> and <code class="tmd-code-span">RUnlock</code>, to avoid some data users (either writers or readers) and one data writer using a piece of data at the same time but allow some data readers to access the piece of data at the same time.
+</div>
+<p></p>
+<div class="tmd-usual">
+<span class="tmd-italic">(Note, here the terminologies <span class="tmd-bold"></span></span><span class="tmd-bold"> data reader <span class="tmd-italic"></span></span><span class="tmd-italic"> and <span class="tmd-bold"></span></span><span class="tmd-bold"> data writer <span class="tmd-italic"></span></span><span class="tmd-italic">should not be interpreted from literal. They are just used for explanation purpose. A data reader might modify data and a data writer might only read data.)</span>
+</div>
+<p></p>
+<div class="tmd-usual">
+A <code class="tmd-code-span">Mutex</code> value is often called a mutual exclusion lock. A zero <code class="tmd-code-span">Mutex</code> value is an unlocked mutex. A <code class="tmd-code-span">Mutex</code> value can only be locked when it is in unlocked status. In other words, once an addressable <code class="tmd-code-span">Mutex</code> value <code class="tmd-code-span">m</code> is locked successfully (a.k.a., a <code class="tmd-code-span">m.Lock()</code> method call returns), a new attempt by a goroutine to lock the <code class="tmd-code-span">Mutex</code> value will make the goroutine enter blocking state, until the <code class="tmd-code-span">Mutex</code> value is unlocked (through a later <code class="tmd-code-span">m.Unlock()</code> call).
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note that <code class="tmd-code-span">m.Lock()</code> and <code class="tmd-code-span">m.Unlock()</code> are shorthands of <code class="tmd-code-span">(&amp;m).Lock()</code> and <code class="tmd-code-span">(&amp;m).Unlock()</code>, respectively.
+</div>
+<p></p>
+<div class="tmd-usual">
+An example of using <code class="tmd-code-span">sync.Mutex</code>:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -325,108 +301,80 @@ func (c *Counter) Increase(delta uint64) {
 
 func main() {
 	var c Counter
-	for i := 0; i < 100; i++ {
+	for i := 0; i &lt; 100; i++ {
 		go func() {
-			for k := 0; k < 100; k++ {
+			for k := 0; k &lt; 100; k++ {
 				c.Increase(1)
 			}
 		}()
 	}
 
 	// The loop is just for demo purpose.
-	for c.Value() < 10000 {
+	for c.Value() &lt; 10000 {
 		runtime.Gosched()
 	}
 	fmt.Println(c.Value()) // 10000
 }
 </code></pre>
-
-<p>
-In the above example, a <code>Counter</code> value uses a <code>Mutex</code> field
-to guarantee that the <code>n</code> field of the <code>Counter</code> value
-will be never used by multiple goroutines at the same time.
-</p>
-
-<p>
-A <code>RWMutex</code> value is often called a reader+writer mutual exclusion lock.
-It has two locks, the write lock and the read lock.
-The locks of a zero <code>RWMutex</code> value are both unlocked.
-For an addressable <code>RWMutex</code> value <code>rwm</code>,
-data writers can lock the write lock of <code>rwm</code> through <code>rwm.Lock()</code> method calls,
-and data readers can lock the read lock of <code>rwm</code> through <code>rwm.RLock()</code> method calls.
-Method calls <code>rwm.Unlock()</code> and <code>rwm.RUnlock()</code>
-are used to unlock the write and read locks of <code>rwm</code>.
-The read lock of <code>rwm</code> maintains a lock count, which increases by one
-when <code>rwm.Lock()</code> is called successfully and decreases by one
-when <code>rwm.Unlock()</code> is called successfully.
-A zero lock count means the read lock is in unlocked status
-and a non-zero one (must be larger than one) means the read lock is locked.
-</p>
-
-<p>
-Please note that <code>rwm.Lock()</code>, <code>rwm.Unlock()</code>,
-<code>rwm.RLock()</code> and <code>rwm.RUnlock()</code>
-are shorthands of <code>(&amp;m).Lock()</code>, <code>(&amp;m).Unlock()</code>,
-<code>(&amp;m).RLock()</code> and <code>(&amp;m).RUnlock()</code>, respectively.
-</p>
-
-For an addressable <code>RWMutex</code> value <code>rwm</code>, the following rules exist.
-<ul>
-<li>
-	The write lock of <code>rwm</code> may be locked only if neither of
-	the read lock and write lock of <code>rwm</code> is in locked status.
-	In other words, the write lock of <code>rwm</code> may only be held by at most one writer at any given time,
-	and the read lock and write lock of <code>rwm</code> may not be held at the same time.
+<p></p>
+<div class="tmd-usual">
+In the above example, a <code class="tmd-code-span">Counter</code> value uses a <code class="tmd-code-span">Mutex</code> field to guarantee that the <code class="tmd-code-span">n</code> field of the <code class="tmd-code-span">Counter</code> value will be never used by multiple goroutines at the same time.
+</div>
+<p></p>
+<div class="tmd-usual">
+A <code class="tmd-code-span">RWMutex</code> value is often called a reader+writer mutual exclusion lock. It has two locks, the write lock and the read lock. The locks of a zero <code class="tmd-code-span">RWMutex</code> value are both unlocked. For an addressable <code class="tmd-code-span">RWMutex</code> value <code class="tmd-code-span">rwm</code>, data writers can lock the write lock of <code class="tmd-code-span">rwm</code> through <code class="tmd-code-span">rwm.Lock()</code> method calls, and data readers can lock the read lock of <code class="tmd-code-span">rwm</code> through <code class="tmd-code-span">rwm.RLock()</code> method calls. Method calls <code class="tmd-code-span">rwm.Unlock()</code> and <code class="tmd-code-span">rwm.RUnlock()</code> are used to unlock the write and read locks of <code class="tmd-code-span">rwm</code>. The read lock of <code class="tmd-code-span">rwm</code> maintains a lock count, which increases by one when <code class="tmd-code-span">rwm.Lock()</code> is called successfully and decreases by one when <code class="tmd-code-span">rwm.Unlock()</code> is called successfully. A zero lock count means the read lock is in unlocked status and a non-zero one (must be larger than one) means the read lock is locked.
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note that <code class="tmd-code-span">rwm.Lock()</code>, <code class="tmd-code-span">rwm.Unlock()</code>, <code class="tmd-code-span">rwm.RLock()</code> and <code class="tmd-code-span">rwm.RUnlock()</code> are shorthands of <code class="tmd-code-span">(&amp;m).Lock()</code>, <code class="tmd-code-span">(&amp;m).Unlock()</code>, <code class="tmd-code-span">(&amp;m).RLock()</code> and <code class="tmd-code-span">(&amp;m).RUnlock()</code>, respectively.
+</div>
+<p></p>
+<div class="tmd-usual">
+For an addressable <code class="tmd-code-span">RWMutex</code> value <code class="tmd-code-span">rwm</code>, the following rules exist.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+The write lock of <code class="tmd-code-span">rwm</code> may be locked only if neither of the read lock and write lock of <code class="tmd-code-span">rwm</code> is in locked status. In other words, the write lock of <code class="tmd-code-span">rwm</code> may only be held by at most one writer at any given time, and the read lock and write lock of <code class="tmd-code-span">rwm</code> may not be held at the same time.
+</div>
 </li>
-<li>
-	When the write lock of <code>rwm</code> is in locked status, any newer
-	attempts to lock the write lock or the read lock of <code>rwm</code>
-	will be blocked until the initial write lock is unlocked.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+When the write lock of <code class="tmd-code-span">rwm</code> is in locked status, any newer attempts to lock the write lock or the read lock of <code class="tmd-code-span">rwm</code> will be blocked until the initial write lock is unlocked.
+</div>
 </li>
-<li>
-	When the read lock of <code>rwm</code> is in locked status,
-	any newer attempts to lock the write lock will be blocked
-	until the read lock is unlocked.
-	However, newer attempts to lock the read lock will succeed
-	as long as the attempts are performed before any blocked attempts to lock the write lock
-	(see the next rule for details). 
-	In other words, the read lock may be held by more than one readers at a time.
-	The read lock will return to unlocked status when its lock count returns to zero. 
+<li class="tmd-list-item">
+<div class="tmd-usual">
+When the read lock of <code class="tmd-code-span">rwm</code> is in locked status, any newer attempts to lock the write lock will be blocked until the read lock is unlocked. However, newer attempts to lock the read lock will succeed as long as the attempts are performed before any blocked attempts to lock the write lock (see the next rule for details). In other words, the read lock may be held by more than one readers at a time. The read lock will return to unlocked status when its lock count returns to zero.
+</div>
 </li>
-<li>
-	Assume the read lock of the value <code>rwm</code> is in locked status now,
-	to avoid endless read locking, any newer attempts to lock the read lock after
-	the a being blocked attempt to lock the write lock will be blocked.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Assume the read lock of the value <code class="tmd-code-span">rwm</code> is in locked status now, to avoid endless read locking, any newer attempts to lock the read lock after the a being blocked attempt to lock the write lock will be blocked.
+</div>
 </li>
-<li>
-	Assume the write lock of the value <code>rwm</code> is in locked status now,
-	for the official standard Go compiler, to avoid endless write locking,
-	the attempts to lock the read lock before releasing the write lock will succeed for sure
-	once the write lock is unlocked, even if some of the attempts are made
-	after some still being blocked attempts to lock the write lock.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Assume the write lock of the value <code class="tmd-code-span">rwm</code> is in locked status now, for the official standard Go compiler, to avoid endless write locking, the attempts to lock the read lock before releasing the write lock will succeed for sure once the write lock is unlocked, even if some of the attempts are made after some still being blocked attempts to lock the write lock.
+</div>
 </li>
 </ul>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 The last two rules are to ensure both readers and writers have chances to acquire locks.
-</p>
-
-<p>
-Please note, locks are not bound to goroutines.
-A lock may be locked in one goroutine and unlocked in another one later.
-In other words, a lock doesn't know which goroutine successfully locked or unlocked it.
-</p>
-
-<!--
-https://github.com/golang/go/issues/17973
--->
-
-The type of the <code>m</code> field of the <code>Counter</code> type in the last example
-can be changed to <code>sync.RWMutex</code>, as the following code shows, to get a better performance
-when the <code>Value</code> method is called very frequently but the <code>Increase</code> method
-is called not frequently.
-
-<pre class="line-numbers"><code class="language-go">...
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note, locks are not bound to goroutines. A lock may be locked in one goroutine and unlocked in another one later. In other words, a lock doesn't know which goroutine successfully locked or unlocked it.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+The type of the <code class="tmd-code-span">m</code> field of the <code class="tmd-code-span">Counter</code> type in the last example can be changed to <code class="tmd-code-span">sync.RWMutex</code>, as the following code shows, to get a better performance when the <code class="tmd-code-span">Value</code> method is called very frequently but the <code class="tmd-code-span">Increase</code> method is called not frequently.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">...
 type Counter struct {
 	//m sync.Mutex
 	m sync.RWMutex
@@ -442,15 +390,17 @@ func (c *Counter) Value() uint64 {
 }
 ...
 </code></pre>
-
-<p>
-Another use scenario of <code>sync.RWMutex</code> values is to slice a write job into several small ones.
-Please read the next section for an example.
-</p>
-
-By the last two rules mentioned above, the following program is very possible to output <code>abdc</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+Another use scenario of <code class="tmd-code-span">sync.RWMutex</code> values is to slice a write job into several small ones. Please read the next section for an example.
+</div>
+<p></p>
+<div class="tmd-usual">
+By the last two rules mentioned above, the following program is very possible to output <code class="tmd-code-span">abdc</code>.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -489,17 +439,20 @@ func main() {
 	fmt.Println()
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+Please note, the above example is only for explanation purpose. It uses <code class="tmd-code-span">time.Sleep</code> calls to do concurrency synchronizations, which is <a href="concurrent-common-mistakes.html#sleep">a bad practice for production code</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Please note, the above example is only for explanation purpose.
-It uses <code>time.Sleep</code> calls to do concurrency synchronizations,
-which is <a href="concurrent-common-mistakes.html#sleep">a bad practice for production code</a>.
-</p>
-
-<code>sync.Mutex</code> and <code>sync.RWMutex</code> values can also be used to make notifications,
-though there are many other better ways to do the same job.
-Here is an example which makes a notification by using a <code>sync.Mutex</code> value.
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+<code class="tmd-code-span">sync.Mutex</code> and <code class="tmd-code-span">sync.RWMutex</code> values can also be used to make notifications, though there are many other better ways to do the same job. Here is an example which makes a notification by using a <code class="tmd-code-span">sync.Mutex</code> value.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -519,117 +472,102 @@ func main() {
 	fmt.Println("Bye")
 }
 </code></pre>
-
-<p>
-In the above example, the text <code>Hi</code> is guaranteed to
-be printed before the text <code>Bye</code>.
-About the memory order guarantees made by
-<code>sync.Mutex</code> and <code>sync.RWMutex</code> values,
-please read <a href="memory-model.html#mutex">memory order guarantees in Go</a>.
-</p>
+<p></p>
+<div class="tmd-usual">
+In the above example, the text <code class="tmd-code-span">Hi</code> is guaranteed to be printed before the text <code class="tmd-code-span">Bye</code>. About the memory order guarantees made by <code class="tmd-code-span">sync.Mutex</code> and <code class="tmd-code-span">sync.RWMutex</code> values, please read <a href="memory-model.html#mutex">memory order guarantees in Go</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<h3 id="cond" class="tmd-header-3">
+The <code class="tmd-code-span">sync.Cond</code> Type
+</h3>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">sync.Cond</code> type provides an efficient way to do notifications among goroutines.
+</div>
+<p></p>
+<div class="tmd-usual">
+Each <code class="tmd-code-span">sync.Cond</code> value holds a <code class="tmd-code-span">sync.Locker</code> field with name <code class="tmd-code-span">L</code>. The field value is often a value of type <code class="tmd-code-span">*sync.Mutex</code> or <code class="tmd-code-span">*sync.RWMutex</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">*sync.Cond</code> type has <a href="https://golang.org/pkg/sync/#Cond">three methods</a>: <code class="tmd-code-span">Wait()</code>, <code class="tmd-code-span">Signal()</code> and <code class="tmd-code-span">Broadcast()</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="cond"></a>
-<h3>The <code>sync.Cond</code> Type</h3>
-
-<div>
-<p>
-The <code>sync.Cond</code> type provides an efficient way
-to do notifications among goroutines.
-</p>
-
-<p>
-Each <code>sync.Cond</code> value holds a <code>sync.Locker</code> field with name <code>L</code>.
-The field value is often a value of type <code>*sync.Mutex</code> or <code>*sync.RWMutex</code>.
-</p>
-
-<p>
-The <code>*sync.Cond</code> type has <a href="https://golang.org/pkg/sync/#Cond">three methods</a>,
-<code>Wait()</code>, <code>Signal()</code> and <code>Broadcast()</code>.
-</p>
-
-Each <code>sync.Cond</code> value also maintains a FIFO (first in first out) waiting goroutine queue.
-For an addressable <code>sync.Cond</code> value <code>c</code>,
-<ul>
-<li>
-	<code>c.Wait()</code> must be called when <code>c.L</code> is locked,
-	otherwise, a <code>c.Wait()</code> will cause panic.
-	A <code>c.Wait()</code> call will
-	<ol>
-	<li>
-		first push the current caller goroutine into
-		the waiting goroutine queue maintained by <code>c</code>,
-	</li>
-	<li>
-		then call <code>c.L.Unlock()</code> to unlock/unhold the lock <code>c.L</code>.
-	</li>
-	<li>
-		<p>
-		then make the current caller goroutine enter blocking state. <!--sup>(1)</sup-->
-		</p>
-
-		<p><i>
-		(The caller goroutine will be unblocked by another goroutine
-		through calling <code>c.Signal()</code> or <code>c.Broadcast()</code> later.)
-		</i></p>
-
-		<p>
-		</p>
-		Once the caller goroutine is unblocked and enters running state again,
-		<code>c.L.Lock()</code> will be called (in the resumed <code>c.Wait()</code> call)
-		to try to lock and hold the lock <code>c.L</code> again,
-		The <code>c.Wait()</code> call will exit after
-		the <code>c.L.Lock()</code> call returns.
-	</li>
-	</ol>
+</div>
+<p></p>
+<div class="tmd-usual">
+Each <code class="tmd-code-span">sync.Cond</code> value also maintains a FIFO (first in first out) waiting goroutine queue. For an addressable <code class="tmd-code-span">sync.Cond</code> value <code class="tmd-code-span">c</code>,
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">c.Wait()</code> must be called when <code class="tmd-code-span">c.L</code> is locked, otherwise, a <code class="tmd-code-span">c.Wait()</code> will cause panic. A <code class="tmd-code-span">c.Wait()</code> call will
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+first push the current caller goroutine into the waiting goroutine queue maintained by <code class="tmd-code-span">c</code>,
+</div>
 </li>
-<li>
-	a <code>c.Signal()</code> call will unblock the first goroutine in (and
-	remove it from) the waiting goroutine queue maintained by <code>c</code>,
-	if the queue is not empty.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+then call <code class="tmd-code-span">c.L.Unlock()</code> to unlock/unhold the lock <code class="tmd-code-span">c.L</code>.
+</div>
 </li>
-<li>
-	a <code>c.Broadcast()</code> call will unblock all the goroutines in (and
-	remove them from) the waiting goroutine queue maintained by <code>c</code>,
-	if the queue is not empty.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+
+</div>
+<div class="tmd-base">
+<div class="tmd-usual">
+then make the current caller goroutine enter blocking state.
+</div>
+<p></p>
+<div class="tmd-usual">
+<span class="tmd-italic">(The caller goroutine will be unblocked by another goroutine through calling <code class="tmd-code-span">c.Signal()</code> or <code class="tmd-code-span">c.Broadcast()</code> later.)</span>
+</div>
+<p></p>
+<div class="tmd-usual">
+Once the caller goroutine is unblocked and enters running state again, <code class="tmd-code-span">c.L.Lock()</code> will be called (in the resumed <code class="tmd-code-span">c.Wait()</code> call) to try to lock and hold the lock <code class="tmd-code-span">c.L</code> again, The <code class="tmd-code-span">c.Wait()</code> call will exit after the <code class="tmd-code-span">c.L.Lock()</code> call returns.
+</div>
+</div>
 </li>
-</ul>
-
-<p>
-Please note that <code>c.Wait()</code>, <code>c.Signal()</code> and <code>c.Broadcast()</code>
-are shorthands of <code>(&amp;c).Wait()</code>, <code>(&amp;c).Signal()</code>
-and <code>(&amp;c).Broadcast()</code>, respectively.
-</p>
-
-<p>
-<code>c.Signal()</code> and <code>c.Broadcast()</code> are often used to notify the status of a condition is changed,
-Generally, <code>c.Wait()</code> should be called in a loop of checking whether or not a condition has got satisfied.
-</p>
-
-<!--
-<sup>(1)</sup> This is for the most common case,
-by assuming that <code>c.Signal()</code> and <code>c.Broadcast()</code> are not called
-in the short period between the step 2 and step 3.
-
-<ul>
-<li>
-If <code>c.Signal()</code> is called in the short period between the step 2 and step 3,
-then the caller goroutine of <code>c.Wait()</code> might not enter blocking state.
+</ol>
+<p></p>
 </li>
-<li>
-If <code>c.Broadcast()</code> is called in the short period between the step 2 and step 3,
-then the caller goroutine of <code>c.Wait()</code> will not enter blocking state for sure.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+a <code class="tmd-code-span">c.Signal()</code> call will unblock the first goroutine in (and remove it from) the waiting goroutine queue maintained by <code class="tmd-code-span">c</code>, if the queue is not empty.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+a <code class="tmd-code-span">c.Broadcast()</code> call will unblock all the goroutines in (and remove them from) the waiting goroutine queue maintained by <code class="tmd-code-span">c</code>, if the queue is not empty.
+</div>
 </li>
 </ul>
--->
-
-In an idiomatic <code>sync.Cond</code> use case, generally,
-one goroutine waits for changes of a certain condition,
-and some other goroutines change the condition and send notifications.
-Here is an example:
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+Please note that <code class="tmd-code-span">c.Wait()</code>, <code class="tmd-code-span">c.Signal()</code> and <code class="tmd-code-span">c.Broadcast()</code> are shorthands of <code class="tmd-code-span">(&amp;c).Wait()</code>, <code class="tmd-code-span">(&amp;c).Signal()</code> and <code class="tmd-code-span">(&amp;c).Broadcast()</code>, respectively.
+</div>
+<p></p>
+<div class="tmd-usual">
+<code class="tmd-code-span">c.Signal()</code> and <code class="tmd-code-span">c.Broadcast()</code> are often used to notify the status of a condition is changed, Generally, <code class="tmd-code-span">c.Wait()</code> should be called in a loop of checking whether or not a condition has got satisfied.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+In an idiomatic <code class="tmd-code-span">sync.Cond</code> use case, generally, one goroutine waits for changes of a certain condition, and some other goroutines change the condition and send notifications. Here is an example:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -644,9 +582,9 @@ func main() {
 	const N = 10
 	var values [N]string
 
-	cond := sync.NewCond(&sync.Mutex{})
+	cond := sync.NewCond(&amp;sync.Mutex{})
 
-	for i := 0; i < N; i++ {
+	for i := 0; i &lt; N; i++ {
 		d := time.Second * time.Duration(rand.Intn(10)) / 10
 		go func(i int) {
 			time.Sleep(d) // simulate a workload
@@ -670,7 +608,7 @@ func main() {
 	// cond.L is locked.
 	checkCondition := func() bool {
 		fmt.Println(values)
-		for i := 0; i < N; i++ {
+		for i := 0; i &lt; N; i++ {
 			if values[i] == "" {
 				return false
 			}
@@ -686,9 +624,12 @@ func main() {
 	}
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 One possible output:
-<pre class="output"><code>[         ]
+</div>
+<pre class="tmd-code output">
+[         ]
 [     f    ]
 [  c   f    ]
 [  c   f  h  ]
@@ -697,35 +638,26 @@ One possible output:
 [a b c   f g h i j]
 [a b c  e f g h i j]
 [a b c d e f g h i j]
-</code></pre>
-
-<p>
-For there is only one goroutine (the main goroutine) waiting to be unblocked in this example,
-the <code>cond.Broadcast()</code> call can be replaced with <code>cond.Signal()</code>.
-As the comments suggest,
-<code>cond.Broadcast()</code> and <code>cond.Signal()</code> are not required to be called
-when <code>cond.L</code> is locked.
-</p>
-
-<p>
-To avoid data races,
-each of the ten parts of the user defined condition should only be modified
-when <code>cond.L</code> is locked.
-The <code>checkCondition</code> function and the <code>cond.Wait</code> method should be also called
-when <code>cond.L</code> is locked.
-</p>
-
-<p>
-In fact, for the above specified example, the <code>cond.L</code> field can also be a <code>*sync.RWMutex</code> value,
-and each of the ten parts of the user defined condition can be modified when the read lock of <code>cond.L</code> is held,
-just as the following code shows:
-</p>
-
-<pre class="line-numbers"><code class="language-go">...
-	cond := sync.NewCond(&sync.RWMutex{})
+</pre>
+<p></p>
+<div class="tmd-usual">
+For there is only one goroutine (the main goroutine) waiting to be unblocked in this example, the <code class="tmd-code-span">cond.Broadcast()</code> call can be replaced with <code class="tmd-code-span">cond.Signal()</code>. As the comments suggest, <code class="tmd-code-span">cond.Broadcast()</code> and <code class="tmd-code-span">cond.Signal()</code> are not required to be called when <code class="tmd-code-span">cond.L</code> is locked.
+</div>
+<p></p>
+<div class="tmd-usual">
+To avoid data races, each of the ten parts of the user defined condition should only be modified when <code class="tmd-code-span">cond.L</code> is locked. The <code class="tmd-code-span">checkCondition</code> function and the <code class="tmd-code-span">cond.Wait</code> method should be also called when <code class="tmd-code-span">cond.L</code> is locked.
+</div>
+<p></p>
+<div class="tmd-usual">
+In fact, for the above specified example, the <code class="tmd-code-span">cond.L</code> field can also be a <code class="tmd-code-span">*sync.RWMutex</code> value, and each of the ten parts of the user defined condition can be modified when the read lock of <code class="tmd-code-span">cond.L</code> is held, just as the following code shows:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">...
+	cond := sync.NewCond(&amp;sync.RWMutex{})
 	cond.L.Lock()
 
-	for i := 0; i < N; i++ {
+	for i := 0; i &lt; N; i++ {
 		d := time.Second * time.Duration(rand.Intn(10)) / 10
 		go func(i int) {
 			time.Sleep(d)
@@ -737,18 +669,17 @@ just as the following code shows:
 	}
 ...
 </code></pre>
-
-<p>
-In the above example, the <code>sync.RWMutex</code> value is used unusually.
-Its read lock is held by some goroutines which modify array elements,
-and its write lock is used by the main goroutine to read array elements.
-</p>
-
-The user defined condition monitored by a <code>Cond</code> value can be a void.
-For such cases, the <code>Cond</code> value is used for notifications purely.
-For example, the following program will print <code>abc</code> or <code>bac</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+In the above example, the <code class="tmd-code-span">sync.RWMutex</code> value is used unusually. Its read lock is held by some goroutines which modify array elements, and its write lock is used by the main goroutine to read array elements.
+</div>
+<p></p>
+<div class="tmd-usual">
+The user defined condition monitored by a <code class="tmd-code-span">Cond</code> value can be a void. For such cases, the <code class="tmd-code-span">Cond</code> value is used for notifications purely. For example, the following program will print <code class="tmd-code-span">abc</code> or <code class="tmd-code-span">bac</code>.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -758,7 +689,7 @@ import (
 func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	cond := sync.NewCond(&sync.Mutex{})
+	cond := sync.NewCond(&amp;sync.Mutex{})
 	cond.L.Lock()
 	go func() {
 		cond.L.Lock()
@@ -779,12 +710,8 @@ func main() {
 	fmt.Println("c")
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-If it needs, multiple <code>sync.Cond</code> values can share the same <code>sync.Locker</code>.
-However, such cases are rare in practice.
-</p>
+<p></p>
+<div class="tmd-usual">
+If it needs, multiple <code class="tmd-code-span">sync.Cond</code> values can share the same <code class="tmd-code-span">sync.Locker</code>. However, such cases are rare in practice.
 </div>
+<p></p>

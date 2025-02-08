@@ -1,0 +1,218 @@
+### Go Value Copy Costs
+
+Value copying happens frequently in Go programming.
+Values assignments, argument passing and channel value send operations
+are all value copying involved.
+This article will talk about the copy costs of values of all kinds of types.
+
+@@@ #value-sizes
+###+++++++++++ Value Sizes
+
+The size of a value means how many bytes the
+__direct part__ of the value will occupy in memory.
+The indirect underlying parts of a value don't contribute to the size of the value.
+
+// __ direct part :: value-part.html
+
+In Go, if the types of two values belong to the same __kind__,
+and the type kind is not string kind,
+interface kind, array kind and struct kind,
+then the sizes of the two value are always equal.
+
+// __ kind :: type-system-overview.html#type-kinds
+
+In fact, for the standard Go compiler/runtime,
+the sizes of two string values are also always equal.
+The same relation is for the sizes of two interface values.
+
+Up to present (Go Toolchain 1.23.n), for the standard Go compiler (and gccgo),
+values of a specified type always have the same value size.
+So, often, we call the size of a value as the size of the type of the value.
+
+The size of an array type depends on the element type size and the length
+of the array type. The array type size is the product of the size of
+the array element type and the array length.
+
+The size of a struct type depends on all of the sizes and the order of its fields.
+For there may be some __padding bytes__ being inserted
+between two adjacent struct fields to guarantee certain memory address alignment requirements of these fields,
+so the size of a struct type must be not smaller than (and often larger than) the sum of the respective type sizes
+of its fields.
+
+// __ padding bytes :: memory-layout.html#size-and-padding
+
+The following table lists the value sizes of all kinds of types
+(for the standard Go compiler v1.23.n).
+In the table, one word means one native word,
+which is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
+
+// __ Required :: https://golang.org/ref/spec#Size_and_alignment_guarantees
+// __ Go Specification :: https://golang.org/ref/spec#Numeric_types
+
+#  ### Kinds of Types
+   ### Value Size
+   ### __Required__ by __Go Specification__
+   -----
+   ### bool
+   ;;; 1 byte
+   ;;; not specified
+   -----
+   ### int8, uint8 (byte)
+   ;;; 1 byte
+   ;;; 1 byte
+   -----
+   ### int16, uint16
+   ;;; 2 bytes
+   ;;; 2 bytes
+   -----
+   ### int32 (rune), uint32, float32
+   ;;; 4 bytes
+   ;;; 4 bytes
+   -----
+   ### int64, uint64, float64, complex64
+   ;;; 8 bytes
+   ;;; 8 bytes
+   -----
+   ### complex128
+   ;;; 16 bytes
+   ;;; 16 bytes
+   -----
+   ### int, uint
+   ;;; 1 word
+   ;;; architecture dependent, 4 bytes on 32-bit architectures and 8 bytes
+       on 64-bit architectures
+   -----
+   ### uintptr
+   ;;; 1 word
+   ;;; large enough to store the uninterpreted bits of a pointer value
+   -----
+   ### string
+   ;;; 2 words
+   ;;; not specified
+   -----
+   ### pointer (safe or unsafe)
+   ;;; 1 word
+   ;;; not specified
+   -----
+   ### slice
+   ;;; 3 words
+   ;;; not specified
+   -----
+   ### map
+   ;;; 1 word
+   ;;; not specified
+   -----
+   ### channel
+   ;;; 1 word
+   ;;; not specified
+   -----
+   ### function
+   ;;; 1 word
+   ;;; not specified
+   -----
+   ### interface
+   ;;; 2 words
+   ;;; not specified
+   -----
+   ### struct
+   ;;; (the sum of sizes of all fields) + (the number of
+       __padding bytes__)
+   ;;; the size of a **struct** type is zero if it contains no fields
+       that have a size greater than zero
+   -----
+   ### array
+   ;;; (element value size) * (array length)
+   ;;; the size of an **array** type is zero if its element type has zero size
+
+@@@ #copy-costs
+###+++++++++++ Value Copy Costs
+
+Generally speaking, the cost to copy a value is proportional to the size of the value.
+However, value sizes are not the only factor determining value copy costs.
+Different CPU models and compiler versions may specially optimize value copying for values with specific sizes.
+
+In practice, we can view struct values with less than 5 fields and with sizes not larger than
+four native words as small-size values. The costs of copying small-size values are small.
+
+For the standard Go compiler,
+except values of large-size struct and array types,
+other types in Go are all small-size types.
+
+To avoid large value copy costs in argument passing and channel value send
+and receive operations, we should try to avoid using large-size
+struct and array types as function and method parameter types
+(including method receiver types) and channel element types.
+We can use pointer types whose base types are large-size types instead for such scenarios.
+
+On the other hand, we should also consider the fact that too many pointers
+will increase the pressure of garbage collectors at run time.
+So whether large-size struct and array types or their corresponding pointer
+types should be used relies on specific circumstances.
+
+Generally, in practice, we seldom use pointer types whose base types are
+slice types, map types, channel types, function types, string types and interface types.
+The costs of copying values of these assumed base types are very small.
+
+We should also try to avoid using the two-iteration-variable forms to
+iterate array and slice elements if the element types are large-size types,
+for each element value will be copied to the second iteration variable
+in the iteration process.
+
+The following is an example which benchmarks different ways to iterate slice elements.
+
+@@@ .line-numbers
+''' go
+package main
+
+import "testing"
+
+type S [12]int64
+var sX = make([]S, 1000)
+var sY = make([]S, 1000)
+var sZ = make([]S, 1000)
+var sumX, sumY, sumZ int64
+
+func Benchmark_Loop(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sumX = 0
+		for j := 0; j < len(sX); j++ {
+			sumX += sX[j][0]
+		}
+	}
+}
+
+func Benchmark_Range_OneIterVar(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sumY = 0
+		for j := range sY {
+			sumY += sY[j][0]
+		}
+	}
+}
+
+func Benchmark_Range_TwoIterVar(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sumZ = 0
+		for _, v := range sZ {
+			sumZ += v[0]
+		}
+	}
+}
+'''
+
+Run the benchmarks in the directory of the test file,
+we will get a result similar to:
+
+@@@ .output
+'''
+Benchmark_Loop-4             424342 2708 ns/op
+Benchmark_Range_OneIterVar-4 407905 2808 ns/op
+Benchmark_Range_TwoIterVar-4 214860 3915 ns/op
+'''
+
+We can find that the efficiency of the two-iteration-variable form is much
+lower than the other two.
+But please note that, some compilers might make special optimizations
+to remove the performance differences between these forms.
+The above benchmark result is based on the standard Go compiler v1.23.n.
+

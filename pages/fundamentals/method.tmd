@@ -1,0 +1,727 @@
+### Methods in Go
+
+Go supports some object-orient programming features.
+Method is one of these features.
+This article will introduce method related concepts in Go.
+
+###+++++++++++ Method Declarations
+
+In Go, we can (explicitly) declare a method for type `T` and `*T`,
+where `T` must satisfy 4 conditions:
+*.
+	`T` must be a __defined type__;
+*.
+	`T` must be defined in the same package as the method declaration;
+*.
+	`T` must not be a pointer type;
+*.
+	`T` must not be an interface type.
+	Interface types will be explained in __the next article__.
+
+// __ defined type :: type-system-overview.html#type-definition
+// __ the next article :: interface.html
+
+Type `T` and `*T` are called the receiver type of the respective methods declared for them.
+Type `T` is called the receiver base types of all methods declared for both type `T` and `*T`.
+
+Note, we can also declare methods for __type aliases__
+of the `T` and `*T` types specified above.
+The effect is the same as declaring methods for the `T`
+and `*T` types themselves.
+
+// __ type aliases :: type-system-overview.html#type-alias
+
+If a method is declared for a type, we can say the type has (or owns) the method.
+
+From the above listed conditions, we will get the conclusions that
+we can never (explicitly) declare methods for:
+*
+	predeclared types, such as `int` and `string`,
+	for we can't declare methods in the `builtin` standard package.
+*
+	interface types. But an interface type can own methods.
+	Please read __the next article__ for details.
+*
+	__unnamed types__.
+	except the pointer types with the form `*T` which are described above.
+
+// __ unnamed types :: type-system-overview.html#named-type
+
+A method declaration is similar to a function declaration,
+but it has an extra parameter declaration part.
+The extra parameter part can contain one and only one parameter of the receiver type of the method.
+The only one parameter is called a receiver parameter of the method declaration.
+The receiver parameter must be enclosed in a `()`
+and declared between the `func` keyword and the method name.
+
+Here are some method declaration examples:
+@@@ .line-numbers
+'''go
+// Age and int are two distinct types. We
+// can't declare methods for int and *int,
+// but can for Age and *Age.
+type Age int
+func (age Age) LargerThan(a Age) bool {
+	return age > a
+}
+func (age *Age) Increase() {
+	*age++
+}
+
+// Receiver of custom defined function type.
+type FilterFunc func(in int) bool
+func (ff FilterFunc) Filte(in int) bool {
+	return ff(in)
+}
+
+// Receiver of custom defined map type.
+type StringSet map[string]struct{}
+func (ss StringSet) Has(key string) bool {
+	_, present := ss[key]
+	return present
+}
+func (ss StringSet) Add(key string) {
+	ss[key] = struct{}{}
+}
+func (ss StringSet) Remove(key string) {
+	delete(ss, key)
+}
+
+// Receiver of custom defined struct type.
+type Book struct {
+	pages int
+}
+
+func (b Book) Pages() int {
+	return b.pages
+}
+
+func (b *Book) SetPages(pages int) {
+	b.pages = pages
+}
+'''
+
+From the above examples, we know that the receiver base types
+not only can be struct types, but also can be
+other kinds of types, such as basic types and container types,
+as long as the receiver base types satisfy the 4 conditions listed above.
+
+In some other programming languages,
+the receiver parameter names are always the implicit `this`,
+which is not a recommended identifier for receiver parameter names in Go.
+
+The receiver of type `*T` is called **%% pointer receiver %%**,
+non-pointer receivers are called **%% value receivers %%**.
+Personally, I don't recommend to view the terminology **%% pointer %%**
+as an opposite of the terminology **%% value %%**,
+because pointer values are just special values.
+But, I am not against using the pointer receiver and value receiver terminologies here.
+The reason will be explained below.
+
+Method names can be the blank identifier `_`.
+A type can have multiple methods with the blank identifier as name.
+But such methods can never be called.
+Only exported methods can be called from other packages.
+Method calls will be introduced in a later section.
+
+@@@ #method-as-function
+###+++++++++++ Each Method Corresponds to an Implicit Function
+
+For each method declaration, compiler will declare a corresponding implicit function for it.
+For the last two methods declared for type `Book` and type `*Book`
+in the last example in the last section,
+two following functions are implicitly declared by compiler:
+
+@@@ .line-numbers
+'''go
+func Book.Pages(b Book) int {
+	// The body is the same as the Pages method.
+	return b.pages
+}
+
+func (*Book).SetPages(b *Book, pages int) {
+	// The body is the same as the SetPages method.
+	b.pages = pages
+}
+'''
+
+In each of the two implicit function declarations, the receiver parameter
+is removed from its corresponding method declaration and inserted
+into the normal parameter list as the first one.
+The function bodies of the two implicitly declared functions
+is the same as their corresponding method explicit bodies.
+
+The implicit function names, `Book.Pages` and `(*Book).SetPages`,
+are both of the form `TypeDenotation.MethodName`.
+As identifiers in Go can't contain the period special characters,
+the two implicit function names are not legal identifiers,
+so the two functions can't be declared explicitly.
+They can only be declared by compilers implicitly,
+but they can be called in user code:
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+func (b Book) Pages() int {
+	return b.pages
+}
+
+func (b *Book) SetPages(pages int) {
+	b.pages = pages
+}
+
+func main() {
+	var book Book
+	// Call the two implicit declared functions.
+	(*Book).SetPages(&book, 123)
+	fmt.Println(Book.Pages(book)) // 123
+}
+'''
+
+In fact, compilers not only declare the two implicit functions,
+they also rewrite the two corresponding explicit declared methods
+to let the two methods call the two implicit functions in the method bodies
+(at least, we can think this happens), just like the following code shows:
+
+@@@ .line-numbers
+'''go
+func (b Book) Pages() int {
+	return Book.Pages(b)
+}
+
+func (b *Book) SetPages(pages int) {
+	(*Book).SetPages(b, pages)
+}
+'''
+
+@@@ #implicit-pointer-methods
+###+++++++++++ Implicit Methods With Pointer Receivers
+
+For each method declared for value receiver type `T`,
+a corresponding method with the same name will be
+implicitly declared by compiler for type `*T`.
+By the example above, the `Pages` method is declared for type `Book`,
+so a method with the same name `Pages` is implicitly declared
+for type `*Book`:
+
+@@@ .line-numbers
+'''go
+// Note: this is not a legal Go syntax.
+// It is shown here just for explanation purpose.
+// It indicates that the expression (&aBook).Pages
+// is evaluated as aBook.Pages (see below sections).
+func (b *Book) Pages = (*b).Pages
+'''
+
+This is why I don't reject the use of the value receiver terminology
+(as the opposite of the pointer receiver terminology).
+After all, when we explicitly declare a method for a non-pointer type,
+in fact two methods are declared, the explicit one is for the non-pointer type
+and the implicit one is for the corresponding pointer type.
+
+As mentioned at the last section, for each declared method,
+compilers will also declare a corresponding implicit function for it.
+So for the implicitly declared method, the following implicit function is
+declared by compiler.
+
+@@@ .line-numbers
+'''go
+func (*Book).Pages(b *Book) int {
+	return Book.Pages(*b)
+}
+'''
+
+In other words, for each explicitly declared method with a value receiver,
+two implicit functions and one implicit method will also be declared at the same time.
+
+@@@ #method-set
+###+++++++++++ Method Specifications and Method Sets
+
+
+A method specification can be viewed as a __function prototype__
+without the `func` keyword.
+We can view each method declaration is composed of the `func` keyword,
+a receiver parameter declaration, a method specification and a method (function) body.
+
+// __ function prototype :: function.html#prototype
+
+For example, the method specifications of the `Pages` and
+`SetPages` methods shown above are
+
+@@@ .line-numbers
+'''go
+Pages() int
+SetPages(pages int)
+'''
+
+
+Each type has a method set.
+The method set of a non-interface type is composed of all the method specifications
+of the methods declared, either explicitly or implicitly, for the type,
+except the ones whose names are the blank identifier `_`.
+Interface types will be explained in __the next article__.
+
+For example, the method sets of the `Book` type shown in the
+previous sections is
+@@@ .line-numbers
+'''go
+Pages() int
+'''
+
+and the method set of the `*Book` type is
+
+@@@ .line-numbers
+'''go
+Pages() int
+SetPages(pages int)
+'''
+
+The order of the method specifications in a method set is not important for the method set.
+
+For a method set, if every method specification in it is also in another method set,
+then we say the former method set is a subset of the latter one, and the latter one is a superset of the former one.
+If two method sets are subsets (or supersets) of each other,
+then we say the two method sets are identical.
+
+Given a type `T`, assume it is neither a pointer type nor an
+interface type, for __the reason__
+mentioned in the last section, the method set of a type `T` is always
+a subset of the method set of type `*T`.
+For example, the method set of the `Book` type shown above is a
+subset of the method set of the `*Book` type.
+
+// __ the reason :: #implicit-pointer-methods
+
+Please note, **non-exported method names, which start with lower-case letters,
+from different packages will be always viewed as two different method names,
+even if the two method names are the same in literal.**
+
+Method sets play an important role in the polymorphism feature of Go.
+About polymorphism, please read __the next article__
+(interfaces in Go) for details.
+
+The method sets of the following types are always blank:
+* built-in basic types.
+* defined pointer types.
+* pointer types whose base types are interface or pointer types.
+* unnamed array, slice, map, function and channel types.
+
+@@@ #call
+###+++++++++++ Method Values and Method Calls
+
+Methods are special functions actually.
+Methods are often called member functions.
+When a type owns a method, each value of the type will own an immutable member of a function type.
+The member name is the same as the method name and the type of the member is the same as
+the function declared with the form of the method declaration but without the receiver part.
+
+A method call is just a call to such a member function.
+For a value `v`, its method `m` can be represented
+with the selector form `v.m`, which is a function value.
+
+An example containing some method calls:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+func (b Book) Pages() int {
+	return b.pages
+}
+
+func (b *Book) SetPages(pages int) {
+	b.pages = pages
+}
+
+func main() {
+	var book Book
+
+	fmt.Printf("%T \n", book.Pages)       // func() int
+	fmt.Printf("%T \n", (&book).SetPages) // func(int)
+	// &book has an implicit method.
+	fmt.Printf("%T \n", (&book).Pages) // func() int
+
+	// Call the three methods.
+	(&book).SetPages(123)
+	book.SetPages(123) // equivalent to the last line
+	fmt.Println(book.Pages())    // 123
+	fmt.Println((&book).Pages()) // 123
+}
+'''
+
+{//
+In the above example, the value `book` is called the base value of both
+the receiver arguments of the `Pages` and `SetPages` method calls.
+}
+
+%%
+(Different from C language, there is not the `->` operator in Go
+to call methods with pointer receivers,
+so `(&book)->SetPages(123)` is illegal in Go.)
+
+Wait! Why does the line `book.SetPages(123)` in the above example compile okay?
+After all, the method `SetPages` is not declared for the `Book` type.
+On one hand, this can be viewed as a syntactic sugar to make programming convenient.
+This sugar only works for addressable value receivers.
+Compiler will implicitly take the address of the addressable value `book`
+when it is passed as the receiver argument of a `SetPages` method call.
+On the other hand, we should also think `aBookExpression.SetPages` is always a legal selector (from the syntax view),
+even if the expression `aBookExpression` is evaluated as an unaddressable `Book` value,
+for which case, the selector `aBookExpression.SetPages` is invalid (but legal).
+
+{//
+@@@ .line-numbers
+'''go
+ ...
+
+// Function results are not addressable in Go.
+func MakeBook() Book {
+	return Book{}
+}
+
+func main() {
+	var book Book
+	book.SetPages(123) // <=> (&book).SetPages(123)
+	fmt.Println(book.Pages()) // 123
+
+	// error: function return results are not addressable.
+	MakeBook().SetPages(123)
+}
+'''
+}
+
+{//
+In fact, the method value `book.Pages`
+can be viewed as a closure returned by:
+@@@ .line-numbers
+'''go
+func() func() int {
+	return func() int {
+		Book.Pages(b)
+	}
+}(book)
+'''
+
+and the method value `(&book).SetPages`
+can be viewed as closures returned by:
+@@@ .line-numbers
+'''go
+func (b *Book) func(int) {
+	return func(pages int) {
+		(*Book).SetPages(b, pages)
+	}
+}(&book)
+'''
+}
+
+As above just mentioned, when a method is declared for a type,
+each value of the type will own a member function.
+Zero values are not exceptions, whether or not the zero values
+of the types are represented by `nil`.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+type StringSet map[string]struct{}
+func (ss StringSet) Has(key string) bool {
+	// Never panic here, even if ss is nil.
+	_, present := ss[key]
+	return present
+}
+
+type Age int
+func (age *Age) IsNil() bool {
+	return age == nil
+}
+func (age *Age) Increase() {
+	*age++ // If age is a nil pointer, then
+	       // dereferencing it will panic.
+}
+
+func main() {
+	_ = (StringSet(nil)).Has   // will not panic
+	_ = ((*Age)(nil)).IsNil    // will not panic
+	_ = ((*Age)(nil)).Increase // will not panic
+
+	_ = (StringSet(nil)).Has("key") // will not panic
+	_ = ((*Age)(nil)).IsNil()       // will not panic
+
+	// This following line will panic. But the
+	// panic is not caused by invoking the method.
+	// It is caused by the nil pointer dereference
+	// within the method body.
+	((*Age)(nil)).Increase()
+}
+'''
+
+###+++++++++++ Receiver Arguments Are Passed by Copy
+
+Same as general function arguments,
+the receiver arguments are also passed by copy.
+So, the modifications on the __direct part__
+of a receiver argument in a method call will not be reflected to
+the outside of the method.
+
+// __ direct part :: value-part.html
+
+An example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+func (b Book) SetPages(pages int) {
+	b.pages = pages
+}
+
+func main() {
+	var b Book
+	b.SetPages(123)
+	fmt.Println(b.pages) // 0
+}
+'''
+
+Another example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+type Books []Book
+
+func (books Books) Modify() {
+	// Modifications on the underlying part of
+	// the receiver will be reflected to outside
+	// of the method.
+	books[0].pages = 500
+	// Modifications on the direct part of the
+	// receiver will not be reflected to outside
+	// of the method.
+	books = append(books, Book{789})
+}
+
+func main() {
+	var books = Books{{123}, {456}}
+	books.Modify()
+	fmt.Println(books) // [{500} {456}]
+}
+'''
+
+Some off topic, if the two lines in the orders of
+the above `Modify` method are exchanged, then both of the modifications
+will not be reflected to outside of the method body.
+@@@ .line-numbers
+'''go
+func (books Books) Modify() {
+	books = append(books, Book{789})
+	books[0].pages = 500
+}
+
+func main() {
+	var books = Books{{123}, {456}}
+	books.Modify()
+	fmt.Println(books) // [{123} {456}]
+}
+'''
+
+The reason here is that the `append` call will allocate a new
+memory block to store the elements of the copy of the passed slice receiver argument.
+The allocation will not reflect to the passed slice receiver argument itself.
+
+To make both of the modifications be reflected to outside of the method body,
+the receiver of the method must be a pointer one.
+@@@ .line-numbers
+'''go
+func (books *Books) Modify() {
+	*books = append(*books, Book{789})
+	(*books)[0].pages = 500
+}
+
+func main() {
+	var books = Books{{123}, {456}}
+	books.Modify()
+	fmt.Println(books) // [{500} {456} {789}]
+}
+'''
+
+@@@ #method-value-Normalization
+###+++++++++++ Method Value Normalization
+
+At compile time, compilers will normalize each method value expression,
+by changing implicit address taking and pointer dereference operations
+into explicit ones in that method value expression.
+
+Assume `v` is a value of type `T`
+and `v.m` is a legal method value expression,
+*
+	if `m` is a method explicitly declared for type `*T`,
+	then compilers will normalize it as `(&v).m`;
+*
+	if `m` is a method explicitly declared for type `T`,
+	then the method value expression `v.m` is already normalized.
+
+Assume `p` is a value of type `*T`
+and `p.m` is a legal method value expression,
+*
+	if `m` is a method explicitly declared for type `T`,
+	then compilers will normalize it as `(*p).m`;
+*
+	if `m` is a method explicitly declared for type `*T`,
+	then the method value expression `p.m` is already normalized.
+
+Promoted method value Normalization will be explained in the following
+__type embedding__ article.
+
+// __ type embedding :: type-embedding.html#method-value-evaluation
+
+@@@ #method-value-evaluation
+###+++++++++++ Method Value Evaluation
+
+Assume `v.m` is a normalized method value expression,
+at run time, when the method value `v.m` is evaluated,
+the receiver argument `v` is evaluated and
+a copy of the evaluation result is saved and used in later calls to the method value.
+
+For example, in the following code,
+*
+	the method value expression `b.Pages` is already normalized.
+	At run time, a copy of the receiver argument `b` is saved.
+	The copy is the same as `Book{pages: 123}`,
+	the subsequent modification of value `b` has no effects on this copy.
+	That is why the call `f1()` prints `123`.
+*
+	the method value expression `p.Pages` is normalized as `(*p).Pages` at compile time.
+	At run time, the receiver argument `*p` is evaluated to the current `b` value,
+	which is `Book{pages: 123}`.
+	A copy of the evaluation result is saved and used in later calls of the method value,
+	that is why the call `f2()` also prints `123`.
+*
+	the method value expression `p.Pages2` is already normalized.
+	At run time, a copy of the receiver argument `p` is saved.
+	The saved value is the address of the value `b`,
+	thus any changes to `b` will be reflected through dereferencing of the saved value,
+	that is why the call `g1()` prints `789`.
+*
+	the method value expression `b.Pages2` is normalized as `(&b).Pages2` at compile time.
+	At run time, a copy of the evaluation result of `&b` is saved.
+	The saved value is the address of the value `b`,
+	thus any changes to `b` will be reflected through dereferencing of the saved value,
+	that is why the call `g2()` prints `789`.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+func (b Book) Pages() int {
+	return b.pages
+}
+
+func (b *Book) Pages2() int {
+	return (*b).Pages()
+}
+
+func main() {
+	var b = Book{pages: 123}
+	var p = &b
+	var f1 = b.Pages
+	var f2 = p.Pages
+	var g1 = p.Pages2
+	var g2 = b.Pages2
+	b.pages = 789
+	fmt.Println(f1()) // 123
+	fmt.Println(f2()) // 123
+	fmt.Println(g1()) // 789
+	fmt.Println(g2()) // 789
+}
+'''
+
+@@@ #method-obtaining
+###+++++++++++ A Defined Type Doesn't Obtain the Methods Declared Explicitly for the Source Type Used in Its Definition
+
+For example, in the following code, unlike the defined type `MyInt`,
+the defined type `Age` has not an `IsOdd` method.
+
+@@@ .line-numbers
+'''go
+package main
+
+type MyInt int
+func (mi MyInt) IsOdd() bool {
+	return mi%2 == 1
+}
+
+type Age MyInt
+
+func main() {
+	var x MyInt = 3
+	_ = x.IsOdd() // okay
+	
+	var y Age = 36
+	// _ = y.IsOdd() // error: y.IsOdd undefined
+	_ = y
+}
+'''
+
+###+++++++++++ Should a Method Be Declared With Pointer Receiver or Value Receiver?
+
+Firstly, from the last section,
+we know that sometimes we must declare methods with pointer receivers.
+
+In fact, we can always declare methods with pointer receivers without any logic problems.
+It is just a matter of program performance that sometimes it is better to declare methods
+with value receivers.
+
+For the cases value receivers and pointer receivers are both acceptable,
+here are some factors needed to be considered to make decisions.
+*
+	Too many pointer copies may cause heavier workload for garbage collector.
+*
+	If the size of a value receiver type is large,
+	then the receiver argument copy cost may be not negligible.
+	Pointer types are all __small-size__ types.
+*
+	Declaring methods of both value receivers and pointer receivers
+	for the same base type is more likely to cause data races
+	if the declared methods are called concurrently in multiple goroutines.
+*
+	Values of the types in the `sync` standard package
+	should not be copied, so declaring methods with value receivers for
+	struct types which __embedding__
+	the types in the `sync` standard package is problematic.
+
+// __ small-size :: value-copy-cost.html
+// __ embedding :: type-embedding.html
+
+If it is hard to make a decision whether
+a method should use a pointer receiver or a value receiver,
+then just choose the pointer receiver way.

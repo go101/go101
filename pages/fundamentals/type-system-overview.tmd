@@ -1,0 +1,595 @@
+### Go Type System Overview
+
+This article will introduce all kinds of types in Go and the concepts regarding
+Go type system. Without knowing these fundamental concepts, it is hard to have
+a thorough understanding of Go.
+
+###+++++++++++ Concept: Basic Types
+
+Built-in basic types in Go have been also introduced in
+__built-in basic types and basic value literals__.
+For completeness of the current article, these built-in basic types
+are re-listed here.
+*  Built-in string type: `string`.
+*  Built-in boolean type: `bool`.
+*  Built-in numeric types:
+   +  `int8`, `uint8` (`byte`), `int16`, `uint16`, `int32` (`rune`), `uint32`, `int64`, `uint64`, `int`, `uint`, `uintptr`.
+   +  `float32`, `float64`.
+   +  `complex64`, `complex128`.
+
+// __ ... literals :: basic-types-and-value-literals.html
+
+Note, `byte` is a built-in alias of `uint8`,
+and `rune` is a built-in alias of `int32`.
+We can also declare custom type aliases (see below).
+
+Except __string types__,
+Go 101 article series will not try to explain more on other basic types.
+
+// __ string types :: string.html
+
+The 17 built-in basic types are predeclared types.
+
+###+++++++++++ Concept: Composite Types
+
+Go supports the following composite types:
+*  __pointer types__ - C pointer alike.
+*  __struct types__ - C struct alike.
+*  __function types__ - functions are first-class types in Go.
+*  __container types__:
+   +  array types - fixed-length container types.
+   +  slice type - dynamic-length and dynamic-capacity container types.
+   +  map types - maps are associative arrays (or dictionaries). The standard Go compiler implements maps as hashtables.
+
+*  __channel types__ - channels are used to synchronize data among goroutines (the green threads in Go).
+*  __interface types__ - interfaces play a key role in reflection and polymorphism.
+
+// __ pointer types :: pointer.html
+// __ struct types :: struct.html
+// __ function types :: function.html
+// __ container types :: container.html
+// __ channel types :: channel.html
+// __ interface types :: interface.html
+
+Unnamed composite types may be denoted by their respective type literals.
+Following are some literal representation examples of all kinds of unnamed composite types
+(name and unnamed types will be explained below).
+@@@ .line-numbers
+''' go
+// Assume T is an arbitrary type and Tkey is
+// a type supporting comparison (== and !=).
+
+*T         // a pointer type
+[5]T       // an array type
+[]T        // a slice type
+map[Tkey]T // a map type
+
+// a struct type
+struct {
+	name string
+	age  int
+}
+
+// a function type
+func(int) (bool, string)
+
+// an interface type
+interface {
+	Method0(string) int
+	Method1() (int, bool)
+}
+
+// some channel types
+chan T
+chan<- T
+<-chan T
+'''
+
+__Comparable and incomparable types__ will be explained below.
+
+// __ Comparable and incomparable types :: #types-not-support-comparison
+
+@@@ #type-kinds
+###+++++++++++ Fact: Kinds of Types
+
+Each of the above mentioned basic and composite types corresponds to one kind of types.
+Besides these kinds, the unsafe pointer types introduced in the __`unsafe` standard package__
+also belong to one kind of types in Go.
+So, up to now (Go 1.23), Go has 26 kinds of types.
+
+// __ `unsafe` standard package :: https://golang.org/pkg/unsafe
+
+@@@ #type-definition
+###+++++++++++ Syntax: Type Definitions
+
+%%
+(**Type definition**, or type definition declaration,
+initially called **type declaration**, was the only type declaration way before Go 1.9.
+Since Go 1.9, type definition has become one of two forms of type declarations.
+The new form is called **type alias declaration**,
+which will be introduced in a section below.)
+
+
+In Go, we can define new types by using the following form.
+In the syntax, `type` is a keyword.
+@@@ .line-numbers
+''' go
+// Define a solo new type.
+type NewTypeName SourceType
+
+// Define multiple new types together.
+type (
+	NewTypeName1 SourceType1
+	NewTypeName2 SourceType2
+)
+'''
+
+New type names must be identifiers.
+But please note that, type names declared at package level can't be __`init`__.
+
+// __ `init` :: packages-and-imports.html#init
+
+The second type declaration in the above example includes two type specifications.
+If a type declaration contains more than one type specification,
+the type specifications must be enclosed within a pair of `()`.
+
+Note,
+*
+   a new defined type and its respective source type in type definitions
+   are two distinct types.
+*
+   two types defined in two type definitions are always two distinct types.
+*
+   the new defined type and the source type will share the same
+   underlying type (see below for the definition of underlying types),
+   and their values can be converted to each other.
+*
+   types can be defined within function bodies.
+
+
+Some type definition examples:
+@@@ .line-numbers
+''' go
+// The following new defined and source types are all
+// basic types. The source types are all predeclared.
+type (
+	MyInt int
+	Age   int
+	Text  string
+)
+
+// The following new defined and source types are all
+// composite types. The source types are all unnamed.
+type IntPtr *int
+type Book struct{author, title string; pages int}
+type Convert func(in0 int, in1 bool)(out0 int, out1 string)
+type StringArray [5]string
+type StringSlice []string
+
+func f() {
+	// The names of the three defined types
+	// can be only used within the function.
+	type PersonAge map[string]int
+	type MessageQueue chan string
+	type Reader interface{Read([]byte) int}
+}
+'''
+
+Please note that,
+from Go 1.9 to Go 1.17, the Go specification ever thought predeclared
+built-in types are defined types.
+But since Go 1.18, the Go specification clarifies that
+predeclared built-in types are not defined types.
+
+@@@ #generic-type
+###+++++++++++ Concept: Custom Generic Types and Instantiated Types
+
+Since Go 1.18, Go has supported custom generic types (and functions).
+A generic type must be instantiated to be used as value types.
+
+A generic type is a defined type and its instantiated types are named types
+(named types are explained in the next section).
+
+The other two important concepts in custom generics are constraints and type parameters.
+
+This book doesn't talk about custom generics in detail.
+Please read the __Go Generics 101__ book
+on how to declare and use generic types and functions.
+
+// __ Go Generics 101 :: https://go101.org/generics/101.html
+
+@@@ #named-type
+###+++++++++++ Concept: Named Types vs. Unnamed Types
+
+Before Go 1.9, the terminology **named type** is defined accurately in Go specification.
+A named type was defined as a type that is represented by an identifier.
+Along with the custom type alias feature introduced in Go 1.9 (see the next section),
+the **named type** terminology was ever removed from Go specification
+and it was replaced by the **defined type** terminology.
+Since Go 1.18, along with the introduction of custom generics,
+the **named type** terminology has been added back to Go specification.
+
+A named type may be
+
+*
+   a predeclared type (not including __type alias__);
+*
+   a defined (non-custom-generic) type;
+*
+   an instantiated type (of a generic type);
+*
+   a type parameter type (used in custom generics).
+
+Other value types are called unnamed types.
+An unnamed type must be a composite type (not vice versa).
+
+// __ type alias :: #type-alias
+
+@@@ #type-alias
+###+++++++++++ Syntax: Type Alias Declarations
+
+{ //
+It's really unfortunate, and a mistake in my mind, that we allowed aliases for type literals.
+There was no need for it, and it needlessly complicates/confuses things.
+https://github.com/golang/go/issues/66540#issuecomment-2030476174
+}
+
+Since Go 1.9, we can declare custom type aliases by using the following syntax.
+The syntax of alias declaration is much like type definition,
+but please note there is a `=` in each type alias specification.
+@@@ .line-numbers
+''' go
+type (
+	Name = string
+	Age  = int
+)
+
+type table = map[string]int
+type Table = map[Name]Age
+'''
+
+Type alias names must be identifiers.
+Like type definitions, type aliases can also be declared within function bodies.
+
+A type name (or literal) and its aliases all denote an identical type.
+By the above declarations, `Name` is an alias of `string`,
+so both denote the same type.
+The same applies to the other three pairs of type notations (either names or literals):
+*
+   `Age` and `int`
+*
+   `table` and `map[string]int`
+*
+   `Table` and `map[Name]Age`
+
+In fact, the literals `map[string]int`
+and `map[Name]Age` also both denote the same type.
+So, similarly, aliases `table` and `Table` also denote the same type.
+
+Note, although a type alias always has a name, it might denote an unnamed type.
+For example, the `table` and `Table` aliases both
+denote the same unnamed type `map[string]int`.
+
+@@@ #underlying-type
+###+++++++++++ Concept: Underlying Types
+
+In Go, each type has an underlying type. Rules:
+*  for built-in types, the respective underlying types are themselves.
+*  for the `Pointer` type defined in the `unsafe` standard code package,
+   its underlying type is itself (at least we can think so. In fact, the underlying type
+   of the `unsafe.Pointer` type is not well documented. We can also think
+   the underlying type is `*T`, where `T` represents an arbitrary type).
+   `unsafe.Pointer` is also viewed as a built-in type.
+*  the underlying type of an unnamed type, which must be a composite type, is itself.
+*  in a type declaration, the newly declared type and the source type have the same underlying type.
+
+Examples:
+@@@ .line-numbers
+''' go
+// The underlying types of the following ones are both int.
+type (
+	MyInt int
+	Age   MyInt
+)
+
+// The following new types have different underlying types.
+type (
+	IntSlice   []int   // underlying type is []int
+	MyIntSlice []MyInt // underlying type is []MyInt
+	AgeSlice   []Age   // underlying type is []Age
+)
+
+// The underlying types of []Age, Ages, and AgeSlice
+// are all the unnamed type []Age.
+type Ages AgeSlice
+'''
+
+How can an underlying type be traced given a user declared type?
+The rule is, when a built-in basic type or an unnamed type is met, the tracing should be stopped.
+Take the type declarations shown above as examples, let's trace their underlying types.
+
+!  ^`
+   MyInt → int
+   \\ Age → MyInt → int
+   \\ IntSlice → []int
+   \\ MyIntSlice → []MyInt ^**→ ~~[]int~~**
+   \\ AgeSlice → []Age ^**→ ~~[]MyInt~~ → ~~[]int~~**
+   \\ Ages → AgeSlice → []Age ^**→ ~~[]MyInt~~ → ~~[]int~~**
+
+In Go,
+*  types whose underlying types are `bool` are called **boolean types**;
+*  types whose underlying types are any of the built-in integer types are called **integer types**;
+*  types whose underlying types are either `float32` or `float64` are called **floating-point types**;
+*  types whose underlying types are either `complex64` or `complex128` are called **complex types**;
+*  integer, floating-point and complex types are also called **numeric types**;
+*  types whose underlying types are `string` are called **string types**.
+
+The concept of underlying type plays an important role in
+__value conversions, assignments and comparisons in Go__.
+
+// __ value conversions ... :: value-conversions-assignments-and-comparisons.html
+
+###+++++++++++ Concept: Values
+
+An instance of a type is called a 'value' of the type.
+Values of the same type share some common properties.
+A type may have many values. One of them is the zero value of the type.
+
+Each type has a zero value, which can be viewed as the default value of the type.
+The predeclared `nil` identifier can used to represent
+zero values of slices, maps, functions, channels,
+pointers (including type-unsafe pointers) and interfaces.
+For more information on `nil`, please read __nil in Go__.
+
+// __ nil in Go :: nil.html
+
+There are several kinds of value representation forms in code, including
+__literals__, __named constants__, __variables__ and __expressions__,
+though the former three can be viewed as special cases of the latter one.
+
+// __ literals :: basic-types-and-value-literals.html
+// __ named constants :: constants-and-variables.html#constant
+// __ variables :: constants-and-variables.html#variable
+// __ expressions :: expressions-and-statements.html
+
+A value can be __typed or untyped__.
+
+All kinds of basic value literals have been introduced in the article
+__href="l">basic types and basic value literals__.
+There are two more kinds of literals in Go, composite literals and function literals.
+
+Function literals, as the name implies, are used to represent function values.
+A __function declaration__ is composed of a function literal and an identifier (the function name).
+
+Composite literals are used to represent values of struct types
+and container types (arrays, slices and maps),
+Please read __structs in Go__ and __containers in Go__ for more details.
+
+// __ typed or untyped :: constants-and-variables.html#untyped-value
+// __ basic types and basic value literals :: basic-types-and-value-literals.htm
+// __ function declaration :: function-declarations-and-calls.html#declaration
+// __ structs in Go :: struct.html
+// __ containers in Go :: container.html
+
+There are no literals to represent values of pointers, channels and interfaces.
+
+@@@ #value-part
+###+++++++++++ Concept: Value Parts
+
+At run time, many values are stored somewhere in memory.
+In Go, each of such values has a direct part.
+However, some of them have one or more indirect parts.
+Each value part occupies a continuous memory segment.
+The indirect underlying parts of a value are referenced
+by its direct part through (__safe__ or __unsafe__) pointers.
+
+The terminology __**value part**__ is not defined in Go specification.
+It is just used in Go 101 to make some explanations simpler
+and help Go programmers understand Go types and values better.
+
+// __ safe :: pointer.html
+// __ unsafe :: unsafe.html
+// __ value part :: value-part.html
+
+@@@ #value-size
+###+++++++++++ Concept: Value Sizes
+
+When a value is stored in memory, the number of bytes occupied
+by the direct part of the value is called the size of the value.
+As all values of the same type have the same value size,
+we often simply call this the size of the type.
+
+We can use the `Sizeof` function in the `unsafe`
+standard package to get the size of any value.
+
+Go specification doesn't specify value size requirements for non-numeric types.
+The requirements for value sizes of all kinds of basic numeric types
+are listed in the article __basic types and basic value literals__.
+
+// __ basic types ... :: basic-types-and-value-literals.html
+
+@@@ #pointer-base-type
+###+++++++++++ Concept: Base Type of a Pointer Type
+
+For a pointer type, assume its underlying type can be denoted as `*T`
+in literal, then `T` is called the base type of the pointer type.
+
+More information on pointer types and values can be found in the article
+__pointers in Go__.
+
+// __ pointers in Go :: pointer.html
+
+###+++++++++++ Concept: Fields of a Struct Type
+
+A struct type consists a collection of member variable declarations.
+Each of the member variable declarations is called a "field" of the struct type.
+For example, the following struct type `Book` has
+three fields, `author`, `title` and `pages`.
+@@@ .line-numbers
+''' go
+type Book struct {
+	author string
+	title  string
+	pages  int
+}
+'''
+
+More information on struct types and values can be found in the article
+__structs in Go__.
+
+// __ structs in Go :: struct.html
+
+###+++++++++++ Concept: Signature of Function Types
+
+The signature of a function type is composed of
+the input parameter definition list and
+the output result definition list of the function.
+
+The function name and body are not parts of a function signature.
+Parameter and result types are important for a function signature,
+but parameter and result names are not important.
+
+Please read __functions in Go__ for more details
+on function types and function values.
+
+// __ functions in Go :: function.html
+
+###+++++++++++ Concept: Methods and Method Set of a Type
+
+In Go, some types can have __methods__.
+Methods can also be called member functions.
+The method set of a type is composed of all the methods of the type.
+
+// __ methods :: method.html
+
+###+++++++++++ Concept: Dynamic Type and Dynamic Value of an Interface Value
+
+Interface values are values whose types are interface types.
+
+Each interface value can box a non-interface value in it.
+The value boxed in an interface value is called the dynamic value of the interface value.
+The type of the dynamic value is called the dynamic type of the interface value.
+An interface value boxing nothing is a zero interface value.
+A zero interface value has neither a dynamic value nor a dynamic type.
+
+An interface type can specify zero or several methods, which form the method set of the interface type.
+
+If the method set of a type, which is either an interface type or a non-interface type,
+is the super set of the method set of an interface type, we say the type
+__implements__ the interface type.
+
+For more about interface types and values, please read __interfaces in Go__.
+
+// __ implements :: interface.html#implementation
+// __ interfaces in Go :: interface.html
+
+@@@ #concrete-type
+###+++++++++++ Concept: Concrete Value and Concrete Type of a Value
+
+For a (typed) non-interface value, its concrete value is itself and its concrete type is the type of the value.
+
+A zero interface value has neither concrete type nor concrete value.
+For a non-zero interface value, its concrete value is its dynamic value and its concrete type is its dynamic type.
+
+###+++++++++++ Concept: Container Types
+
+Arrays, slices and maps can be viewed as formal container types.
+
+Sometimes, string and channel types can also be viewed as container types informally.
+
+Each value of a formal or informal container type has a length.
+
+More information on formal container types and values can be found in the
+article __containers in Go__.
+
+// __ containers in Go :: container.htm
+
+###+++++++++++ Concept: Key Type of a Map Type
+
+If the underlying type of a map type can be denoted as `map[Tkey]T`,
+then `Tkey` is called the key type of the map type.
+`Tkey` must be a comparable type (see below).
+
+###+++++++++++ Concept: Element Type of a Container Type
+
+The types of the elements stored in values of a container type must be identical.
+The identical type of the elements is called the element type of the container type.
+*  For an array type, if its underlying type is `[N]T`, then its element type is `T`.
+*  For a slice type, if its underlying type is `[]T`, then its element type is `T`.
+*  For a map type, if its underlying type is `map[Tkey]T`, then its element type is `T`.
+*  For a channel type, if its underlying type is `chan T`, `chan<- T` or `<-chan T`, then its element type is `T`.
+*  The element type of any string type is always `byte` (a.k.a. `uint8`).
+
+###+++++++++++ Concept: Directions of Channel Types
+
+Channel values can be viewed as synchronized first-in-first-out (FIFO) queues.
+Channel types and values have directions.
+*
+   A channel value which is both sendable and receivable is called
+   a bidirectional channel. Its type is called a bidirectional channel type.
+   The underlying types of bidirectional channel types are denoted by the `chan T` literal.
+*
+   A channel value which is only sendable is called
+   a send-only channel. Its type is called a send-only channel type.
+   Send-only channel types are denoted by the `chan<- T` literal.
+*
+   A channel value which is only receivable is called
+   a receive-only channel. Its type is called a receive-only channel type.
+   Receive-only channel types are denoted by the `<-chan T` literal.
+
+
+More information on channel types and values can be found in the article
+__channels in Go__.
+
+// __ channels in Go :: channel.html
+
+@@@ #types-not-support-comparison
+###+++++++++++ Fact: Types Which Support or Don't Support Comparisons
+
+Currently (Go 1.23), Go doesn't support comparisons
+(with the `==` and `!=` operators)
+for values of the following types:
+*  slice types
+   *. map types
+   *. function types*.
+      any struct type with a field whose type is incomparable
+      and any array type which element type is incomparable.
+
+Above listed types are called incomparable types.
+All other types are called comparable types.
+Compilers forbid comparing two values of incomparable types.
+
+Note, incomparable types are also called uncomparable types in many articles.
+
+The key type of any map type must be a comparable type.
+
+We can learn more about the detailed rules of comparisons from the article
+__value conversions, assignments and comparisons in Go__.
+
+// __ ... comparisons in Go :: value-conversions-assignments-and-comparisons.html#comparison-rules
+
+###+++++++++++ Fact: Object-Oriented Programming in Go
+
+Go is not a full-featured object-oriented programming language,
+but Go really supports some object-oriented programming elements.
+Please read the following listed articles for details:
+*
+   __methods in Go`` method.html__.
+*
+   __implementations in Go`` interface.html#implementation__.
+*
+   __type embedding in Go`` type-embedding.html__.
+
+
+###+++++++++++ Fact: Generics in Go
+
+Before Go 1.18, the generic functionalities in Go were limited to built-in types and functions.
+Since Go 1.18, custom generics has already been supported.
+Please read the __generics in Go__ article for built-in generics
+and the __Go Generics 101__ book for custom generics.
+
+// __ generics in Go :: generic.html
+// __ Go Generics 101 :: https://go101.org/generics/101.html
+
+
+

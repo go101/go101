@@ -1,43 +1,36 @@
-﻿<h1>Memory Order Guarantees in Go</h1>
+<h1 class="tmd-header-1">
+Memory Order Guarantees in Go
+</h1>
+<p></p>
+<h3 class="tmd-header-3">
+About Memory Ordering
+</h3>
+<p></p>
+<div class="tmd-usual">
+Many compilers (at compile time) and CPU processors (at run time) often make some optimizations by adjusting the instruction orders, so that the instruction execution orders may differ from the orders presented in code. Instruction ordering is also often called <a href="https://en.wikipedia.org/wiki/Memory_ordering">memory ordering</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>About Memory Ordering</h3>
+</div>
+<p></p>
+<div class="tmd-usual">
+Surely, instruction reordering can't be arbitrary. The basic requirement for a reordering inside a specified goroutine is the reordering must not be detectable by the goroutine itself if the goroutine doesn't share data with other goroutines. In other words, from the perspective of such a goroutine, it can think its instruction execution order is always the same as the order specified by code, even if instruction reordering really happens inside it.
+</div>
+<p></p>
+<div class="tmd-usual">
+However, if some goroutines share some data, then instruction reordering happens inside one of these goroutine may be observed by the others goroutines, and affect the behaviors of all these goroutines. Sharing data between goroutines is common in concurrent programming. If we ignore the results caused by instruction reordering, the behaviors of our concurrent programs might compiler and CPU dependent, and often abnormal.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Many compilers (at compile time) and CPU processors (at run time)
-often make some optimizations by adjusting the instruction orders,
-so that the instruction execution orders may differ from the
-orders presented in code.
-Instruction ordering is also often called
-<a href="https://en.wikipedia.org/wiki/Memory_ordering">memory ordering</a>.
-</p>
-
-<p>
-Surely, instruction reordering can't be arbitrary.
-The basic requirement for a reordering inside a specified goroutine is
-the reordering must not be detectable by the goroutine itself
-if the goroutine doesn't share data with other goroutines.
-In other words, from the perspective of such a goroutine,
-it can think its instruction execution order is always
-the same as the order specified by code,
-even if instruction reordering really happens inside it.
-</p>
-
-<p>
-However, if some goroutines share some data,
-then instruction reordering happens inside one of these goroutine
-may be observed by the others goroutines,
-and affect the behaviors of all these goroutines.
-Sharing data between goroutines is common in concurrent programming.
-If we ignore the results caused by instruction reordering,
-the behaviors of our concurrent programs might compiler and CPU dependent,
-and often abnormal.
-</p>
-
-<div>
-Here is an unprofessional Go program which doesn't consider instruction reordering.
-the program is expanded from an example in the official documentation
-<a href="https://golang.org/ref/mem">Go 1 memory model</a>.
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+Here is an unprofessional Go program which doesn't consider instruction reordering. the program is expanded from an example in the official documentation <a href="https://golang.org/ref/mem">Go 1 memory model</a>.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "log"
 import "runtime"
@@ -62,18 +55,12 @@ func main() {
 	log.Println(a) // expected to print: hello, world
 }
 </code></pre>
-
-The behavior of this program is very possible as we expect,
-a <code>hello, world</code> text will be printed.
-However, the behavior of this program is compiler and CPU dependent.
-If the program is compiled with a different compiler,
-or with a later compiler version, or it runs on a different architecture,
-the <code>hello, world</code> text might not be printed,
-or a text different from <code>hello, world</code> might be printed.
-The reason is compilers and CPUs may exchange the execution orders of
-the first two lines in the <code>setup</code> function,
-so the final effect of the <code>setup</code> function may become to
-<pre class="line-numbers"><code class="language-go">func setup() {
+<p></p>
+<div class="tmd-usual">
+The behavior of this program is very possible as we expect, a <code class="tmd-code-span">hello, world</code> text will be printed. However, the behavior of this program is compiler and CPU dependent. If the program is compiled with a different compiler, or with a later compiler version, or it runs on a different architecture, the <code class="tmd-code-span">hello, world</code> text might not be printed, or a text different from <code class="tmd-code-span">hello, world</code> might be printed. The reason is compilers and CPUs may exchange the execution orders of the first two lines in the <code class="tmd-code-span">setup</code> function, so the final effect of the <code class="tmd-code-span">setup</code> function may become to
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func setup() {
 	done = true
 	a = "hello, world"
 	if done {
@@ -81,125 +68,54 @@ so the final effect of the <code>setup</code> function may become to
 	}
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">setup</code> goroutine in the above program is unable to observe the reordering, so the <code class="tmd-code-span">log.Println(len(a))</code> line will always print <code class="tmd-code-span">12</code> (if this line gets executed before the program exits). However, the main goroutine may observe the reordering, which is why the printed text might be not <code class="tmd-code-span">hello, world</code>.
 </div>
-
-<p>
-The <code>setup</code> goroutine in the above program is unable to observe the reordering,
-so the <code>log.Println(len(a))</code> line will always print <code>12</code>
-(if this line gets executed before the program exits).
-However, the main goroutine may observe the reordering,
-which is why the printed text might be not <code>hello, world</code>.
-</p>
-
-<p>
-Besides the problem of ignoring memory reordering, there are data races in the program.
-There are not any synchronizations made in using the variable
-<code>a</code> and <code>done</code>.
-So, the above program is a showcase full of concurrent programming mistakes.
-A professional Go programmer should not make these mistakes.
-</p>
-
-<p>
-We can use the <code>go build -race</code> command provided in Go Toolchain
-to build a program, then we can run the outputted executable to check
-whether or not there are data races in the program.
-</p>
-
-<h3>Go Memory Model</h3>
-
-<p>
-Sometimes, we need to ensure that the execution of some code lines in a goroutine
-must happen before (or after) the execution of some code lines in another goroutine
-(from the view of either of the two goroutines),
-to keep the correctness of a program.
-Instruction reordering may cause some troubles for such circumstances.
-How should we do to prevent certain possible instruction reordering?
-</p>
-
-<p>
-Different CPU architectures provide different fence instructions
-to prevent different kinds of instruction reordering.
-Some programming languages provide corresponding functions
-to insert these fence instructions in code.
-However, understanding and correctly using the fence instructions
-raises the bar of concurrent programming.
-</p>
-
-<p>
-The design philosophy of Go is to use as fewer features as possible
-to support as more use cases as possible, at the same time to
-ensure a good enough overall code execution efficiency.
-So Go built-in and standard packages don't provide direct ways
-to use the CPU fence instructions.
-In fact, CPU fence instructions are used in implementing all kinds of synchronization techniques supported in Go.
-So, we should use these synchronization techniques to ensure expected code execution orders.
-</p>
-
-<p>
-The remaining of the current article will list some guaranteed (and non-guaranteed) code execution orders in Go,
-which are mentioned or not mentioned in
-<a href="https://golang.org/ref/mem">Go 1 memory model</a> and other official Go documentation.
-</p>
-
-<p>
-In the following descriptions, if we say
-event <code>A</code> is guaranteed to happen before event <code>B</code>,
-it means any of the goroutines involved in the two events will observe that
-any of the statements presented before event <code>A</code> in source code
-will be executed before
-any of the statements presented after event <code>B</code> in source code.
-For other irrelevant goroutines,
-the observed orders may be different from the just described.
-</p>
-
-<!--
-<h4><code>init</code> functions related order guarantees</h4>
-
-<div>
-The execution order of the <code>init</code> functions in a program order guarantees:
-
-The article <a href="packages-and-imports.html#initialization-order">code packages and package imports</a>
-has introduced the execution order of the <code>init</code> functions in a program.
-Here lists the guaranteed orders:
-<ul>
-<li>
-	The completion of all the <code>init</code> functions in the dependency packages of a package
-	happens before the start of any <code>init</code> function in the package.
-</li>
-<li>
-	The completion of all <code>init</code> functions in a program
-	happens before the start of the program <code>main</code> entry function.
-</li>
-</ul>
-
-In fact, there are two other order guarantees:
-<ul>
-<li>
-	the completion of all package-level variable initializations in a package
-	happens before the start of any <code>init</code> function in the package.
-</li>
-<li>
-	the completion of all the <code>init</code> functions in the dependency packages of a package
-	happens before any package-level variable initialization in the package.
-</li>
-</ul>
-
-<p>
-Package loading only involves one goroutine.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Besides the problem of ignoring memory reordering, there are data races in the program. There are not any synchronizations made in using the variable <code class="tmd-code-span">a</code> and <code class="tmd-code-span">done</code>. So, the above program is a showcase full of concurrent programming mistakes. A professional Go programmer should not make these mistakes.
 </div>
--->
-
-<a class="anchor" id="goroutine"></a>
-<h4>The creation of a goroutine happens before the execution of the goroutine</h4>
-
-<div>
-In the following function,
-the assignment <code>x, y = 123, 789</code> will be executed before the call <code>fmt.Println(x)</code>,
-and the call <code>fmt.Println(x)</code> will be executed before the call <code>fmt.Println(y)</code>.
-
-<pre class="line-numbers"><code class="language-go">var x, y int
+<p></p>
+<div class="tmd-usual">
+We can use the <code class="tmd-code-span">go build -race</code> command provided in Go Toolchain to build a program, then we can run the outputted executable to check whether or not there are data races in the program.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Go Memory Model
+</h3>
+<p></p>
+<div class="tmd-usual">
+Sometimes, we need to ensure that the execution of some code lines in a goroutine must happen before (or after) the execution of some code lines in another goroutine (from the view of either of the two goroutines), to keep the correctness of a program. Instruction reordering may cause some troubles for such circumstances. How should we do to prevent certain possible instruction reordering?
+</div>
+<p></p>
+<div class="tmd-usual">
+Different CPU architectures provide different fence instructions to prevent different kinds of instruction reordering. Some programming languages provide corresponding functions to insert these fence instructions in code. However, understanding and correctly using the fence instructions raises the bar of concurrent programming.
+</div>
+<p></p>
+<div class="tmd-usual">
+The design philosophy of Go is to use as fewer features as possible to support as more use cases as possible, at the same time to ensure a good enough overall code execution efficiency. So Go built-in and standard packages don't provide direct ways to use the CPU fence instructions. In fact, CPU fence instructions are used in implementing all kinds of synchronization techniques supported in Go. So, we should use these synchronization techniques to ensure expected code execution orders.
+</div>
+<p></p>
+<div class="tmd-usual">
+The remaining of the current article will list some guaranteed (and non-guaranteed) code execution orders in Go, which are mentioned or not mentioned in <a href="https://golang.org/ref/mem">Go 1 memory model</a> and other official Go documentation.
+</div>
+<p></p>
+<div class="tmd-usual">
+In the following descriptions, if we say event <code class="tmd-code-span">A</code> is guaranteed to happen before event <code class="tmd-code-span">B</code>, it means any of the goroutines involved in the two events will observe that any of the statements presented before event <code class="tmd-code-span">A</code> in source code will be executed before any of the statements presented after event <code class="tmd-code-span">B</code> in source code. For other irrelevant goroutines, the observed orders may be different from the just described.
+</div>
+<p></p>
+<p></p>
+<h4 id="goroutine" class="tmd-header-4">
+The creation of a goroutine happens before the execution of the goroutine
+</h4>
+<p></p>
+<div class="tmd-usual">
+In the following function, the assignment <code class="tmd-code-span">x, y = 123, 789</code> will be executed before the call <code class="tmd-code-span">fmt.Println(x)</code>, and the call <code class="tmd-code-span">fmt.Println(x)</code> will be executed before the call <code class="tmd-code-span">fmt.Println(y)</code>.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var x, y int
 func f1() {
 	x, y = 123, 789
 	go func() {
@@ -210,11 +126,13 @@ func f1() {
 	}()
 }
 </code></pre>
-
-However, the execution orders of the three in the following function are not deterministic.
-There are data races in this function.
-
-<pre class="line-numbers"><code class="language-go">var x, y int
+<p></p>
+<div class="tmd-usual">
+However, the execution orders of the three in the following function are not deterministic. There are data races in this function.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var x, y int
 func f2() {
 	go func() {
 		// Might print 0, 123, or some others.
@@ -227,67 +145,48 @@ func f2() {
 	x, y = 123, 789
 }
 </code></pre>
-</div>
-
-<a class="anchor" id="channel"></a>
-<h4>Channel operations related order guarantees</h4>
-
-<div>
-
-<!--
-The following listed guarantees are not mentioned in Go 1 memory model,
-but I think they are obvious.
-<ul>
-<li>
-	A channel send operation happens before the completion of the send operation.
-</li>
-<li>
-	A channel receive operation happens before the completion of the receive operation.
-</li>
-<li>
-	The completions of two send operations on a channel can't happen at the same time.
-</li>
-<li>
-	The completions of two receive operations on a channel can't happen at the same time.
-</li>
-</ul>
--->
-
+<p></p>
+<h4 id="channel" class="tmd-header-4">
+Channel operations related order guarantees
+</h4>
+<p></p>
+<p></p>
+<div class="tmd-usual">
 Go 1 memory model lists the following three channel related order guarantees.
-<ol>
-<li>
-	The <b><i>n</i></b>th successful send to a channel happens before
-	the <b><i>n</i></b>th successful receive from that channel completes,
-	no matter that channel is buffered or unbuffered.
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+The <span class="tmd-bold"><span class="tmd-italic">n</span></span>th successful send to a channel happens before the <span class="tmd-bold"><span class="tmd-italic">n</span></span>th successful receive from that channel completes, no matter that channel is buffered or unbuffered.
+</div>
 </li>
-<li>
-	The <b><i>n</i></b>th successful receive from a channel with capacity <b><i>m</i></b>
-	happens before the (<b><i>n+m</i></b>)th successful send to that channel completes.
-	In particular, if that channel is unbuffered (<code>m == 0</code>),
-	the <b><i>n</i></b>th successful receive from that channel happens
-	before the <b><i>n</i></b>th successful send on that channel completes.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+The <span class="tmd-bold"><span class="tmd-italic">n</span></span>th successful receive from a channel with capacity <span class="tmd-bold"><span class="tmd-italic">m</span></span> happens before the (<span class="tmd-bold"><span class="tmd-italic">n+m</span></span>)th successful send to that channel completes. In particular, if that channel is unbuffered (<code class="tmd-code-span">m == 0</code>), the <span class="tmd-bold"><span class="tmd-italic">n</span></span>th successful receive from that channel happens before the <span class="tmd-bold"><span class="tmd-italic">n</span></span>th successful send on that channel completes.
+</div>
 </li>
-<li>
-	The closing of a channel happens before a receive completes if
-	the receive returns a zero value because the channel is closed.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+The closing of a channel happens before a receive completes if the receive returns a zero value because the channel is closed.
+</div>
 </li>
 </ol>
-
-<p>
-In fact, the completion of the <b><i>n</i></b>th successful send to a channel and
-the completion of the <b><i>n</i></b>th successful receive from the same channel
-are the same event.
-</p>
-
-Here is an example show some guaranteed code execution orders
-in using an unbuffered channel.
-<pre class="line-numbers"><code class="language-go">func f3() {
+<p></p>
+<div class="tmd-usual">
+In fact, the completion of the <span class="tmd-bold"><span class="tmd-italic">n</span></span>th successful send to a channel and the completion of the <span class="tmd-bold"><span class="tmd-italic">n</span></span>th successful receive from the same channel are the same event.
+</div>
+<p></p>
+<div class="tmd-usual">
+Here is an example show some guaranteed code execution orders in using an unbuffered channel.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func f3() {
 	var a, b int
 	var c = make(chan bool)
 
 	go func() {
 		a = 1
-		c <- true
+		c &lt;- true
 		if b != 1 { // impossible
 			panic("b != 1") // will never happen
 		}
@@ -295,42 +194,48 @@ in using an unbuffered channel.
 
 	go func() {
 		b = 1
-		<-c
+		&lt;-c
 		if a != 1  { // impossible
 			panic("a != 1") // will never happen
 		}
 	}()
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 Here, for the two new created goroutines, the following orders are guaranteed:
-<ul>
-<li>
-	the execution of the assignment <code>b = 1</code> absolutely ends
-	before the evaluation of the condition <code>b != 1</code>.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the execution of the assignment <code class="tmd-code-span">b = 1</code> absolutely ends before the evaluation of the condition <code class="tmd-code-span">b != 1</code>.
+</div>
 </li>
-<li>
-	the execution of the assignment <code>a = 1</code> absolutely ends
-	before the evaluation of the condition <code>a != 1</code>.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the execution of the assignment <code class="tmd-code-span">a = 1</code> absolutely ends before the evaluation of the condition <code class="tmd-code-span">a != 1</code>.
+</div>
 </li>
 </ul>
-
-So the two calls to <code>panic</code> in the above example will never get executed.
-However, the <code>panic</code> calls in the following example may get executed.
-
-<pre class="line-numbers"><code class="language-go">func f4() {
+<p></p>
+<div class="tmd-usual">
+So the two calls to <code class="tmd-code-span">panic</code> in the above example will never get executed. However, the <code class="tmd-code-span">panic</code> calls in the following example may get executed.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func f4() {
 	var a, b, x, y int
 	c := make(chan bool)
 
 	go func() {
 		a = 1
-		c <- true
+		c &lt;- true
 		x = 1
 	}()
 
 	go func() {
 		b = 1
-		<-c
+		&lt;-c
 		y = 1
 	}()
 
@@ -357,152 +262,135 @@ However, the <code>panic</code> calls in the following example may get executed.
 	}()
 }
 </code></pre>
-
-<p>
-Here, for the third goroutine,
-which is irrelevant to the operations on channel <code>c</code>.
-It will not be guaranteed to observe the orders observed by the first two new created goroutines.
-So, any of the four <code>panic</code> calls may get executed.
-</p>
-
-<p>
-In fact, most compiler implementations do guarantee the four <code>panic</code> calls
-in the above example will never get executed,
-however, the Go official documentation never makes such guarantees.
-So the code in the above example is not cross-compiler or cross-compiler-version compatible.
-We should stick to the Go official documentation to write professional Go code.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Here, for the third goroutine, which is irrelevant to the operations on channel <code class="tmd-code-span">c</code>. It will not be guaranteed to observe the orders observed by the first two new created goroutines. So, any of the four <code class="tmd-code-span">panic</code> calls may get executed.
+</div>
+<p></p>
+<div class="tmd-usual">
+In fact, most compiler implementations do guarantee the four <code class="tmd-code-span">panic</code> calls in the above example will never get executed, however, the Go official documentation never makes such guarantees. So the code in the above example is not cross-compiler or cross-compiler-version compatible. We should stick to the Go official documentation to write professional Go code.
+</div>
+<p></p>
+<div class="tmd-usual">
 Here is an example using a buffered channel.
-<pre class="line-numbers"><code class="language-go">func f5() {
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func f5() {
 	var k, l, m, n, x, y int
 	c := make(chan bool, 2)
 
 	go func() {
 		k = 1
-		c <- true
+		c &lt;- true
 		l = 1
-		c <- true
+		c &lt;- true
 		m = 1
-		c <- true
+		c &lt;- true
 		n = 1
 	}()
 
 	go func() {
 		x = 1
-		<-c
+		&lt;-c
 		y = 1
 	}()
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The following orders are guaranteed:
-<ul>
-<li>
-	the execution of <code>k = 1</code> ends before
-	the execution of <code>y = 1</code>.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the execution of <code class="tmd-code-span">k = 1</code> ends before the execution of <code class="tmd-code-span">y = 1</code>.
+</div>
 </li>
-<li>
-	the execution of <code>x = 1</code> ends before
-	the execution of <code>n = 1</code>.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the execution of <code class="tmd-code-span">x = 1</code> ends before the execution of <code class="tmd-code-span">n = 1</code>.
+</div>
 </li>
 </ul>
-
-<p>
-However, the execution of <code>x = 1</code> is not guaranteed to happen before
-the execution of <code>l = 1</code> and <code>m = 1</code>,
-and the execution of <code>l = 1</code> and <code>m = 1</code>
-is not guaranteed to happen before the execution of <code>y = 1</code>.
-</p>
-
-The following is an example on channel closing.
-In this example, the execution of <code>k = 1</code>
-is guaranteed to end before the execution of <code>y = 1</code>,
-but not guaranteed to end before the execution of <code>x = 1</code>,
-<pre class="line-numbers"><code class="language-go">func f6() {
+<p></p>
+<div class="tmd-usual">
+However, the execution of <code class="tmd-code-span">x = 1</code> is not guaranteed to happen before the execution of <code class="tmd-code-span">l = 1</code> and <code class="tmd-code-span">m = 1</code>, and the execution of <code class="tmd-code-span">l = 1</code> and <code class="tmd-code-span">m = 1</code> is not guaranteed to happen before the execution of <code class="tmd-code-span">y = 1</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+The following is an example on channel closing. In this example, the execution of <code class="tmd-code-span">k = 1</code> is guaranteed to end before the execution of <code class="tmd-code-span">y = 1</code>, but not guaranteed to end before the execution of <code class="tmd-code-span">x = 1</code>,
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func f6() {
 	var k, x, y int
 	c := make(chan bool, 1)
 
 	go func() {
-		c <- true
+		c &lt;- true
 		k = 1
 		close(c)
 	}()
 
 	go func() {
-		<-c
+		&lt;-c
 		x = 1
-		<-c
+		&lt;-c
 		y = 1
 	}()
 }
 </code></pre>
-
-<!--
-The two guarantees may be not true.
-
-There are two other obvious channel related order guarantees.
-But they are not very valuable for Go programming in practice.
-<ol>
-<li>
-	The completion of the <b>n</b>th successful send on a channel happens before
-	the completion of the (<b>n+1</b>)th successful send on the channel.
-</li>
-<li>
-	The completion of the <b>n</b>th successful receive on a channel happens before
-	the completion of the (<b>n+1</b>)th successful receive on the channel.
-</li>
-</ol>
--->
-
-</div>
-
-<a class="anchor" id="mutex"></a>
-<h4>Mutex related order guarantees</h4>
-
-<div>
+<p></p>
+<p></p>
+<h4 id="mutex" class="tmd-header-4">
+Mutex related order guarantees
+</h4>
+<p></p>
+<div class="tmd-usual">
 The followings are the mutex related order guarantees in Go.
-<ol>
-<li>
-	For an addressable value <code>m</code> of type <code>Mutex</code> or <code>RWMutex</code>
-	in the <code>sync</code> standard package, the <b><i>n</i></b>th successful
-	<code>m.Unlock()</code> method call happens before the (<b><i>n+1</i></b>)th
-	<code>m.Lock()</code> method call returns.
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+For an addressable value <code class="tmd-code-span">m</code> of type <code class="tmd-code-span">Mutex</code> or <code class="tmd-code-span">RWMutex</code> in the <code class="tmd-code-span">sync</code> standard package, the <span class="tmd-bold"><span class="tmd-italic">n</span></span>th successful <code class="tmd-code-span">m.Unlock()</code> method call happens before the (<span class="tmd-bold"><span class="tmd-italic">n+1</span></span>)th <code class="tmd-code-span">m.Lock()</code> method call returns.
+</div>
 </li>
-<li>
-	For an addressable value <code>rw</code> of type <code>RWMutex</code>,
-	if its <b><i>n</i></b>th <code>rw.Lock()</code> method call has returned,
-	then its successful <b><i>n</i></b>th <code>rw.Unlock()</code> method call happens
-	before the return of any <code>rw.RLock()</code> method call which is guaranteed
-	to happen after the <b><i>n</i></b>th <code>rw.Lock()</code> method call returns.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+For an addressable value <code class="tmd-code-span">rw</code> of type <code class="tmd-code-span">RWMutex</code>, if its <span class="tmd-bold"><span class="tmd-italic">n</span></span>th <code class="tmd-code-span">rw.Lock()</code> method call has returned, then its successful <span class="tmd-bold"><span class="tmd-italic">n</span></span>th <code class="tmd-code-span">rw.Unlock()</code> method call happens before the return of any <code class="tmd-code-span">rw.RLock()</code> method call which is guaranteed to happen after the <span class="tmd-bold"><span class="tmd-italic">n</span></span>th <code class="tmd-code-span">rw.Lock()</code> method call returns.
+</div>
 </li>
-<li>
-	For an addressable value <code>rw</code> of type <code>RWMutex</code>,
-	if its <b><i>n</i></b>th <code>rw.RLock()</code> method call has returned,
-	then its <b><i>m</i></b>th successful <code>rw.RUnlock()</code> method call,
-	where <code>m &lt;= n</code>, happens before the return of any
-	<code>rw.Lock()</code> method call which is guaranteed to happen
-	after the <b><i>n</i></b>th <code>rw.RLock()</code> method call returns.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+For an addressable value <code class="tmd-code-span">rw</code> of type <code class="tmd-code-span">RWMutex</code>, if its <span class="tmd-bold"><span class="tmd-italic">n</span></span>th <code class="tmd-code-span">rw.RLock()</code> method call has returned, then its <span class="tmd-bold"><span class="tmd-italic">m</span></span>th successful <code class="tmd-code-span">rw.RUnlock()</code> method call, where <code class="tmd-code-span">m &lt;= n</code>, happens before the return of any <code class="tmd-code-span">rw.Lock()</code> method call which is guaranteed to happen after the <span class="tmd-bold"><span class="tmd-italic">n</span></span>th <code class="tmd-code-span">rw.RLock()</code> method call returns.
+</div>
 </li>
 </ol>
-
+<p></p>
+<div class="tmd-usual">
 In the following example, the following orders are guaranteed:
-<ul>
-<li>
-	the execution of <code>a = 1</code> ends before
-	the execution of <code>b = 1</code>.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the execution of <code class="tmd-code-span">a = 1</code> ends before the execution of <code class="tmd-code-span">b = 1</code>.
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the execution of <code class="tmd-code-span">m = 1</code> ends before the execution of <code class="tmd-code-span">n = 1</code>.
+</div>
 </li>
-<li>
-	the execution of <code>m = 1</code> ends before
-	the execution of <code>n = 1</code>.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the execution of <code class="tmd-code-span">x = 1</code> ends before the execution of <code class="tmd-code-span">y = 1</code>.
+</div>
 </li>
-<li>
-	the execution of <code>x = 1</code> ends before
-	the execution of <code>y = 1</code>.
+</ol>
 </li>
 </ul>
-
-<pre class="line-numbers"><code class="language-go">func fab() {
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func fab() {
 	var a, b int
 	var l sync.Mutex // or sync.RWMutex
 
@@ -550,15 +438,13 @@ func fxy() {
 	}()
 }
 </code></pre>
-
-<p>
-</p>
-
-Note, in the following code, by the official Go documentation,
-the execution of <code>p = 1</code> is not guaranteed to end before the execution of <code>q = 1</code>,
-though most compilers do make such guarantees.
-
-<pre class="line-numbers"><code class="language-go">var p, q int
+<p></p>
+<div class="tmd-usual">
+Note, in the following code, by the official Go documentation, the execution of <code class="tmd-code-span">p = 1</code> is not guaranteed to end before the execution of <code class="tmd-code-span">q = 1</code>, though most compilers do make such guarantees.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var p, q int
 func fpq() {
 	var l sync.Mutex
 	p = 1
@@ -567,68 +453,65 @@ func fpq() {
 	q = 1
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h4 class="tmd-header-4">
+Order guarantees made by <code class="tmd-code-span">sync.WaitGroup</code> values
+</h4>
+<p></p>
+<div class="tmd-usual">
+At a given time, assume the counter maintained by an addressable <code class="tmd-code-span">sync.WaitGroup</code> value <code class="tmd-code-span">wg</code> is not zero. If there is a group of <code class="tmd-code-span">wg.Add(n)</code> method calls invoked after the given time, and we can make sure that only the last returned call among the group of calls will modify the counter maintained by <code class="tmd-code-span">wg</code> to zero, then each of the group of calls is guaranteed to happen before the return of a <code class="tmd-code-span">wg.Wait</code> method call which is invoked after the given time.
+</div>
+<p></p>
+<div class="tmd-usual">
+Note, <code class="tmd-code-span">wg.Done()</code> is equivalent to <code class="tmd-code-span">wg.Add(-1)</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+Please read <a href="concurrent-synchronization-more.html#waitgroup">the explanations for the <code class="tmd-code-span">sync.WaitGroup</code> type</a> to get how to use <code class="tmd-code-span">sync.WaitGroup</code> values.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<h4 class="tmd-header-4">
+Order guarantees made by <code class="tmd-code-span">sync.Once</code> values
+</h4>
+<p></p>
+<div class="tmd-usual">
+Please read <a href="concurrent-synchronization-more.html#once">the explanations for the <code class="tmd-code-span">sync.Once</code> type</a> to get the order guarantees made by <code class="tmd-code-span">sync.Once</code> values and how to use <code class="tmd-code-span">sync.Once</code> values.
+</div>
+<p></p>
+<div class="tmd-usual">
 
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Order guarantees made by <code class="tmd-code-span">sync.Cond</code> values
+</h4>
+<p></p>
+<div class="tmd-usual">
+It is some hard to make a clear description for the order guarantees made by <code class="tmd-code-span">sync.Cond</code> values. Please read <a href="concurrent-synchronization-more.html#cond">the explanations for the <code class="tmd-code-span">sync.Cond</code> type</a> to get how to use <code class="tmd-code-span">sync.Cond</code> values.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h4>Order guarantees made by <code>sync.WaitGroup</code> values</h4>
-
-<p>
-At a given time, assume the counter maintained by
-an addressable <code>sync.WaitGroup</code> value <code>wg</code> is not zero.
-If there is a group of <code>wg.Add(n)</code> method calls invoked after the given time,
-and we can make sure that only the last returned call among the group of calls
-will modify the counter maintained by <code>wg</code> to zero,
-then each of the group of calls is guaranteed to happen before the return
-of a <code>wg.Wait</code> method call which is invoked after the given time.
-</p>
-
-<p>
-Note, <code>wg.Done()</code> is equivalent to <code>wg.Add(-1)</code>.
-</p>
-
-<p>
-Please read <a href="concurrent-synchronization-more.html#waitgroup">the explanations
-for the <code>sync.WaitGroup</code> type</a> to get how to use <code>sync.WaitGroup</code> values.
-</p>
-
-<h4>Order guarantees made by <code>sync.Once</code> values</h4>
-
-<p>
-Please read <a href="concurrent-synchronization-more.html#once">the explanations
-for the <code>sync.Once</code> type</a> to get the order guarantees
-made by <code>sync.Once</code> values and how to use <code>sync.Once</code> values.
-</p>
-
-<h4>Order guarantees made by <code>sync.Cond</code> values</h4>
-
-<p>
-It is some hard to make a clear description for
-the order guarantees made by <code>sync.Cond</code> values.
-Please read <a href="concurrent-synchronization-more.html#cond">the explanations
-for the <code>sync.Cond</code> type</a> to get how to use <code>sync.Cond</code> values.
-</p>
-
-<a class="anchor" id="atomic"></a>
-<h4>Atomic operations related order guarantees</h4>
-
-<div>
-<p>
-Since Go 1.19, the Go 1 memory model documentation formally specifies that
-all atomic operations executed in Go programs behave as though executed in some sequentially consistent order.
-If the effect of an atomic operation A is observed by atomic operation B, then A is synchronized before B.
-</p>
-
-By the descriptions, in the following code, the atomic write operation on the variable <code>b</code>
-is guaranteed to happen before the atomic read operation with result <code>1</code> on the same variable.
-Consequently, the write operation on the variable <code>a</code> is also guaranteed to happen before
-the read operation on the same variable.
-So the following program is guaranteed to print <code>2</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<h4 id="atomic" class="tmd-header-4">
+Atomic operations related order guarantees
+</h4>
+<p></p>
+<div class="tmd-usual">
+Since Go 1.19, the Go 1 memory model documentation formally specifies that all atomic operations executed in Go programs behave as though executed in some sequentially consistent order. If the effect of an atomic operation A is observed by atomic operation B, then A is synchronized before B.
+</div>
+<p></p>
+<div class="tmd-usual">
+By the descriptions, in the following code, the atomic write operation on the variable <code class="tmd-code-span">b</code> is guaranteed to happen before the atomic read operation with result <code class="tmd-code-span">1</code> on the same variable. Consequently, the write operation on the variable <code class="tmd-code-span">a</code> is also guaranteed to happen before the read operation on the same variable. So the following program is guaranteed to print <code class="tmd-code-span">2</code>.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -641,11 +524,11 @@ func main() {
 
 	go func() {
 		a = 2
-		atomic.StoreInt32(&b, 1)
+		atomic.StoreInt32(&amp;b, 1)
 	}()
 
 	for {
-		if n := atomic.LoadInt32(&b); n == 1 {
+		if n := atomic.LoadInt32(&amp;b); n == 1 {
 			// The following line always prints 2.
 			fmt.Println(a)
 			break
@@ -654,63 +537,20 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-Please read <a href="concurrent-atomic-operation.html">this article</a>
-to get how to do atomic operations.
-</p>
+<p></p>
+<div class="tmd-usual">
+Please read <a href="concurrent-atomic-operation.html">this article</a> to get how to do atomic operations.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-
-
-<a class="anchor" id="finalizer"></a>
-<h4>Finalizers related order guarantees</h4>
-
-<div>
-A call to <code>runtime.SetFinalizer(x, f)</code> happens before the finalization call <code>f(x)</code>. 
 </div>
-
-
-
-<!--
-
-ToDo: about the outcomes of data races.
-
-
-https://groups.google.com/forum/#!topic/golang-nuts/j1NcF0O6ouw
-
-https://groups.google.com/forum/#!msg/golang-nuts/mSD7u1oEhSk/NFkQTOM5AwAJ
-
-https://github.com/golang/go/issues/19182
-https://news.ycombinator.com/item?id=13686863
-For the complexity and subtlety of properly using atomic functions, atomic functions are not recommended
-to synchronize values. Mutexes are more preferred.
-Some Go team members are regretted that the atomic package is expose as a public standard package
-and think the atomic package should only be used inside standard packages and runtime code.
-
-https://github.com/golang/go/issues/5045
-https://bartoszmilewski.com/2008/12/01/c-atomics-and-memory-ordering/
-https://bartoszmilewski.com/2008/11/05/who-ordered-memory-fences-on-an-x86/
-http://preshing.com/20130922/acquire-and-release-fences/
-https://en.wikipedia.org/wiki/Memory_barrier
-https://groups.google.com/forum/#!topic/golang-nuts/AoO3aivfA_E
-https://peeterjoot.wordpress.com/2009/12/04/intel-memory-ordering-fence-instructions-and-atomic-operations/
-
-https://github.com/golang/go/issues/5045#issuecomment-292673178
-C++ atomics and memory ordering
-https://bartoszmilewski.com/2008/12/01/c-atomics-and-memory-ordering/
-Memory ordering
-https://en.wikipedia.org/wiki/Memory_ordering
-Cmd/compile: Go 1.8 regression: sync/atomic loop elided
-https://news.ycombinator.com/item?id=13686863
-
-https://groups.google.com/forum/#!msg/golang-nuts/AoO3aivfA_E/zFjhu8XvngMJ
-We generally don’t want sync/atomic to be used at all
-Experience has shown us again and again that
-very very few people are capable of writing correct code
-that uses atomic operations…If we had thought of internal packages
-when we added the sync/atomic package, perhaps we would have used that.
-Now we can’t remove the package because of the Go 1 guarantee.
-
-https://groups.google.com/forum/#!topic/golang-nuts/AoO3aivfA_E
--->
+<p></p>
+<h4 id="finalizer" class="tmd-header-4">
+Finalizers related order guarantees
+</h4>
+<p></p>
+<div class="tmd-usual">
+A call to <code class="tmd-code-span">runtime.SetFinalizer(x, f)</code> happens before the finalization call <code class="tmd-code-span">f(x)</code>.
+</div>
+<p></p>

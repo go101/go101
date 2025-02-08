@@ -1,79 +1,55 @@
-﻿<h1>Goroutines, Deferred Function Calls and Panic/Recover</h1>
-
-<p>
-This article will introduce goroutines and deferred function calls.
-Goroutine and deferred function call are two unique features in Go.
-This article also explains panic and recover mechanism.
-Not all knowledge relating to these features is covered in this
-article, more will be introduced in future articles.
-</p>
-
-<a class="anchor" id="goroutine"></a>
-<h3>Goroutines</h3>
-
-<div>
-<p>
-Modern CPUs often have multiple cores, and some CPU cores support hyper-threading.
-In other words, modern CPUs can process multiple instruction pipelines simultaneously.
-To fully use the power of modern CPUs,
-we need to do concurrent programming in coding our programs.
-</p>
-
-<p>
-Concurrent computing is a form of computing in which
-several computations are executed during overlapping time periods.
-The following picture depicts two concurrent computing cases.
-In the picture, A and B represent two separate computations.
-The second case is also called parallel computing,
-which is special concurrent computing.
-In the first case, A and B are only in parallel during a small piece of time.
-</p>
-
-<div class="text-center">
-<img src="res/concurrent-vs-parallel.png" alt="concurrent and parallel"></img>
+<h1 class="tmd-header-1">
+Goroutines, Deferred Function Calls and Panic/Recover
+</h1>
+<p></p>
+<div class="tmd-usual">
+This article will introduce goroutines and deferred function calls. Goroutine and deferred function call are two unique features in Go. This article also explains panic and recover mechanism. Not all knowledge relating to these features is covered in this article, more will be introduced in future articles.
 </div>
+<p></p>
+<h3 id="goroutine" class="tmd-header-3">
+Goroutines
+</h3>
+<p></p>
+<div class="tmd-usual">
+Modern CPUs often have multiple cores, and some CPU cores support hyper-threading. In other words, modern CPUs can process multiple instruction pipelines simultaneously. To fully use the power of modern CPUs, we need to do concurrent programming in coding our programs.
+</div>
+<p></p>
+<div class="tmd-usual">
+Concurrent computing is a form of computing in which several computations are executed during overlapping time periods. The following picture depicts two concurrent computing cases. In the picture, A and B represent two separate computations. The second case is also called parallel computing, which is special concurrent computing. In the first case, A and B are only in parallel during a small piece of time.
+</div>
+<p></p>
+<div class="tmd-base tmd-align-center">
+<div class="tmd-usual">
+<img src="res/concurrent-vs-parallel.png" class="tmd-media"/>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
+Concurrent computing may happen in a program, a computer, or a network. In Go 101, we only talk about program-scope concurrent computing. Goroutine is the Go way to create concurrent computations in Go programming.
+</div>
+<p></p>
+<div class="tmd-usual">
+Goroutines are also often called green threads. Green threads are maintained and scheduled by the language runtime instead of the operating systems. The cost of memory consumption and context switching, of a goroutine is much lesser than an OS thread. So, it is not a problem for a Go program to maintain tens of thousands goroutines at the same time, as long as the system memory is sufficient.
+</div>
+<p></p>
+<div class="tmd-usual">
+Go doesn't support the creation of system threads in user code. So, using goroutines is the only way to do (program scope) concurrent programming in Go.
+</div>
+<p></p>
+<div class="tmd-usual">
+Each Go program starts with only one goroutine, we call it the main goroutine. A goroutine can create new goroutines. It is super easy to create a new goroutine in Go, just use the keyword <code class="tmd-code-span">go</code> followed by a function call. The function call will then be executed in a newly created goroutine. The newly created goroutine will exit alongside the exit of the called function.
+</div>
+<p></p>
+<div class="tmd-usual">
+All the result values of a goroutine function call (if the called function returns values) must be discarded in the function call statement. The following is an example which creates two new goroutines in the main goroutine. In the example, <code class="tmd-code-span">time.Duration</code> is a custom type defined in the <code class="tmd-code-span">time</code> standard package. Its underlying type is the built-in type <code class="tmd-code-span">int64</code>. Underlying types will be explained in <a href="type-system-overview.html#underlying-type">the next article</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Concurrent computing may happen in a program, a computer, or a network.
-In Go 101, we only talk about program-scope concurrent computing.
-Goroutine is the Go way to create concurrent computations in Go programming.
-</p>
-
-<p>
-Goroutines are also often called green threads.
-Green threads are maintained and scheduled by
-the language runtime instead of the operating systems.
-The cost of memory consumption and context switching,
-of a goroutine is much lesser than an OS thread.
-So, it is not a problem for a Go program to maintain tens of thousands
-goroutines at the same time, as long as the system memory is sufficient.
-</p>
-
-<p>
-Go doesn't support the creation of system threads in user code.
-So, using goroutines is the only way to do (program scope) concurrent programming in Go.
-</p>
-
-<p>
-Each Go program starts with only one goroutine, we call it the main goroutine.
-A goroutine can create new goroutines.
-It is super easy to create a new goroutine in Go,
-just use the keyword <code>go</code> followed by a function call.
-The function call will then be executed in a newly created goroutine.
-The newly created goroutine will exit alongside the exit of the called function.
-</p>
-
-All the result values of a goroutine function call
-(if the called function returns values)
-must be discarded in the function call statement.
-The following is an example which creates two new goroutines
-in the main goroutine.
-In the example, <code>time.Duration</code> is a custom type defined
-in the <code>time</code> standard package.
-Its underlying type is the built-in type <code>int64</code>.
-Underlying types will be explained in <a href="type-system-overview.html#underlying-type">the next article</a>.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"log"
@@ -82,7 +58,7 @@ import (
 )
 
 func SayGreetings(greeting string, times int) {
-	for i := 0; i < times; i++ {
+	for i := 0; i &lt; times; i++ {
 		log.Println(greeting)
 		d := time.Second * time.Duration(rand.Intn(5)) / 2
 		time.Sleep(d) // sleep for 0 to 2.5 seconds
@@ -97,120 +73,111 @@ func main() {
 	time.Sleep(2 * time.Second)
 }
 </code></pre>
-
-Quite easy. Right? We do concurrent programming now!
-The above program may have three user-created goroutines running
-simultaneously at its peak during run time.
-Let's run it. One possible output result:
-
-<pre class="output"><code>hi!
+<p></p>
+<div class="tmd-usual">
+Quite easy. Right? We do concurrent programming now! The above program may have three user-created goroutines running simultaneously at its peak during run time. Let's run it. One possible output result:
+</div>
+<p></p>
+<pre class="tmd-code output">
+hi!
 hello!
 hello!
 hello!
 hello!
 hi!
-</code></pre>
-
-<p>
-</p>
-
-<p>
-When the main goroutine exits, the whole program also exits,
-even if there are still some other goroutines which have not exited yet.
-</p>
-
-<p>
-Unlike previous articles, this program uses the <code>Println</code>
-function in the <code>log</code> standard package instead of the
-corresponding function in the <code>fmt</code> standard package.
-The reason is the print functions in the <code>log</code> standard
-package are synchronized (the next section will explain what synchronizations are),
-so the texts printed by the two goroutines
-will not be messed up in one line (though the chance of the printed texts
-being messed up by using the print functions in the <code>fmt</code>
-standard package is very small for this specific program).
-</p>
+</pre>
+<p></p>
+<div class="tmd-usual">
+When the main goroutine exits, the whole program also exits, even if there are still some other goroutines which have not exited yet.
+</div>
+<p></p>
+<div class="tmd-usual">
+Unlike previous articles, this program uses the <code class="tmd-code-span">Println</code> function in the <code class="tmd-code-span">log</code> standard package instead of the corresponding function in the <code class="tmd-code-span">fmt</code> standard package. The reason is the print functions in the <code class="tmd-code-span">log</code> standard package are synchronized (the next section will explain what synchronizations are), so the texts printed by the two goroutines will not be messed up in one line (though the chance of the printed texts being messed up by using the print functions in the <code class="tmd-code-span">fmt</code> standard package is very small for this specific program).
+</div>
+<p></p>
+<h3 id="synchronization" class="tmd-header-3">
+Concurrency Synchronization
+</h3>
+<p></p>
+<div class="tmd-usual">
+Concurrent computations may share resources, generally memory resource. The following are some circumstances that may occur during concurrent computing:
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+In the same period that one computation is writing data to a memory segment, another computation is reading data from the same memory segment. Then the integrity of the data read by the other computation might be not preserved.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+In the same period that one computation is writing data to a memory segment, another computation is also writing data to the same memory segment. Then the integrity of the data stored at the memory segment might be not preserved.
+</div>
+</li>
+</ul>
+<p></p>
+<div class="tmd-usual">
+These circumstances are called data races. One of the duties in concurrent programming is to control resource sharing among concurrent computations, so that data races will never happen. The ways to implement this duty are called concurrency synchronizations, or data synchronizations, which will be introduced one by one in later Go 101 articles.
+</div>
+<p></p>
+<div class="tmd-usual">
+Other duties in concurrent programming include
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+determine how many computations are needed.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+determine when to start, block, unblock and end a computation.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+determine how to distribute workload among concurrent computations.
+</div>
+</li>
+</ul>
+<p></p>
+<div class="tmd-usual">
+The program shown in the last section is not perfect. The two new goroutines are intended to print ten greetings each. However, the main goroutine will exit in two seconds, so many greetings don't have a chance to get printed. How to let the main goroutine know when the two new goroutines have both finished their tasks? We must use something called concurrency synchronization techniques.
+</div>
+<p></p>
+<div class="tmd-usual">
+Go supports several <a href="concurrent-synchronization-overview.html">concurrency synchronization techniques</a>. Among them, <a href="channel.html">the channel technique</a> is the most unique and popularly used one. However, for simplicity, here we will use another technique, the <code class="tmd-code-span">WaitGroup</code> type in the <code class="tmd-code-span">sync</code> standard package, to synchronize the executions between the two new goroutines and the main goroutine.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="synchronization"></a>
-<h3>Concurrency Synchronization</h3>
-
-<div>
-
-Concurrent computations may share resources, generally memory resource.
-The following are some circumstances that may occur during concurrent computing:
-<ul>
-<li>
-	In the same period that one computation is writing data to a memory segment,
-	another computation is reading data from the same memory segment.
-	Then the integrity of the data read by the other computation might be not preserved.
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">WaitGroup</code> type has three methods (special functions, will be explained later): <code class="tmd-code-span">Add</code>, <code class="tmd-code-span">Done</code> and <code class="tmd-code-span">Wait</code>. This type will be explained in detail later in another article. Here we can simply think
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the <code class="tmd-code-span">Add</code> method is used to register the number of new tasks.
+</div>
 </li>
-<li>
-	In the same period that one computation is writing data to a memory segment,
-	another computation is also writing data to the same memory segment.
-	Then the integrity of the data stored at the memory segment might be not preserved.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the <code class="tmd-code-span">Done</code> method is used to notify that a task is finished.
+</div>
 </li>
-</ul>
-
-<p>
-These circumstances are called data races. One of the duties in concurrent
-programming is to control resource sharing among concurrent computations,
-so that data races will never happen.
-The ways to implement this duty are called concurrency synchronizations,
-or data synchronizations, which will be introduced one by one in later Go 101 articles.
-</p>
-
-Other duties in concurrent programming include
-<ul>
-<li>
-	determine how many computations are needed.
-</li>
-<li>
-	determine when to start, block, unblock and end a computation.
-</li>
-<li>
-	determine how to distribute workload among concurrent computations.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+and the <code class="tmd-code-span">Wait</code> method makes the caller goroutine become blocking until all registered tasks are finished.
+</div>
 </li>
 </ul>
-
-<p>
-The program shown in the last section is not perfect.
-The two new goroutines are intended to print ten greetings each.
-However, the main goroutine will exit in two seconds,
-so many greetings don't have a chance to get printed.
-How to let the main goroutine know when the two new goroutines
-have both finished their tasks?
-We must use something called concurrency synchronization techniques.
-</p>
-
-<p>
-Go supports several
-<a href="concurrent-synchronization-overview.html">concurrency synchronization techniques</a>.
-Among them, <a href="channel.html">the channel technique</a> is the most unique and popularly used one.
-However, for simplicity, here we will use another technique,
-the <code>WaitGroup</code> type in the <code>sync</code> standard package,
-to synchronize the executions between the two new goroutines and the main goroutine.
-</p>
-
-The <code>WaitGroup</code> type has three methods (special functions, will be explained later):
-<code>Add</code>, <code>Done</code> and <code>Wait</code>.
-This type will be explained in detail later in another article.
-Here we can simply think
-<ul>
-<li>
-	the <code>Add</code> method is used to register the number of new tasks.
-</li>
-<li>
-	the <code>Done</code> method is used to notify that a task is finished.
-</li>
-<li>
-	and the <code>Wait</code> method makes the caller goroutine become blocking until all registered tasks are finished.
-</li>
-</ul>
-
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"log"
@@ -222,13 +189,13 @@ import (
 var wg sync.WaitGroup
 
 func SayGreetings(greeting string, times int) {
-	for i := 0; i < times; i++ {
+	for i := 0; i &lt; times; i++ {
 		log.Println(greeting)
 		d := time.Second * time.Duration(rand.Intn(5)) / 2
 		time.Sleep(d)
 	}
 	// Notify a task is finished.
-	wg.Done() // <=> wg.Add(-1)
+	wg.Done() // &lt;=&gt; wg.Add(-1)
 }
 
 func main() {
@@ -240,59 +207,46 @@ func main() {
 	wg.Wait() // block until all tasks are finished.
 }
 </code></pre>
-
-<p>
-Run it, we can find that, before the program exits,
-each of the two new goroutines prints ten greetings.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Run it, we can find that, before the program exits, each of the two new goroutines prints ten greetings.
 </div>
-
-<a class="anchor" id="states-of-goroutine"></a>
-<h3>Goroutine States</h3>
-
-<div>
-<p>
-The last example shows that a live goroutine may stay in (and switch between)
-two states, <b>running</b> and <b>blocking</b>.
-In that example, the main goroutine enters the blocking state when the
-<code>wg.Wait</code> method is called, and enter running state again
-when the other two goroutines both finish their respective tasks.
-</p>
-
-<p>
+<p></p>
+<h3 id="states-of-goroutine" class="tmd-header-3">
+Goroutine States
+</h3>
+<p></p>
+<div class="tmd-usual">
+The last example shows that a live goroutine may stay in (and switch between) two states, <span class="tmd-bold">running</span> and <span class="tmd-bold">blocking</span>. In that example, the main goroutine enters the blocking state when the <code class="tmd-code-span">wg.Wait</code> method is called, and enter running state again when the other two goroutines both finish their respective tasks.
+</div>
+<p></p>
+<div class="tmd-usual">
 The following picture depicts a possible lifecycle of a goroutine.
-</p>
-
-<div class="text-center">
-<img src="res/goroutine-states.png" alt="goroutine states"></img>
 </div>
-
-<p>
-Note, a goroutine is still considered to be 'running' if it is asleep (after calling <code>time.Sleep</code> function)
-or awaiting the response of a system call or a network connection.
-</p>
-
-<p>
-When a new goroutine is created, it will enter the 'running' state automatically.
-Goroutines can only exit from running state, and never from blocking state.
-If, for any reason, a goroutine stays in blocking state forever,
-then it will never exit.
-Such cases, except some rare ones, should be avoided in concurrent programming.
-</p>
-
-<p>
-A blocking goroutine can only be unblocked by
-an operation made in another goroutine.
-If all goroutines in a Go program are in blocking state,
-then all of them will stay in blocking state forever.
-This can be viewed as an overall deadlock.
-When this happens in a program, the standard Go runtime
-will try to crash the program.
-</p>
-
+<p></p>
+<div class="tmd-base tmd-align-center">
+<div class="tmd-usual">
+<img src="res/goroutine-states.png" class="tmd-media"/>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
+Note, a goroutine is still considered to be 'running' if it is asleep (after calling <code class="tmd-code-span">time.Sleep</code> function) or awaiting the response of a system call or a network connection.
+</div>
+<p></p>
+<div class="tmd-usual">
+When a new goroutine is created, it will enter the 'running' state automatically. Goroutines can only exit from running state, and never from blocking state. If, for any reason, a goroutine stays in blocking state forever, then it will never exit. Such cases, except some rare ones, should be avoided in concurrent programming.
+</div>
+<p></p>
+<div class="tmd-usual">
+A blocking goroutine can only be unblocked by an operation made in another goroutine. If all goroutines in a Go program are in blocking state, then all of them will stay in blocking state forever. This can be viewed as an overall deadlock. When this happens in a program, the standard Go runtime will try to crash the program.
+</div>
+<p></p>
+<div class="tmd-usual">
 The following program will crash, after two seconds:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"sync"
@@ -310,114 +264,92 @@ func main() {
 	wg.Wait()
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The output:
-<pre class="output"><code>fatal error: all goroutines are asleep - deadlock!
+</div>
+<pre class="tmd-code output">
+fatal error: all goroutines are asleep - deadlock!
 
 ...
-</code></pre>
-
-<p>
+</pre>
+<p></p>
+<div class="tmd-usual">
 Later, we will learn more operations which will make goroutines enter blocking state.
-</p>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Goroutine Schedule
+</h3>
+<p></p>
+<div class="tmd-usual">
+Not all goroutines in running state are being executed at a given time. At any given time, the maximum number of goroutines being executed will not exceed the number of logical CPUs available for the current program. We can call the <a href="https://golang.org/pkg/runtime/#NumCPU"><code class="tmd-code-span">runtime.NumCPU</code></a> function to get the number of logical CPUs available for the current program. Each logical CPU can only execute one goroutine at any given time. Go runtime must frequently switch execution contexts between goroutines to let each running goroutine have a chance to execute. This is similar to how operating systems switch execution contexts between OS threads.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h3>Goroutine Schedule</h3>
-
-<p>
-Not all goroutines in running state are being executed at a given time.
-At any given time, the maximum number of goroutines being executed will
-not exceed the number of logical CPUs available for the current program.
-We can call the <a href="https://golang.org/pkg/runtime/#NumCPU"><code>runtime.NumCPU</code></a>
-function to get the number of logical CPUs available for the current program.
-Each logical CPU can only execute one goroutine at any given time.
-Go runtime must frequently switch execution contexts between goroutines
-to let each running goroutine have a chance to execute.
-This is similar to how operating systems switch execution contexts between OS threads.
-</p>
-
-<p>
-The following picture depicts a more detailed possible lifecycle for a goroutine.
-In the picture, the running state is divided into several more sub-states.
-A goroutine in the queuing sub-state is waiting to be executed.
-A goroutine in the executing sub-state may enter the queuing sub-state
-again when it has been executed for a while (a very small piece of time).
-</p>
-
-<div class="text-center">
-<img src="res/goroutine-schedule.png" alt="goroutine sub-states"></img>
+<p></p>
+<div class="tmd-usual">
+The following picture depicts a more detailed possible lifecycle for a goroutine. In the picture, the running state is divided into several more sub-states. A goroutine in the queuing sub-state is waiting to be executed. A goroutine in the executing sub-state may enter the queuing sub-state again when it has been executed for a while (a very small piece of time).
 </div>
+<p></p>
+<div class="tmd-base tmd-align-center">
+<div class="tmd-usual">
+<img src="res/goroutine-schedule.png" class="tmd-media"/>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note, for simplicity, the sub-states shown in the above picture will be not mentioned in other articles in Go 101. And again, in Go 101, the sleeping and system calling sub-states are not viewed as sub-states of the blocking state.
+</div>
+<p></p>
+<div class="tmd-usual">
+The standard Go runtime adopts the <a href="https://docs.google.com/document/d/1TTj4T2JO42uD5ID9e89oa0sLKhJYD0Y_kqxDv3I3XMw">M-P-G model</a> to do the goroutine schedule job, where <span class="tmd-bold">M</span> represents OS threads, <span class="tmd-bold">P</span> represents logical/virtual processors (not logical CPUs) and <span class="tmd-bold">G</span> represents goroutines. Most schedule work is made by logical processors (<span class="tmd-bold">P</span>s), which act as brokers by attaching goroutines (<span class="tmd-bold">G</span>s) to OS threads (<span class="tmd-bold">M</span>s). Each OS thread can only be attached to at most one goroutine at any given time, and each goroutine can only be attached to at most one OS thread at any given time. A goroutine can only get executed when it is attached to an OS thread. A goroutine which has been executed for a while will try to detach itself from the corresponding OS thread, so that other running goroutines can have a chance to get attached and executed.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Please note, for simplicity, the sub-states shown in the above
-picture will be not mentioned in other articles in Go 101.
-And again, in Go 101, the sleeping and system calling sub-states are not viewed
-as sub-states of the blocking state.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+At runtime. we can call the <a href="https://golang.org/pkg/runtime/#GOMAXPROCS"><code class="tmd-code-span">runtime.GOMAXPROCS</code></a> function to get and set the number of logical processors (<span class="tmd-bold">P</span>s). For the standard Go runtime, before Go Toolchain 1.5, the default initial value of this number is <code class="tmd-code-span">1</code>, but since Go Toolchain 1.5, the default initial value of this number is equal to the number of logical CPUs available for the current running program. The default initial value (the number of logical CPUs) is the best choice for most programs. But for some file IO heavy programs, a <code class="tmd-code-span">GOMAXPROCS</code> value larger than <code class="tmd-code-span">runtime.NumCPU()</code> may be helpful.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The standard Go runtime adopts the
-<a href="https://docs.google.com/document/d/1TTj4T2JO42uD5ID9e89oa0sLKhJYD0Y_kqxDv3I3XMw">M-P-G model</a>
-to do the goroutine schedule job,
-where <b>M</b> represents OS threads,
-<b>P</b> represents logical/virtual processors (not logical CPUs)
-and <b>G</b> represents goroutines.
-Most schedule work is made by logical processors (<b>P</b>s),
-which act as brokers by attaching goroutines (<b>G</b>s) to OS threads (<b>M</b>s).
-Each OS thread can only be attached to at most one goroutine at any given time,
-and each goroutine can only be attached to at most one OS thread at any given time.
-A goroutine can only get executed when it is attached to an OS thread.
-A goroutine which has been executed for a while will try to detach itself from the corresponding OS thread,
-so that other running goroutines can have a chance to get attached and executed.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+The default initial value of <code class="tmd-code-span">runtime.GOMAXPROCS</code> can also be set through the <code class="tmd-code-span">GOMAXPROCS</code> environment variable.
+</div>
+<p></p>
+<div class="tmd-usual">
+At any time, the number of goroutines in the executing sub-state is no more than the smaller one of <code class="tmd-code-span">runtime.NumCPU</code> and <code class="tmd-code-span">runtime.GOMAXPROCS</code>.
+</div>
+<p></p>
+<h3 id="defer" class="tmd-header-3">
+Deferred Function Calls
+</h3>
+<p></p>
+<div class="tmd-usual">
+A deferred function call is a function call which follows a <code class="tmd-code-span">defer</code> keyword. The <code class="tmd-code-span">defer</code> keyword and the deferred function call together form a defer statement. Like goroutine function calls, all the results of the function call (if the called function has return results) must be discarded in the function call statement.
+</div>
+<p></p>
+<div class="tmd-usual">
+When a defer statement is executed, the deferred function call is not executed immediately. Instead, it is pushed into a defer-call stack maintained by its caller goroutine. After a function call <code class="tmd-code-span">fc(...)</code> returns (but has not fully exited yet) and enters its <a href="function-declarations-and-calls.html#exiting-phase">exiting phase</a>, all the deferred function calls pushed into the defer-call stack during executing the function call will be removed from the defer-call stack and executed, in first-in, last-out order, that is, the reverse of the order in which they were pushed into the defer-call stack. Once all these deferred calls are executed, the function call <code class="tmd-code-span">fc(...)</code> fully exits.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-At runtime. we can call the <a href="https://golang.org/pkg/runtime/#GOMAXPROCS"><code>runtime.GOMAXPROCS</code></a>
-function to get and set the number of logical processors (<b>P</b>s).
-For the standard Go runtime, before Go Toolchain 1.5, the default initial value of this number is <code>1</code>,
-but since Go Toolchain 1.5, the default initial value of this number is equal to
-the number of logical CPUs available for the current running program.
-The default initial value (the number of logical CPUs) is the best choice for most programs.
-But for some file IO heavy programs, a <code>GOMAXPROCS</code> value larger than <code>runtime.NumCPU()</code> may be helpful.
-</p>
-
-<p>
-The default initial value of <code>runtime.GOMAXPROCS</code> can also be set through the <code>GOMAXPROCS</code> environment variable.
-</p>
-
-<p>
-At any time, the number of goroutines in the executing sub-state is no more than
-the smaller one of <code>runtime.NumCPU</code> and <code>runtime.GOMAXPROCS</code>.
-</p>
-
-<a class="anchor" id="defer"></a>
-<h3>Deferred Function Calls</h3>
-
-<div>
-<p>
-A deferred function call is a function call which follows a <code>defer</code> keyword.
-The <code>defer</code> keyword and the deferred function call together form a defer statement. 
-Like goroutine function calls,
-all the results of the function call (if the called function has return results)
-must be discarded in the function call statement.
-</p>
-
-<p>
-When a defer statement is executed, the deferred function call is not executed immediately.
-Instead, it is pushed into a defer-call stack maintained by its caller goroutine.
-After a function call <code>fc(...)</code> returns (but has not fully exited yet)
-and enters its <a href="function-declarations-and-calls.html#exiting-phase">exiting phase</a>,
-all the deferred function calls pushed into the defer-call stack
-during executing the function call will be removed from the defer-call stack and executed,
-in first-in, last-out order, that is, the reverse of the order
-in which they were pushed into the defer-call stack.
-Once all these deferred calls are executed, the function call <code>fc(...)</code> fully exits.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 Here is a simple example to show how to use deferred function calls.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -427,20 +359,21 @@ func main() {
 	fmt.Println("The first line.")
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The output:
-<pre class="output"><code>The first line.
+</div>
+<pre class="tmd-code output">
+The first line.
 The second line.
 The third line.
-</code></pre>
-
-<p>
-</p>
-
-Here is another example which is a little more complex.
-The example will print <code>0</code> to <code>9</code>,
-each per line, by their natural order.
-<pre class="line-numbers"><code class="language-go">package main
+</pre>
+<p></p>
+<div class="tmd-usual">
+Here is another example which is a little more complex. The example will print <code class="tmd-code-span">0</code> to <code class="tmd-code-span">9</code>, each per line, by their natural order.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -466,17 +399,16 @@ func main() {
 	defer fmt.Println("not reachable")
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="defer-modify-results"></a>
-<h3>Deferred Function Calls Can Modify the Named Return Results of Nesting Functions</h3>
-
-<div>
+<p></p>
+<h3 id="defer-modify-results" class="tmd-header-3">
+Deferred Function Calls Can Modify the Named Return Results of Nesting Functions
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example,
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -485,36 +417,31 @@ func Triple(n int) (r int) {
 		r += n // modify the return value
 	}()
 
-	return n + n // <=> r = n + n; return
+	return n + n // &lt;=&gt; r = n + n; return
 }
 
 func main() {
 	fmt.Println(Triple(5)) // 15
 }
 </code></pre>
+<p></p>
+<h3 id="argument-evaluation-moment" class="tmd-header-3">
+The Evaluation Moment of the Arguments of Deferred Function Calls
+</h3>
+<p></p>
+<div class="tmd-usual">
+The arguments of a deferred function call are all evaluated at the moment when the corresponding defer statement is executed (a.k.a. when the deferred call is pushed into the defer-call stack). The evaluation results are used when the deferred call is executed later during the existing phase of the surrounding call (the caller of the deferred call).
 </div>
-
-<a class="anchor" id="argument-evaluation-moment"></a>
-<h3>The Evaluation Moment of the Arguments of Deferred Function Calls</h3>
-
-<div>
-
-<p>
-The arguments of a deferred function call
-are all evaluated at the moment when the corresponding defer statement is executed
-(a.k.a. when the deferred call is pushed into the defer-call stack).
-The evaluation results are used when the deferred call is executed later during
-the existing phase of the surrounding call (the caller of the deferred call).
-</p>
-
-<p>
-The expressions within the body of an anonymous function call,
-whether the call is a general call or a deferred/goroutine call,
-are evaluated during the anonymous function call is executed.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+The expressions within the body of an anonymous function call, whether the call is a general call or a deferred/goroutine call, are evaluated during the anonymous function call is executed.
+</div>
+<p></p>
+<div class="tmd-usual">
 Here is an example.
-<pre class="line-numbers"><code class="language-go">// eval-moment.go
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// eval-moment.go
 package main
 
 import "fmt"
@@ -522,7 +449,7 @@ import "fmt"
 func main() {
 	func() {
 		var x = 0
-		for i := 0; i < 3; i++ {
+		for i := 0; i &lt; 3; i++ {
 			defer fmt.Println("a:", i + x)
 		}
 		x = 10
@@ -530,7 +457,7 @@ func main() {
 	fmt.Println()
 	func() {
 		var x = 0
-		for i := 0; i < 3; i++ {
+		for i := 0; i &lt; 3; i++ {
 			defer func() {
 				fmt.Println("b:", i + x)
 			}()
@@ -539,12 +466,16 @@ func main() {
 	}()
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
 
-Use different Go Toolchain versions to run the code
-(<a href="https://go101.org/apps-and-libs/gotv.html">gotv</a> is a tool used to
-manage and use multiple coexisting installations of official Go toolchain versions).
-The outputs:
-<pre class="output"><code>$ gotv 1.21. run eval-moment.go
+</div>
+<p></p>
+<div class="tmd-usual">
+Use different Go Toolchain versions to run the code (<a href="https://go101.org/apps-and-libs/gotv.html">gotv</a> is a tool used to manage and use multiple coexisting installations of official Go toolchain versions). The outputs:
+</div>
+<pre class="tmd-code output">
+$ gotv 1.21. run eval-moment.go
 [Run]: $HOME/.cache/gotv/tag_go1.21.8/bin/go run eval-moment.go
 a: 2
 a: 1
@@ -562,43 +493,23 @@ a: 0
 b: 12
 b: 11
 b: 10
-</code></pre>
+</pre>
+<p></p>
+<div class="tmd-usual">
+Please note the behavior change caused by <a href="control-flows.html#for-semantic-change">the semantic change (of <code class="tmd-code-span">for</code> loop blocks) made in Go 1.22</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Please note the behavior change caused by <a href="control-flows.html#for-semantic-change">the semantic change (of <code>for</code> loop blocks) made in Go 1.22</a>.
-</p>
-
-<!--
-To make the second loop print the same result as the first one,
-we can modify the second loop as
-
-<pre class="line-numbers"><code class="language-go">		for i := 0; i < 3; i++ {
-			defer func(i int) {
-				// The "i" is the input parameter.
-				fmt.Println("b:", i)
-			}(i)
-		}
-</code></pre>
-
-or
-
-<pre class="line-numbers"><code class="language-go">		for i := 0; i < 3; i++ {
-			i := i // <=> var i = i
-			defer func() {
-				// The "i" is not the loop variable.
-				fmt.Println("b:", i)
-			}()
-		}
-</code></pre>
-
-<p>
-</p>
--->
-
-The same argument valuation moment rules also apply to goroutine function calls.
-The following program will output <code>123 789</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+The same argument valuation moment rules also apply to goroutine function calls. The following program will output <code class="tmd-code-span">123 789</code>.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "time"
@@ -615,90 +526,81 @@ func main() {
 	time.Sleep(2 * time.Second)
 }
 </code></pre>
-
-<p>
-By the way, it is not a good idea to do synchronizations by using <code>time.Sleep</code> calls in formal projects.
-If the program runs on a computer which CPUs are occupied by many other
-programs running on the computer, the newly created goroutine may never
-get a chance to execute before the program exits.
-We should use the concurrency synchronization techniques introduced in the article
-<a href="concurrent-synchronization-overview.html">concurrency synchronization overview</a>
-to do synchronizations in formal projects.
-</p>
+<p></p>
+<div class="tmd-usual">
+By the way, it is not a good idea to do synchronizations by using <code class="tmd-code-span">time.Sleep</code> calls in formal projects. If the program runs on a computer which CPUs are occupied by many other programs running on the computer, the newly created goroutine may never get a chance to execute before the program exits. We should use the concurrency synchronization techniques introduced in the article <a href="concurrent-synchronization-overview.html">concurrency synchronization overview</a> to do synchronizations in formal projects.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<h3 class="tmd-header-3">
+The Necessity of the Deferred Function Feature
+</h3>
+<p></p>
+<div class="tmd-usual">
+In the above examples, the deferred function calls are not absolutely necessary. However, the deferred function call feature is a necessary feature for the panic and recover mechanism which will be introduced below.
+</div>
+<p></p>
+<div class="tmd-usual">
+Deferred function calls can also help us write cleaner and more robust code. We can read more code examples that make use of deferred function calls and learn more details on deferred function calls in the article <a href="defer-more.html">more about deferred functions</a> later. For now, we will explore the importance of deferred functions for panic and recovery.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>The Necessity of the Deferred Function Feature</h3>
-
-<p>
-In the above examples, the deferred function calls are not absolutely necessary.
-However, the deferred function call feature is a necessary feature for the
-panic and recover mechanism which will be introduced below.
-</p>
-
-<p>
-Deferred function calls can also help us write cleaner and more robust code.
-We can read more code examples that make use of deferred function calls
-and learn more details on deferred function calls in the article
-<a href="defer-more.html">more about deferred functions</a> later. For now,
-we will explore the importance of deferred functions for panic and recovery.
-</p>
-
-
-<a class="anchor" id="panic-recover"></a>
-<h3>Panic and Recover</h3>
-
-<p>
-Go doesn't support exception throwing and catching,
-instead explicit error handling is preferred to use in Go programming.
-In fact, Go supports an exception throw/catch alike mechanism.
-The mechanism is called panic/recover.
-</p>
-
-<p>
-We can call the built-in <code>panic</code> function to create a panic
-to make the current goroutine enter panicking status.
-</p>
-
-<p>
-Panicking is another way to make a function return.
-Once a panic occurs in a function call, the function call returns immediately
-and enters its exiting phase.
-</p>
-
-<p>
-By calling the built-in <code>recover</code> function in a deferred call,
-an alive panic in the current goroutine can be removed
-so that the current goroutine will enter normal calm status again.
-</p>
-
-<p>
+</div>
+<p></p>
+<h3 id="panic-recover" class="tmd-header-3">
+Panic and Recover
+</h3>
+<p></p>
+<div class="tmd-usual">
+Go doesn't support exception throwing and catching, instead explicit error handling is preferred to use in Go programming. In fact, Go supports an exception throw/catch alike mechanism. The mechanism is called panic/recover.
+</div>
+<p></p>
+<div class="tmd-usual">
+We can call the built-in <code class="tmd-code-span">panic</code> function to create a panic to make the current goroutine enter panicking status.
+</div>
+<p></p>
+<div class="tmd-usual">
+Panicking is another way to make a function return. Once a panic occurs in a function call, the function call returns immediately and enters its exiting phase.
+</div>
+<p></p>
+<div class="tmd-usual">
+By calling the built-in <code class="tmd-code-span">recover</code> function in a deferred call, an alive panic in the current goroutine can be removed so that the current goroutine will enter normal calm status again.
+</div>
+<p></p>
+<div class="tmd-usual">
 If a panicking goroutine exits without being recovered, it will make the whole program crash.
-</p>
-
-The built-in <code>panic</code> and <code>recover</code> functions are
-declared as
-<pre class="line-numbers"><code class="language-go">func panic(v interface{})
+</div>
+<p></p>
+<div class="tmd-usual">
+The built-in <code class="tmd-code-span">panic</code> and <code class="tmd-code-span">recover</code> functions are declared as
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func panic(v interface{})
 func recover() interface{}
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+Interface types and values will be explained in the article <a href="interface.html">interfaces in Go</a> later. Here, we just need to know that the blank interface type <code class="tmd-code-span">interface{}</code> can be viewed as the <code class="tmd-code-span">any</code> type or the <code class="tmd-code-span">Object</code> type in many other languages. In other words, we can pass a value of any type to a <code class="tmd-code-span">panic</code> function call.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Interface types and values will be explained in the article
-<a href="interface.html">interfaces in Go</a> later.
-Here, we just need to know that the blank interface type
-<code>interface{}</code> can be viewed as the <code>any</code> type
-or the <code>Object</code> type in many other languages. In other words,
-we can pass a value of any type to a <code>panic</code> function call.
-</p>
-
-<p>
-The value returned by a <code>recover</code> function call is the value
-a <code>panic</code> function call consumed.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
+The value returned by a <code class="tmd-code-span">recover</code> function call is the value a <code class="tmd-code-span">panic</code> function call consumed.
+</div>
+<p></p>
+<div class="tmd-usual">
 The example below shows how to create a panic and how to recover from it.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -715,21 +617,23 @@ func main() {
 	fmt.Println("unreachable")
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The output:
-
-<pre class="output"><code>hi!
+</div>
+<p></p>
+<pre class="tmd-code output">
+hi!
 recovered: bye!
 exit normally.
-</code></pre>
-
-<p>
-</p>
-
-Here is another example which shows a panicking goroutine exits without being recovered.
-So the whole program crashes.
-
-<pre class="line-numbers"><code class="language-go">package main
+</pre>
+<p></p>
+<div class="tmd-usual">
+Here is another example which shows a panicking goroutine exits without being recovered. So the whole program crashes.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -749,67 +653,64 @@ func main() {
 	}
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The output:
-
-<pre class="output"><code>hi!
+</div>
+<p></p>
+<pre class="tmd-code output">
+hi!
 panic: 123
 
 goroutine 5 [running]:
 ...
-</code></pre>
-
-<p>
-</p>
-
-Go runtime will create panics for some circumstances,
-such as dividing an integer by zero. For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+</pre>
+<p></p>
+<div class="tmd-usual">
+Go runtime will create panics for some circumstances, such as dividing an integer by zero. For example,
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	a, b := 1, 0
 	_ = a/b
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The output:
-
-<pre class="output"><code>panic: runtime error: integer divide by zero
+</div>
+<p></p>
+<pre class="tmd-code output">
+panic: runtime error: integer divide by zero
 
 goroutine 1 [running]:
 ...
-</code></pre>
+</pre>
+<p></p>
+<div class="tmd-usual">
+More runtime panic circumstances will be mentioned in later Go 101 articles.
+</div>
+<p></p>
+<div class="tmd-usual">
+Generally, panics are used for logic errors, such as careless human errors. Logic errors should never happen at run time. If they happen, there must be bugs in the code. On the other hand, non-logic errors are hard to absolutely avoid at run time. In other words, non-logic errors are errors happening in reality. Such errors should not cause panics and should be explicitly returned and handled properly.
+</div>
+<p></p>
+<div class="tmd-usual">
+We can learn <a href="panic-and-recover-use-cases.html">some panic/recover use cases</a> and <a href="panic-and-recover-more.html">more about panic/recover mechanism</a> later.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-</p>
-
-<p>
-More runtime panic circumstances will be mentioned
-in later Go 101 articles.
-</p>
-
-<p>
-Generally, panics are used for logic errors, such as careless human errors.
-Logic errors should never happen at run time.
-If they happen, there must be bugs in the code.
-On the other hand, non-logic errors are hard to absolutely avoid at run time.
-In other words, non-logic errors are errors happening in reality.
-Such errors should not cause panics and should be explicitly returned and handled properly.
-</p>
-
-<p>
-We can learn <a href="panic-and-recover-use-cases.html">some panic/recover use cases</a>
-and <a href="panic-and-recover-more.html">more about panic/recover mechanism</a> later.
-</p>
-
-<h3>Some Fatal Errors Are Not Panics and They Are Unrecoverable</h3>
-
-<p>
-For the standard Go compiler, some fatal errors,
-such as stack overflow and out of memory are not recoverable.
-Once they occur, program will crash.
-</p>
-
-
-
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Some Fatal Errors Are Not Panics and They Are Unrecoverable
+</h3>
+<p></p>
+<div class="tmd-usual">
+For the standard Go compiler, some fatal errors, such as stack overflow and out of memory are not recoverable. Once they occur, program will crash.
+</div>
+<p></p>

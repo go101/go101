@@ -1,0 +1,464 @@
+### Structs in Go
+
+Same as C, Go also supports struct types.
+This article will introduce the basic knowledge of struct types and values in Go.
+
+###+++++++++++ Struct Types and Struct Type Literals
+
+Each unnamed struct type literal starts with a `struct` keyword
+which is followed by a sequence of field definitions enclosed in a `{}`.
+Generally, each field definition is composed of a name and a type.
+The number of fields of a struct type can be zero.
+
+The following is an unnamed struct type literal:
+@@@ .line-numbers
+'''go
+struct {
+	title  string
+	author string
+	pages  int
+}
+'''
+
+The above struct type has three fields. The types of the two fields
+`title` and `author` are both `string`.
+The type of the `pages` field is `int`.
+
+Some articles also call fields as member variables.
+
+Consecutive fields with the same type can be declared together.
+@@@ .line-numbers
+'''go
+struct {
+	title, author string
+	pages         int
+}
+'''
+
+The size of a struct type is the sum of the sizes of all its field types plus the number of some padding bytes.
+The padding bytes are used to align the memory addresses of some fields.
+We can learn padding and memory address alignments in __a later article__.
+
+// __ a later article :: memory-layout.html
+
+The size of a zero-field struct type is zero.
+
+A tag may be bound to a struct field when the field is declared.
+Field tags are optional, the default value of each field tag is a blank string.
+The syntax allows either string literal forms for field tags.
+However, in practice, struct filed tags should present as key-value pairs,
+and each tag should present as raw string literals (``...``),
+whereas each value in a tag should present as interpreted string literals (`"..."`).
+For example:
+
+@@@ .line-numbers
+'''go
+struct {
+	Title  string `json:"title" myfmt:"s1"`
+	Author string `json:"author,omitempty" myfmt:"s2"`
+	Pages  int    `json:"pages,omitempty" myfmt:"n1"`
+	X, Y   bool   `myfmt:"b1"`
+}
+'''
+
+Note, the tags of the `X` and `Y` fields in the above example
+are identical (though using field tags as this way is a bad practice).
+
+We can use the __reflection__ way to inspect field tag information.
+
+// __ reflection :: reflection.html#struct-field-tag
+
+The purpose of each field tag is application dependent.
+In the above example, the field tags can help the functions in the
+`encoding/json` standard package to determine the field names in JSON texts,
+in the process of encoding struct values into JSON texts or decoding JSON texts into struct values.
+The functions in the `encoding/json` standard package will
+only encode and decode the exported struct fields, which is why
+the first letters of the field names in the above example are all upper cased.
+
+It is not a good idea to use field tags as comments.
+
+Unlike C language, Go structs don't support unions.
+
+All above shown struct types are unnamed.
+In practice, named struct types are more popular.
+
+Only exported fields of struct types shown up in a package
+can be used in other packages by importing the package.
+We can view non-exported struct fields as private/protected member variables.
+
+The field tags and the order of the field declarations in a struct type matter for the identity of the struct type.
+Two unnamed struct types are identical only if they have the same sequence of field declarations.
+Two field declarations are identical only if their respective names,
+their respective types and their respective tags are all identical,
+and they are both __embedded fields__ or not.
+Please note, **two non-exported struct field names from
+different packages are always viewed as two different names.**
+
+// __ embedded fields :: type-embedding.html
+
+A struct type can't have a field of the struct type itself, neither directly nor recursively.
+
+{//
+https://github.com/golang/go/issues/18640
+}
+
+###+++++++++++ Struct Value Literals and Struct Value Manipulations
+
+In Go, the form `T{...}`,
+where `T` must be a type literal or a type name,
+is called a **composite literal** and
+is used as the value literals of some kinds of types,
+including struct types and the container types introduced later.
+
+Note, a type literal `T{...}` is a typed value, its type is `T`.
+
+// __ underlying type :: type-system-overview.html#underlying-type
+
+Given a struct type `S` whose __underlying type__ is `struct{x int; y bool}`,
+the zero value of `S` can be represented by the following
+two variants of struct composite literal forms:
+*.
+	`S{0, false}`.
+	In this variant, no field names are present but all field values must be present
+	by the field declaration orders.
+*.
+	`S{x: 0, y: false}`, `S{y: false, x: 0}`,
+	`S{x: 0}`, `S{y: false}` and `S{}`.
+	In this variant, each field item is optional and the order of the field items is not important.
+	The values of the absent fields will be set as the zero values of their respective types.
+	But if a field item is present, it must be presented with the `FieldName: FieldValue` form.
+	The order of the field items in this form doesn't matter.
+	The form `S{}` is the most used zero value representation of type `S`.
+
+If `S` is a struct type imported from another package,
+it is recommended to use the second form, to maintain compatibility.
+Consider the case where the maintainer of the package adds
+a new field for type `S`, this will make the use of first form invalid.
+
+Surely, we can also use the struct composite literals to represent non-zero struct value.
+
+For a value `v` of type `S`, we can use
+`v.x` and `v.y`, which are called selectors (or selector expressions),
+to represent the field values of `v`.
+`v` is called the receiver of the selectors.
+
+Later, we call the dot `.` in a selector as the property selection operator.
+
+An example:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+)
+
+type Book struct {
+	title, author string
+	pages         int
+}
+
+func main() {
+	book := Book{"Go 101", "Tapir", 256}
+	fmt.Println(book) // {Go 101 Tapir 256}
+
+	// Create a book value with another form.
+	// All of the three fields are specified.
+	book = Book{author: "Tapir", pages: 256, title: "Go 101"}
+
+	// None of the fields are specified. The title and
+	// author fields are both "", pages field is 0.
+	book = Book{}
+
+	// Only specify the author field. The title field
+	// is "" and the pages field is 0.
+	book = Book{author: "Tapir"}
+
+	// Initialize a struct value by using selectors.
+	var book2 Book // <=> book2 := Book{}
+	book2.author = "Tapir Liu"
+	book2.pages = 300
+	fmt.Println(book2.pages) // 300
+}
+'''
+
+The last `,` in a composite literal is optional
+if the last item in the literal and the closing `}`
+are at the same line.
+Otherwise, the last `,` is required.
+For more details, please read __line break rules in Go__.
+
+// __ line break rules in Go :: line-break-rules.html
+
+@@@ .line-numbers
+'''go
+var _ = Book {
+	author: "Tapir",
+	pages: 256,
+	title: "Go 101", // here, the "," must be present
+}
+
+// The last "," in the following line is optional.
+var _ = Book{author: "Tapir", pages: 256, title: "Go 101",}
+'''
+
+###+++++++++++ About Struct Value Assignments
+
+When a struct value is assigned to another struct value,
+the effect is the same as assigning each field one by one.
+@@@ .line-numbers
+'''go
+func f() {
+	book1 := Book{pages: 300}
+	book2 := Book{"Go 101", "Tapir", 256}
+
+	book2 = book1
+	// The above line is equivalent to the
+	// following lines.
+	book2.title = book1.title
+	book2.author = book1.author
+	book2.pages = book1.pages
+}
+'''
+
+Two struct values can be assigned to each other only if
+their types are identical or the types of the two struct values
+have an identical underlying type (considering field tags)
+and at least one of the two types is an __unnamed type__.
+
+// __ unnamed type :: type-system-overview.html#named-type
+
+@@@ #field-addressability
+###+++++++++++ Struct Field Addressability
+
+The fields of an addressable struct are also addressable.
+The fields of an unaddressable struct are also unaddressable.
+The fields of unaddressable structs can't be modified.
+All composite literals, including struct composite literals are unaddressable.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	type Book struct {
+		Pages int
+	}
+	var book = Book{} // book is addressable
+	p := &book.Pages
+	*p = 123
+	fmt.Println(book) // {123}
+
+	// The following two lines fail to compile, for
+	// Book{} is unaddressable, so is Book{}.Pages.
+	/*
+	Book{}.Pages = 123
+	p = &(Book{}.Pages) // <=> p = &Book{}.Pages
+	*/
+}
+'''
+
+Note that the precedence of the property selection operator `.`
+in a selector is higher than the address-taking operator `&`.
+
+
+@@@ #take-composite-literal-address
+###+++++++++++ Composite Literals Are Unaddressable But Can Take Addresses
+
+Generally, only addressable values can take addresses.
+But there is a syntactic sugar in Go, which allows us to
+take addresses on composite literals.
+A syntactic sugar is an exception in syntax to make programming convenient.
+
+For example,
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	type Book struct {
+		Pages int
+	}
+	// Book{100} is unaddressable but can
+	// be taken address.
+	p := &Book{100} // <=> tmp := Book{100}; p := &tmp
+	p.Pages = 200
+}
+'''
+
+@@@ #use-pointer-as-struct
+###+++++++++++ In Field Selectors, Dereferences of Receivers Can Be Implicit
+
+In the following example, for simplicity, `(*bookN).pages` could
+be written as `bookN.pages`. In other words, `bookN`
+is dereferenced in the simplified selectors.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	type Book struct {
+		pages int
+	}
+	book1 := &Book{100} // book1 is a struct pointer
+	book2 := new(Book)  // book2 is another struct pointer
+	// Use struct pointers as structs.
+	book2.pages = book1.pages
+	// This last line is equivalent to the above line.
+	// In other words, if the receiver is a pointer,
+	// it will be implicitly dereferenced.
+	(*book2).pages = (*book1).pages
+}
+'''
+
+@@@ #comparison
+###+++++++++++ About Struct Value Comparisons
+
+A struct type is comparable only if none of the types of its fields
+(including the fields with names as the blank identifier `_`) are __incomparable__.
+
+// __ incomparable :: type-system-overview.html#types-not-support-comparison
+
+Two struct values are comparable only if they can be assigned to each other and their types are both comparable.
+In other words, two struct values can be compared with each other only if
+the (comparable) types of the two struct values are identical or
+their underlying types are identical (considering field tags)
+and at least one of the two types is unnamed.
+
+When comparing two struct values of the same type,
+each pair of their corresponding fields will be compared (in the order shown in source code).
+The two struct values are equal only if all of their corresponding fields are equal.
+The comparison stops in advance when a pair of fields is found unequal or __a panic occurs__.
+In comparisons, fields with names as the blank identifier `_` will be ignored.
+
+// __ a panic occurs :: interface.html#comparison
+
+###+++++++++++ About Struct Value Conversions
+
+Values of two struct types `S1` and `S2` can be converted
+to each other's types, if `S1` and `S2` share
+the identical underlying type (by ignoring field tags).
+In particular if either `S1` or `S2` is an __unnamed type__
+and their underlying types are identical (considering field tags),
+then the conversions between the values of them can be implicit.
+
+Given struct types `S0`, `S1`, `S2`,
+`S3` and `S4` in the following code snippet,
+*
+	values of type `S0` can't be converted to
+	the other four types, and vice versa,
+	because the corresponding field names are different.
+*
+	two values of two different types among `S1`,
+	`S2`, `S3` and `S4`
+	can be converted to each other's type.
+
+
+In particular,
+*
+	values of the type denoted by `S2` can be implicitly converted
+	to type `S3`, and vice versa.
+*
+	values of the type denoted by `S2` can be implicitly converted
+	to type `S4`, and vice versa.
+
+
+But,
+*
+	values of the type denoted by `S2` must be explicitly converted
+	to type `S1`, and vice versa.
+*
+	values of type `S3` must be explicitly converted
+	to type `S4`, and vice versa.
+
+@@@ .line-numbers
+'''go
+package main
+
+type S0 struct {
+	y int "foo"
+	x bool
+}
+
+// S1 is an alias of an unnamed type.
+type S1 = struct {
+	x int "foo"
+	y bool
+}
+
+// S2 is also an alias of an unnamed type.
+type S2 = struct {
+	x int "bar"
+	y bool
+}
+
+// If field tags are ignored, the underlying
+// types of S3(S4) and S1 are same. If field
+// tags are considered, the underlying types
+// of S3(S4) and S1 are different.
+type S3 S2 // S3 is a defined (so named) type
+type S4 S3 // S4 is a defined (so named) type
+
+var v0, v1, v2, v3, v4 = S0{}, S1{}, S2{}, S3{}, S4{}
+func f() {
+	v1 = S1(v2); v2 = S2(v1)
+	v1 = S1(v3); v3 = S3(v1)
+	v1 = S1(v4); v4 = S4(v1)
+	v2 = v3; v3 = v2 // the conversions can be implicit
+	v2 = v4; v4 = v2 // the conversions can be implicit
+	v3 = S3(v4); v4 = S4(v3)
+}
+'''
+
+In fact, two struct values can be assigned (or compared) to each other
+only if one of them can be implicitly converted to the type of the other.
+
+###+++++++++++ Anonymous Struct Types Can Be Used in Field Declarations
+
+Anonymous struct types are allowed to be used as the types of the fields
+of another struct type.
+Anonymous struct type literals are also allowed to be used
+in composite literals.
+
+An example:
+@@@ .line-numbers
+'''go
+var aBook = struct {
+	// The type of the author field is
+	// an anonymous struct type.
+	author struct {
+		firstName, lastName string
+		gender              bool
+	}
+	title string
+	pages int
+}{
+	author: struct { // an anonymous struct type
+		firstName, lastName string
+		gender              bool
+	}{
+		firstName: "Mark",
+		lastName: "Twain",
+	},
+	title: "The Million Pound Note",
+	pages: 96,
+}
+'''
+
+Generally, for better readability, it is not recommended to
+use anonymous struct type literals in composite literals.
+
+###+++++++++++ More About Struct Types
+
+There are some advanced topics which are related to struct types.
+They will be explained in __type embedding__ and __memory layouts__ later.
+
+// __ type embedding :: type-embedding.html
+// __ memory layouts :: memory-layout.html#size-and-padding
+
+

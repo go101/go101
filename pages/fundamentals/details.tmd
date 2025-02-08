@@ -1,0 +1,2266 @@
+### Go Details 101
+
+Index:
+
+@@@ #details.html .summaries
+*
+	Code package related details:
+	@@@ .index
+	-
+		__A package can be imported more than once in a source file.`` #import-package-multiple-times__
+	{//
+	*
+		__The comment `// import "x.y.z/mypkg"` following `package mypkg` is meaningful for the standard Go compiler.`` #force-import-path__
+	}
+*
+	Control flow related details:
+	@@@ .index
+	-
+		__The `default` branch in `switch` and `select` blocks can be put before all `case` branches, after all `case` branches, or between `case` branches.`` #default-branch-position__
+	-
+		__The numeric constant case expressions in a `switch` block can't be duplicate, but boolean ones can.`` #constant-case-expressions__
+	-
+		__The switch expressions in `switch` block are always evaluated to typed values.`` #switch-expressions-are-typed__
+	-
+		__The default switch expression of a `switch` block is a typed value `true` of the predeclared type `bool`.`` #default-switch-expression-value__
+	-
+		__Sometimes, the open brace `{` of an explicit code block can be put on the next line.`` #open-brace-on-the-next-line__
+	-
+		__Some `case` branch blocks must be explicit.`` #some-case-branch-blocks-must-be-explicit__
+	-
+		__Nested deferred function calls can modify return result values of nesting functions.`` #defer-modify-results__
+	-
+		__Some `recover` calls may be no-ops.`` #no-op-recover-calls__
+	-
+		__Exit a program with a `os.Exit` function call and exit a goroutine with a `runtime.Goexit` function call`` #os-exit-runtime-goexit__.
+	
+*
+	Operator related details:
+	@@@ .index
+	-
+		__The precedence of the increment operator `++` and the decrement `--` is lower than the dereference operator `*` and the address-taking operator `&`, which are lower than the property selection operator `.` in selectors.`` #some-operator-precedence__
+	-
+		__The type deduction rule for the left untyped operand of a bit-shift operation depends on whether or not the right operand is a constant.`` #type-deduction-in-bit-shift__
+	
+*
+	Pointer related details:
+	@@@ .index
+	-
+		__Values of two pointer types with different underlying types can be converted to each other if the base types of their underlying types share the same underlying type.`` #conversion-of-pointers-with-different-underlying-types__
+	-
+		__Addresses of different zero-sized values may be equal, or not.`` #addresses-of-zeor-sized-values__
+	-
+		__The base type of a pointer type may be the pointer type itself.`` #self-based-pointer-type__
+	-
+		__A detail about selector shorthands.`` #pointer-selector-shorthands__
+	
+*
+	Container related details:
+	@@@ .index
+	-
+		__Sometimes, nested composite literals can be simplified.`` #composite-literal-simplification__
+	-
+		__In some scenarios, it is ok to use array pointers as arrays.`` #use-pointer-as-array__
+	-
+		__Retrieving elements from nil maps will not panic. The result is a zero element value.`` #nil-map-element-retrieving__
+	-
+		__Deleting an entry from a nil map will not panic. It is a no-op.`` #nil-map-element--deletion__
+	-
+		__The result slice of an `append` function call may share some elements with the original slice, or not.`` #append-slice-elements__
+	-
+		__The length of a subslice may be larger than the base slice the subslice derives from.`` #subslice__
+	-
+		__Deriving a subslice from a nil slice is ok if all the indexes used in the subslice expression are zero. The result subslice is also a nil slice.`` #derive-from-nil-slice__
+	-
+		__Ranging over a nil maps or a nil slices is ok, it is a no-op.`` #range-over-nil-map-and-slice__
+	-
+		__Range over a nil array pointer is ok if the second iteration variable is ignored or omitted.`` #range-over-nil-array-pointer__
+	-
+		__The length and capacity of a slice can be modified separately.`` #modify-slice-length-and-capacity-separately__
+	-
+		__The indexes in slice and array composite literals must be constants and non-negative.`` #indexes-in-composite-literals__
+	-
+		__The constant indexes or keys in slice/array/map composite literals can't be duplicate.`` #constant-keys-in-composite-literals__
+	-
+		__Elements of unaddressable arrays are also unaddressable, but elements of unaddressable slices are always addressable.`` #array-slice-element-addressability__
+	-
+		__It is ok to derive subslices from unaddressable slices, but not ok from unaddressable arrays. It is ok to take addresses for elements of unaddressable slices, but not ok for elements of unaddressable arrays.`` #array-slice-derivable__
+	-
+		__Putting entries with `NaN` as keys to a map is like putting the entries in a black hole.`` #nan-as-map-keys__
+	-
+		__The capacity of the result slice of a conversion from a string to byte/rune slice may be larger than the length of the result slice.`` #capacity-of-slice-from-string__
+	-
+		__For a slice `s`, the loop `for i = range s {...}` is not equivalent to the loop `for i = 0; i < len(s); i++ {...}`.`` #different-loops__
+	-
+		__The iteration order over maps is not guaranteed to be the same from one iteration to the next.`` #map-entry-iteration__
+	-
+		__If a map entry is created during an iteration of the map, that entry may be iterated during the iteration or may be skipped.`` #create-entry-in-map-entry-iteration__
+	
+*
+	Function and method related details:
+	@@@ .index
+	-
+		__A multi-result function call can't mix with other expressions when the call is used as the sources in an assignment or the arguments of another function call.`` #call-as-expression__
+	-
+		__Some function calls are evaluated at compile time.`` #compile-time-evaluated-calls__
+	-
+		__Each method corresponds to an implicit function.`` #method-as-function__
+	
+*
+	Interface related details:
+	@@@ .index
+	-
+		__Comparing two interface values with the same dynamic incomparable type produces a panic.`` #comparison-interfaces-may-panic__
+	-
+		__Type assertions can be used to convert a value of an interface type to another interface type, even if the former interface type doesn't implement the latter one.`` #type-assertion-to-interface-type__
+	-
+		__Whether or not the second optional result of a failed type assertion is present will affect the behavior of the type assertion.`` #failed-type-assertion-may-panic__
+	-
+		__About the impossible to-interface assertions which can be detected at compile time.`` #impossible-to-interface-assertion__
+	{//
+	-
+		__For the standard Go compiler, the time complexity of comparing two equal interface values may be `%% O %%(1)` or `%% O %%(n)`.`` #interface-comparison-complexity__
+	-
+		__For the standard Go compiler, the time complexity of copying an interface value is `%% O %%(1)`.`` #interface-copy-complexity__
+	
+	}
+	-
+		__Two `error` values returned by two `errors.New` calls with the same argument are not equal.`` #errors-new-different-returns__
+	
+*
+	Channel related details:
+	@@@ .index
+	-
+		__Receive-only channels can't be closed.`` #receive-only-channel-canot-be-closed__
+	-
+		__Sending a value to a closed channel is viewed as a non-blocking operation, and this operation causes a panic.`` #send-to-closed-channel-is-non-blocking__
+	
+*
+	More type and value related details:
+	@@@ .index
+	-
+		__Types can be declared within function bodies.`` #local-type-declaration__
+	-
+		__For the standard compiler, zero-sized fields in a struct may be treated as one-byte-sized value.`` #final-zero-size-field__
+	-
+		__NaN != NaN, Inf == Inf.`` #nan-inf__
+	-
+		__Non-exported method names and struct field names from different packages are viewed as different names.`` #non-exported-names-from-different-packages__
+	{//
+	-
+		__The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.`` #compare-values-with-both-comparable-and-incomparable-parts__
+	}
+	-
+		__In struct value comparisons, blank fields will be ignored.`` #blank-fields-are-ignored-in-comparisons__
+	
+*
+	Miscellanies:
+	@@@ .index
+	-
+		__Parentheses are required in several rare scenarios to make code compile okay.`` #sometimes-parentheses-are-required__
+	{//
+	.
+		__A program doesn't need a `main` entry function to run.`` #main-entry-function-absence__
+	
+	}
+	-
+		__Stack overflow is unrecoverable.`` #stack-overflow-is-unrecoverable__
+	-
+		__Some expression evaluation orders in Go are compiler implementation dependent.`` #some-evaluation-order-are-compiler-dependent__
+	
+*
+	Standard packages related:
+	@@@ .index
+	-
+		__The results of `reflect.DeepEqual(x, y)` and `x == y` may be different.`` #reflect-deep-equal__
+	-
+		__The `reflect.Value.Bytes()` method returns a `[]byte` value, which element type, `byte`, might be not the same as the Go slice value represented by the receiver parameter.`` #reflect-value-bytes__
+	-
+		__We should use `os.IsNotExist(err)` instead of `err == os.ErrNotExist` to check whether or not a file exists.`` #check-file-existent__
+	-
+		__The `flag` standard package treats boolean command flags differently than number and string flags.`` #boolean-flag__
+	-
+		__`[Sp|Fp|P]rintf` functions support positional arguments.`` #printf-positional-arguments__
+	
+
+
+@@@ .summaries-items
+{
+
+@@@ #import-package-multiple-times
+###+++++++++++ A package can be imported more than once in a source file.
+
+A Go source file can imports the same package multiple times,
+but the import names must be different.
+These same-package imports reference the same package instance.
+
+For example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "io"
+import inout "io"
+
+func main() {
+	fmt.Println(&inout.EOF == &io.EOF) // true
+}
+'''
+
+{//
+@@@ #force-import-path
+###+++++++++++ The comment `// import "x.y.z/mypkg"` following `package mypkg` is meaningful for the standard Go compiler.
+
+For example, when the source files importing this package are compiled by the standard Go compiler,
+the import path of the following package must be `"x.y.z/mypkg"`.
+
+@@@ .line-numbers
+'''go
+package mypkg // import "x.y.z/mypkg"
+...
+'''
+
+However, since Go Toolchain 1.11, the restriction __doesn't apply for modules based and vendored packages__.
+
+// __ doesn't apply  ... :: https://golang.org/cmd/go/#hdr-Import_path_checking
+}
+
+@@@ #default-branch-position
+###+++++++++++ The `default` branch in `switch` and `select` blocks can be put before all `case` branches, after all `case` branches, or between `case` branches.
+
+For example:
+
+@@@ .line-numbers
+'''go
+	switch n := rand.Intn(3); n {
+	case 0: fmt.Println("n == 0")
+	case 1: fmt.Println("n == 1")
+	default: fmt.Println("n == 2")
+	}
+
+	switch n := rand.Intn(3); n {
+	default: fmt.Println("n == 2")
+	case 0: fmt.Println("n == 0")
+	case 1: fmt.Println("n == 1")
+	}
+
+	switch n := rand.Intn(3); n {
+	case 0: fmt.Println("n == 0")
+	default: fmt.Println("n == 2")
+	case 1: fmt.Println("n == 1")
+	}
+
+	var x, y chan int
+
+	select {
+	case <-x:
+	case y <- 1:
+	default:
+	}
+
+	select {
+	case <-x:
+	default:
+	case y <- 1:
+	}
+
+	select {
+	default:
+	case <-x:
+	case y <- 1:
+	}
+'''
+
+@@@ #constant-case-expressions
+###+++++++++++ The numeric constant case expressions in a `switch` block can't be duplicate, but boolean ones can.
+
+For example, the following program fails to compile.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	switch 123 {
+	case 123:
+	case 123: // error: duplicate case
+	}
+}
+'''
+
+But the following program compiles okay.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	switch false {
+	case false:
+	case false:
+	}
+}
+'''
+
+For reasons, please read __this issue__.
+The behavior is compiler dependent.
+In fact, the standard Go compiler also doesn't allow duplicate string case expressions, but gccgo allows.
+
+// __ this issue :: https://github.com/golang/go/issues/28357
+
+@@@ #switch-expressions-are-typed
+###+++++++++++ The switch expressions in `switch` block are always evaluated to typed values.
+
+For example, the switch expression `123` in the following `switch` block
+is viewed as a value of `int` instead of an untyped integer.
+So the following program fails to compile.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	switch 123 {
+	case int64(123):  // error: mismatched types
+	case uint32(789): // error: mismatched types
+	}
+}
+'''
+
+@@@ #default-switch-expression-value
+###+++++++++++ The default switch expression of a `switch` block is a typed value `true` of the predeclared type `bool`.
+
+For example, the following program will print `true`.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	switch { // <=> switch true {
+	case true:  fmt.Println("true")
+	case false: fmt.Println("false")
+	}
+}
+'''
+
+@@@ #open-brace-on-the-next-line
+###+++++++++++ Sometimes, the open brace `{` of an explicit code block can be put on the next line.
+
+For example:
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var i = 0
+Outer:
+	for
+	{ // okay on the next line
+		switch
+		{ // okay on the next line
+		case i == 5:
+			break Outer
+		default:
+			i++
+		}
+	}
+}
+'''
+
+What result will the following program print? `true` or `false`?
+The answer is `true`.
+Please read __line break rules in Go__ for reasons.
+
+// __ line break rules in Go :: line-break-rules.html
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func False() bool {
+	return false
+}
+
+func main() {
+	switch False()
+	{
+	case true:  fmt.Println("true")
+	case false: fmt.Println("false")
+	}
+}
+'''
+
+@@@ #some-case-branch-blocks-must-be-explicit
+###+++++++++++ Some `case` branch blocks must be explicit.
+
+For example, the following program fails to compile.
+
+@@@ .line-numbers
+'''go
+func demo(n, m int) (r int) {
+	switch n {
+	case 123:
+		if m > 0 {
+			goto End
+		}
+		r++
+
+		End: // syntax error: missing statement after label
+	default:
+		r = 1
+	}
+	return
+}
+'''
+
+To make it compile okay, the `case` branch code block should be explicit:
+
+@@@ .line-numbers
+'''go
+func demo(n, m int) (r int) {
+	switch n {
+	case 123: {
+		if m > 0 {
+			goto End
+		}
+		r++
+
+		End:
+	}
+	default:
+		r = 1
+	}
+	return
+}
+'''
+
+Alternatively, we can let a semicolon follow the label declaration `End:`:
+
+@@@ .line-numbers
+'''go
+func demo(n, m int) (r int) {
+	switch n {
+	case 123:
+		if m > 0 {
+			goto End
+		}
+		r++
+
+		End:;
+	default:
+		r = 1
+	}
+	return
+}
+'''
+
+Please read __line break rules in Go__ for reasons.
+
+@@@ #defer-modify-results
+###+++++++++++ A nested deferred function calls can modify return result values of its innermost nesting function.
+
+For example:
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func F() (r int) {
+	defer func() {
+		r = 789
+	}()
+
+	return 123 // <=> r = 123; return
+}
+
+func main() {
+	fmt.Println(F()) // 789
+}
+'''
+
+@@@ #no-op-recover-calls
+###+++++++++++ Some `recover` calls may be no-ops.
+
+We should call the `recover` function at the right places.
+Please read __the right places to call the built-in `recover` function__ for details.
+
+// __ the right places ... :: panic-and-recover-more.html
+
+@@@ #os-exit-runtime-goexit
+###+++++++++++ Exit a program with a `os.Exit` function call and exit a goroutine with a `runtime.Goexit` function call.
+
+{//
+https://github.com/golang/go/issues/29226 a bug of goexit
+}
+
+We can exit a program from any function by calling the `os.Exit` function.
+An `os.Exit` function call takes an `int` code as
+argument and returns the code to operating system.
+
+An example:
+
+@@@ .line-numbers
+'''go
+// exit-example.go
+package main
+
+import "os"
+import "time"
+
+func main() {
+	go func() {
+		time.Sleep(time.Second)
+		os.Exit(1)
+	}()
+	select{}
+}
+'''
+
+Run it:
+
+@@@ .output
+'''
+$ go run a.go
+exit status 1
+$ echo $?
+1
+'''
+
+We can make a goroutine exit by calling the `runtime.Goexit` function.
+The `runtime.Goexit` function has no parameters.
+
+In the following example, the `Java` word will not be printed.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "runtime"
+
+func main() {
+	c := make(chan int)
+	go func() {
+		defer func() {c <- 1}()
+		defer fmt.Println("Go")
+		func() {
+			defer fmt.Println("C")
+			runtime.Goexit()
+		}()
+		fmt.Println("Java")
+	}()
+	<-c
+}
+'''
+
+@@@ #some-operator-precedence
+###+++++++++++ The precedence of the increment operator `++` and the decrement `--` is lower than the dereference operator `*` and the address-taking operator `&`, which are lower than the property selection operator `.` in selectors.
+
+For example:
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+type T struct {
+	x int
+	y *int
+}
+
+func main() {
+	var t T
+	p := &t.x // <=> p := &(t.x)
+	fmt.Printf("%T\n", p) // *int
+
+	*p++ // <=> (*p)++
+	*p-- // <=> (*p)--
+
+	t.y = p
+	a := *t.y // <=> *(t.y)
+	fmt.Printf("%T\n", a) // int
+}
+'''
+
+@@@ #type-deduction-in-bit-shift
+###+++++++++++ The type deduction rule for the left untyped operand of a bit-shift operation depends on whether or not the right operand is a constant.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+}
+
+const M  = 2
+// Compiles okay. 1.0 is deduced as an int value.
+var _ = 1.0 << M
+
+var N = 2
+// Fails to compile. 1.0 is deduced as a float64 value.
+var _ = 1.0 << N
+'''
+
+Please read __this article__ for reasons.
+
+// __ this article :: operators.html#bitwise-shift-left-operand-type-deduction
+
+@@@ #conversion-of-pointers-with-different-underlying-types
+###+++++++++++ Values of two pointer types with different underlying types can be converted to each other if the base types of their underlying types share the same underlying type.
+
+An example:
+
+@@@ .line-numbers
+'''go
+package main
+
+type MyInt int64
+type Ta    *int64
+type Tb    *MyInt
+
+func main() {
+	var a Ta
+	var b Tb
+
+	// Direct conversion is not allowed.
+	//a = Ta(b) // error
+
+	// But indirect conversion is possible.
+	y := (*MyInt)(b)
+	x := (*int64)(y)
+	a = x           // <=> the next line
+	a = (*int64)(y) // <=> the next line
+	a = (*int64)((*MyInt)(b))
+	_ = a
+}
+'''
+
+@@@ #addresses-of-zeor-sized-values
+###+++++++++++ Addresses of different zero-sized values may be equal, or not.
+{//
+https://github.com/golang/go/issues/12726
+}
+
+Whether or not the addresses of two zero-sized values are equal
+is compiler and compiler version dependent.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	a := struct{}{}
+	b := struct{}{}
+	x := struct{}{}
+	y := struct{}{}
+	m := [10]struct{}{}
+	n := [10]struct{}{}
+	o := [10]struct{}{}
+	p := [10]struct{}{}
+
+	fmt.Println(&x, &y, &o, &p)
+
+	// For the standard Go compiler (1.23.n),
+	// x, y, o and p escape to heap, but
+	// a, b, m and n are allocated on stack.
+
+	fmt.Println(&a == &b) // false
+	fmt.Println(&x == &y) // true
+	fmt.Println(&a == &x) // false
+
+	fmt.Println(&m == &n) // false
+	fmt.Println(&o == &p) // true
+	fmt.Println(&n == &p) // false
+}
+'''
+
+The outputs indicated in the above code are for the standard Go compiler 1.23.n.
+
+@@@ #self-based-pointer-type
+###+++++++++++ The base type of a pointer type may be the pointer type itself.
+
+An example:
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	type P *P
+	var p P
+	p = &p
+	p = **************p
+}
+'''
+
+Similarly,
+*
+	the element type of a slice type can be the slice type itself,
+*
+	the element type of a map type can be the map type itself,
+*
+	the element type of a channel type can be the channel type itself,
+*
+	and the argument and result types of a function type can be the function type itself.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	type S []S
+	type M map[string]M
+	type C chan C
+	type F func(F) F
+
+	s := S{0:nil}
+	s[0] = s
+	m := M{"Go": nil}
+	m["Go"] = m
+	c := make(C, 3)
+	c <- c; c <- c; c <- c
+	var f F
+	f = func(F)F {return f}
+
+	_ = s[0][0][0][0][0][0][0][0]
+	_ = m["Go"]["Go"]["Go"]["Go"]
+	<-<-<-c
+	f(f(f(f(f))))
+}
+'''
+
+@@@ #pointer-selector-shorthands
+###+++++++++++ A detail about selector shorthands.
+
+For a pointer value, which type is either named or not,
+if the base type of its (pointer) type is a struct type,
+then we can select the fields of the struct value
+referenced by the pointer value through the pointer value.
+However, if the type of the pointer value is a named type,
+then we can't select the methods of the struct value
+referenced by the pointer value through the pointer value.
+
+@@@ .line-numbers
+'''go
+package main
+
+type T struct {
+	x int
+}
+func (T) m(){} // T has one method.
+
+type P *T  // a named one-level pointer type.
+type PP *P // a named two-level pointer type.
+
+func main() {
+	var t T
+	var tp = &t
+	var tpp = &tp
+	var p P = tp
+	var pp PP = &p
+	tp.x = 12  // okay
+	p.x = 34   // okay
+	pp.x = 56  // error: type PP has no field or method x
+	tpp.x = 78 // error: type **T has no field or method x
+
+	tp.m()  // okay. Type *T also has a "m" method.
+	p.m()   // error: type P has no field or method m
+	pp.m()  // error: type PP has no field or method m
+	tpp.m() // error: type **T has no field or method m
+}
+'''
+
+@@@ #composite-literal-simplification
+###+++++++++++ Sometimes, nested composite literals can be simplified.
+
+Please read __nested composite literals can be simplified__ for details.
+
+// __ nested composite literals can be simplified :: container.html#composite-literal-simplification
+
+@@@ #use-pointer-as-array
+###+++++++++++ In some scenarios, it is ok to use array pointers as arrays.
+
+Please read __use array pointers as arrays__ for details.
+
+// __ use array pointers as arrays :: container.html#use-pointer-as-array
+
+@@@ #nil-map-element-retrieving
+###+++++++++++ Retrieving elements from nil maps will not panic. The result is a zero element value.
+
+For example, the `Foo1` and the `Foo2` functions are equivalent,
+but the function `Foo2` is much tidier than the function `Foo1`.
+
+@@@ .line-numbers
+'''go
+func Foo1(m map[string]int) int {
+	if m != nil {
+		return m["foo"]
+	}
+	return 0
+}
+
+func Foo2(m map[string]int) int {
+	return m["foo"]
+}
+'''
+
+@@@ #nil-map-element--deletion
+###+++++++++++ Deleting an entry from a nil map will not panic. It is a no-op.
+
+For example, the following program will not panic.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var m map[string]int // nil
+	delete(m, "foo")
+}
+'''
+
+@@@ #append-slice-elements
+###+++++++++++ The result slice of an `append` function call may share some elements with the original slice, or not.
+
+Please read __append and delete container elements__ for details.
+
+// __ append and delete ... :: container.html#element-addition-deletion
+
+@@@ #subslice
+###+++++++++++ The length of a subslice may be larger than the base slice the subslice derives from.
+
+For example,
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	s := make([]int, 3, 9)
+	fmt.Println(len(s)) // 3
+	s2 := s[2:7]
+	fmt.Println(len(s2)) // 5
+}
+'''
+
+Please read __derive slices from arrays and slices__ for details.
+
+// __ derive slices ... :: container.html#subslice
+
+@@@ #derive-from-nil-slice
+###+++++++++++ Deriving a subslice from a nil slice is ok if all the indexes used in the subslice expression are zero. The result subslice is also a nil slice.
+
+For example, the following program will not panic at run time.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	var x []int // nil
+	a := x[:]
+	b := x[0:0]
+	c := x[:0:0]
+	// Print three "true".
+	fmt.Println(a == nil, b == nil, c == nil)
+}
+'''
+
+Please read __derive slices from arrays and slices__ for details.
+
+@@@ #range-over-nil-map-and-slice
+###+++++++++++ Ranging over a nil maps or a nil slices is ok, it is a no-op.
+
+For example, the following program compiles okay.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var s []int // nil
+	for range s {
+	}
+
+	var m map[string]int // nil
+	for range m {
+	}
+}
+'''
+
+@@@ #range-over-nil-array-pointer
+###+++++++++++ Range over a nil array pointer is ok if the second iteration variable is ignored or omitted.
+
+For example, the following program will print `01234`.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	var a *[5]int // nil
+	for i, _ := range a {
+		fmt.Print(i)
+	}
+}
+'''
+
+@@@ #modify-slice-length-and-capacity-separately
+###+++++++++++ The length and capacity of a slice can be modified separately.
+
+We can modify the length and capacity of a slice separately through the reflection way.
+Please read __modify the length and capacity properties of a slice individually__ for details.
+
+// __ modify the length ... :: container.html#modify-slice-length-and-capacity
+
+@@@ #indexes-in-composite-literals
+###+++++++++++ The indexes in slice and array composite literals must be constants and non-negative.
+
+For example, the following code fails to compile.
+
+@@@ .line-numbers
+'''go
+var k = 1
+// error: index must be non-negative integer constant
+var x = [2]int{k: 1}
+// error: index must be non-negative integer constant
+var y = []int{k: 1}
+'''
+
+Note, the keys in map composite literals are not required to be constants.
+
+@@@ #constant-keys-in-composite-literals
+###+++++++++++ The constant indexes or keys in slice/array/map composite literals can't be duplicate.
+
+For example, the following code fails to compile.
+
+@@@ .line-numbers
+'''go
+// error: duplicate index in array literal: 1
+var a = []bool{0: false, 1: true, 1: true}
+// error: duplicate index in array literal: 0
+var b = [...]string{0: "foo", 1: "bar", 0: "foo"}
+// error: duplicate key "foo" in map literal
+var c = map[string]int{"foo": 1, "foo": 2}
+'''
+
+This feature can be used to __assert some conditions at compile time__.
+
+// __ assert some conditions at compile time :: tips.html#assert-at-compile-time
+
+@@@ #array-slice-element-addressability
+###+++++++++++ Elements of unaddressable arrays are also unaddressable, but elements of unaddressable slices are always addressable.
+
+The reason is the elements of an array value and the array will be stored
+in the same memory block when the array is stored in memory.
+But __the situation is different for slices__.
+
+// __ the situation ... :: unofficial-faq.html#slice-elements-always-addressable
+
+An example:
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	// Container composite literals are unaddressable.
+
+	// It is ok to take slice literal element addresses.
+	_ = &[]int{1}[0] // ok
+	// Cannot take addresses of array literal elements.
+	_ = &[5]int{}[0] // error
+
+	// It is ok to modify slice literal elements.
+	[]int{1,2,3}[1] = 9  // ok
+	// Cannot modify array literal elements.
+	[3]int{1,2,3}[1] = 9 // error
+}
+'''
+
+@@@ #array-slice-derivable
+###+++++++++++ 
+It is ok to derive subslices from unaddressable slices, but not ok from unaddressable arrays.
+
+The reason is the same as the last detail.
+
+An example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	// Map elements are unaddressable in Go.
+
+	// The following lines compile okay. Deriving
+	// slices from unaddressable slices is allowed.
+	_ = []int{6, 7, 8, 9}[1:3]
+	var ms = map[string][]int{"abc": {0, 1, 2, 3}}
+	_ = ms["abc"][1:3]
+
+	// The following lines fail to compile. Deriving
+	// slices from unaddressable arrays is not allowed.
+	/*
+	_ = [...]int{6, 7, 8, 9}[1:3] // error
+	var ma = map[string][4]int{"abc": {0, 1, 2, 3}}
+	_ = ma["abc"][1:3]  // error
+	*/
+}
+'''
+
+@@@ #nan-as-map-keys
+###+++++++++++ Putting entries with `NaN` as keys to a map is like putting the entries in a black hole.
+
+This reason is `NaN != NaN`, which is another detail will be described __below__.
+Before Go 1.12, the elements with `NaN` as keys can only be found out in a `for-range` loop,
+Since Go 1.12, the elements with `NaN` as keys can also be printed out by
+`fmt.Print` alike functions.
+
+// __ below :: #nan-inf
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "math"
+
+func main() {
+	var a = math.NaN()
+	fmt.Println(a) // NaN
+
+	var m = map[float64]int{}
+	m[a] = 123
+	v, present := m[a]
+	fmt.Println(v, present) // 0 false
+	m[a] = 789
+	v, present = m[a]
+	fmt.Println(v, present) // 0 false
+
+	fmt.Println(m) // map[NaN:789 NaN:123]
+	delete(m, a)   // no-op
+	fmt.Println(m) // map[NaN:789 NaN:123]
+
+	for k, v := range m {
+		fmt.Println(k, v)
+	}
+	// the above loop outputs:
+	// NaN 123
+	// NaN 789
+}
+'''
+
+Please note, before Go 1.12, the two `fmt.Println(m)`
+calls both printed `map[NaN:<nil> NaN:<nil>]`.
+
+@@@ #capacity-of-slice-from-string
+###+++++++++++ The capacity of the result slice of a conversion from a string to byte/rune slice may be larger than the length of the result slice.
+
+We should not assume the length and the capacity of the result slice are always equal.
+
+In the following example, if the last `fmt.Println` line is removed,
+the outputs of the two lines before it print the same value `5`;
+otherwise, one print `5` and one print `8`
+(for the standard Go compiler 1.23.n).
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	s := "abcde"
+	x := []byte(s)              // len(s) == 1
+	fmt.Println(cap([]byte(s))) // 32
+	fmt.Println(cap(x))         // 8
+	fmt.Println(x)
+}
+'''
+
+__Some buggy code will be written__ if we assume the length and the capacity of the result slice are always equal.
+
+// __ Some buggy code will be written :: https://github.com/go101/go101/wiki/The-capacity-of-the-result-byte-%28or-rune%29-slice-of-a-conversion-from-a-string-is-undefined
+
+@@@ #different-loops
+###+++++++++++ For a slice `s`, the loop `for i = range s {...}` is not equivalent to the loop `for i = 0; i < len(s); i++ {...}`.
+
+The respective final values of the iteration variable `i`
+may be different for the two loops.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+var i int
+
+func fa(s []int, n int) int {
+	i = n
+	for i = 0; i < len(s); i++ {}
+	return i
+}
+
+func fb(s []int, n int) int {
+	i = n
+	for i = range s {}
+	return i
+}
+
+func main() {
+	s := []int{2, 3, 5, 7, 11, 13}
+	fmt.Println(fa(s, -1), fb(s, -1)) // 6 5
+	s = nil
+	fmt.Println(fa(s, -1), fb(s, -1)) // 0 -1
+}
+'''
+
+@@@ #map-entry-iteration
+###+++++++++++ The iteration order over maps is not guaranteed to be the same from one iteration to the next.
+
+For example, the following program will not run infinitely:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func f(m map[byte]byte) string {
+	bs := make([]byte, 0, 2*len(m))
+	for k, v := range m {
+		bs = append(bs, k, v)
+	}
+	return string(bs)
+}
+
+func main() {
+	m := map[byte]byte{'a':'A', 'b':'B', 'c':'C'}
+	s0 := f(m)
+	for i := 1; ; i++{
+		if s := f(m); s != s0 {
+			fmt.Println(s0)
+			fmt.Println(s)
+			fmt.Println(i)
+			return
+		}
+	}
+}
+'''
+
+Please note, the entries in the JSON marshal result on maps are sorted by their keys.
+And since Go 1.12, printing maps (with the print functions in the standard
+`fmt` package) also results sorted entries.
+
+@@@ #create-entry-in-map-entry-iteration
+###+++++++++++ If a map entry is created during an iteration of the map, that entry may be iterated during the iteration or may be skipped.
+
+A proof:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	m := map[int]int{0: 0, 1: 100, 2: 200}
+	r, n, i:= len(m), len(m), 0
+	for range m {
+		m[n] = n*100
+		n++
+		i++
+	}
+	fmt.Printf("%d new entries, iterate %d and skip %d\n",
+		i, i - r, n - i,
+	)
+}
+'''
+
+Thanks to Valentin Deleplace for the above __two detail suggestions__.
+
+// __ two detail suggestions :: https://twitter.com/val_deleplace/status/1358784287399698434
+
+@@@ #call-as-expression
+###+++++++++++ A multi-result function call can't mix with other expressions when the call is used as the sources in an assignment or the arguments of another function call.
+
+Please read __use function calls as expressions__ for details.
+
+// __ use function calls as expressions :: function.html#call-as-expression
+
+@@@ #compile-time-evaluated-calls
+###+++++++++++ Some function calls are evaluated at compile time.
+
+Please read __some function calls are evaluated at compile time__ for details.
+
+// __ some function calls are evaluated at compile time :: function.html#compile-time-evaluated-calls
+
+@@@ #method-as-function
+###+++++++++++ Each method corresponds to an implicit function.
+
+Please read __each method corresponds to an implicit function__ for details.
+
+// __ each method corresponds to an implicit function :: method.html#method-as-function
+
+@@@ #comparison-interfaces-may-panic
+###+++++++++++ Comparing two interface values with the same dynamic incomparable type produces a panic.
+
+For example:
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var x interface{} = []int{}
+	_ = x == x // panic
+}
+'''
+
+@@@ #type-assertion-to-interface-type
+###+++++++++++ Type assertions can be used to convert a value of an interface type to another interface type, even if the former interface type doesn't implement the latter one.
+
+For example:
+
+@@@ .line-numbers
+'''go
+package main
+
+type Foo interface {
+	foo()
+}
+
+type T int
+func (T) foo() {}
+
+func main() {
+	var x interface{} = T(123)
+	// The following two lines fails to compile, for the
+	// same reason: interface{} does not implement Foo.
+	/*
+	var _ Foo = x   // error
+	var _ = Foo(x)  // error
+	*/
+	// But the following line compiles and runs okay.
+	var _ = x.(Foo) // okay
+}
+'''
+
+@@@ #failed-type-assertion-may-panic
+###+++++++++++ Whether or not the second optional result of a type assertion is present will affect the behavior of the type assertion.
+
+If the second optional result presents in a failed type assertion, the type assertion will not produce a panic.
+Otherwise, a panic will occur.
+For example:
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var x interface{} = true
+
+	// Assertion fails, but doesn't cause a panic.
+	_, _ = x.(int)
+
+	// Assertion fails, which causes a panic.
+	_ = x.(int)
+}
+'''
+
+@@@ #impossible-to-interface-assertion
+###+++++++++++ About the impossible to-interface assertions which can be detected at compile time.
+
+At compile time, some to-interface assertions can be deducted as impossible to succeed.
+For example, the assertion shown in the following code:
+
+@@@ .line-numbers
+'''go
+package main
+
+type Ia interface {
+	m()
+}
+
+type Ib interface {
+	m() int
+}
+
+type T struct{}
+
+func (T) m() {}
+
+func main() {
+	var x Ia = T{}
+	_ = x.(Ib) // panic: main.T is not main.Ib
+}
+'''
+
+Such assertions will not make code compilations fail (but the program will panic at run time).
+Since Go Toolchain 1.15, the `go vet` command warns on such assertions.
+
+{//
+@@@ #interface-comparison-complexity
+###+++++++++++ For the standard Go compiler, the time complexity of comparing two equal interface values may be `%% O %%(1)` or `%% O %%(n)`.
+
+The time complexity depends on whether or not the direct parts
+of the two equal interfaces both reference the underlying value.
+Please read the article __value parts__ for detail.
+
+// __ value parts :: value-part.html#interface-structure
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "time"
+
+func main() {
+	bigarr := [1 << 20]int{}
+
+	type I interface{}
+
+	// i0, i1 and i2 are three equal interfaces.
+	var i0 I = bigarr // the dynamic value of i0 is a copy of bigarr.
+	var i1 I = bigarr // the dynamic value of i1 is also a copy of bigarr.
+	                  // Note, the dynamic values of i0 and i1 are
+	                  // two different copies of bigarr.
+	var i2 I = i1 // i2 shares the same dynamic value copy with i1.
+
+	startTime := time.Now()
+	_ = i0 == i1
+	duration := time.Since(startTime)
+	fmt.Println("duration for (i0 == i1):", duration)
+
+	startTime = time.Now()
+	_ = i1 == i2
+	duration = time.Since(startTime)
+	fmt.Println("duration for (i1 == i2):", duration)
+}
+'''
+
+The output:
+@@@ .output
+'''
+duration for (i0 == i1): 1.381337ms
+duration for (i1 == i2): 609ns
+'''
+1ms is 1000000ns!
+
+@@@ #interface-copy-complexity
+###+++++++++++ About the time complexity of copying a non-nil interface value.
+
+The __href="https://golang.org/doc/faq#pass_by_value">official Go FAQ__
+says **%% copying an interface value makes a copy of the thing stored in the interface value. %%**.
+The article __href="interface.html#boxing">interfaces in Go__ mentions that,
+for the standard Go compiler, the time complexity of copying an interface value
+is `%% O %%(1)`.
+But the sizes of different dynamic values stored in interface values may
+be different, why isn't the complexity `%% O %%(n)`?
+
+The reason is the dynamic values of interface values are all immutable,
+so the standard Go compiler makes an optimization here.
+As the article __href="value-part.html#interface-structure">value parts__
+has explained, an non-nil interface value has an underlying part and
+the direct part of the interface value stores a pointer which
+references the underlying part. When the interface value is copied,
+only its direct part is copied. For the standard Go compiler,
+the sizes of the direct parts of all interface values are the same.
+}
+
+@@@ #errors-new-different-returns
+###+++++++++++ Two `error` values returned by two `errors.New` calls with the same argument are not equal.
+
+The reason is the `errors.New` function will copy the input string argument
+and use a pointer to the copied string as the dynamic value of the returned `error` value.
+Two different calls will produce two different pointers.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "errors"
+
+func main() {
+	notfound := "not found"
+	a, b := errors.New(notfound), errors.New(notfound)
+	fmt.Println(a == b) // false
+}
+'''
+
+@@@ #receive-only-channel-canot-be-closed
+###+++++++++++ Receive-only channels can't be closed.
+
+For example, the following code fails to compile.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+}
+
+func foo(c <-chan int) {
+	close(c) // error: cannot close receive-only channel
+}
+'''
+
+@@@ #send-to-closed-channel-is-non-blocking
+###+++++++++++ Sending a value to a closed channel is viewed as a non-blocking operation, and this operation causes a panic.
+
+For example, in the following program, when the second `case` branch gets selected, it will produce a panic at run time.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var c = make(chan bool)
+	close(c)
+	select {
+	case <-c:
+	case c <- true: // panic: send on closed channel
+	default:
+	}
+}
+'''
+
+@@@ #local-type-declaration
+###+++++++++++ Types can be declared within function bodies.
+
+Types can be declared in function bodies. For example,
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	type T struct{}
+	type S = []int
+}
+'''
+
+@@@ #final-zero-size-field
+###+++++++++++ For the standard compiler, zero-sized fields in a struct may be treated as one-byte-sized value.
+
+Please read __this FAQ item__ for details.
+
+// __ this FAQ item :: unofficial-faq.html#final-zero-size-field
+
+@@@ #nan-inf
+###+++++++++++ NaN != NaN, Inf == Inf.
+
+This follows IEEE-754 standard and is consistent with most other programming languages:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "math"
+
+func main() {
+	var a = math.Sqrt(-1.0)
+	fmt.Println(a)      // NaN
+	fmt.Println(a == a) // false
+
+	var x = 0.0
+	var y = 1.0 / x
+	var z = 2.0 * y
+	fmt.Println(y, z, y == z) // +Inf +Inf true
+}
+'''
+
+@@@ #non-exported-names-from-different-packages
+###+++++++++++ Non-exported method names and struct field names from different packages are viewed as different names.
+
+For example, if the following types are declared in package `foo`:
+
+@@@ .line-numbers
+'''go
+package foo
+
+type I = interface {
+	about() string
+}
+
+type S struct {
+	a string
+}
+
+func (s S) about() string {
+	return s.a
+}
+'''
+
+and the following types are declared in package `bar`:
+
+@@@ .line-numbers
+'''go
+package bar
+
+type I = interface {
+	about() string
+}
+
+type S struct {
+	a string
+}
+
+func (s S) about() string {
+	return s.a
+}
+'''
+
+then,
+*
+	values of the two respective types `S` from the two packages
+	can't be converted to each other.
+*
+	the two respective interface types `S` from the two packages
+	denote two distinct method sets.
+*
+	type `foo.S` doesn't implement the interface type `bar.I`.
+*
+	type `bar.S` doesn't implement the interface type `foo.I`.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "包2/foo"
+import "包2/bar"
+
+func main() {
+	var x foo.S
+	var y bar.S
+	var _ foo.I = x
+	var _ bar.I = y
+
+	// The following lines fail to compile.
+	x = foo.S(y)
+	y = bar.S(x)
+	var _ foo.I = y
+	var _ bar.I = x
+}
+'''
+
+{//
+@@@ #compare-values-with-both-comparable-and-incomparable-parts
+###+++++++++++ The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.
+
+Surely, the mentioned incomparable values here must present as interfaces, otherwise, the comparisons fail to compile.
+
+Although it looks the implementation by the official standard Go compiler is comparing struct values fields by fields,
+and comparing array values elements by elements, until an inequality is found or a panic occurs, 
+but __href="https://github.com/golang/go/issues/8606">the behavior is really unspecified__ currently (Go 1.15).
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func cmpS(a, b S) {
+	defer func() {
+		if recover() != nil {
+			fmt.Println("panic")
+		}
+	}()
+	fmt.Println(a == b)
+}
+
+func cmpA(x, y A) {
+	defer func() {
+		if recover() != nil {
+			fmt.Println("panic")
+		}
+	}()
+	fmt.Println(x == y)
+}
+
+type S struct{x, y interface{}}
+type A [2]interface{}
+
+func main() {
+	var f func()
+	cmpS(S{1, f}, S{2, f}) // false (but panic is ok)
+	cmpS(S{f, 1}, S{f, 2}) // panic (but false is ok)
+	cmpA(A{1, f}, A{2, f}) // false (but panic is ok)
+	cmpA(A{f, 1}, A{f, 2}) // panic (but false is ok)
+}
+'''
+
+}
+
+@@@ #blank-fields-are-ignored-in-comparisons
+###+++++++++++ In struct value comparisons, blank fields will be ignored.
+
+Blank fields are those fields whose name are the blank identifier `_`.
+The following program will print `true`.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+type T struct {
+	_ int
+	_ bool
+}
+
+func main() {
+	var t1 = T{123, true}
+	var t2 = T{789, false}
+	fmt.Println(t1 == t2) // true
+}
+'''
+
+@@@ #sometimes-parentheses-are-required
+###+++++++++++ Parentheses are required in several rare scenarios to make code compile okay.
+
+For example:
+
+@@@ .line-numbers
+'''go
+package main
+
+type T struct{x, y int}
+
+func main() {
+	// Each of the following three lines makes code
+	// fail to compile. Some "{}"s confuse compilers.
+	/*
+	if T{} == T{123, 789} {}
+	if T{} == (T{123, 789}) {}
+	if (T{}) == T{123, 789} {}
+	var _ = func()(nil) // nil is viewed as a type
+	*/
+
+	// We must add parentheses like the following
+	// two lines to make code compile okay.
+	if (T{} == T{123, 789}) {}
+	if (T{}) == (T{123, 789}) {}
+	var _ = (func())(nil) // nil is viewed as a value
+}
+'''
+
+{//
+@@@ #main-entry-function-absence
+###+++++++++++ A program doesn't need a `main` entry function to run.
+
+The following program __href="https://github.com/golang/go/issues/21256">compiles okay before Go 1.11__,
+for the standard Go compiler.
+But since Go 1.11, it fails to compile.
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func init() {
+	for {
+		time.Sleep(time.Second)
+		fmt.Println("hi")
+	}
+}
+
+var main int
+'''
+
+}
+
+@@@ #stack-overflow-is-unrecoverable
+###+++++++++++ Stack overflow is not panic.
+
+For the current main stream Go compilers, stack overflows are fatal errors.
+Once a stack overflow happens, the whole program will crash without recovery ways.
+
+@@@ .line-numbers
+'''go
+package main
+
+func f() {
+	f()
+}
+
+func main() {
+	defer func() {
+		recover() // helpless to avoid program crashing
+	}()
+	f()
+}
+'''
+
+the running result:
+
+@@@ .output
+'''
+runtime: goroutine stack exceeds 1000000000-byte limit
+fatal error: stack overflow
+
+runtime stack:
+...
+'''
+
+About more crash cases, please read __this wiki article__.
+
+// __ this wiki article :: https://github.com/go101/go101/wiki/Panic-and-crash-cases
+
+@@@ #some-evaluation-order-are-compiler-dependent
+###+++++++++++ Some expression evaluation orders in Go are compiler implementation dependent.
+
+Please read __expression evaluation orders in Go__ for details.
+
+// __ expression evaluation orders in Go :: evaluation-orders.html
+
+@@@ #reflect-deep-equal
+###+++++++++++ The results of `reflect.DeepEqual(x, y)` and `x == y` may be different.
+
+The function call `reflect.DeepEqual(x, y)` will always return
+`false` if the types of its two arguments are different,
+whereas `x == y` may return `true` even if
+the types of the two operands are different.
+
+The second difference is a `DeepEqual` call with
+two pointer argument values of the same type returns whether or not
+the two respective values referenced by the two pointers are deep equal.
+So the call might return `true` even if the two pointers are not equal.
+
+The third difference is the result of a `DeepEqual` call might return
+`true` if both of its arguments are in cyclic reference chains
+(to avoid infinite looping in the call).
+
+The fourth difference is, the function call
+`reflect.DeepEqual(x, y)` is not expected to panic generally,
+whereas `x == y` will panic if the two operands are both
+interface values and their dynamic types are identical and incomparable.
+
+An example showing these differences:
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	type Book struct {page int}
+	x := struct {page int}{123}
+	y := Book{123}
+	fmt.Println(reflect.DeepEqual(x, y)) // false
+	fmt.Println(x == y)                  // true
+
+	z := Book{123}
+	fmt.Println(reflect.DeepEqual(&z, &y)) // true
+	fmt.Println(&z == &y)                  // false
+
+	type Node struct{peer *Node}
+	var q, r, s Node
+	q.peer = &q // form a cyclic reference chain
+	r.peer = &s // form a cyclic reference chain
+	s.peer = &r
+	println(reflect.DeepEqual(&q, &r)) // true
+	fmt.Println(q == r)                // false
+
+	var f1, f2 func() = nil, func(){}
+	fmt.Println(reflect.DeepEqual(f1, f1)) // true
+	fmt.Println(reflect.DeepEqual(f2, f2)) // false
+
+	var a, b interface{} = []int{1, 2}, []int{1, 2}
+	fmt.Println(reflect.DeepEqual(a, b)) // true
+	fmt.Println(a == b)                  // panic
+}
+'''
+
+Note, if the two arguments of a `DeepEqual` call are both function values,
+then the call returns `true` only if the two function arguments are both nil and their types are identical.
+It is similar to compare container values whose elements contain function values or compare struct values whose fields contain function values.
+But please also note that the result of comparing two slices (of the same type) is always `true` if the two slices exactly share
+the same elements (in other words, they have the same length and each pair of their corresponding elements have the same address).
+An example:
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+func main() {
+	a := [1]func(){func(){}}
+	b := a
+	fmt.Println(reflect.DeepEqual(a, a))       // false
+	fmt.Println(reflect.DeepEqual(a[:], a[:])) // true
+	fmt.Println(reflect.DeepEqual(a[:], b[:])) // false
+	a[0], b[0] = nil, nil
+	fmt.Println(reflect.DeepEqual(a[:], b[:])) // true
+}
+'''
+
+@@@ #reflect-value-bytes
+###+++++++++++ The `reflect.Value.Bytes()` method returns a `[]byte` value, which element type, `byte`, might be not the same as the Go slice value represented by the receiver parameter.
+
+Assume the underlying type of a defined type `MyByte` is the
+predeclared type `byte`, we know that Go type system forbids
+the conversions between `[]MyByte` and `[]byte` values.
+However, it looks the implementation of the method `Bytes` of the
+`reflect.Value` type partially violates this restriction unintentionally,
+by allowing converting a `[]MyByte` value to `[]byte`.
+
+Example:
+
+@@@ .line-numbers
+'''go
+package main
+
+import "bytes"
+import "fmt"
+import "reflect"
+
+type MyByte byte
+
+func main() {
+	var mybs = []MyByte{'a', 'b', 'c'}
+	var bs []byte
+
+	// bs = []byte(mybs) // this line fails to compile
+
+	v := reflect.ValueOf(mybs)
+	bs = v.Bytes() // okay. Violating Go type system.
+	fmt.Println(bytes.HasPrefix(bs, []byte{'a', 'b'})) // true
+
+	bs[1], bs[2] = 'r', 't'
+	fmt.Printf("%s \n", mybs) // art
+}
+'''
+
+But it looks the violation is not harmful.
+On the contrary, it makes some benefits.
+For example, with this violation, we can use the functions in the
+`bytes` standard package for the `[]MyByte` values.
+
+Note, the `reflect.Value.Bytes()` method __might be removed later__.
+
+// __ might be removed later :: https://github.com/golang/go/issues/27727
+
+@@@ #check-file-existent
+###+++++++++++ We should use `os.IsNotExist(err)` instead of `err == os.ErrNotExist` to check whether or not a file exists.
+
+Using `err == os.ErrNotExist` may miss errors.
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	_, err := os.Stat("a-nonexistent-file.abcxyz")
+	fmt.Println(os.IsNotExist(err))    // true
+	fmt.Println(err == os.ErrNotExist) // false
+}
+'''
+
+For projects only supporting Go 1.13+, `errors.Is(err, os.ErrNotExist)` is
+__more recommended to be used__ to check whether or not a file exists.
+
+// __ more recommended to be used :: https://github.com/golang/go/issues/38198
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os"
+)
+
+func main() {
+	_, err := os.Stat("a-nonexistent-file.abcxyz")
+	fmt.Println(errors.Is(err, os.ErrNotExist)) // true
+}
+'''
+
+@@@ #boolean-flag
+###+++++++++++ The `flag` standard package treats boolean command flags differently than integer and string flags.
+
+There are three forms to pass flag options.
+*.
+	`-flag`, for boolean flags only.
+*.
+	`-flag=x`, for any flag.
+*.
+	`-flag x`, for non-boolean flags only.
+
+And please note that, a boolean flag with the first form
+is viewed as the last flag, all items following it are viewed as arguments.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "flag"
+
+var b = flag.Bool("b", true, "a boolean flag")
+var i = flag.Int("i", 123, "an integer flag")
+var s = flag.String("s", "hi", "a string flag")
+
+func main() {
+	flag.Parse()
+	fmt.Print("b=", *b, ", i=", *i, ", s=", *s, "\n")
+	fmt.Println("arguments:", flag.Args())
+}
+'''
+
+If we run this program with the below shown flags and arguments
+
+@@@ .output
+'''
+./exampleProgram -b false -i 789 -s bye arg0 arg1
+'''
+
+the output will be
+
+@@@ .output
+'''
+b=true, i=123, s=hi
+arguments: [false -i 789 -s bye arg0 arg1]
+'''
+
+This output is obviously not what we expect.
+
+We should pass the flags and arguments like
+
+@@@ .output
+'''
+./exampleProgram -b=false -i 789 -s bye arg0 arg1
+'''
+
+or
+
+@@@ .output
+'''
+./exampleProgram -i 789 -s bye -b arg0 arg1
+'''
+
+to get the output we expect:
+
+@@@ .output
+'''
+b=true, i=789, s=bye
+arguments: [arg0 arg1]
+'''
+
+{//
+reason: https://github.com/golang/go/issues/36263#thread-subscription-status
+}
+
+@@@ #printf-positional-arguments
+###+++++++++++ `[Sp|Fp|P]rintf` functions support positional arguments.
+
+The following program will print `coco`.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	// The next line prints: coco
+	fmt.Printf("%[2]v%[1]v%[2]v%[1]v", "o", "c")
+}
+'''
+
+} // .summaries-items
+
+""""""//
+@@@ #remove-spaces-in-template
+###+++++++++++ Since Go 1.6, we can .
+
+https://golang.org/doc/go1.6 : {{a -}} sss {{- b}}
+
+
+
+The exported fields and methods of embedded non-exported fields
+are still exported for the embedding struct type.
+
+
+json:"name: empty" // doesn't work
+
+syscall package docs show current O arch defaultly
+  https://golang.org/pkg/syscall/?GOOS=linux&GOARCH=mips64le
+
+two unnamed struct types embedding two type aliases which denote the same type are two different types.
+if the two aliases have different names.
+
+non-exported field can't be set by reflection, but can be listed. Can read?
+
+reflection created embedding type will not obtain methods. still?
+
+
+
+https://golang.org/pkg/reflect/#pkg-note-BUG
+
+https://golang.org/pkg/reflect/#Value.String
+Print functions not always print the result of the String() method of a value.
+
+
+
+
+an untyped rune or int constant can be bound with a value which is larger than the max `rune` or `int` value in memory.
+
+-128/-1 = -128
+
+
+greedy goroutine https://github.com/golang/go/issues/10958
+* It look some goroutines never get yielded, this make some other goroutines never get chances to run, why?
+http://stackoverflow.com/questions/13107958/what-exactly-does-runtime-gosched-do
+tight loops should be preemptible
+https://github.com/golang/go/issues/10958
+(eliminated since Go Toolchain 1.15) https://twitter.com/zigo_101/status/1225258083745558528
+
+internal package
+
+"go doc xyz" may show the docs of the first package named with "xyz"
+https://github.com/golang/go/issues/24462
+For example, "go doc rand" show docs of "math/rand" instead of "crypto/rand".
+
+
+runtime.Caller/ Callers: depth inconsistency
+
+https://github.com/golang/go/issues/13890
+
+https://github.com/golang/go/issues/24693
+
+https://github.com/golang/go/issues/24721
+
+
+
+Try not to use multi-value assignments.
+Reason 1: maybe bug. Reason 3: unspecified behaviors. 2: maybe inefficient.
+https://github.com/golang/go/issues/23188#issuecomment-361482955
+https://github.com/golang/go/issues/23017
+https://github.com/golang/go/issues/22881
+https://github.com/golang/go/issues/24448
+
+https://github.com/golang/go/issues/24746
+
+https://github.com/golang/go/issues/20135
+https://github.com/golang/go/issues/26463 maps do not shrink
+
+Values of `expvar.Int` and `expvar.Float` need to be 64-bit aligned.
+
+func main() {
+	var a, b = 1.0, 0.0
+	x, y := a/b, 0.0
+	println(x, y) // +Inf +0.000000e+000
+	println(x * y) // NaN
+}
+
+The String method of a reflect.Value value v returns the string form of the underlying value of v.
+However, the functions in the fmt package try to print the string form of the underlying value of the underlying value of v,
+if the underlying value of v is also a reflect.Value value.
+
+	package main
+
+	import (
+		"fmt"
+		"reflect"
+	)
+
+	func main() {
+		var v reflect.Value
+		fmt.Println(v.IsValid()) // false
+		fmt.Println(v)           // <invalid reflect.Value>
+		fmt.Println(v.String())  // <invalid Value>
+		
+		v = reflect.ValueOf(v)
+		fmt.Println(v.IsValid()) // true
+		fmt.Println(v)           // <invalid Value>
+		fmt.Println(v.String())  // <reflect.Value Value>
+		
+		v = reflect.ValueOf(v)
+		fmt.Println(v.IsValid()) // true
+		fmt.Println(v)           // <reflect.Value Value>
+		fmt.Println(v.String())  // <reflect.Value Value>
+	}
+
+io/ioutil since Go 1.11
+    The TempFile function now supports specifying where the random characters in the filename are placed.
+    If the prefix argument includes a "*", the random string replaces the "*".
+    For example, a prefix argument of "myname.*.bat" will result in a random filename such as "myname.123456.bat".
+    If no "*" is included the old behavior is retained, and the random digits are appended to the end.
+io/ioutil is deprecated since Go 1.16
+
+
+
+go term(inoledgie)s 101
+
+go contests 101 / summaries / snippets
+
+
+
+1.13+: one more DeepEqual exception: https://go-review.googlesource.com/c/go/+/168438/3/src/reflect/deepequal.go
+* (cancelled)
+
+bytes.TrimSpace may return nil even if the input is not: https://github.com/golang/go/issues/31038
+
+
+
+
+method value evaluation timing
+* https://github.com/golang/go/issues/32021
+* https://github.com/golang/go/issues/32035
+
+https://github.com/golang/go/issues/22075
+
+https://github.com/golang/go/issues/18531
+
+https://github.com/golang/go/issues/23224
+
+deferred calls will be called after runtime.Goexit 
+but will not after os.Exit. Note, log.Fatal wraps os.Exit.
+If a program does clean-up work in deferred calls, don't use os.Exit to terminate the program.
+
+package main
+import "C" // program crashes if this line is commented out
+func main() {
+  select{}
+}
+
+https://github.com/golang/go/issues/34684
+
+The print result of nil and blank slices are the same. (Similar to maps).
+* history reason
+
+
+the source part of a type alias declaration can't reference the declared alias.
+
+cgo should not call Go before all init functions exit:
+https://github.com/golang/go/issues/36530#issuecomment-574213023
+
+force gc every 2 minutes: https://github.com/golang/go/blob/895b7c85addfffe19b66d8ca71c31799d6e55990/src/runtime/proc.go#L4481-L448
+
+Go time
+https://github.com/golang/go/issues/27090
+
+Remove element from list
+	for e := l.Front(); e != nil; e = e.Next() {
+		l.Remove(e) // bug
+	}
+	for e := l.Front(); e != nil; {
+		next = e.Next()
+		l.Remove(e)
+		e = next
+	}
+
+reflect: DeepEqual always returns true for unexported C structures in dynamic library
+https://github.com/golang/go/issues/38980
+
+
+https://twitter.com/dgryski/status/1302984936870223874
+An http.ResponseWriter will set the status to "200 Ok" if Write() is called before the status code is set explicitly with WriteHeader().
+If you call WriteHeader afterwards, the new status code is ignored but the server will log to stderr.
+Check your logs!
+
+
+...
+f is much faster than g, for f makes no allocations (optimized by Go Toolchain).
+	func f(x, y, z []byte){
+	  switch {
+	  case string(x) == string(y):
+	  case string(x) == string(z):
+	  }
+	}
+	func g(x, y, z []byte){
+	  switch string(x) {
+	  case string(y):
+	  case string(z):
+	  }
+	}
+
+func foo(buf []byte) {
+	f := func() {
+		type buf struct{} // mute buf in this block to avoid misusing it.
+		data := make([]byte, 100)
+		...
+	}
+}
+
+
+"// +build go1.16" specify the minimum Go Toolchain version needed to compile a source file.
+"go 1.N" directive in a "go.mod" file specifies the features the containing module could use (https://golang.org/ref/mod#go-mod-file-go). It likes the "-lang=go1.N" compilation option. So
+  it doesn't specify the minimum Go Toolchain version to compile the module. Higher or lower Toolchain versions may be used if the desired features are supported these Toolchain versions.
+  it doesn't cover other modules in a program. https://play.golang.org/p/hMNDpRPh7Em
+
+
+https://github.com/golang/go/issues/44391
+https://github.com/golang/go/issues/14830
+	key := []byte{}
+	fmt.Printf("%#[1]v %[1]T\n", key)  // []byte{} []uint8
+	fmt.Printf("%#[1]v %[1]T\n", &key) // &[]uint8{} *[]uint8
+
+
+https://groups.google.com/g/golang-nuts/c/90fYaXNRmVM
+https://groups.google.com/g/golang-nuts/c/90fYaXNRmVM/m/ZfKRE1vwFQAJ
+
+https://github.com/golang/go/issues/44830
+reflect: TypeOf(unsafe.Pointer(nil)).PkgPath() returns "", not "unsafe"
+
+https://github.com/golang/go/issues/46789
+runtime.NumCgoCall() decrease when some goroutines exit? bug or should?
+
+https://github.com/golang/go/issues/46827#issuecomment-864694337
+tiny object might implicitly share memory blocks with others.
+https://go-review.googlesource.com/c/go/+/337391/5/src/runtime/mfinal.go
+
+Max embed size is 2G: https://github.com/golang/go/issues/47627
+
+Missing go directive in go.mod: language version is defaulted to 1.16:
+https://groups.google.com/g/golang-nuts/c/lhedc8YaWlM
+https://github.com/golang/go/issues/44976
+
+
+
+
+
+
+
+
+
+

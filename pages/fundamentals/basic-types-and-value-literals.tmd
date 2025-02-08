@@ -1,0 +1,607 @@
+### Basic Types and Basic Value Literals
+
+Types can be viewed as value templates,
+and values can be viewed as type instances.
+This article will introduce the built-in basic types
+and their value literals in Go.
+Composite types will not get introduced in this article.
+
+@@@ #overview
+###+++++++++++ Built-in Basic Types in Go
+
+Go supports following built-in basic types:
+*
+	one boolean built-in boolean type: `bool`.
+*
+	11 built-in integer numeric types (basic integer types):
+	`int8`, `uint8`, `int16`,
+	`uint16`, `int32`, `uint32`,
+	`int64`, `uint64`, `int`, `uint`,
+	and `uintptr`.
+*
+	two built-in floating-point numeric types: `float32` and `float64`.
+*
+	two built-in complex numeric types: `complex64` and `complex128`.
+*
+	one built-in string type: `string`.
+
+Each of the 17 built-in basic types belongs to one different kind of type in Go.
+We can use the above built-in types in code without importing any packages,
+though all the names of these types are non-exported identifiers.
+
+15 of the 17 built-in basic types are numeric types.
+Numeric types include integer types, floating-point types and complex types.
+
+Go also support two built-in type aliases,
+*
+	`byte` is a built-in alias of `uint8`.
+	We can view `byte` and `uint8` as the same type.
+*
+	`rune` is a built-in alias of `int32`.
+	We can view `rune` and `int32` as the same type.
+
+The integer types whose names starting with an `u` are unsigned types.
+Values of unsigned types are always non-negative.
+The number in the name of a type means how many binary bits
+a value of the type will occupy in memory at run time.
+For example, every value of the `uint8` occupies 8 bits in memory.
+So the largest `uint8` value is `255` (2^$$8$$-1),
+the largest `int8` value is `127` (2^$$7$$-1), and
+the smallest `int8` value is `-128` (-2^$$7$$).
+
+If a value occupies **N** bits in memory, we say the size of the value is **N** bits.
+The sizes of all values of a type are always the same, so value sizes are often called as type sizes.
+
+We often measure the size of a value based on the number of bytes it occupies in memory.
+One byte contains 8 bits.
+So the size of the `uint32` type is four bytes.
+
+The size of `uintptr`, `int` and `uint` values
+n memory are implementation-specific.
+Generally, The size of `int` and `uint` values
+are 4 bytes on 32-bit architectures, and 8 bytes on 64-bit architectures.
+The size of `uintptr` value must be large enough to
+store the uninterpreted bits of any memory address.
+
+The real and imaginary parts of a `complex64` value are both `float32` values,
+and the real and imaginary parts of a `complex128` value are both `float64` values.
+
+In memory, all floating-point numeric values in Go are stored in __IEEE-754 format__.
+
+// __ IEEE-754 format :: https://en.wikipedia.org/wiki/IEEE_754
+
+A boolean value represents a truth.
+There are only two possible boolean values in memory,
+they are denoted by the two predeclared named constants,
+`false` and `true`.
+Name constants will be introduced in __the next article__.
+
+// __ the next article :: constants-and-variables.html
+
+In logic, a string value denotes a piece of text.
+In memory, a string value stores a sequence of bytes, which is the
+UTF-8 encoding representation of the piece of text denoted by the string value.
+We can learn more facts on strings from the article __strings in Go__ later.
+
+// __ strings in Go :: string.html
+
+Although there is only one built-in type for each of boolean and string types,
+we can define custom boolean and string types
+for the built-in boolean and string types.
+So there can be many boolean and string types.
+The same is for any kinds of numeric types.
+The following are some type declaration examples.
+In these declarations, the word `type` is a keyword.
+
+@@@ .line-numbers
+'''go
+/* Some type definition declarations */
+
+// status and bool are two different types.
+type status bool
+// MyString and string are two different types.
+type MyString string
+// Id and uint64 are two different types.
+type Id uint64
+// real and float32 are two different types.
+type real float32
+
+/* Some type alias declarations */
+
+// boolean and bool denote the same type.
+type boolean = bool
+// Text and string denote the same type.
+type Text = string
+// U8, uint8 and byte denote the same type.
+type U8 = uint8
+// char, rune and int32 denote the same type.
+type char = rune
+'''
+
+We can call the custom `real` type defined above
+and the built-in `float32` type both as float32 types.
+Note, the second **%% float32 %%** word
+in the last sentence is a general reference,
+whereas the first one is a specified reference.
+Similarly, `MyString` and `string` are both string types,
+`status` and `bool` are both bool types, etc.
+
+We can learn more on custom types in the article
+__Go type system overview__ later.
+
+// __ Go type system overview :: type-system-overview.html
+
+###+++++++++++ Zero Values
+
+Each type has a zero value.
+The zero value of a type can be viewed as the default value of the type.
+*
+	The zero value of a boolean type is false.
+*
+	The zero value of a numeric type is zero, though zeros of different numeric types may have different sizes in memory.
+*
+	The zero value of a string type is an empty string.
+
+@@@ #basic-value-literals
+###+++++++++++ Basic Value Literals
+
+A literal of a value is a text representation of the value in code.
+A value may have many literals.
+The literals denoting values of basic types are called basic value literals.
+
+###----------- Boolean value literals
+
+Go specification doesn't define boolean literals.
+However, in general programming, we can view the two predeclared identifiers,
+`false` and `true`, as boolean literals.
+But we should know that the two are not literals in the strict sense.
+
+As mentioned above, zero values of boolean types
+are denoted with the predeclared `false` constant.
+
+###----------- Integer value literals
+
+There are four integer value literal forms,
+the decimal (base 10) form, the octal (base 8) form,
+the hex (base 16) form and the binary form (base 2).
+For example, the following four integer literals
+all denote `15` in decimal.
+
+@@@ .disable-line-numbers111
+'''go
+0xF // the hex form (starts with a "0x" or "0X")
+0XF
+
+017 // the octal form (starts with a "0", "0o" or "0O")
+0o17
+0O17
+
+0b1111 // the binary form (starts with a "0b" or "0B")
+0B1111
+
+15 // the decimal form (starts without a "0")
+'''
+
+(Note: the binary form and the octal from starting with
+`0o` or `0O` are supported since Go 1.13.)
+
+The following program will print two `true` texts.
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	println(15 == 017) // true
+	println(15 == 0xF) // true
+}
+'''
+
+Note, the two `==` are the equal-to comparison operator,
+which will be introduced in __common operators__.
+
+// __ common operators :: operators.html
+
+Generally, zero values of integer types are denoted as `0`
+in literal, though there are many other legal literals for integer zero values,
+such as `00` and `0x0`.
+In fact, the zero value literals introduced in the current article
+for other kinds of numeric types can also
+represent the zero value of any integer type.
+
+###----------- Floating-point value literals
+
+A decimal floating-point value literal may contain a decimal integer part,
+a decimal point, a decimal fractional part, and an integer exponent part (10-based).
+Such an integer exponent part starts with a letter `e` or `E` and suffixes with a decimal integer literal
+(`xEn` is equivalent to `x` is multiplied by `10^$$n$$`,
+and `xE-n` is equivalent to `x` is divided by `10^$$n$$`).
+Some examples:
+@@@ .disable-line-numbers111
+'''go
+1.23
+01.23 // == 1.23
+.23
+1.
+// An "e" or "E" starts the exponent part (10-based).
+1.23e2  // == 123.0
+123E2   // == 12300.0
+123.E+2 // == 12300.0
+1e-1    // == 0.1
+.1e0    // == 0.1
+0010e-2 // == 0.1
+0e+5    // == 0.0
+'''
+
+Since Go 1.13, Go also supports another floating point literal form: hexadecimal floating point literal form.
+*
+	A hexadecimal floating point literal must end with 2-based exponent part,
+	which starts with a letter `p` or `P` and suffixes with a decimal integer literal
+	(`yPn` is equivalent to `y` is multiplied by `2^$$n$$`, and `yP-n` is equivalent to `y` is divided by `2^$$n$$`).
+*
+	Same as hex integer literals, a hexadecimal floating point literal also must start with `0x` or `0X`.
+	Different from hex integer literals, a hexadecimal floating point literal may contain a decimal point and a decimal fractional part.
+
+The followings are some legal hexadecimal floating point literals:
+@@@ .disable-line-numbers111
+'''go
+0x1p-2     // == 1.0/4 = 0.25
+0x2.p10    // == 2.0 * 1024 == 2048.0
+0x1.Fp+0   // == 1+15.0/16 == 1.9375
+0X.8p1     // == 8.0/16 * 2 == 1.0
+0X1FFFP-16 // == 0.1249847412109375
+'''
+
+However, the following ones are illegal:
+@@@ .disable-line-numbers111
+'''go
+0x.p1    // mantissa has no digits
+1p-2     // p exponent requires hexadecimal mantissa
+0x1.5e-2 // hexadecimal mantissa requires p exponent
+'''
+
+Note: the following literal is legal, but it is not a floating point literal.
+It is a subtraction arithmetic expression actually.
+The `e` in it means `14` in decimal.
+`0x15e` is a hex integer literal, `-` is the subtraction operator,
+and `2` is a decimal integer literal.
+(Arithmetic operators will be introduced in the article __common operators__.)
+
+// __ common operators :: operators.html
+
+@@@ .disable-line-numbers111
+'''go
+0x15e-2 // == 0x15e - 2 // a subtraction expression
+'''
+
+The standard literals for zero value of floating-point types are
+`0.0`, though there are many other legal literals,
+such as `0.`, `.0`, `0e0`, `0x0p0`, etc.
+In fact, the zero value literals introduced in the current article
+for other kinds of numeric types can also
+represent the zero value of any floating-point type.
+
+###----------- Imaginary value literals
+
+An imaginary literal consists of a floating-point or integer literal and a lower-case letter `i`.
+Examples:
+@@@ .disable-line-numbers111
+'''go
+1.23i
+1.i
+.23i
+123i
+0123i   // == 123i (for backward-compatibility. See below.)
+1.23E2i // == 123i
+1e-1i
+011i   // == 11i (for backward-compatibility. See below.)
+00011i // == 11i (for backward-compatibility. See below.)
+// The following lines only compile okay since Go 1.13.
+0o11i    // == 9i
+0x11i    // == 17i
+0b11i    // == 3i
+0X.8p-0i // == 0.5i
+'''
+
+Note, before Go 1.13, in an imaginary literal, the letter `i`
+can only be prefixed with a floating-point literal.
+To be compatible with the older versions, since Go 1.13,
+the integer literals appearing as octal integer forms not starting with
+`0o` and `0O` are still viewed as floating-point literals,
+such as `011i`, `0123i` and `00011i` in the above example.
+
+Imaginary literals are used to represent the imaginary parts of complex values.
+Here are some literals to denote complex values:
+@@@ .disable-line-numbers111
+'''go
+1 + 2i       // == 1.0 + 2.0i
+1. - .1i     // == 1.0 + -0.1i
+1.23i - 7.89 // == -7.89 + 1.23i
+1.23i        // == 0.0 + 1.23i
+'''
+
+The standard literals for zero values of complex types are
+`0.0+0.0i`, though there are many other legal literals,
+such as `0i`, `.0i`, `0+0i`, etc.
+In fact, the zero value literals introduced in the current article
+for other kinds of numeric types can also
+represent the zero value of any complex type.
+
+@@@ #underscores-in-literals
+###----------- Use `_` in numeric literals for better readability
+
+Since Go 1.13, underscores `_` can appear in integer, floating-point
+and imaginary literals as digit separators to enhance code readability.
+But please note, in a numeric literal,
+*
+	any `_` is not allowed to
+	be used as the first or the last character of the literal,
+*
+	the two sides of any `_` must be either literal prefixes
+	(such as `0X`) or legal digit characters.
+
+Some legal and illegal numeric literals which contain underscores:
+
+@@@ .disable-line-numbers111
+'''go
+// Legal ones:
+6_9          // == 69
+0_33_77_22   // == 0337722
+0x_Bad_Face  // == 0xBadFace
+0X_1F_FFP-16 // == 0X1FFFP-16
+0b1011_0111 + 0xA_B.Fp2i
+
+// Illegal ones:
+_69        // _ can't appear as the first character
+69_        // _ can't appear as the last character
+6__9       // one side of _ is a illegal character
+0_xBadFace // "x" is not a legal octal digit
+1_.5       // "." is not a legal octal digit
+1._5       // "." is not a legal octal digit
+'''
+
+@@@ #rune
+###----------- Rune value literals
+
+Rune types, including custom defined rune types and
+the built-in `rune` type (a.k.a., `int32` type),
+are special integer types,
+so all rune values can be denoted by the integer literals introduced above.
+On the other hand, many values of all kinds of integer types can also be
+represented by rune literals introduced below in the current subsection.
+
+A rune value is intended to store a Unicode code point.
+Generally, we can view a code point as a Unicode character,
+but we should know that some Unicode characters are
+composed of more than one code points each.
+
+A rune literal is expressed as one or more characters enclosed in a pair of quotes.
+The enclosed characters denote one Unicode code point value.
+There are some minor variants of the rune literal form.
+The most popular form of rune literals is just to enclose the characters denoted
+by rune values between two single quotes. For example
+@@@ .disable-line-numbers111
+'''go
+'a' // an English character
+'π'
+'众' // a Chinese character
+'''
+
+The following rune literal variants are equivalent to `'a'`
+(the Unicode value of character `a` is 97).
+@@@ .disable-line-numbers111
+'''go
+// 141 is the octal representation of decimal number 97.
+'\141'
+// 61 is the hex representation of decimal number 97.
+'\x61'
+'\u0061'
+'\U00000061'
+'''
+
+Please note, `\` must be followed by exactly three octal digits to represent a byte value,
+`\x` must be followed by exactly two hex digits to represent a byte value,
+`\u` must be followed by exactly four hex digits to represent a rune value,
+and `\U` must be followed by exactly eight hex digits to represent a rune value.
+Each such octal or hex digit sequence must represent a legal Unicode code point, otherwise, it fails to compile.
+
+The following program will print 7 `true` texts.
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	println('a' == 97)
+	println('a' == '\141')
+	println('a' == '\x61')
+	println('a' == '\u0061')
+	println('a' == '\U00000061')
+	println(0x61 == '\x61')
+	println('\u4f17' == '众')
+}
+'''
+
+In fact, the four variant rune literal forms just mentioned
+are rarely used for rune values in practice.
+They are occasionally used in interpreted string literals
+(see the next subsection for details).
+
+If a rune literal is composed by two characters (not including the two quotes),
+the first one is the character `\` and the second one is not
+a digital character, `x`, `u` and `U`,
+then the two successive characters
+will be escaped as one special character.
+The possible character pairs to be escaped are:
+@@@ .disable-line-numbers111
+'''go
+\a   (Unicode value 0x07) alert or bell
+\b   (Unicode value 0x08) backspace
+\f   (Unicode value 0x0C) form feed
+\n   (Unicode value 0x0A) line feed or newline
+\r   (Unicode value 0x0D) carriage return
+\t   (Unicode value 0x09) horizontal tab
+\v   (Unicode value 0x0b) vertical tab
+\\   (Unicode value 0x5c) backslash
+\'   (Unicode value 0x27) single quote
+'''
+
+`\n` is the most used escape character pair.
+
+An example:
+@@@ .line-numbers
+'''go
+    println('\n') // 10
+    println('\r') // 13
+    println('\'') // 39
+
+    println('\n' == 10)     // true
+    println('\n' == '\x0A') // true
+'''
+
+There are many literals which can denote the zero values of rune types,
+such as `'\000'`, `'\x00'`, `'\u0000'`, etc.
+In fact, we can also use any numeric literal introduced above to represent
+the values of rune types, such as `0`, `0x0`,
+`0.0`, `0e0`, `0i`, etc.
+
+@@@ #string-literals
+###----------- String value literals
+
+String values in Go are UTF-8 encoded.
+In fact, all Go source files must be UTF-8 encoding compatible.
+
+There are two forms of string value literals,
+interpreted string literal (double quotes form)
+and raw string literal (back quotes form).
+For example, the following two string literals are equivalent:
+
+@@@ .disable-line-numbers111
+'''go
+// The interpreted form.
+"Hello\nworld!\n\"你好世界\""
+
+// The raw form.
+`Hello
+world!
+"你好世界"`
+'''
+
+In the above interpreted string literal, each `\n` character pair
+will be escaped as one newline character, and each `\"` character pair
+will be escaped as one double quote character.
+Most of such escape character pairs are the same as the escape character pairs
+used in rune literals introduced above, except that `\"` is only
+legal in interpreted string literals and `\^``` is only legal in
+rune literals.
+
+The character sequence of `\`, `\x`,
+`\u` and `\U` followed by several octal or hex digits
+introduced in the last section can also be used in interpreted string literals.
+
+@@@ .disable-line-numbers111
+'''go
+// The following interpreted string literals are equivalent.
+"\141\142\143"
+"\x61\x62\x63"
+"\x61b\x63"
+"abc"
+
+// The following interpreted string literals are equivalent.
+"\u4f17\xe4\xba\xba"
+      // The Unicode of 众 is 4f17, which is
+      // UTF-8 encoded as three bytes: e4 bc 97.
+"\xe4\xbc\x97\u4eba"
+      // The Unicode of 人 is 4eba, which is
+      // UTF-8 encoded as three bytes: e4 ba ba.
+"\xe4\xbc\x97\xe4\xba\xba"
+"众人"
+'''
+
+Please note that each English character (code point) is represented with one byte,
+but each Chinese character (code point) is represented with three bytes.
+
+In a raw string literal, no character sequences will be escaped.
+The back quote character is not allowed to appear in a raw string literal.
+To get better cross-platform compatibility, carriage return characters
+(Unicode code point `0x0D`) inside raw string literals will be discarded.
+
+Zero values of string types can be denoted as `""` or `^````` in literal.
+
+@@@ #representability
+###+++++++++++ Representability of Basic Numeric Value Literals
+
+A numeric literal can be used to represent as an integer value only if it needn't be rounded.
+For example, `1.23e2` can represent as values of any basic integer types,
+but `1.23` can't represent as values of any basic integer types.
+Rounding is allowed when using a numeric literal to represent a non-integer basic numeric values.
+
+Each basic numeric type has a representable value range.
+So, if a literal overflows the value range of a type,
+then the literal is not representable as values of the type.
+
+Some examples:
+# ### The Literal
+  ### Types Which Values the Literal Can Represent
+  ---
+  ;;; `256`
+  ;;; All basic numeric types except int8 and uint8 types.
+  ---
+  ;;; `255`
+  ;;; All basic numeric types except int8 types.
+  ---
+  ;;; `-123`
+  ;;; All basic numeric types except the unsigned ones.
+  ---
+  ;;; `123`
+  {>< :5
+  All basic numeric types.
+  }
+  ---
+  ;;; `123.000`
+  ---
+  ;;; `1.23e2`
+  ---
+  ;;; `'a'`
+  ---
+  ;;; `1.0+0i`
+  ---
+  ;;; `1.23`
+  {>< :2
+  All basic floating-point and complex numeric types.
+  }
+  ---
+  ;;; `0x10000000000000000`
+      \\ (16 zeros)
+  ---
+  ;;; `3.5e38`
+  ;;; All basic floating-point and complex numeric types except float32 and complex64 types.
+  ---
+  ;;; `1+2i`
+  ;;; All basic complex numeric types.
+  ---
+  ;;; `2e+308`
+  ;;; None basic types.
+  
+
+
+Notes:
+*
+	Because no values of the basic integer types provided in Go can hold
+	`0x10000000000000000`, so the literal is not
+	representable as values of any basic integer types.
+*
+	The maximum IEEE-754 float32 value which can be represented accurately
+	is `3.40282346638528859811704183484516925440e+38`,
+	so `3.5e38` is not representable as values of
+	any float32 and complex64 types.
+*
+	The max IEEE-754 float64 value which can be represented accurately
+	is `1.797693134862315708145274237317043567981e+308`,
+	so `2e+308` is not representable as
+	values of any `float64` and `complex128` types.
+*
+	In the end, please note, although `0x10000000000000000`
+	can represent values of float32 types,
+	however it can't represent any float32 values accurately in memory.
+	In other words, it will be rounded to the closest float32 value which can be
+	represented accurately in memory when it is used as values of float32 types.
+

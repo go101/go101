@@ -1,0 +1,1282 @@
+### Go FAQ 101
+
+%%
+(This is an unofficial Go FAQ. The official one is __here__.)
+
+// __ here :: https://golang.org/doc/faq
+
+Index:
+
+@@@ #unofficial-faq.html .summaries
+* compiler and runtime
+	@@@ .index
+	- __What does the compile error message `non-name **	- on left side of :=` mean?`` #error-non-name__
+	- __What does the compile error message `unexpected newline, expecting { after if clause` mean?`` #error-missing-left-brace__
+	- __What does the compiler error message `declared and not used` mean?`` #error-declared-not-used__
+	- __Does Go runtime maintain the iteration orders for maps?`` #map-iteration-order__
+	- __Will Go compilers do padding to ensure field alignments for struct types?`` #compiler-field-padding__
+	- __Why does the final field of a zero-sized type in a struct contribute to the size of the struct sometimes?`` #final-zero-size-field__
+	- __Is `new(T)` a sugar of `var t T; (&t)`?`` #new-function__
+	- __What does the runtime error message `all goroutines are asleep - deadlock` mean?`` #fatal-error-deadlock__
+	- __Are 64-bit integer values guaranteed to be 64-bit aligned
+		so that they can be accessed atomically?`` #64-bit-alignment__
+	- __Are assignments of values atomic operations?`` #atomical-assignment__
+	- __Is every zero value composed of a sequence of zero bytes in memory?`` #zero-values-zero-bytes__
+	- __Does the standard Go compiler support function inlining?`` #function-inline__
+	- __Can I use finalizers as object destructors?`` #finalizers__
+
+* standard packages
+	@@@ .index
+	- __How to get the number of days of any month by using as few code lines as possible?`` #get-days-of-month__
+	- __What is the difference between the function call `time.Sleep(d)` and the channel receive operation `<-time.After(d)`?`` #time-sleep-after__
+	- __Calls of the `TrimLeft` and `TrimRight` functions in the `strings` and `bytes`
+		standard packages often return unexpected results, are there bugs in these function implementations?`` #trim__
+	- __What are the differences between the `fmt.Print` and `fmt.Println` functions?`` #fmt-print-println__
+	- __Is there any difference between the `log.Print` and `log.Println` functions?`` #log-print-println__
+	- __Are `fmt.Print`, `fmt.Println` and `fmt.Printf` functions synchronized?`` #fmt-print-synced__
+	- __What are the differences between the built-in `print`/`println` functions and the corresponding print functions in the `fmt` and `log` standard packages?`` #print-builtin-fmt-log__
+	- __What is the difference between the random numbers produced by the `math/rand` standard package and the `crypto/rand` standard package?`` #math-crypto-rand__
+	- __Why isn't there a `math.Round` function?`` #math-round__
+
+* type system
+	@@@ .index
+	- __Which types don't support comparisons?`` #incomparable-types__
+	- __Why aren't two `nil` values equal sometimes?`` #nil-equality__
+	- __Why don't type `[]T1` and `[]T2` share the same underlying type
+		even if the two different types `T1` and `T2` share the same underlying type?`` #slice-conversion__
+	- __Which values can and which values can't have their addresses taken?`` #unaddressable-values__
+	- __Why are map elements not addressable?`` #map-elements-are-unaddressable__
+	- __Why elements of a non-nil slice are always addressable, even if the slice is unaddressable?`` #slice-elements-always-addressable__
+	- __For any non-pointer non-interface type `T`,
+		why is the method set of `*T` always a super set of the method set of `T`,
+		but not vice versa?`` #method-set-relation__
+	- __Which types can we implement methods for?`` #types-can-have-methods__
+	- __How to declare immutable values in Go?`` #declare-immutables__
+	- __Why isn't there a built-in `set` container type?`` #set-container-type__
+	- __What is byte? What is rune?
+		How to convert `[]byte` and `[]rune` values to strings?`` #byte-rune-slice-string__
+	- __How to manipulate pointer values atomically?`` #pointer-atomic__
+
+* others
+	@@@ .index
+	- __What does `iota` mean?`` #about-iota__
+	- __Why isn't there a built-in `closed` function to check whether or not a channel is closed?`` #check-if-channels-closed__
+	- __Is it safe for a function to return pointers of local variables?`` #return-local-pointers__
+	- __What does the word **%% gopher %%** mean in Go community?`` #gopher__
+
+
+
+@@@ .summaries-items
+{
+
+// compiler and runtime
+
+@@@ #error-non-name
+###+++++++++++ 
+	What does the compile error message `non-name *** on left side of :=` mean?
+
+Up to now (Go 1.23), there is __a mandatory rule__
+for short variable declarations:
+@@@ .alert;alert-success
+{
+All items at the left side of `:=` must be pure
+__identifiers__ and at least one of them must be a new variable name.
+}
+
+// __ a mandatory rule :: https://golang.org/ref/spec#Short_variable_declarations
+// __ identifiers :: https://golang.org/ref/spec#Identifiers
+
+This means container elements (`x[i]`),
+struct fields (`x.f`), pointer dereferences (`*p`)
+and qualified identifiers (`aPackage.Value`)
+can't appear at the left side of `:=`.
+
+Currently, there is an __open issue__
+(which was merged with __a more related one__)
+for this problem. It looks Go core team wants to __leave this problem unresolved currently__.
+
+// __ open issue :: https://github.com/golang/go/issues/377
+// __ a more related one :: https://github.com/golang/go/issues/6842
+// __ leave this problem unresolved currently :: https://github.com/golang/go/issues/30318
+
+@@@ #error-missing-left-brace
+###+++++++++++ 
+	What does the compile error message `unexpected newline, expecting { ...` mean?
+
+In Go, we can't break a code line at an arbitrary position.
+Please read __line break rules in Go__ for details.
+By the rules, generally, it is not okay to break code lines just before the open brackets.
+
+// __ line break rules in Go :: line-break-rules.html
+
+For example, the following code
+
+@@@ .line-numbers
+'''go
+if true
+{
+}
+
+for i := 0; i < 10; i++
+{
+}
+
+var _ = []int
+{
+	1, 2, 3
+}
+'''
+
+will be interpreted as
+
+@@@ .line-numbers
+'''go
+if true;
+{
+}
+
+for i := 0; i < 10; i++;
+{
+}
+
+var _ = []int;
+{
+	1, 2, 3;
+}
+'''
+
+Go compilers will report an error for each open bracket `{`.
+To avoid these errors, we should rewrite the above code as the following.
+
+@@@ .line-numbers
+'''go
+if true {
+}
+
+for i := 0; i < 10; i++ {
+}
+
+var _ = []int {
+	1, 2, 3,
+}
+'''
+
+@@@ #error-declared-not-used
+###+++++++++++ 
+	What does the compiler error message `declared and not used` mean?
+
+For the standard Go compiler, each variable declared in local code blocks
+must be used as a r-value (right-hand-side value) for at least once.
+
+So the following code fails to compile.
+
+@@@ .line-numbers
+'''go
+func f(x bool) {
+	var y = 1 // y declared but not used (as r-values)
+	if x {
+		y = 2 // here y is used as a left-hand-side value
+	}
+}
+'''
+
+{//
+exception: https://github.com/golang/go/issues/8560
+}
+
+
+@@@ #map-iteration-order
+###+++++++++++ 
+	Does Go runtime maintain the iteration orders for maps?
+
+No. __Go 1 specification__
+says the iteration order over a map is not specified and
+is not guaranteed to be the same from one iteration to the next.
+For the standard Go compiler, the map iteration orders are always partially randomized to varying extent. 
+If you require a stable iteration order for a map you must maintain the order by yourself.
+Please read __Go maps in action__ for more information.
+
+// __ Go 1 specification :: https://golang.org/ref/spec#For_range
+// __ Go maps in action :: https://go.dev/blog/maps#iteration-order
+
+However, please note, since Go 1.12, the entry order in the print result
+of the print functions in standard packages are always ordered.
+
+@@@ #compiler-field-padding
+###+++++++++++ 
+	Will Go compilers do padding to ensure field alignments for struct types?
+
+At least for the standard Go compiler and gccgo, the answer is yes.
+How many bytes will be padded is OS and compiler dependent.
+Please read __memory layouts__ for details.
+
+// __ memory layouts :: memory-layout.html#size-and-padding
+
+{//
+For example, the standard Go compiler will pad bytes
+like the following comments describes.
+@@@ .line-numbers
+'''go
+type T1 struct {
+	a int8
+	// 7 bytes padded on 64bit OS and pad 3 bytes padded on i386 OS here
+	b int64
+	c int16
+	// 6 bytes padded on AMD64 OS and pad 2 bytes padded on i386 OS here
+}
+
+type T2 struct {
+	a int8
+	// 1 byte padded on both AMD64 and i386 OS here
+	c int16
+	// 4 bytes padded on AMD64 OS here. No padding on i386 OS
+	b int64
+}
+'''
+The addresses of `T1.b` values in memory must be 8-byte aligned on AMD64 OS
+and 4-byte aligned on i386 OS, this is why there will be 7 bytes padded on AMD64 OS and
+3 bytes padded on i386 OS after `T1.a`.
+Go specification makes __some guarantees for type alignments__.
+One of them is the alignment of a struct type is its largest alignment of its field types.
+So `T1` is also 8-byte aligned on AMD64 OS and 4-byte aligned on i386
+(same as type of `T1.b`, `int64`),
+and the standard Go compiler will ensure the size of values of a type is a multiple of the alignment guarantee of the type,
+this is why there will be 6 bytes padded on AMD64 OS and 2 bytes
+padded on i386 OS at the end of `T1` values.
+The orders of the fields in a struct will affect padding, and padding will affect the size of the struct afterwards.
+On AMD64 OS, the size of `T1` values is 24, but the size of `T2` values is 16.
+
+// __ some guarantees for type alignments :: https://golang.org/ref/spec#Size_and_alignment_guarantees
+}
+
+Go Compilers will not rearrange struct fields to minimize struct value sizes.
+Doing this may cause some unexpected results.
+However, programmers can minimize padding by reordering the fields manually.
+
+@@@ #final-zero-size-field
+###+++++++++++ 
+	Why does the final field of a zero-sized type in a struct contribute to the size of the struct sometimes?
+
+{//
+https://github.com/golang/go/issues/9401
+}
+
+In the current standard Go runtime implementation,
+as long as a memory block is referenced by at least one active pointer,
+that memory block will not be viewed as garbage and will not be collected.
+
+All the fields of an addressable struct value can be taken addresses.
+If the size of the final field in a non-zero-sized struct value is zero, then taking the address of
+the final field in the struct value will return an address which is beyond the allocated memory block
+for the struct value. The returned address may point to another allocated memory block
+which closely follows the one allocated for the non-zero-sized struct value.
+As long as the returned address is stored in an active pointer value,
+the other allocated memory block will not get garbage collected, which may cause memory leaking.
+
+To avoid these kinds of memory leak problems, the standard Go compiler will ensure that taking the address of
+the final field in a non-zero-sized struct will never return an address which is beyond
+the allocated memory block for the struct.
+The standard Go compiler implements this by padding some bytes after the final zero-sized field
+when needed.
+
+If the types of all fields in a struct type are zero-sized
+(so the struct is also a zero-sized type), then there is no need to pad bytes in the struct,
+for the standard Go compiler treats zero-sized memory blocks specially.
+
+An example:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"unsafe"
+	"fmt"
+)
+
+func main() {
+	type T1 struct {
+		a struct{}
+		x int64
+	}
+	fmt.Println(unsafe.Sizeof(T1{})) // 8
+
+	type T2 struct {
+		x int64
+		a struct{}
+	}
+	fmt.Println(unsafe.Sizeof(T2{})) // 16
+}
+'''
+
+Also see __this official FAQ item__.
+
+// __ this official FAQ item :: https://go.dev/doc/faq#zero_size_types
+
+@@@ #new-function
+###+++++++++++ 
+	Is `new(T)` a sugar of `var t T; (&t)`?
+
+Generally we can think so, though there may be some subtle differences between the two, depending on compiler implementations.
+The memory block allocated by `new` may be either on stack or on heap.
+
+@@@ #fatal-error-deadlock
+###+++++++++++ 
+	What does the runtime error message `all goroutines are asleep - deadlock` mean?
+
+The word **%% asleep %%** is not accurate here, it means
+**%% in blocking state %%** in fact.
+
+As a blocking goroutine can only be unblocked by another goroutine,
+if all goroutines in a program enter blocking state,
+then all of they will stay in blocking state for ever.
+This means the program is deadlocked.
+A normal running program is never expected to be deadlocked,
+so the standard Go runtime makes the program crash and exit.
+
+@@@ #64-bit-alignment
+###+++++++++++ 
+	Are 64-bit integer values guaranteed to be 64-bit aligned
+	so that they can be accessed atomically?
+
+The addresses passed to the 64-bit functions in `sync/atomic` package
+must be 64-bit aligned, otherwise, calls to these functions may panic at run time.
+
+For the standard Go compiler and gccgo compiler,
+on 64-bit architectures, 64-bit integers are guaranteed to be 64-bit aligned.
+So they can be always accessed atomically without any problems.
+
+On 32-bit architectures, 64-bit integers are only guaranteed to be 32-bit aligned.
+So accessing many 64-bit integers atomically may cause panics.
+However, there are some ways to guarantee some 64-bit integers to be relied upon to be 64-bit aligned.
+Please read __memory layouts in Go__ for details.
+
+// __ memory layouts in Go :: memory-layout.html#64bit-atomic-operation
+
+{//
+
+But following 64-bit words are guaranteed to be able to be accessed atomically:
+* allocated 64-bit words.
+*. the first field in an allocated struct if the field is a 64-bit word.
+*. the first word in the first elements of an allocated array if the word is 64-bit.
+
+Here, an **%% allocated %%** value means the address of the value is
+the start address of the memory block the value locates at.
+In other words, the value is placed at the beginning of the memory block it locates at.
+
+A qualified Go compiler should promise that
+all elements in an array/slice can also be accessed atomically
+if one element in the array/slice can be accessed atomically
+and the element type is a 64-bit word type,
+though the official documentation doesn't make this guarantee.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"sync/atomic"
+)
+
+type T struct {
+	a uint64
+	b bool
+	c int64
+}
+
+type V struct {
+	d byte
+	t T // t.a is not the first field in V.
+}
+
+var x int64
+var y [3]uint64
+var z = make([]int64, 5)
+var t T
+
+var v V
+
+func main() {
+	var x2 int64
+	var y2 [3]uint64
+	var z2 = make([]int64, 5)
+	var t2 T
+
+	var v2 = new(V)
+
+	// following lines are guaranteed to be safe on
+	// both 64-bit and 32-bit OS.
+	atomic.LoadInt64(&x)
+	atomic.LoadUint64(&y[1])
+	atomic.LoadInt64(&z[2])
+	atomic.LoadUint64(&t.a)
+
+	atomic.LoadInt64(&x2)
+	atomic.LoadUint64(&y2[1])
+	atomic.LoadInt64(&z2[2])
+	atomic.LoadUint64(&t2.a)
+
+	// the following two lines are safe on 64-bit OS
+	// but may be panic on 32-bit OS
+	atomic.LoadUint64(&v.t.a)
+	atomic.LoadUint64(&v2.t.a)
+}
+'''
+
+}
+
+@@@ #atomical-assignment
+###+++++++++++ 
+	Are assignments of values atomic operations?
+
+No for the standard Go compiler, even if the sizes of the assigned values are native words.
+
+Please read __the official question__ for more details.
+
+// __ the official question :: https://golang.org/doc/faq#What_operations_are_atomic_What_about_mutexes
+
+@@@ #zero-values-zero-bytes
+###+++++++++++ 
+	Is every zero value composed of a sequence of zero bytes in memory?
+
+For most types, this is true.
+But we should know that this is compiler dependent.
+For example, for the standard Go compiler,
+the statement is wrong for some zero values of string types and float-point types.
+
+Evidence:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"unsafe"
+	"fmt"
+)
+
+func main() {
+	// case 1:
+	var s = "abc"[0:0]
+	fmt.Println(s == "") // true
+	var addr = unsafe.StringData(s)
+	fmt.Println(addr) // <a-non-zero-value>
+
+	// case 2:
+	var x = 0.0
+	var y = -x
+	fmt.Println(y == 0) // true
+	var n = *(*uintptr)(unsafe.Pointer(&y))
+	fmt.Println(n) // 9223372036854775808
+}
+'''
+
+Inversely, for all the architectures the standard Go compiler currently supports,
+if all bytes in a value are zero, then the value must be a zero value of its type.
+However, Go specification doesn't guarantee this.
+I have heard of that on some very old processors,
+nil pointers are not zero in memory.
+
+@@@ #function-inline
+###+++++++++++ 
+	Does the standard Go compiler support function inlining?
+
+Yes, the standard Go compiler supports inlining functions.
+The compiler will automatically inline some very short functions which satisfy certain requirements.
+The specific inline requirements may change from version to version.
+
+Currently (Go Toolchain 1.23), for the standard Go compiler:
+*
+	There are no explicit ways to specify which functions should be inlined in user programs.
+*
+	The `-gcflags "-l"` build option disables inlining globally, which will prevent all functions from being inline expanded.
+*
+	In user programs, there are not formal ways to prevent inlining of particular functions.
+	You can add a line `//go:noinline` directive before a function declaration to
+	prevent the function from being inlined, but this way is not guaranteed to always work in the future.
+
+@@@ #finalizers
+###+++++++++++ 
+	Can I use finalizers as object destructors?
+
+In Go programs, we can set a finalizer function for an object by using
+the `runtime.SetFinalizer` function.
+Generally, the finalizer function will be called before the object is garbage collected.
+But finalizers are never intended to be used as destructors of objects.
+The finalizers set by `runtime.SetFinalizer` are not guaranteed to run.
+So you shouldn't rely on finalizers for your program correctness.
+
+The main intention of finalizers is to allow the maintainers of a library to
+compensate for problems caused by incorrect library use.
+For example, if a programmer uses `os.Open` to open
+many files but forgets to close them after using them, then the program
+will hold many file descriptors until the program exits. This is a classic example of resource leak.
+To avoid the program holding too many file descriptors, the maintainers of the
+`os` package will set a finalizer on the every created `os.File`
+object. The finalizer will close the file descriptor stored in the `os.File`
+object. As mentioned above, the finalizers are not guaranteed to be called.
+They are just used to make the extent of resource leak as small as possible.
+
+// to add best practices and more cases where finalizer doesn't work.
+
+Please note, some finalizers will never get called for sure,
+and sometimes setting finalizers improperly will prevent some objects from being garbage collected.
+Please read the __runtime.SetFinalizer function documentation__
+to get more details.
+
+// __ runtime.SetFinalizer function documentation :: https://golang.org/pkg/runtime/#SetFinalizer
+
+// standard packages
+
+@@@ #get-days-of-month
+###+++++++++++ 
+	How to get the number of days of any month in as few lines as possible?
+
+Assume the input year and month are from the Gregorian Calendar (January is 1).
+@@@ .disable-line-numbers111
+'''go
+days := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+'''
+For Go time APIs, the usual month range is `[1, 12]` and the start day of each month is `1`.
+The start time of a month `m` in year `y` is
+`time.Date(y, m, 1, 0, 0, 0, 0, time.UTC)`.
+The arguments passed to `time.Date` can be outside their usual ranges
+and will be normalized during the conversion.
+For example, January 32 will be converted to February 1.
+
+Here are some `time.Date` use examples in Go:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"time"
+	"fmt"
+)
+
+func main() {
+	// 2017-02-01 00:00:00 +0000 UTC
+	fmt.Println(time.Date(2017, 1, 32, 0, 0, 0, 0, time.UTC))
+
+	// 2017-01-31 23:59:59.999999999 +0000 UTC
+	fmt.Println(time.Date(2017, 1, 32, 0, 0, 0, -1, time.UTC))
+
+	// 2017-01-31 00:00:00 +0000 UTC
+	fmt.Println(time.Date(2017, 2, 0, 0, 0, 0, 0, time.UTC))
+
+	// 2016-12-31 00:00:00 +0000 UTC
+	fmt.Println(time.Date(2016, 13, 0, 0, 0, 0, 0, time.UTC))
+
+	// 2017-02-01 00:00:00 +0000 UTC
+	fmt.Println(time.Date(2016, 13, 32, 0, 0, 0, 0, time.UTC))
+}
+'''
+
+@@@ #time-sleep-after
+###+++++++++++ 
+	What is the difference between the function call `time.Sleep(d)` and the channel receive operation `<-time.After(d)`?
+
+The two will both pause the current goroutine execution for a certain duration.
+The difference is the function call `time.Sleep(d)`
+will let the current goroutine enter sleeping sub-state,
+but still stay in __running state__,
+whereas, the channel receive operation `<-time.After(d)`
+will let the current goroutine enter blocking state.
+
+// __ running state :: control-flows-more.html#states-of-goroutine
+
+@@@ #trim
+###+++++++++++ 
+	Calls of the `TrimLeft` and `TrimRight` functions in the `strings` and `bytes`
+		standard packages often return unexpected results, are there bugs in these function implementations?
+
+Aha, maybe there are bugs in the implementations, but none are confirmed now.
+If the return results are unexpected, it is more possible that your expectations are not correct.
+
+There are many trim functions in `strings` and `bytes` standard packages.
+These functions can be categorized into two groups:
+*.
+	`Trim`, `TrimLeft`, `TrimRight`, `TrimSpace`, `TrimFunc`, `TrimLeftFunc`, `TrimRightFunc`.
+	These functions will trim all leading or trailing UTF-8-encoded Unicode code points (a.k.a. runes)
+	which satisfy the specified or implied conditions (`TrimSpace` implies to trim all kinds of white spaces).
+	Each of the leading or trailing runes will be checked until one doesn't satisfy the specified or implied conditions.
+*.
+	`TrimPrefix`, `TrimSuffix`.
+	The two functions will trim the specified prefix or suffix substrings (or subslices) as a whole.
+
+__Some ``https://github.com/golang/go/issues/19172__
+__programmers`` https://github.com/golang/go/issues/18160__
+__misused`` https://github.com/golang/go/issues/14657__
+__the`` https://github.com/golang/go/issues/19371__
+`TrimLeft` and `TrimRight` functions
+as `TrimPrefix` and `TrimSuffix` functions when they use the trim functions the first time.
+Certainly, the return results are very possible not as expected.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"strings"
+)
+
+func main() {
+	var s = "abaay森z众xbbab"
+	o := fmt.Println
+	o(strings.TrimPrefix(s, "ab")) // aay森z众xbbab
+	o(strings.TrimSuffix(s, "ab")) // abaay森z众xbb
+	o(strings.TrimLeft(s, "ab"))   // y森z众xbbab
+	o(strings.TrimRight(s, "ab"))  // abaay森z众x
+	o(strings.Trim(s, "ab"))       // y森z众x
+	o(strings.TrimFunc(s, func(r rune) bool {
+		return r < 128 // trim all ascii chars
+	})) // 森z众
+}
+'''
+
+
+@@@ #fmt-print-println
+###+++++++++++ 
+	What are the differences between the `fmt.Print` and `fmt.Println` functions?
+
+The `fmt.Println` function will always write a space between two adjacent arguments,
+whereas the `fmt.Print` function will write a space between two adjacent arguments
+only if both of (the concrete values of) the two adjacent arguments are not strings.
+
+Another difference is that `fmt.Println` will write
+a newline character in the end,
+but the `fmt.Print` function will not.
+
+@@@ #log-print-println
+###+++++++++++ 
+	Is there any difference between the `log.Print` and `log.Println` functions?
+
+The difference between the `log.Print` and `log.Println` functions
+is the same as the first difference between the `fmt.Print` and `fmt.Println`
+functions described in the last question.
+
+Both of the two functions will write a newline character in the end.
+
+@@@ #fmt-print-synced
+###+++++++++++ 
+	Are `fmt.Print`, `fmt.Println` and `fmt.Printf` functions synchronized?
+
+No, these functions are not synchronized.
+Please use the corresponding functions in the `log` standard package instead
+when synchronizations are needed.
+You can call `log.SetFlags(0)` to remove the prefix from each log line.
+
+@@@ #print-builtin-fmt-log
+###+++++++++++ 
+What are the differences between the built-in `print`/`println` functions and the corresponding print functions in the `fmt` and `log` standard packages?
+
+Besides the difference mentioned in the last question,
+there are some other differences between the three sets of functions.
+*.
+	The built-in `print`/`println` functions
+	will write to standard error.
+	The print functions in the `fmt` standard package
+	will write to standard output.
+	The print functions in the `log` standard package
+	will write to standard error by default,
+	though this can be changed using the
+	`log.SetOutput` function.
+
+*.
+	Calls to the built-in `print`/`println` functions
+	can't take array and struct arguments.
+*.
+	For an argument of a composite type,
+	the built-in `print`/`println` functions
+	write the addresses of the underlying value parts of the argument,
+	whereas the print functions in the `fmt` and `log`
+	standard packages try to write the value literal of the dynamic values of the interface arguments.
+*.
+	Calls to the built-in `print`/`println` functions
+	will not make the values referenced by the arguments of the calls
+	escape to heap, whereas the print functions in the `fmt`
+	and `log` standard packages will.
+*.
+	If an argument has a `String() string` or `Error() string`
+	method, the print functions in the `fmt` and `log`
+	standard packages will try to call that method when writing the argument,
+	whereas the built-in `print`/`println` functions
+	will ignore methods of arguments.
+*.
+	The built-in `print`/`println` functions
+	are not guaranteed to exist in future Go versions.
+
+@@@ #math-crypto-rand
+###+++++++++++ 
+	What is the difference between the random numbers produced by the `math/rand` standard package and the `crypto/rand` standard package?
+
+The pseudo random numbers produced by the `math/rand` standard
+package are deterministic for a given seed.
+The produced random numbers are not good for security-sensitive contexts.
+For cryptographical security purpose, we should use the pseudo random numbers
+produced by the `crypto/rand` standard package.
+
+@@@ #math-round
+###+++++++++++ 
+	Why isn't there a `math.Round` function?
+
+There is a `math.Round` function, but only since Go 1.10.
+Two new functions, `math.Round` and `math.RoundToEven`
+have been added since Go 1.10.
+
+Before Go 1.10, much time and effort was spent __discussing__ whether or not
+the `math.Round` function should be added to standard package or not.
+In the end, the proposal was adopted.
+
+// __ discussing :: https://github.com/golang/go/issues/4594
+
+// type system
+
+@@@ #incomparable-types
+###+++++++++++ 
+	Which types don't support comparisons?
+
+Following types don't support comparisons:
+* map
+* slice
+* function
+* struct types containing incomparable fields
+* array types with incomparable element types
+
+Types which don't support comparisons can't be used as the key type of map types.
+
+Please note,
+* although map, slice and function types don't support comparisons,
+ their values can be compared to the bare `nil` identifier.
+* __comparing two interface values__
+  with `==` will panic at run time if the two dynamic types of the two interface values
+  are identical and incomparable.
+
+// __ comparing two interface values :: interface.html#comparison
+
+On why slice, map and function types don't support comparison,
+please read __this answer__ in the official Go FAQ.
+
+// __ this answer :: https://golang.org/doc/faq#map_keys
+
+@@@ #nil-equality
+###+++++++++++ 
+	Why aren't two `nil` values equal sometimes?
+
+%%
+(__The answer__ in the official Go FAQ
+may also answer this question.)
+
+// __ The answer :: https://golang.org/doc/faq#nil_error
+
+An interface value can be viewed as a box which is used to encapsulate non-interface values.
+Only values whose types implement the type of the interface value can be boxed (encapsulated) into the interface value.
+In Go, there are several kinds of types whose zero values are represented as the predeclared identifier `nil`.
+An interface value boxing nothing is a zero interface value, a.k.a, a nil interface value.
+However an interface value boxing a nil non-interface value doesn't box nothing, so it is not, and doesn't equal to, a nil interface value.
+
+When comparing a nil interface value and a nil non-interface value (assume they can be compared),
+the nil non-interface value will be converted to the type of the nil interface value before doing the comparison.
+The conversion result is an interface value boxing a copy of the non-interface value.
+The result interface value doesn't box nothing, so it is not, or doesn't equal to, the nil interface value.
+
+Please read __interfaces in Go__ and
+__nils in Go__ for detailed explanations.
+
+// __ interfaces in Go :: interface.html
+// __ nils in Go :: nil.html
+
+For example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	var pi *int = nil
+	var pb *bool = nil
+	var x interface{} = pi
+	var y interface{} = pb
+	var z interface{} = nil
+
+	fmt.Println(x == y)   // false
+	fmt.Println(x == nil) // false
+	fmt.Println(y == nil) // false
+	fmt.Println(x == z)   // false
+	fmt.Println(y == z)   // false
+}
+'''
+
+@@@ #slice-conversion
+###+++++++++++ 
+	Why don't type `[]T1` and `[]T2` share the same underlying type
+	even if the two different types `T1` and `T2` share the same underlying type?
+
+%%
+(It looks the official Go FAQ also added __a similar question__ not long ago.)
+
+// __ a similar question :: https://golang.org/doc/faq#convert_slice_with_same_underlying_type
+
+In Go, values of a slice type can be converted to another slice type
+without using __the `unsafe` mechanisms__ only if the two slice types
+share the same __underlying type__.
+(__This article__ lists the full list of value conversion rules.)
+
+// __ the `unsafe` mechanisms :: unsafe.html
+// __ underlying type :: type-system-overview.html#underlying-type
+// __ This article :: value-conversions-assignments-and-comparisons.html
+
+The underlying type of an unnamed composite type is the composite type itself.
+So even if two different types `T1` and `T2` share the same underlying type,
+type `[]T1` and `[]T2` are still different types,
+so their underlying types are also different, which means values of one of them can't be converted
+to the other.
+
+The reasons for the underlying types of `[]T1` and `[]T2` are not same are:
+* the request of converting values of `[]T1` and `[]T2` to each other is not strong in practice.
+*. to make the __underlying type tracing rules__ simpler.
+
+// __ underlying type tracing rules :: type-system-overview.html#underlying-type
+
+The same reasons are also valid for other composite types.
+For example, type `map[T]T1` and `map[T]T2` also don't share the same underlying type
+even if `T1` and `T2` share the same underlying type.
+
+It is possible that values of type `[]T1` can be converted to
+`[]T2` by using the `unsafe` mechanisms,
+but generally this is not recommended:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+func main() {
+	type MyInt int
+
+	var a = []int{7, 8, 9}
+	var b = *(*[]MyInt)(unsafe.Pointer(&a))
+	b[0]= 123
+	fmt.Println(a) // [123 8 9]
+	fmt.Println(b) // [123 8 9]
+	fmt.Printf("%T \n", a) // []int
+	fmt.Printf("%T \n", b) // []main.MyInt
+}
+'''
+
+@@@ #unaddressable-values
+###+++++++++++ 
+	Which values can and which values can't have their addresses taken?
+
+We can't take the address of the following values:
+* bytes in strings
+* map elements
+* dynamic values of interface values (exposed by type assertions)
+* constant values (including named constants and literals)
+* package level functions
+* methods (used as function values)
+* intermediate values
+  - function calls
+  - explicit value conversions
+  - all sorts of operations, excluding pointer dereference operations, but including:
+    + channel receive operations
+    + sub-string operations
+    + sub-slice operations
+    + addition, subtraction, multiplication, and division, etc.
+
+@@@ .alert;alert-success
+{
+Please note, there is a syntax sugar, `&T{}`, in Go.
+It is a short form of `tmp := T{}; (&tmp)`.
+However, though `&T{}` is legal, 
+the literal `T{}` is still not addressable.
+}
+
+Following values can have their addresses taken:
+* variables
+* fields of addressable structs
+* elements of addressable arrays
+* elements of any slices (whether the slices are addressable or not)
+* pointer dereference operations
+
+@@@ #maps-are-unaddressable
+@@@ #map-elements-are-unaddressable
+###+++++++++++ 
+	Why are map elements unaddressable?
+
+The first reason is that it would conflict with maps' internal memory management process.
+In Go, a map is designed as a container which can contain an unlimited number of entries if memory is available.
+To ensure good map element indexing efficiency, in the official Go runtime implementation 
+each map value only maintains one continuous memory segment for the entirety of entries stored in that map.
+Therefore, Go runtime needs to allocate larger memory segments for a map from time to time
+when more and more entries are being put into the map.
+In the process, the entries stored on older memory segments will be moved to newer memory segments.
+There might be also some other reasons causing memory movements of entries.
+In other words, the addresses of map elements will change from time to time on need.
+If map elements are allowed to have their addresses taken, then when some map entries are moved,
+Go runtime would have to update all pointers which are storing the addresses of the moved elements,
+which brings many difficulties in implementing Go compilers and runtimes and greatly decreases execution performance.
+So, currently, map elements cannot have their addresses taken. 
+
+Secondly, the map index expression `aMap[key]` might
+return an element stored in map `aMap` or not, which means `aMap[key]` might still result
+in a zero value after `(&aMap[key]).Modify()` is called. This would confuse many people.
+(Here `Modify()` refers to a hypothetical method  which would modify the value `aMap[key]`).
+
+@@@ #slice-elements-always-addressable
+###+++++++++++ 
+	Why elements of a non-nil slice are always addressable, even if the slice is unaddressable?
+
+The internal type for slices is a struct like
+@@@ .line-numbers
+'''go
+struct {
+	// elements references an element sequence.
+	elements unsafe.Pointer
+	length   int
+	capacity int
+}
+'''
+Each slice indirectly references an underlying element sequence internally.
+Although a non-nil slice is not addressable,
+its internal element sequence is always allocated somewhere and must be addressable.
+Taking addresses of elements of a slice is taking the addresses of elements of the internal element sequence actually.
+This is why elements of unaddressable non-nil slices are always addressable.
+
+{//
+For the same reason, the substring operations on unaddressable strings also always compile ok
+(by the standard Go compiler).
+However, I can't make sure whether this is guaranteed by Go specification or not.
+}
+
+@@@ #method-set-relation
+###+++++++++++ 
+	For any non-pointer non-interface type `T`,
+	why is the method set of `*T` always a super set of the method set of `T`,
+	but not vice versa?
+
+Both of these situations involve sugaring, but only one is an intrinsic rule.
+
+*
+    A value of type `T` can call methods of type `*T`,
+    but only if the value of `T` is addressable.
+    Compilers will take the address of the `T` value automatically
+    before calling the pointer receiver methods.
+    Because type `T` can have values that are not addressable,
+    not all values of type `T` are capable of calling methods of type `*T`.
+	;;;
+    **This convenience is just a sugar, not an intrinsic rule.**
+    
+*
+    A value of type `*T`  can always call methods of type `T`.
+    This is because it is always legal to dereference a pointer value.
+	;;;
+    **This convenience is not only a sugar, but also an intrinsic rule.**
+
+So, it makes sense that the method set of `*T` is always
+a super set of the method set of `T`, but not vice versa.
+
+In fact, you can think that, for every method declared on type `T`,
+an implicit method with the same name and the same signature is automatically
+declared on type `*T`.
+Please read __methods__ for details.
+
+// __ methods :: method.html#implicit-pointer-methods
+
+@@@ .line-numbers
+'''go
+func (t T) MethodX(v0 ParamType0, ...) (ResultType0, ...) {
+	...
+}
+
+// An implicit method of *T is automatically defined as
+func (pt *T) MethodX(v0 ParamType0, ...) (ResultType0, ...) {
+	return (*pt).MethodX(v0, ...)
+}
+'''
+
+{//p>
+If a method is defined on type `*T`, no methods with the same method name can
+be defined on `T` any more.
+This is another explanation why the method set of `*T` is always
+a super set of the method set of `T`, but not vice versa.
+</p}
+
+Please read __this answer__ in the official Go FAQ to get more explanations.
+
+// __ this answer :: https://golang.org/doc/faq#different_method_sets
+
+@@@ #types-can-have-methods
+###+++++++++++ 
+	Which types can we implement methods for?
+
+Please read __methods in Go__ for details.
+
+// __ methods in Go :: method.html
+
+@@@ #declare-immutables
+###+++++++++++ 
+	How to declare immutable values in Go?
+
+There are three **%% immutable value %%** definitions:
+*. the values which have no addresses (so they are not addressable).
+*. the values which have addresses but are not addressable (their addresses are not allowed to be taken in syntax).
+*. the values which are addressable but their values are not allowed to be modified in syntax.
+
+In Go, up to now (Go 1.23), there are no values satisfy the third definition.
+In other words, the third definition is not supported.
+However, variables of zero-size types may be viewed de facto immutable (addressable) values.
+
+Name constant values satisfy the first definition.
+
+Methods and package-level functions can also viewed as declared immutable values.
+They satisfy the second definition.
+String elements (bytes) and map entry elements also satisfy the second definition.
+
+There are no ways to declare other custom immutable named values in Go.
+
+@@@ #set-container-type
+###+++++++++++ 
+	Why isn't there a built-in `set` container type?
+
+Sets are just maps but don't care about element values.
+In Go, `map[Tkey]struct{}` is often used as a set type.
+
+@@@ #byte-rune-slice-string
+###+++++++++++ 
+	What is byte? What is rune?
+	How to convert `[]byte` and `[]rune` values to strings?
+
+In Go, `byte` is an alias of type `uint8`.
+In other words, `byte` and `uint8` are the same identical type.
+The same relation is for `rune` and `int32`.
+
+A `rune` often is used to store a Unicode code point.
+
+`[]byte` and `[]rune` values can be explicitly and directly converted to strings,
+and vice versa.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	var s0 = "Go"
+
+	var bs = []byte(s0)
+	var s1 = string(bs)
+
+	var rs = []rune(s0)
+	var s2 = string(rs)
+
+	fmt.Println(s0 == s1) // true
+	fmt.Println(s0 == s2) // true
+}
+'''
+
+About more on strings, please read __strings in Go__.
+
+// __ strings in Go :: string.html
+
+@@@ #pointer-atomic
+###+++++++++++ 
+	How to manipulate pointer values atomically?
+
+Please read __atomic operations for pointers__.
+
+// __ atomic operations for pointers :: concurrent-atomic-operation.html#pointer
+
+// others
+
+@@@ #about-iota
+###+++++++++++ 
+	What does `iota` mean?
+
+Iota is the ninth letter of the Greek alphabet.
+In Go, `iota` is used in constant declarations.
+In each constant declaration group, its value is `N`
+in the **%% N %%**th constant specification in that constant declaration group.
+This allows for easy __declaration of related constants__.
+
+// __ declaration of related constants :: https://golang.org/ref/spec#Iota
+
+@@@ #check-if-channels-closed
+###+++++++++++ 
+	Why isn't there a built-in `closed` function to check whether or not a channel is closed?
+
+The reason is that the usefulness of such function would be very limited, while the potential for misuse is high.
+The return result of a call to such function may be not able to
+reflect the latest status of the input channel argument.
+So, it is not a good idea to make decisions relying on the return result.
+
+If you do need such a function, it would be effortless to write one by yourself.
+Please read __this article__
+to get how to write `closed` functions and how to avoid using such a function.
+
+// __ this article :: channel-closing.html
+
+@@@ #return-local-pointers
+###+++++++++++ 
+	Is it safe for a function to return pointers of local variables?
+
+Yes, it is absolutely safe in Go.
+
+Go compilers which support stack will do escape analysis.
+For the standard Go compiler, if the escape analyzer thinks a memory block
+will only be used in the current goroutine for sure, it will allocate the
+memory block on stack. If not, the memory block will be allocated on the heap.
+Please read __memory block__ for more information.
+
+// __ memory block :: memory-block.html
+
+@@@ #gopher
+###+++++++++++ 
+	What does the word **%% gopher %%** mean in Go community?
+
+In the Go community, a **%% gopher %%** means a Go programmer.
+This nickname may originate from the fact that Go language
+adopted __a cartoon gopher__ as the mascot.
+BTW, the cartoon gopher is designed by %% Renee French %%,
+who is the wife of the (first) Go project leader, %% Rob Pike %%.
+
+// __ a cartoon gopher :: https://blog.golang.org/gopher
+
+
+} // .summaries-items
+
+"""""//
+
+What are "named types"?
+* obsoleted.
+
+why pointer types with base types as pointer or interface types can't be embedded.
+* The reason is, except pointer and interface types, for each type T of other types,
+  the method set of *T is always a super-set of T.
+  To avoid confusion, ...
+
+explain some exceptions and details.
+
+why left side of := must be pure identifiers?
+* s, s[0] = []int{1, 2}, 1. The "s[0]" is an element of an old slice or the new slice? (not a good reason)
+* there are some proposals to lift this limit
+
+why fmt.Print function makes argument escape to heap.
+
+todo: add related go-nuts/issue links in each question.
+
+todo: also index official faq questions.
+
+is it possible to recover out of memory error?
+* https://github.com/golang/go/issues/14162
+* https://github.com/golang/go/issues/16843
+* https://groups.google.com/forum/#!topic/golang-dev/wUEWhk2jtHM
+* https://github.com/golang/go/blob/master/src/runtime/HACKING.md#error-handling-and-reporting
+
+time.Format, what do 01 02 03 04 05 06 07 mean?
+
+Why json marshal no output: fields are not exported.
+
+in go, size type is int, not uint, why?
+size_t in go is int instead of uint, ..., good design.
+
+why Go doesn't support loop import like C++ and Java?
+just a tradeoff, one of many in Go.
+
+Why is there not a function to get the underlying type of a type
+https://groups.google.com/forum/#!searchin/golang-nuts/reflect$3A$20get$20underlying$20type|sort:relevance/golang-nuts/BJEuegjQtEA/q2S3b6JxY1MJ
+
+https://www.reddit.com/r/golang/comments/8m4xrh/do_linux_golang_binaries_depend_on_libc/
+
+Why type assertion with ok fail panic?
+* while the design of Go tries to be consistent in a big view, there are really some inconsistencies at some details.
+* history reason ...
+
+why named pointer type has no and can't own methods.
+
+why break and fallthrough are not allowed in type switch and select
+Why fallthrough not allowed in select and type-switch?
+https://github.com/golang/go/issues/25676#issuecomment-393734800
+(it is feasible if the next branch is default or no variables are declared,
+but for consistency, ...)
+
+
+
+why some goto details?
+* https://github.com/golang/go/issues/26058#issuecomment-501741325
+
+https://old.reddit.com/r/golang/comments/crdwcv/is_it_possible_to_run_a_go_binaryprogram_without/
+Those libraries end up using cgo and talking to the dynamic libraries that exist on the host. Use ldd <binary> to see what dynamic libraries your binary is linked against.
+They do only do this for very common libraries that they expect most hosts would have (glibc / uclibc) but it is still a point of note that it's not entirely static for all stdlib
+https://github.com/golang/go/issues/25670
+https://github.com/golang/go/issues/33673 : for cross-compilation CGO_ENABLED is default to 0.
+
+FAQ:
+* why non-exported fields can be listed through reflect?
+  * for a non-exported fields can have exported fields.
+    Otherwise, there are no ways to list the exported fields.
+
+* Does the addresses of a Go value never change in its life?
+  This is compiler and compiler version dependent.
+  Stack move.
+* Is the standard packages standard?
+  Not quite.
+  To some extend, the standard packages are bound to the go tool chain distributed with them together.
+  https://stackoverflow.com/questions/22195919/does-go-guarantee-constant-addresses
+  * wg align
+  * atomic order guarantee
+
+What are the differences between type definition declarations and type alias declarations?
+* direct method set not obtained for definition
+* named pointer type whose base is interface and pointer can't be embedded
+* method receiver with alias will declare the method on the represented type
+
+What's the difference between using panic and os.Exit to exit a program?
+   The deferred calls will be invoked
+   after panicking, but not os.Exited.
+Note: log.Fatal functions call os.Exit.
+
+Why are constString[i] and constString[i:j] not constants?
+
+Modules section:
+* Why new format for go.mod: https://github.com/golang/go/issues/23966#issuecomment-377997161
+
+why map and slice are not comparable
+* https://github.com/golang/go/issues/23725
+  https://github.com/golang/go/issues/38377
+  and some reasons mentioned in reflect.DeepEqual
+* rules deterministic
+  * from the point of view of being as map keys, the comparing parts of keys shouldn't be modifiable. Otherwise, confused.
+  * from the point of view of equalness, people more prefer to think two slices are equal if their elements are also equal.
+* if elements are counted (which is most people prefer), map and slice, using a map keys, might be change.
+  In other words, comparable <=> copy irrelevant.
+why function values are not comparable
+* some subtle details: promoted method value is not specified well.
+                       will interface methods compare to concrete methods? 
+
+Why not pkg::Exported
+   array[pkg::exported] may cause some parsing difficulties?
+
+why the special shift type deduction rule?
+* .., if you think as this, then all look natural, otherwise, it is weird.
+
+What does the "go 1.N" directive in go.mod mean?
+* https://stackoverflow.com/questions/58204618/what-are-the-implications-of-using-the-go-version-directive-within-a-go-module
+* https://github.com/golang/go/issues/30791
+
+loop func var ref:
+* https://github.com/golang/go/issues/43741
+
+how to get GOPATH and GOROOT from code
+	go/build.Default.GOPATH/GOROOT
+
+what's the difference between package x and x_test
+https://groups.google.com/g/golang-nuts/c/ajUuSF78wZU
+
+

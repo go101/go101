@@ -1,0 +1,852 @@
+### Basic Control Flows
+
+The control flow code blocks in Go are much like other popular programming languages,
+but there are also many differences.
+This article will show these similarities and differences.
+
+###+++++++++++ An Introduction of Control Flows in Go
+
+There are three kinds of basic control flow code blocks in Go:
+*
+	`if-else` two-way conditional execution block.
+*
+	`for` loop block.
+*
+	`switch-case` multi-way conditional execution block.
+
+There are also some control flow code blocks which are related to some certain kinds of types in Go.
+*
+	`for-range` loop block to iterate integers,
+	all kinds of __containers`` container.html#iteration__,
+	__channels`` channel.html#range__,
+	and __some functions`` function.html#range__.
+*
+	`type-switch` multi-way conditional execution block for
+	__interfaces`` interface.html#type-switch__.
+*
+	`select-case` block for
+	__channels`` channel.html#select__.
+
+Like many other popular languages, Go also supports `break`,
+`continue` and `goto` code execution jump statements.
+Besides these, there is a special code jump statement in Go, `fallthrough`.
+
+Among the six kinds of control flow blocks,
+except the `if-else` control flow,
+the other five are called **breakable control flow blocks**.
+We can use `break` statements to make executions
+jump out of breakable control flow blocks.
+
+`for` and `for-range` loop blocks are called
+**loop control flow blocks**.
+We can use `continue` statements to end a loop iteration in advance
+in a loop control flow block, i.e. continue to the next iteration of the loop.
+
+Please note, each of the above mentioned control flow blocks is a statement,
+and it may contain many other sub-statements.
+
+Above mentioned control flow statements are all the ones in narrow sense.
+The mechanisms introduced in the next article,
+__goroutines, deferred function calls and
+panic/recover__, and the concurrency synchronization techniques introduced
+in the later article
+__concurrency synchronization overview__
+can be viewed as control flow statements in broad sense.
+
+// __ goroutines, ... :: control-flows-more.html
+// __ concurrency synchronization overview :: concurrent-synchronization-overview.html
+
+The current article mainly explains the basic control flow code blocks
+and code jump statements. Go 1.22 introduced `for range anInteger {...}`
+loops will be also touched. Other control flow code blocks will be explained
+in many other coming Go 101 articles.
+
+@@@ #if-else
+###+++++++++++ `if-else` Control Flow Blocks
+
+The full form of a `if-else` code block is like
+@@@ .line-numbers
+'''go
+if InitSimpleStatement; Condition {
+	// do something
+} else {
+	// do something
+}
+'''
+
+`if` and `else` are keywords.
+Like many other programming languages, the `else` branch is optional.
+
+The `InitSimpleStatement` portion is also optional.
+It must be a __simple statement__ if it is present.
+If it is absent, we can view it as a blank statement (one kind of simple statements).
+In practice, `InitSimpleStatement` is often
+a short variable declaration or a pure assignment.
+A `Condition` must be an __expression__ which results to a boolean value.
+The `Condition` portion can be enclosed in a pair of `()` or not,
+but it can't be enclosed together with the `InitSimpleStatement` portion.
+
+// __ simple statement :: expressions-and-statements.html#simple-statements
+// __ expression :: expressions-and-statements.html#expressions
+
+If the `InitSimpleStatement` in a `if-else` block is present,
+it will be executed before executing other statements in the `if-else` block.
+If the `InitSimpleStatement` is absent,
+then the semicolon following it is optional.
+
+Each `if-else` control flow forms
+one implicit code block, one `if` branch explicit code block
+and one optional `else` branch code block.
+The two branch code blocks are both nested in the implicit code block.
+Upon execution, if `Condition` expression results in `true`,
+then the `if` branch block will get executed, otherwise,
+the `else` branch block will get executed.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	rand.Seed(time.Now().UnixNano()) // needed before Go 1.20
+
+	if n := rand.Int(); n%2 == 0 {
+		fmt.Println(n, "is an even number.")
+	} else {
+		fmt.Println(n, "is an odd number.")
+	}
+
+	n := rand.Int() % 2 // this n is not the above n.
+	if n % 2 == 0 {
+		fmt.Println("An even number.")
+	}
+
+	if ; n % 2 != 0 {
+		fmt.Println("An odd number.")
+	}
+}
+'''
+
+If the `InitSimpleStatement` in a `if-else` code block is a short variable declaration,
+then the declared variables will be viewed as being declared in the top nesting implicit code block of the `if-else` code block.
+
+An `else` branch code block can be implicit if the corresponding `else`
+is followed by another `if-else` code block, otherwise, it must be explicit.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	if h := time.Now().Hour(); h < 12 {
+		fmt.Println("Now is AM time.")
+	} else if h > 19 {
+		fmt.Println("Now is evening time.")
+	} else {
+		fmt.Println("Now is afternoon time.")
+		h := h // the right one is declared above
+		// The just new declared "h" variable
+		// shadows the above same-name one.
+		_ = h
+	}
+
+	// h is not visible here.
+}
+'''
+
+@@@ #for
+###+++++++++++ `for` Loop Control Flow Blocks
+
+The full form of a `for` loop block is:
+@@@ .line-numbers
+'''go
+for InitSimpleStatement; Condition; PostSimpleStatement {
+	// do something
+}
+'''
+
+`for` is a keyword.
+The `InitSimpleStatement` and `PostSimpleStatement` portions
+must be both simple statements, and the `PostSimpleStatement` portion
+must not be a short variable declaration.
+`Condition` must be an expression which result is a boolean value.
+The three portions are all optional.
+
+Unlike many other programming languages, the just mentioned three parts following
+the `for` keyword can't be enclosed in a pair of `()`.
+
+Each `for` control flow forms at least two code blocks,
+one is implicit and one is explicit.
+The explicit one is nested in the implicit one.
+
+The `InitSimpleStatement` in a `for` loop block
+will be executed (only once) before executing other statements in the `for` loop block.
+
+The `Condition` expression will be evaluated at each loop iteration.
+If the evaluation result is `false`, then the loop will end.
+Otherwise the body (a.k.a., the explicit code block) of the loop will get executed.
+
+The `PostSimpleStatement` will be executed at the end of each loop iteration.
+
+A `for` loop example. The example will print the integers from
+`0` to `9`.
+@@@ .line-numbers
+'''go
+for i := 0; i < 10; i++ {
+	fmt.Println(i)
+}
+'''
+
+If the `InitSimpleStatement` and `PostSimpleStatement`
+portions are both absent (just view them as blank statements),
+their nearby two semicolons can be omitted.
+The form is called as condition-only `for` loop form.
+It is the same as the `while` loop in other languages.
+@@@ .line-numbers
+'''go
+var i = 0
+for ; i < 10; {
+	fmt.Println(i)
+	i++
+}
+for i < 20 {
+	fmt.Println(i)
+	i++
+}
+'''
+
+If the `Condition` portion is absent,
+compilers will view it as `true`.
+@@@ .line-numbers
+'''go
+for i := 0; ; i++ { // <=> for i := 0; true; i++ {
+	if i >= 10 {
+		// "break" statement will be explained below.
+		break
+	}
+	fmt.Println(i)
+}
+
+// The following 4 endless loops are
+// equivalent to each other (for most cases).
+for ; true; {
+}
+for true {
+}
+for ; ; {
+}
+for {
+}
+'''
+
+If the `InitSimpleStatement` in a `for` block
+is a short variable declaration statement,
+then the declared loop variables will be viewed as being declared
+in the top nesting implicit code block of the `for` block.
+For example, the following code snippet prints `012` instead of `0`.
+
+@@@ .line-numbers
+'''go
+for i := 0; i < 3; i++ {
+	fmt.Print(i)
+	// The left i is a new declared variable,
+	// and the right i is the loop variable.
+	i := i
+	// The new declared variable is modified, but
+	// the old one (the loop variable) is not yet.
+	i = 10
+	_ = i
+}
+'''
+
+@@@ #for-semantic-change
+Note: Go 1.22 modified the semantics of `for` loop blocks.
+*
+	Prior to Go 1.22, every declared loop variable used in a `for` loop block
+	was shared by all iterations during executing the loop block.
+*
+	Since Go 1.22, every declared loop variable used in a `for` loop
+	will be instantiated as a distinctive instance at the start of each iteration.
+
+
+For most cases, the semantic change doesn't change code behavior.
+But __sometimes, it does__.
+So the semantic change breaks backward compatibility.
+Since Go 1.22, __every Go source file should be specified a Go version__ to
+reduce the damage as small as possible.
+
+// __ sometimes, it does :: control-flows-more.html#argument-evaluation-moment
+// __ every Go source ... :: https://go101.org/blog/2024-03-01-for-loop-semantic-changes-in-go-1.22.html
+
+A `break` statement can be used to make execution jump out of a
+`for` loop control flow block in advance,
+if the `for` loop control flow block is the innermost breakable
+control flow block containing the `break` statement.
+For example, the following code also prints `0` to `9`.
+
+@@@ .line-numbers
+'''go
+i := 0
+for {
+	if i >= 10 {
+		break
+	}
+	fmt.Println(i)
+	i++
+}
+'''
+
+A `continue` statement can be used to end the current loop iteration
+in advance (`PostSimpleStatement` will still get executed),
+if the `for` loop control flow block is the innermost
+loop control flow block containing the `continue` statement.
+For example, the following code snippet will print `13579`.
+
+@@@ .line-numbers
+'''go
+for i := 0; i < 10; i++ {
+	if i % 2 == 0 {
+		continue
+	}
+	fmt.Print(i)
+}
+'''
+
+@@@ #for-range-integer
+###+++++++++++ Use `for-range` Control Flow Blocks to Iterate Integers
+
+`for-range` loop blocks can be used to iterate integers,
+all kinds of __containers__, __channels__, and __some functions__..
+The current article only explains how to use `for-range` loop blocks
+to iterate integers.
+
+// __ containers :: container.html#iteration
+// __ channels :: channel.html#rang
+// __ some functions :: function.html#range
+
+Note: using `for-range` loop blocks to iterate integers is only supported since Go 1.22.
+
+The following code
+
+@@@ .line-numbers
+'''go
+// i is declared earlier.
+for i = range anInteger {
+	...
+}
+'''
+
+is actually a short form of
+
+@@@ .line-numbers
+'''go
+for i = 0; i < anInteger; i++ {
+	...
+}
+'''
+
+Similarly,
+
+@@@ .line-numbers
+'''go
+for i := range anInteger {
+	...
+}
+'''
+
+is actually a short form of
+
+@@@ .line-numbers
+'''go
+for i := 0; i < anInteger; i++ {
+	...
+}
+'''
+
+with Go 1.22+ semantics.
+
+For example, the last example in the last section is equivalent to
+
+@@@ .line-numbers
+'''go
+for i := range 10 {
+	if i % 2 == 0 {
+		continue
+	}
+	fmt.Print(i)
+}
+'''
+
+@@@ #switch-case
+###+++++++++++ `switch-case` Control Flow Blocks
+
+`switch-case` control flow block is
+one kind of conditional execution control flow blocks.
+
+The full form a `switch-case` block is
+@@@ .line-numbers
+'''go
+switch InitSimpleStatement; CompareOperand0 {
+case CompareOperandList1:
+	// do something
+case CompareOperandList2:
+	// do something
+...
+case CompareOperandListN:
+	// do something
+default:
+	// do something
+}
+'''
+
+In the full form,
+*
+	`switch`, `case` and `default` are three keywords.
+*
+	The `InitSimpleStatement` portion must be a simple statement.
+	The `CompareOperand0` portion is an expression which is viewed as
+	a typed value (if it is an untyped value,
+	then it is viewed as a type value of its default type),
+	hence it can't be an untyped `nil`.
+	`CompareOperand0` is called as switch expression in Go specification.
+*
+	Each of the `CompareOperandListX`
+	(`X` may represent from `1` to `N`)
+	portions must be a comma separated expression list.
+	Each of these expressions shall be comparable with `CompareOperand0`.
+	Each of these expressions is called as a case expression in Go specification.
+	If a case expression is an untyped value,
+	then it must be implicitly convertible to the type of the switch expression
+	in the same `switch-case` control flow.
+	If the conversion is impossible to achieve, compilation fails.
+
+Each `case CompareOperandListX:` or `default:`
+opens (and is followed by) an implicit code block.
+The implicit code block and that `case CompareOperandListX:` or `default:` forms a branch.
+Each such branch is optional to be present.
+We call an implicit code block in such a branch as a branch code block later.
+
+There can be at most one `default` branch
+in a `switch-case` control flow block.
+
+Besides the branch code blocks,
+each `switch-case` control flow forms two code blocks,
+one is implicit and one is explicit.
+The explicit one is nested in the implicit one.
+All the branch code blocks are nested in the explicit one
+(and nested in the implicit one indirectly).
+
+`switch-case` control flow blocks are breakable,
+so `break` statements can also be used in any branch code block
+in a `switch-case` control flow block to make execution jump out of
+the `switch-case` control flow block in advance.
+
+The `InitSimpleStatement` will get executed firstly
+when a `switch-case` control flow gets executed.
+It will get executed only once during executing the `switch-case` control flow.
+After the `InitSimpleStatement` gets executed,
+the switch expression `CompareOperand0` will be evaluated and only evaluated once.
+The evaluation result is always a typed value.
+The evaluation result will be compared (by using the `==` operator)
+with the evaluation result of each case expression in the
+`CompareOperandListX` expression lists,
+from top to down and from left to right.
+If a case expression is found to be equal to `CompareOperand0`,
+the comparison process stops and the corresponding branch code block
+of the expression will be executed.
+If none case expressions are found to be equal to `CompareOperand0`,
+the default branch code block (if it is present) will get executed.
+
+A `switch-case` control flow example:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	rand.Seed(time.Now().UnixNano()) // needed before Go 1.20
+	switch n := rand.Intn(100); n%9 {
+	case 0:
+		fmt.Println(n, "is a multiple of 9.")
+
+		// Different from many other languages,
+		// in Go, the execution will automatically
+		// jumps out of the switch-case block at
+		// the end of each branch block.
+		// No "break" statement is needed here.
+	case 1, 2, 3:
+		fmt.Println(n, "mod 9 is 1, 2 or 3.")
+		// Here, this "break" statement is nonsense.
+		break
+	case 4, 5, 6:
+		fmt.Println(n, "mod 9 is 4, 5 or 6.")
+	// case 6, 7, 8:
+		// The above case line might fail to compile,
+		// for 6 is duplicate with the 6 in the last
+		// case. The behavior is compiler dependent.
+	default:
+		fmt.Println(n, "mod 9 is 7 or 8.")
+	}
+}
+'''
+
+The `rand.Intn` function returns a non-negative `int`
+random value which is smaller than the specified argument.
+
+{//
+https://github.com/golang/go/issues/28357
+https://github.com/golang/go/blob/5a7cfbc0117bce314c3f079ece459173b9efc854/src/cmd/compile/internal/gc/swt.go#L637
+}
+Note, if any two case expressions in a `switch-case` control flow
+can be detected to be equal at compile time, then a compiler may reject the latter one.
+For example, the standard Go compiler thinks the `case 6, 7, 8` line
+in the above example is invalid if that line is not commented out.
+But other compilers may think that line is okay.
+In fact, the current standard Go compiler (version 1.23.n)
+__allows duplicate boolean case expressions__,
+and gccgo (v8.2) allows both duplicate boolean and string case expressions.
+
+// __ allows duplicate ... :: https://github.com/golang/go/issues/28357
+
+As the comments in the above example describes,
+unlike many other languages, in Go,
+at the end of each branch code block, the execution will automatically
+break out of the corresponding `switch-case` control block.
+Then how to let the execution slip into the next branch code block?
+Go provides a `fallthrough` keyword to do this task.
+For example, in the following example, every branch code block
+will get executed, by their orders, from top to down.
+
+@@@ .line-numbers
+'''go
+rand.Seed(time.Now().UnixNano()) // needed before Go 1.20
+switch n := rand.Intn(100) % 5; n {
+case 0, 1, 2, 3, 4:
+	fmt.Println("n =", n)
+	// The "fallthrough" statement makes the
+	// execution slip into the next branch.
+	fallthrough
+case 5, 6, 7, 8:
+	// A new declared variable also called "n",
+	// it is only visible in the current
+	// branch code block.
+	n := 99
+	fmt.Println("n =", n) // 99
+	fallthrough
+default:
+	// This "n" is the switch expression "n".
+	fmt.Println("n =", n)
+}
+'''
+
+Please note,
+*
+	a `fallthrough` statement must be the final statement in a branch.
+*
+	a `fallthrough` statement can't show up
+	in the final branch in a `switch-case` control flow block.
+
+For example, the following `fallthrough` uses are all illegal.
+@@@ .line-numbers
+'''go
+switch n := rand.Intn(100) % 5; n {
+case 0, 1, 2, 3, 4:
+	fmt.Println("n =", n)
+	// The if-block, not the fallthrough statement,
+	// is the final statement in this branch.
+	if true {
+		fallthrough // error: not the final statement
+	}
+case 5, 6, 7, 8:
+	n := 99
+	fallthrough // error: not the final statement
+	_ = n
+default:
+	fmt.Println(n)
+	fallthrough // error: show up in the final branch
+}
+'''
+
+The `InitSimpleStatement` and `CompareOperand0` portions
+in a `switch-case` control flow are both optional.
+If the `CompareOperand0` portion is absent,
+it will be viewed as `true`,
+a typed value of the built-in type `bool`.
+If the `InitSimpleStatement` portion is absent,
+the semicolon following it can be omitted.
+
+And as above has mentioned, all branches are optional.
+So the following code blocks are all legal, all of them can be viewed as no-ops.
+
+@@@ .line-numbers
+'''go
+switch n := 5; n {
+}
+
+switch 5 {
+}
+
+switch _ = 5; {
+}
+
+switch {
+}
+'''
+
+For the latter two `switch-case` control flow blocks in the last example,
+as above has mentioned, each of the absent `CompareOperand0`
+portions is viewed as a typed value `true`
+of the built-in type `bool`.
+So the following code snippet will print `hello`.
+
+@@@ .line-numbers
+'''go
+switch { // <=> switch true {
+case true: fmt.Println("hello")
+default: fmt.Println("bye")
+}
+'''
+
+@@@ #default-branch-placement
+
+Another obvious difference from many other languages is
+the order of the `default` branch
+in a `switch-case` control flow block can be arbitrary.
+For example, the following three `switch-case` control flow blocks
+are equivalent to each other.
+@@@ .line-numbers
+'''go
+switch n := rand.Intn(3); n {
+case 0: fmt.Println("n == 0")
+case 1: fmt.Println("n == 1")
+default: fmt.Println("n == 2")
+}
+
+switch n := rand.Intn(3); n {
+default: fmt.Println("n == 2")
+case 0: fmt.Println("n == 0")
+case 1: fmt.Println("n == 1")
+}
+
+switch n := rand.Intn(3); n {
+case 0: fmt.Println("n == 0")
+default: fmt.Println("n == 2")
+case 1: fmt.Println("n == 1")
+}
+'''
+
+###+++++++++++ `goto` Statement and Label Declaration
+
+Like many other languages, Go also supports `goto` statement.
+A `goto` keyword must be followed by a label to form a statement.
+A label is declared with the form `LabelName:`,
+where `LabelName` must be an identifier.
+A label which name is not the blank identifier must be used at least once.
+
+A `goto` statement will make the execution jump to the next statement
+following the declaration of the label used in the `goto` statement.
+So a label declaration must be followed by one statement.
+
+A label must be declared within a function body.
+A use of a label can appear before or after the declaration of the label.
+But a label is not visible (and can't appear) outside
+the innermost code block the label is declared in.
+
+The following example uses a `goto` statement and a label to implement a loop control flow.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	i := 0
+
+Next: // here, a label is declared.
+	fmt.Println(i)
+	i++
+	if i < 5 {
+		goto Next // execution jumps
+	}
+}
+'''
+
+As mentioned above, a label is not visible (and can't appear)
+outside the innermost code block the label is declared in.
+So the following example fails to compile.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+goto Label1 // error
+	{
+		Label1:
+		goto Label2 // error
+	}
+	{
+		Label2:
+	}
+}
+'''
+
+Note that, if a label is declared within the scope of a variable,
+then the uses of the label can't appear before the declaration of the variable.
+Identifier scopes will be explained in the article
+__blocks and scopes in Go__ later.
+
+// __ blocks and scopes in Go :: blocks-and-scopes.html
+
+The following example also fails to compile.
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	i := 0
+Next:
+	if i >= 5 {
+		// error: jumps over declaration of k
+		goto Exit
+	}
+
+	k := i + i
+	fmt.Println(k)
+	i++
+	goto Next
+
+// This label is declared in the scope of k,
+// but its use is outside of the scope of k.
+Exit:
+}
+'''
+
+The just mentioned rule __may change later__.
+Currently, to make the above code compile okay,
+we must adjust the scope of the variable `k`.
+There are two ways to fix the problem in the last example.
+
+// __ may change later :: https://github.com/golang/go/issues/26058
+
+One way is to shrink the scope of the variable `k`.
+@@@ .line-numbers
+'''go
+func main() {
+	i := 0
+Next:
+	if i >= 5 {
+		goto Exit
+	}
+	// Create an explicit code block to
+	// shrink the scope of k.
+	{
+		k := i + i
+		fmt.Println(k)
+	}
+	i++
+	goto Next
+Exit:
+}
+'''
+
+The other way is to enlarge the scope of the variable `k`.
+@@@ .line-numbers
+'''go
+func main() {
+	var k int // move the declaration of k here.
+	i := 0
+Next:
+	if i >= 5 {
+		goto Exit
+	}
+
+	k = i + i
+	fmt.Println(k)
+	i++
+	goto Next
+Exit:
+}
+'''
+
+###+++++++++++ `break` and `continue` Statements With Labels
+
+A `goto` statement must contain a label.
+A `break` or `continue` statement can also
+contain a label, but the label is optional.
+Generally, `break` containing labels are used in nested breakable control flow blocks
+and `continue` statements containing labels are used in nested loop control flow blocks.
+
+If a `break` statement contains a label,
+the label must be declared just before a breakable control flow block
+which contains the `break` statement.
+We can view the label name as the name of the breakable control flow block.
+The `break` statement will make execution jump out of
+the breakable control flow block, even if the breakable control flow block
+is not the innermost breakable control flow block containing
+`break` statement.
+
+If a `continue` statement contains a label,
+the label must be declared just before a loop control flow block
+which contains the `continue` statement.
+We can view the label name as the name of the loop control flow block.
+The `continue` statement will end the current loop iteration of
+the loop control flow block in advance, even if the loop control flow block
+is not the innermost loop control flow block containing
+the `continue` statement.
+
+The following is an example of using `break`
+and `continue` statements with labels.
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func FindSmallestPrimeLargerThan(n int) int {
+Outer:
+	for n++; ; n++{
+		for i := 2; ; i++ {
+			switch {
+			case i * i > n:
+				break Outer
+			case n % i == 0:
+				continue Outer
+			}
+		}
+	}
+	return n
+}
+
+func main() {
+	for i := 90; i < 100; i++ {
+		n := FindSmallestPrimeLargerThan(i)
+		fmt.Print("The smallest prime number larger than ")
+		fmt.Println(i, "is", n)
+	}
+}
+'''
+
+
+
+

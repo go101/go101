@@ -1,188 +1,171 @@
-﻿<h1>Structs in Go</h1>
-
-<p>
-Same as C, Go also supports struct types.
-This article will introduce the basic knowledge of struct types and values in Go.
-</p>
-
-<h3>Struct Types and Struct Type Literals</h3>
-
-<div>
-<p>
-Each unnamed struct type literal starts with a <code>struct</code> keyword
-which is followed by a sequence of field definitions enclosed in a <code>{}</code>.
-Generally, each field definition is composed of a name and a type.
-The number of fields of a struct type can be zero.
-</p>
-
+<h1 class="tmd-header-1">
+Structs in Go
+</h1>
+<p></p>
+<div class="tmd-usual">
+Same as C, Go also supports struct types. This article will introduce the basic knowledge of struct types and values in Go.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Struct Types and Struct Type Literals
+</h3>
+<p></p>
+<div class="tmd-usual">
+Each unnamed struct type literal starts with a <code class="tmd-code-span">struct</code> keyword which is followed by a sequence of field definitions enclosed in a <code class="tmd-code-span">{}</code>. Generally, each field definition is composed of a name and a type. The number of fields of a struct type can be zero.
+</div>
+<p></p>
+<div class="tmd-usual">
 The following is an unnamed struct type literal:
-<pre class="line-numbers"><code class="language-go">struct {
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">struct {
 	title  string
 	author string
 	pages  int
 }
 </code></pre>
-
-<p>
-The above struct type has three fields. The types of the two fields
-<code>title</code> and <code>author</code> are both <code>string</code>.
-The type of the <code>pages</code> field is <code>int</code>.
-</p>
-
-<p>
+<p></p>
+<div class="tmd-usual">
+The above struct type has three fields. The types of the two fields <code class="tmd-code-span">title</code> and <code class="tmd-code-span">author</code> are both <code class="tmd-code-span">string</code>. The type of the <code class="tmd-code-span">pages</code> field is <code class="tmd-code-span">int</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
 Some articles also call fields as member variables.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 Consecutive fields with the same type can be declared together.
-<pre class="line-numbers"><code class="language-go">struct {
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">struct {
 	title, author string
 	pages         int
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+The size of a struct type is the sum of the sizes of all its field types plus the number of some padding bytes. The padding bytes are used to align the memory addresses of some fields. We can learn padding and memory address alignments in <a href="memory-layout.html">a later article</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The size of a struct type is the sum of the sizes of all its field types plus the number of some padding bytes.
-The padding bytes are used to align the memory addresses of some fields.
-We can learn padding and memory address alignments in <a href="memory-layout.html">a later article</a>.
-</p>
-
-<p>
+</div>
+<p></p>
+<div class="tmd-usual">
 The size of a zero-field struct type is zero.
-</p>
-
-A tag may be bound to a struct field when the field is declared.
-Field tags are optional, the default value of each field tag is a blank string.
-The syntax allows either string literal forms for field tags.
-However, in practice, struct filed tags should present as key-value pairs,
-and each tag should present as raw string literals (<code>`...`</code>),
-whereas each value in a tag should present as interpreted string literals (<code>"..."</code>).
-For example:
-
-<pre class="line-numbers"><code class="language-go">struct {
+</div>
+<p></p>
+<div class="tmd-usual">
+A tag may be bound to a struct field when the field is declared. Field tags are optional, the default value of each field tag is a blank string. The syntax allows either string literal forms for field tags. However, in practice, struct filed tags should present as key-value pairs, and each tag should present as raw string literals (...), whereas each value in a tag should present as interpreted string literals (<code class="tmd-code-span">"..."</code>). For example:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">struct {
 	Title  string `json:"title" myfmt:"s1"`
 	Author string `json:"author,omitempty" myfmt:"s2"`
 	Pages  int    `json:"pages,omitempty" myfmt:"n1"`
 	X, Y   bool   `myfmt:"b1"`
 }
 </code></pre>
-
-<p>
-Note, the tags of the <code>X</code> and <code>Y</code> fields in the above example
-are identical (though using field tags as this way is a bad practice).
-</p>
-
-<p>
+<p></p>
+<div class="tmd-usual">
+Note, the tags of the <code class="tmd-code-span">X</code> and <code class="tmd-code-span">Y</code> fields in the above example are identical (though using field tags as this way is a bad practice).
+</div>
+<p></p>
+<div class="tmd-usual">
 We can use the <a href="reflection.html#struct-field-tag">reflection</a> way to inspect field tag information.
-</p>
-
-<p>
-The purpose of each field tag is application dependent.
-In the above example, the field tags can help the functions in the
-<code>encoding/json</code> standard package to determine the field names in JSON texts,
-in the process of encoding struct values into JSON texts or decoding JSON texts into struct values.
-The functions in the <code>encoding/json</code> standard package will
-only encode and decode the exported struct fields, which is why
-the first letters of the field names in the above example are all upper cased.
-</p>
-
-<p>
-It is not a good idea to use field tags as comments.
-</p>
-
-<p>
-Unlike C language, Go structs don't support unions.
-</p>
-
-<p>
-All above shown struct types are unnamed.
-In practice, named struct types are more popular.
-</p>
-
-<p>
-Only exported fields of struct types shown up in a package
-can be used in other packages by importing the package.
-We can view non-exported struct fields as private/protected member variables.
-</p>
-
-<p>
-The field tags and the order of the field declarations in a struct type matter for the identity of the struct type.
-Two unnamed struct types are identical only if they have the same sequence of field declarations.
-Two field declarations are identical only if their respective names,
-their respective types and their respective tags are all identical,
-and they are both <a href="type-embedding.html">embedded fields</a> or not.
-Please note, <b>two non-exported struct field names from
-different packages are always viewed as two different names.</b>
-</p>
-
-<p>
-A struct type can't have a field of the struct type itself, neither directly nor recursively.
-</p>
-
-<!--
-https://github.com/golang/go/issues/18640
--->
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<div class="tmd-usual">
+The purpose of each field tag is application dependent. In the above example, the field tags can help the functions in the <code class="tmd-code-span">encoding/json</code> standard package to determine the field names in JSON texts, in the process of encoding struct values into JSON texts or decoding JSON texts into struct values. The functions in the <code class="tmd-code-span">encoding/json</code> standard package will only encode and decode the exported struct fields, which is why the first letters of the field names in the above example are all upper cased.
+</div>
+<p></p>
+<div class="tmd-usual">
+It is not a good idea to use field tags as comments.
+</div>
+<p></p>
+<div class="tmd-usual">
+Unlike C language, Go structs don't support unions.
+</div>
+<p></p>
+<div class="tmd-usual">
+All above shown struct types are unnamed. In practice, named struct types are more popular.
+</div>
+<p></p>
+<div class="tmd-usual">
+Only exported fields of struct types shown up in a package can be used in other packages by importing the package. We can view non-exported struct fields as private/protected member variables.
+</div>
+<p></p>
+<div class="tmd-usual">
+The field tags and the order of the field declarations in a struct type matter for the identity of the struct type. Two unnamed struct types are identical only if they have the same sequence of field declarations. Two field declarations are identical only if their respective names, their respective types and their respective tags are all identical, and they are both <a href="type-embedding.html">embedded fields</a> or not. Please note, <span class="tmd-bold">two non-exported struct field names from different packages are always viewed as two different names.</span>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>Struct Value Literals and Struct Value Manipulations</h3>
+</div>
+<p></p>
+<div class="tmd-usual">
+A struct type can't have a field of the struct type itself, neither directly nor recursively.
+</div>
+<p></p>
+<p></p>
+<h3 class="tmd-header-3">
+Struct Value Literals and Struct Value Manipulations
+</h3>
+<p></p>
+<div class="tmd-usual">
+In Go, the form <code class="tmd-code-span">T{...}</code>, where <code class="tmd-code-span">T</code> must be a type literal or a type name, is called a <span class="tmd-bold">composite literal</span> and is used as the value literals of some kinds of types, including struct types and the container types introduced later.
+</div>
+<p></p>
+<div class="tmd-usual">
+Note, a type literal <code class="tmd-code-span">T{...}</code> is a typed value, its type is <code class="tmd-code-span">T</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-In Go, the form <code>T{...}</code>,
-where <code>T</code> must be a type literal or a type name,
-is called a <b>composite literal</b> and
-is used as the value literals of some kinds of types,
-including struct types and the container types introduced later.
-</p>
-
-<p>
-Note, a type literal <code>T{...}</code> is a typed value, its type is <code>T</code>.
-</p>
-
-<div>
-Given a struct type <code>S</code> whose
-<a href="type-system-overview.html#underlying-type">underlying type</a>
-is <code>struct{x int; y bool}</code>,
-the zero value of <code>S</code> can be represented by the following
-two variants of struct composite literal forms:
-<ol>
-<li>
-	<code>S{0, false}</code>.
-	In this variant, no field names are present but all field values must be present
-	by the field declaration orders.
+</div>
+<p></p>
+<div class="tmd-usual">
+Given a struct type <code class="tmd-code-span">S</code> whose <a href="type-system-overview.html#underlying-type">underlying type</a> is <code class="tmd-code-span">struct{x int; y bool}</code>, the zero value of <code class="tmd-code-span">S</code> can be represented by the following two variants of struct composite literal forms:
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">S{0, false}</code>. In this variant, no field names are present but all field values must be present by the field declaration orders.
+</div>
 </li>
-<li>
-	<code>S{x: 0, y: false}</code>, <code>S{y: false, x: 0}</code>,
-	<code>S{x: 0}</code>, <code>S{y: false}</code> and <code>S{}</code>.
-	In this variant, each field item is optional and the order of the field items is not important.
-	The values of the absent fields will be set as the zero values of their respective types.
-	But if a field item is present, it must be presented with the <code>FieldName: FieldValue</code> form.
-	The order of the field items in this form doesn't matter.
-	The form <code>S{}</code> is the most used zero value representation of type <code>S</code>.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">S{x: 0, y: false}</code>, <code class="tmd-code-span">S{y: false, x: 0}</code>, <code class="tmd-code-span">S{x: 0}</code>, <code class="tmd-code-span">S{y: false}</code> and <code class="tmd-code-span">S{}</code>. In this variant, each field item is optional and the order of the field items is not important. The values of the absent fields will be set as the zero values of their respective types. But if a field item is present, it must be presented with the <code class="tmd-code-span">FieldName: FieldValue</code> form. The order of the field items in this form doesn't matter. The form <code class="tmd-code-span">S{}</code> is the most used zero value representation of type <code class="tmd-code-span">S</code>.
+</div>
 </li>
 </ol>
-
-<p>
-If <code>S</code> is a struct type imported from another package,
-it is recommended to use the second form, to maintain compatibility.
-Consider the case where the maintainer of the package adds
-a new field for type <code>S</code>, this will make the use of first form invalid.
-</p>
-
-<p>
+<p></p>
+<div class="tmd-usual">
+If <code class="tmd-code-span">S</code> is a struct type imported from another package, it is recommended to use the second form, to maintain compatibility. Consider the case where the maintainer of the package adds a new field for type <code class="tmd-code-span">S</code>, this will make the use of first form invalid.
+</div>
+<p></p>
+<div class="tmd-usual">
 Surely, we can also use the struct composite literals to represent non-zero struct value.
-</p>
-
-<p>
-For a value <code>v</code> of type <code>S</code>, we can use
-<code>v.x</code> and <code>v.y</code>, which are called selectors (or selector expressions),
-to represent the field values of <code>v</code>.
-<code>v</code> is called the receiver of the selectors.
-
-Later, we call the dot <code>.</code> in a selector as the property selection operator.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
+For a value <code class="tmd-code-span">v</code> of type <code class="tmd-code-span">S</code>, we can use <code class="tmd-code-span">v.x</code> and <code class="tmd-code-span">v.y</code>, which are called selectors (or selector expressions), to represent the field values of <code class="tmd-code-span">v</code>. <code class="tmd-code-span">v</code> is called the receiver of the selectors.
+</div>
+<p></p>
+<div class="tmd-usual">
+Later, we call the dot <code class="tmd-code-span">.</code> in a selector as the property selection operator.
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -210,23 +193,23 @@ func main() {
 	book = Book{author: "Tapir"}
 
 	// Initialize a struct value by using selectors.
-	var book2 Book // <=> book2 := Book{}
+	var book2 Book // &lt;=&gt; book2 := Book{}
 	book2.author = "Tapir Liu"
 	book2.pages = 300
 	fmt.Println(book2.pages) // 300
 }
 </code></pre>
-
 <p></p>
+<div class="tmd-usual">
+The last <code class="tmd-code-span">,</code> in a composite literal is optional if the last item in the literal and the closing <code class="tmd-code-span">}</code> are at the same line. Otherwise, the last <code class="tmd-code-span">,</code> is required. For more details, please read <a href="line-break-rules.html">line break rules in Go</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-The last <code>,</code> in a composite literal is optional
-if the last item in the literal and the closing <code>}</code>
-are at the same line.
-Otherwise, the last <code>,</code> is required.
-For more details, please read
-<a href="line-break-rules.html">line break rules in Go</a>.
-
-<pre class="line-numbers"><code class="language-go">var _ = Book {
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var _ = Book {
 	author: "Tapir",
 	pages: 256,
 	title: "Go 101", // here, the "," must be present
@@ -235,18 +218,16 @@ For more details, please read
 // The last "," in the following line is optional.
 var _ = Book{author: "Tapir", pages: 256, title: "Go 101",}
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h3 class="tmd-header-3">
+About Struct Value Assignments
+</h3>
+<p></p>
+<div class="tmd-usual">
+When a struct value is assigned to another struct value, the effect is the same as assigning each field one by one.
 </div>
-
-<h3>About Struct Value Assignments</h3>
-
-<div>
-When a struct value is assigned to another struct value,
-the effect is the same as assigning each field one by one.
-<pre class="line-numbers"><code class="language-go">func f() {
+<pre class="tmd-code line-numbers">
+<code class="language-go">func f() {
 	book1 := Book{pages: 300}
 	book2 := Book{"Go 101", "Tapir", 256}
 
@@ -258,29 +239,28 @@ the effect is the same as assigning each field one by one.
 	book2.pages = book1.pages
 }
 </code></pre>
-
-<p>
-Two struct values can be assigned to each other only if
-their types are identical or the types of the two struct values
-have an identical underlying type (considering field tags)
-and at least one of the two types is an
-<a href="type-system-overview.html#named-type">unnamed type</a>.
-</p>
+<p></p>
+<div class="tmd-usual">
+Two struct values can be assigned to each other only if their types are identical or the types of the two struct values have an identical underlying type (considering field tags) and at least one of the two types is an <a href="type-system-overview.html#named-type">unnamed type</a>.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="field-addressability"></a>
-<h3>Struct Field Addressability</h3>
-
-<div>
-<p>
-The fields of an addressable struct are also addressable.
-The fields of an unaddressable struct are also unaddressable.
-The fields of unaddressable structs can't be modified.
-All composite literals, including struct composite literals are unaddressable.
-</p>
-
+</div>
+<p></p>
+<h3 id="field-addressability" class="tmd-header-3">
+Struct Field Addressability
+</h3>
+<p></p>
+<div class="tmd-usual">
+The fields of an addressable struct are also addressable. The fields of an unaddressable struct are also unaddressable. The fields of unaddressable structs can't be modified. All composite literals, including struct composite literals are unaddressable.
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -289,7 +269,7 @@ func main() {
 		Pages int
 	}
 	var book = Book{} // book is addressable
-	p := &book.Pages
+	p := &amp;book.Pages
 	*p = 123
 	fmt.Println(book) // {123}
 
@@ -297,31 +277,28 @@ func main() {
 	// Book{} is unaddressable, so is Book{}.Pages.
 	/*
 	Book{}.Pages = 123
-	p = &(Book{}.Pages) // <=> p = &Book{}.Pages
+	p = &amp;(Book{}.Pages) // &lt;=&gt; p = &amp;Book{}.Pages
 	*/
 }
 </code></pre>
-
-<p>
-Note that the precedence of the property selection operator <code>.</code>
-in a selector is higher than the address-taking operator <code>&amp;</code>.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Note that the precedence of the property selection operator <code class="tmd-code-span">.</code> in a selector is higher than the address-taking operator <code class="tmd-code-span">&amp;</code>.
 </div>
-
-<a class="anchor" id="take-composite-literal-address"></a>
-<h3>Composite Literals Are Unaddressable But Can Take Addresses</h3>
-
-<div>
-<p>
-Generally, only addressable values can take addresses.
-But there is a syntactic sugar in Go, which allows us to
-take addresses on composite literals.
-A syntactic sugar is an exception in syntax to make programming convenient.
-</p>
-
+<p></p>
+<h3 id="take-composite-literal-address" class="tmd-header-3">
+Composite Literals Are Unaddressable But Can Take Addresses
+</h3>
+<p></p>
+<div class="tmd-usual">
+Generally, only addressable values can take addresses. But there is a syntactic sugar in Go, which allows us to take addresses on composite literals. A syntactic sugar is an exception in syntax to make programming convenient.
+</div>
+<p></p>
+<div class="tmd-usual">
 For example,
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	type Book struct {
@@ -329,28 +306,27 @@ func main() {
 	}
 	// Book{100} is unaddressable but can
 	// be taken address.
-	p := &Book{100} // <=> tmp := Book{100}; p := &tmp
+	p := &amp;Book{100} // &lt;=&gt; tmp := Book{100}; p := &amp;tmp
 	p.Pages = 200
 }
 </code></pre>
+<p></p>
+<h3 id="use-pointer-as-struct" class="tmd-header-3">
+In Field Selectors, Dereferences of Receivers Can Be Implicit
+</h3>
+<p></p>
+<div class="tmd-usual">
+In the following example, for simplicity, <code class="tmd-code-span">(*bookN).pages</code> could be written as <code class="tmd-code-span">bookN.pages</code>. In other words, <code class="tmd-code-span">bookN</code> is dereferenced in the simplified selectors.
 </div>
-
-<a class="anchor" id="use-pointer-as-struct"></a>
-<h3>In Field Selectors, Dereferences of Receivers Can Be Implicit</h3>
-
-<div>
-
-In the following example, for simplicity, <code>(*bookN).pages</code> could
-be written as <code>bookN.pages</code>. In other words, <code>bookN</code>
-is dereferenced in the simplified selectors.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	type Book struct {
 		pages int
 	}
-	book1 := &Book{100} // book1 is a struct pointer
+	book1 := &amp;Book{100} // book1 is a struct pointer
 	book2 := new(Book)  // book2 is another struct pointer
 	// Use struct pointers as structs.
 	book2.pages = book1.pages
@@ -360,91 +336,89 @@ func main() {
 	(*book2).pages = (*book1).pages
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="comparison" class="tmd-header-3">
+About Struct Value Comparisons
+</h3>
+<p></p>
+<div class="tmd-usual">
+A struct type is comparable only if none of the types of its fields (including the fields with names as the blank identifier <code class="tmd-code-span">_</code>) are <a href="type-system-overview.html#types-not-support-comparison">incomparable</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<div class="tmd-usual">
+Two struct values are comparable only if they can be assigned to each other and their types are both comparable. In other words, two struct values can be compared with each other only if the (comparable) types of the two struct values are identical or their underlying types are identical (considering field tags) and at least one of the two types is unnamed.
+</div>
+<p></p>
+<div class="tmd-usual">
+When comparing two struct values of the same type, each pair of their corresponding fields will be compared (in the order shown in source code). The two struct values are equal only if all of their corresponding fields are equal. The comparison stops in advance when a pair of fields is found unequal or <a href="interface.html#comparison">a panic occurs</a>. In comparisons, fields with names as the blank identifier <code class="tmd-code-span">_</code> will be ignored.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="comparison"></a>
-<h3>About Struct Value Comparisons</h3>
-
-<p>
-A struct type is comparable only if none of the types of its fields
-(including the fields with names as the blank identifier <code>_</code>) are
-<a href="type-system-overview.html#types-not-support-comparison">incomparable</a>.
-</p>
-
-<p>
-Two struct values are comparable only if they can be assigned to each other and their types are both comparable.
-In other words, two struct values can be compared with each other only if
-the (comparable) types of the two struct values are identical or
-their underlying types are identical (considering field tags)
-and at least one of the two types is unnamed.
-</p>
-
-<p>
-When comparing two struct values of the same type,
-each pair of their corresponding fields will be compared (in the order shown in source code).
-The two struct values are equal only if all of their corresponding fields are equal.
-The comparison stops in advance when a pair of fields is found unequal
-or <a href="interface.html#comparison">a panic occurs</a>.
-In comparisons, fields with names as the blank identifier <code>_</code> will be ignored.
-</p>
-
-<h3>About Struct Value Conversions</h3>
-
-<div>
-<p>
-Values of two struct types <code>S1</code> and <code>S2</code> can be converted
-to each other's types, if <code>S1</code> and <code>S2</code> share
-the identical underlying type (by ignoring field tags).
-In particular if either <code>S1</code> or <code>S2</code> is an
-<a href="type-system-overview.html#named-type">unnamed type</a>
-and their underlying types are identical (considering field tags),
-then the conversions between the values of them can be implicit.
-</p>
-
-Given struct types <code>S0</code>, <code>S1</code>, <code>S2</code>,
-<code>S3</code> and <code>S4</code> in the following code snippet,
-<ul>
-<li>
-	values of type <code>S0</code> can't be converted to
-	the other four types, and vice versa,
-	because the corresponding field names are different.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+About Struct Value Conversions
+</h3>
+<p></p>
+<div class="tmd-usual">
+Values of two struct types <code class="tmd-code-span">S1</code> and <code class="tmd-code-span">S2</code> can be converted to each other's types, if <code class="tmd-code-span">S1</code> and <code class="tmd-code-span">S2</code> share the identical underlying type (by ignoring field tags). In particular if either <code class="tmd-code-span">S1</code> or <code class="tmd-code-span">S2</code> is an <a href="type-system-overview.html#named-type">unnamed type</a> and their underlying types are identical (considering field tags), then the conversions between the values of them can be implicit.
+</div>
+<p></p>
+<div class="tmd-usual">
+Given struct types <code class="tmd-code-span">S0</code>, <code class="tmd-code-span">S1</code>, <code class="tmd-code-span">S2</code>, <code class="tmd-code-span">S3</code> and <code class="tmd-code-span">S4</code> in the following code snippet,
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+values of type <code class="tmd-code-span">S0</code> can't be converted to the other four types, and vice versa, because the corresponding field names are different.
+</div>
 </li>
-<li>
-	two values of two different types among <code>S1</code>,
-	<code>S2</code>, <code>S3</code> and <code>S4</code>
-	can be converted to each other's type.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+two values of two different types among <code class="tmd-code-span">S1</code>, <code class="tmd-code-span">S2</code>, <code class="tmd-code-span">S3</code> and <code class="tmd-code-span">S4</code> can be converted to each other's type.
+</div>
 </li>
 </ul>
-
+<p></p>
+<div class="tmd-usual">
 In particular,
-<ul>
-<li>
-	values of the type denoted by <code>S2</code> can be implicitly converted
-	to type <code>S3</code>, and vice versa.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+values of the type denoted by <code class="tmd-code-span">S2</code> can be implicitly converted to type <code class="tmd-code-span">S3</code>, and vice versa.
+</div>
 </li>
-<li>
-	values of the type denoted by <code>S2</code> can be implicitly converted
-	to type <code>S4</code>, and vice versa.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+values of the type denoted by <code class="tmd-code-span">S2</code> can be implicitly converted to type <code class="tmd-code-span">S4</code>, and vice versa.
+</div>
 </li>
 </ul>
-
+<p></p>
+<div class="tmd-usual">
 But,
-<ul>
-<li>
-	values of the type denoted by <code>S2</code> must be explicitly converted
-	to type <code>S1</code>, and vice versa.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+values of the type denoted by <code class="tmd-code-span">S2</code> must be explicitly converted to type <code class="tmd-code-span">S1</code>, and vice versa.
+</div>
 </li>
-<li>
-	values of type <code>S3</code> must be explicitly converted
-	to type <code>S4</code>, and vice versa.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+values of type <code class="tmd-code-span">S3</code> must be explicitly converted to type <code class="tmd-code-span">S4</code>, and vice versa.
+</div>
 </li>
 </ul>
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type S0 struct {
 	y int "foo"
@@ -480,29 +454,24 @@ func f() {
 	v3 = S3(v4); v4 = S4(v3)
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-In fact, two struct values can be assigned (or compared) to each other
-only if one of them can be implicitly converted to the type of the other.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+In fact, two struct values can be assigned (or compared) to each other only if one of them can be implicitly converted to the type of the other.
 </div>
-
-<h3>Anonymous Struct Types Can Be Used in Field Declarations</h3>
-
-<div>
-<p>
-Anonymous struct types are allowed to be used as the types of the fields
-of another struct type.
-Anonymous struct type literals are also allowed to be used
-in composite literals.
-</p>
-
+<p></p>
+<h3 class="tmd-header-3">
+Anonymous Struct Types Can Be Used in Field Declarations
+</h3>
+<p></p>
+<div class="tmd-usual">
+Anonymous struct types are allowed to be used as the types of the fields of another struct type. Anonymous struct type literals are also allowed to be used in composite literals.
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-<pre class="line-numbers"><code class="language-go">var aBook = struct {
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var aBook = struct {
 	// The type of the author field is
 	// an anonymous struct type.
 	author struct {
@@ -523,20 +492,20 @@ An example:
 	pages: 96,
 }
 </code></pre>
-
-<p>
-Generally, for better readability, it is not recommended to
-use anonymous struct type literals in composite literals.
-</p>
+<p></p>
+<div class="tmd-usual">
+Generally, for better readability, it is not recommended to use anonymous struct type literals in composite literals.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+More About Struct Types
+</h3>
+<p></p>
+<div class="tmd-usual">
+There are some advanced topics which are related to struct types. They will be explained in <a href="type-embedding.html">type embedding</a> and <a href="memory-layout.html#size-and-padding">memory layouts</a> later.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h3>More About Struct Types</h3>
-
-<p>
-There are some advanced topics which are related to struct types.
-They will be explained in <a href="type-embedding.html">type embedding</a>
-and <a href="memory-layout.html#size-and-padding">memory layouts</a> later.
-</p>
-
-
+<p></p>

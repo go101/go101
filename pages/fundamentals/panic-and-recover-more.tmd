@@ -1,0 +1,467 @@
+### Explain Panic/Recover Mechanism in Detail
+
+Panic and recover mechanism has been __introduced before__,
+and several panic/recover use cases are shown in __the last article__.
+This current article will explain panic/recover mechanism in detail.
+Exiting phases of function calls will also be explained in detail.
+
+// __ introduced before :: control-flows-more.html#panic-recover
+// __ the last article :: panic-and-recover-use-cases.html
+
+@@@ #exiting-phase
+###+++++++++++ Exiting Phases of Function Calls
+
+In Go, a function call may undergo an exiting phase before it fully exits.
+In the exiting phase, the deferred function calls pushed into the defer-call stack
+during executing the function call will be executed (in the inverse pushing order).
+When all of the deferred calls fully exit,
+the exiting phase ends and the function call also fully exits.
+
+Exiting phases might also be called returning phases elsewhere.
+
+A function call may enter its exiting phase (or exit directly) through three ways:
+*.
+	after the call returns normally.
+*.
+	when a panic occurs in the call.
+*.
+	after the `runtime.Goexit` function is called and fully exits in the call.
+
+For example, in the following code snippet,
+*
+	a call to the function `f0` or `f1`
+	will enter its existing phase after it returns normally.
+*
+	a call to the function `f2` will enter its exiting phase
+	after the divided-by-zero panic happens.
+*
+	a call to the function `f3` will enter its exiting phase
+	after the `runtime.Goexit` function call fully exits.
+
+@@@ .line-numbers
+'''go
+import (
+	"fmt"
+	"runtime"
+)
+
+func f0() int {
+	var x = 1
+	defer fmt.Println("exits normally:", x)
+	x++
+	return x
+}
+
+func f1() {
+	var x = 1
+	defer fmt.Println("exits normally:", x)
+	x++
+}
+
+func f2() {
+	var x, y = 1, 0
+	defer fmt.Println("exits for panicking:", x)
+	x = x / y // will panic
+	x++       // unreachable
+}
+
+func f3() int {
+	x := 1
+	defer fmt.Println("exits for Goexiting:", x)
+	x++
+	runtime.Goexit()
+	return x+x // unreachable
+}
+'''
+
+BTW, the `runtime.Goexit()` function is not intended to be called in the main goroutine of a program.
+
+@@@ #function-call-associations
+###+++++++++++ Associating Panics and Goexit Signals of Function Calls
+
+When a panic occurs directly in a function call, we say the (unrecovered) panic starts associating with the function call.
+Similarly, when the `runtime.Goexit` function is called in a function call,
+we say a Goexit signal starts associating with the function call after the `runtime.Goexit` call fully exits.
+As explained in the last section,
+associating either a panic or a Goexit signal with a function call
+will make the function call enter its exiting phase immediately.
+
+We have learned that __panics can be recovered__.
+However, there are no ways to cancel a Goexit signal.
+
+// __ panics can be recovered :: control-flows-more.html#panic-recover
+
+At any give time, a function call may associate with at most one unrecovered panic.
+If a call is associating with an unrecovered panic, then
+*
+	the call will associate with no panics when the unrecovered panic is recovered.
+*
+	when a new panic occurs in the function call, the new one will replace
+	the old one to become the associating unrecovered panic of the function call.
+
+For example, in the following program, the recovered panic is panic 3,
+which is the last panic associating with the `main` function call.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	defer func() {
+		fmt.Println(recover()) // 3
+	}()
+	
+	defer panic(3) // will replace panic 2
+	defer panic(2) // will replace panic 1
+	defer panic(1) // will replace panic 0
+	panic(0)
+}
+'''
+
+As Goexit signals can't be cancelled,
+arguing whether a function call may associate with at most one or more than one Goexit signal is unnecessary.
+
+Although it is unusual, there might be multiple unrecovered panics coexisting in a goroutine at a time.
+Each one associates with one not-exited-yet function call in the call stack of the goroutine.
+When a nested call fully exits and it still associates with an unrecovered panic,
+the unrecovered panic will spread to the nesting call (the caller of the nested call).
+The effect is the same as a panic occurs directly in the nesting call.
+That says,
+*
+	if there was an old unrecovered panic associating with the nesting call before,
+	the old one will be replaced by the spread one.
+	For this case, the nesting call must had already entered its exiting phase for sure,
+	so the next deferred function call in its defer-call stack will be invoked.
+*
+	if there was not an unrecovered panic associating with the nesting call before,
+	the spread one will associates with the nesting call.
+	For this case, the nesting call might have entered its exiting phase or not.
+	If it hasn't, it will enter its exiting phase immediately.
+
+So, when a goroutine finishes to exit, there may be at most one unrecovered panic in the goroutine.
+If a goroutine exits with an unrecovered panic, the whole program crashes,
+and the information of the unrecovered panic will be reported.
+Otherwise, the goroutine exits normally (peacefully).
+
+When a function is invoked, there is neither a panic nor Goexit signals associating with its call initially,
+no matter whether its caller (the nesting call) has entered exiting phase or not.
+Surely, panics might occur or the `runtime.Goexit` function might be called later
+in the process of executing the call, so panics and Goexit signals might associate with the call later.
+
+The following example program will crash if it runs,
+because the panic 2 is still not recovered when the new goroutine exits.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	// The new goroutine.
+	go func() {
+		// This is an anonymous deferred call.
+		// When it fully exits, the panic 2 will spread
+		// to the entry function call of the new
+		// goroutine, and replace the panic 0. The
+		// panic 2 will never be recovered.
+		defer func() {
+			// As explained in the last example,
+			// panic 2 will replace panic 1.
+			defer panic(2)
+			
+			// When the anonymous function call fully
+			// exits, panic 1 will spread to (and
+			// associate with) the nesting anonymous
+			// deferred call.
+			func () {
+				// Once the panic 1 occurs, there will
+				// be two unrecovered panics coexisting
+				// in the new goroutine. One (panic 0)
+				// associates with the entry function
+				// call of the new goroutine, the other
+				// (panic 1) associates with the
+				// current anonymous function call.
+				panic(1)
+			}()
+		}()
+		panic(0)
+	}()
+	
+	select{}
+}
+'''
+
+The output (when the above program is compiled with the standard Go compiler v1.23.n):
+@@@ .output
+'''
+panic: 0
+	panic: 1
+	panic: 2
+
+...
+'''
+
+The format of the output is not perfect,
+it is prone to make some people think that the panic 0 is the final unrecovered panic,
+whereas the final unrecovered panic is actually panic 2.
+
+Similarly, when a nested call fully exits and it is associating with a Goexit signal,
+then the Goexit signal will also spread to (and associate with) the nesting call.
+This will make the nesting call enter (if it hasn't entered) its exiting phase immediately.
+
+When a Goexit signal associates with a function call,
+if the function call is associating with an unrecovered panic,
+then the panic will be recovered.
+For example, the following program will exit peacefully and print `<nil>`,
+because the `bye` panic will be recovered by the Goexit signal.
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func f() {
+	defer func() {
+		fmt.Println(recover())
+	}()
+
+	// The Goexit signal will disable the "bye" panic.
+	defer runtime.Goexit()
+	panic("bye")
+}
+
+func main() {
+	go f()
+	
+	for runtime.NumGoroutine() > 1 {
+		runtime.Gosched()
+	}
+}
+'''
+
+{//
+The above has mentioned that a panic and a Goexit signal are independent of each other.
+In other words, an unrecovered panic should not cancel a Goexit signal,
+and a Goexit signal should not shadow an unrecovered panic or be cancelled.
+However, both of the current official standard Go compiler (gc, v1.19) and gccgo (v10)
+don't implement this rule correctly.
+For example, the following program should crash but it doesn't
+if it is compiled with the current versions of gc and gccgo.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "runtime"
+
+func f() {
+	// The Goexit signal shadows the "bye"
+	// panic now, but it should not.
+	defer runtime.Goexit()
+	panic("bye")
+}
+
+func main() {
+	go f()
+	
+	for runtime.NumGoroutine() > 1 {
+		runtime.Gosched()
+	}
+}
+'''
+
+__The problem__ will be fixed in future versions of gc and gccgo.
+
+// __ The problem_ :: https://github.com/golang/go/issues/35378
+}
+
+{//
+The following example program should exit quickly in running,
+but it will not compile correctly with the current gccgo version (v8.0) and gc versions before Go Toolchain 1.14.
+In fact, it never exits if it compiles with those compiler versions.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "runtime"
+
+func f() {
+	defer func() {
+		recover()
+	}()
+	defer panic("will cancel Goexit but should not")
+	runtime.Goexit()
+}
+
+func main() {
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		f()
+		for {
+			runtime.Gosched()
+		}
+	}()
+	<-c
+}
+'''
+
+Since Go Toolchain 1.14, __the problem__ has been fixed in the standard compiler (gc).
+
+// __ the problem :: https://github.com/golang/go/issues/29226
+}
+
+@@@ #some-recovers-are-no-ops
+###+++++++++++ Some `recover` Calls Are No-Ops
+
+The builtin `recover` function must be called at proper places to take effect.
+Otherwise, the calls are no-ops.
+For example, none of the `recover` calls in the following example recover the `bye` panic.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	defer func() {
+		defer func() {
+			recover() // no-op
+		}()
+	}()
+	defer func() {
+		func() {
+			recover() // no-op
+		}()
+	}()
+	func() {
+		defer func() {
+			recover() // no-op
+		}()
+	}()
+	func() {
+		defer recover() // no-op
+	}()
+	func() {
+		recover() // no-op
+	}()
+	recover()       // no-op
+	defer recover() // no-op
+	panic("bye")
+}
+'''
+
+We have already known that the following `recover` call takes effect.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	defer func() {
+		recover() // take effect
+	}()
+
+	panic("bye")
+}
+'''
+
+Then why don't those `recover` calls in the first example of the current section take effect?
+Let's read the current version of __Go specification__:
+
+// __ Go specification :: https://golang.org/ref/spec#Handling_panics
+
+
+>  The return value of `recover` is `nil` if any of the following conditions holds:
+	{
+	* `panic`'s argument was nil;
+	* the goroutine is not panicking;
+	* `recover` was not called directly by a deferred function.
+	}
+
+There is __an example__ showing the first condition case in the last article.
+
+// __ an example :: panic-and-recover-use-cases.html#avoid-verbose
+
+Most of the `recover` calls in the first example of the current section satisfy
+either the second or the third conditions mentioned in Go specification,
+except the first call. Yes, here, the current descriptions are not precise yet.
+The third condition should be described as 
+
+*
+	`recover` was not called directly by a deferred function **call which was called directly
+	by the function call associating with the expected to-be-recovered panic**.
+
+In the first example of the current section, the expected to-be-recovered panic is associating with
+the `main` function call. The first `recover` call is called
+directly by a deferred function call but the deferred function call is not called directly
+by the `main` function call. This is why the first `recover` call is a no-op.
+
+In fact, the current Go specification also doesn't explain well why the second
+`recover` call (by code line order), which is expected to recover panic 1,
+in the following example doesn't take effect.
+
+@@@ .line-numbers
+'''go
+// This program exits without recovering panic 1.
+package main
+
+func demo() {
+	defer func() {
+		defer func() {
+			recover() // this one recovers panic 2
+		}()
+
+		defer recover() // no-op
+
+		panic(2)
+	}()
+	panic(1)
+}
+
+func main() {
+	demo()
+}
+'''
+
+What Go specification doesn't mention is that,
+every `recover` call is viewed as an attempt
+to recover the newest unrecovered panic in the current goroutine.
+
+Go runtime thinks the second `recover` call in the above example attempts to recover
+the newest unrecovered panic, panic 2, which is associating with the caller call
+of the second `recover` call. The second `recover` call
+is not called directly by a deferred function call which is called by the associating function call.
+Instead, it is directly called by the associating function call.
+This is why the second `recover` call is a no-op.
+
+@@@ #summary
+###+++++++++++ Summary
+
+OK, now, let's try to make a short description on which `recover` calls will take effect:
+@@@ .alert;alert-warning
+{
+A `recover` call takes effect only if the direct caller of
+the `recover` call is a deferred call and
+the direct caller of the deferred call associates with
+the newest unrecovered panic in the current goroutine.
+An effective `recover` call disassociates the
+newest unrecovered panic from its associating function call,
+and returns the value passed to the `panic` call
+which produced the newest unrecovered panic. 
+}
+
+{//
+other bugs:
+* https://github.com/golang/go/issues/43942
+* https://github.com/golang/go/issues/43941
+* https://github.com/golang/go/issues/43921
+* https://github.com/golang/go/issues/43920
+}
+
+

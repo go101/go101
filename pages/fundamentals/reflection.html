@@ -1,91 +1,75 @@
-﻿<h1>Reflections in Go</h1>
+<h1 class="tmd-header-1">
+Reflections in Go
+</h1>
+<p></p>
+<div class="tmd-usual">
+Go is a static language with well reflection support. The remaining of this article will explain the reflection functionalities provided in the <code class="tmd-code-span">reflect</code> standard package.
+</div>
+<p></p>
+<div class="tmd-usual">
+It is very helpful to read the <a href="type-system-overview.html">overview of Go type system</a> and <a href="interface.html">interfaces in Go</a> articles before reading the remaining of the current article.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Go is a static language with well reflection support.
-The remaining of this article will explain the reflection functionalities
-provided in the <code>reflect</code> standard package.
-</p>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Overview of Go Reflection
+</h3>
+<p></p>
+<div class="tmd-usual">
+Go reflection brings many dynamic functionalities to Go programming. Many standard code packages, such as the <code class="tmd-code-span">fmt</code> and <code class="tmd-code-span">encoding</code> packages, heavily rely on the reflection functionalities.
+</div>
+<p></p>
+<div class="tmd-usual">
+We can inspect Go values through the values of the <code class="tmd-code-span">Type</code> and <code class="tmd-code-span">Value</code> types defined in the <code class="tmd-code-span">reflect</code> standard package. The remaining of this article will show some examples on how to use values of the two types.
+</div>
+<p></p>
+<div class="tmd-usual">
+One of the Go reflection design goals is any non-reflection operation should be also possible to be applied through the reflection ways. For all kinds of reasons, this goal is not 100 percent achieved. However, most non-reflection operations can be applied through the reflection ways now. On the other hand, through the reflection ways, we can do some operations which are impossible to be achieved through non-reflection ways. The operations which can't and can only be achieved through the reflection ways will be mentioned in the following sections.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+The <code class="tmd-code-span">reflect.Type</code> Type and Values
+</h3>
+<p></p>
+<div class="tmd-usual">
+In Go, we can create a <code class="tmd-code-span">reflect.Type</code> value from an arbitrary non-interface value by calling the <code class="tmd-code-span">reflect.TypeOf</code> function. The result <code class="tmd-code-span">reflect.Type</code> value represents the type of the non-interface value. Surely, we can also pass an interface value to a <code class="tmd-code-span">reflect.TypeOf</code> function call, but the call will return a <code class="tmd-code-span">reflect.Type</code> value which represents the dynamic type of the interface value. In fact, the <code class="tmd-code-span">reflect.TypeOf</code> function has only one parameter of type <code class="tmd-code-span">interface{}</code> and always returns a <code class="tmd-code-span">reflect.Type</code> value which represents the dynamic type of the only interface parameter. To get a <code class="tmd-code-span">reflect.Type</code> value which represents an interface type by using the <code class="tmd-code-span">reflect.TypeOf</code> function, we must use indirect ways which will be introduced below to achieve this goal.
+</div>
+<p></p>
+<div class="tmd-usual">
+Since Go 1.22, we can also use <a href="https://docs.go101.org/std/pkg/reflect.html#name-TypeFor">the <code class="tmd-code-span">reflect.TypeFor</code> function</a> to get a <code class="tmd-code-span">reflect.Type</code> value which represents a type which is known at compile time. The compile-time known type may be either non-interface or interface.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-It is very helpful to read the <a href="type-system-overview.html">overview
-of Go type system</a> and <a href="interface.html">interfaces in Go</a> articles
-before reading the remaining of the current article.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">reflect.Type</code> type is an interface type. It <a href="https://golang.org/pkg/reflect/#Type">specifies several methods</a>. We can call these methods to inspect the information of the type represented by a <code class="tmd-code-span">reflect.Type</code> receiver value. Some of these methods apply for all <a href="https://golang.org/pkg/reflect/#Kind">kinds of types</a>, some of them are one kind or several kinds specific. Please read the documentation of each method for details. Calling one of the methods through an improper <code class="tmd-code-span">reflect.Type</code> receiver value will produce a panic.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>Overview of Go Reflection</h3>
-
-<p>
-Go reflection brings many dynamic functionalities to Go programming.
-Many standard code packages, such as the <code>fmt</code> and <code>encoding</code>
-packages, heavily rely on the reflection functionalities.
-</p>
-
-<p>
-We can inspect Go values through the values of the <code>Type</code> and
-<code>Value</code> types defined in the <code>reflect</code> standard package.
-The remaining of this article will show some examples on how to use
-values of the two types.
-</p>
-
-<p>
-One of the Go reflection design goals is any non-reflection operation
-should be also possible to be applied through the reflection ways.
-For all kinds of reasons, this goal is not 100 percent achieved.
-However, most non-reflection operations can be applied through the reflection ways now.
-On the other hand, through the reflection ways, we can do some operations
-which are impossible to be achieved through non-reflection ways.
-The operations which can't and can only be achieved through the reflection ways
-will be mentioned in the following sections.
-</p>
-
-<h3>The <code>reflect.Type</code> Type and Values</h3>
-
-<div>
-<p>
-In Go, we can create a <code>reflect.Type</code> value from an arbitrary
-non-interface value by calling the <code>reflect.TypeOf</code> function.
-The result <code>reflect.Type</code> value represents the type of the non-interface value.
-Surely, we can also pass an interface value to a <code>reflect.TypeOf</code> function call,
-but the call will return a <code>reflect.Type</code> value which represents the dynamic type of the interface value.
-In fact, the <code>reflect.TypeOf</code> function has only one parameter of type <code>interface{}</code>
-and always returns a <code>reflect.Type</code> value which represents the dynamic type of the only interface parameter.
-To get a <code>reflect.Type</code> value which represents an interface type
-by using the <code>reflect.TypeOf</code> function,
-we must use indirect ways which will be introduced below to achieve this goal.
-</p>
-
-<p>
-Since Go 1.22, we can also use
-<a href="https://docs.go101.org/std/pkg/reflect.html#name-TypeFor">the <code>reflect.TypeFor</code> function</a>
-to get a <code>reflect.Type</code> value which represents a type which is known
-at compile time. The compile-time known type may be either non-interface or interface.
-</p>
-
-<p>
-The <code>reflect.Type</code> type is an interface type.
-It <a href="https://golang.org/pkg/reflect/#Type">specifies several methods</a>.
-We can call these methods to inspect the information of the type represented
-by a <code>reflect.Type</code> receiver value.
-Some of these methods apply for all
-<a href="https://golang.org/pkg/reflect/#Kind">kinds of types</a>,
-some of them are one kind or several kinds specific.
-Please read the documentation of each method for details.
-Calling one of the methods through an improper <code>reflect.Type</code> receiver value will produce a panic.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
 
 func main() {
 	type A = [16]int16
-	var c <-chan map[A][]byte
+	var c &lt;-chan map[A][]byte
 	tc := reflect.TypeOf(c)
 	fmt.Println(tc.Kind())    // chan
-	fmt.Println(tc.ChanDir()) // <-chan
+	fmt.Println(tc.ChanDir()) // &lt;-chan
 	tm := tc.Elem()
 	ta, tb := tm.Key(), tm.Elem()
 	// The next line prints: map array slice
@@ -105,18 +89,21 @@ func main() {
 	fmt.Println(tc.Comparable()) // true
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 There are <a href="https://golang.org/pkg/reflect/#Kind">26 kinds of types</a> in Go.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-In the above example, we use the method <code>Elem</code> to get
-the element types of some container types (a channel type, a map type,
-a slice type and an array type).
-In fact, we can also use this method to get the base type of a pointer type.
-For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+In the above example, we use the method <code class="tmd-code-span">Elem</code> to get the element types of some container types (a channel type, a map type, a slice type and an array type). In fact, we can also use this method to get the base type of a pointer type. For example,
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -145,15 +132,17 @@ func main() {
 	fmt.Println(ti.Implements(ti))  // true
 }
 </code></pre>
-
-<p>
-The above example also shows how to (indirectly) get a <code>reflect.Type</code> value which represents an interface type.
-</p>
-
-We can get all of the field types (of a struct type) and the method information of a type through reflection.
-We can also get the parameter and result type information of a function type through reflection.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The above example also shows how to (indirectly) get a <code class="tmd-code-span">reflect.Type</code> value which represents an interface type.
+</div>
+<p></p>
+<div class="tmd-usual">
+We can get all of the field types (of a struct type) and the method information of a type through reflection. We can also get the parameter and result type information of a function type through reflection.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -196,30 +185,37 @@ func main() {
 	fmt.Println(ok1, ok2) // false true
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 From the above example, we could find that,
-<ol>
-<li>
-	for non-interface types, the <code>reflect.Type.NumMethod</code> only returns the number of exported methods
-    (including implicitly declared ones) of a type.
-	We are unable to get the information of a non-exported method by using the <code>reflect.Type.MethodByName</code> method.
-    For interface types, the limits don't exist (the fact was not mentioned in the docs of the two methods before Go 1.16).
-    Such situation also applies to the corresponding methods of the <code>reflect.Value</code> type introduced in the next section.
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+for non-interface types, the <code class="tmd-code-span">reflect.Type.NumMethod</code> only returns the number of exported methods (including implicitly declared ones) of a type. We are unable to get the information of a non-exported method by using the <code class="tmd-code-span">reflect.Type.MethodByName</code> method. For interface types, the limits don't exist (the fact was not mentioned in the docs of the two methods before Go 1.16). Such situation also applies to the corresponding methods of the <code class="tmd-code-span">reflect.Value</code> type introduced in the next section.
+</div>
 </li>
-<li>
-	although a <code>reflect.Type.NumField</code> method call returns the number of all fields (including non-exported ones)
-    of a struct type, it is <a href="https://golang.org/pkg/reflect/#pkg-note-BUG">not a good idea</a> to
-	use the <code>reflect.Type.FieldByName</code> method to get the information of a non-exported field.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+although a <code class="tmd-code-span">reflect.Type.NumField</code> method call returns the number of all fields (including non-exported ones) of a struct type, it is <a href="https://golang.org/pkg/reflect/#pkg-note-BUG">not a good idea</a> to use the <code class="tmd-code-span">reflect.Type.FieldByName</code> method to get the information of a non-exported field.
+</div>
 </li>
 </ol>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="struct-field-tag"></a>
-We may <a href="https://golang.org/pkg/reflect/#StructTag">inspect struct field tags through reflection</a>.
-The types of struct field tags are <code>reflect.StructTag</code>, which has two methods,
-<code>Get</code> and <code>Lookup</code>, to inspect the key-value pairs specified in field tags.
-An example of inspecting struct field tags:
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div id="struct-field-tag" class="tmd-usual">
+We may <a href="https://golang.org/pkg/reflect/#StructTag">inspect struct field tags through reflection</a>. The types of struct field tags are <code class="tmd-code-span">reflect.StructTag</code>, which has two methods, <code class="tmd-code-span">Get</code> and <code class="tmd-code-span">Lookup</code>, to inspect the key-value pairs specified in field tags. An example of inspecting struct field tags:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -244,40 +240,39 @@ func main() {
 	fmt.Println(z.Lookup("optional")) // yes true
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 Note,
-<ul>
-<li>
-	tag keys may not contain space (Unicode value 32),
-	quote (Unicode value 34) and colon (Unicode value 58) characters.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+tag keys may not contain space (Unicode value 32), quote (Unicode value 34) and colon (Unicode value 58) characters.
+</div>
 </li>
-<li>
-	to form a valid key-value pair, no space characters are allowed to
-	follow the semicolon in the supposed key-value pair. So<br/>
-	<code>`optional: "yes"`</code> doesn't form key-value pairs.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+to form a valid key-value pair, no space characters are allowed to follow the semicolon in the supposed key-value pair. So<br/><code class="tmd-code-span">`optional: "yes"`</code> doesn't form key-value pairs.
+</div>
 </li>
-<li>
-	space characters in tag values are important (not be ignored). So<br/>
-	<code>`json:"author, omitempty"`</code>,<br/>
-	<code>`json:" author,omitempty"`</code> and<br/>
-	<code>`json:"author,omitempty"`</code> are different from each other.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+space characters in tag values are important (not be ignored). So<br/><code class="tmd-code-span">`json:"author, omitempty"`</code>,<br/><code class="tmd-code-span">`json:" author,omitempty"`</code> and<br/><code class="tmd-code-span">`json:"author,omitempty"`</code> are different from each other.
+</div>
 </li>
-<li>
-	each struct field tag should present as a single line to be wholly meaningful.
-	<!--
-	https://github.com/golang/go/issues/43379
-	https://github.com/golang/go/issues/38641
-	https://github.com/golang/go/issues/15893
-	-->
+<li class="tmd-list-item">
+<div class="tmd-usual">
+each struct field tag should present as a single line to be wholly meaningful.
+</div>
 </li>
 </ul>
-
-Beside the <code>reflect.TypeOf</code> function,
-we can also use some other functions in the <code>reflect</code>
-standard package to create <code>reflect.Type</code> values
-which represent some unnamed composite types.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+Beside the <code class="tmd-code-span">reflect.TypeOf</code> function, we can also use some other functions in the <code class="tmd-code-span">reflect</code> standard package to create <code class="tmd-code-span">reflect.Type</code> values which represent some unnamed composite types.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -286,16 +281,16 @@ func main() {
 	ta := reflect.ArrayOf(5, reflect.TypeOf(123))
 	fmt.Println(ta) // [5]int
 	tc := reflect.ChanOf(reflect.SendDir, ta)
-	fmt.Println(tc) // chan<- [5]int
+	fmt.Println(tc) // chan&lt;- [5]int
 	tp := reflect.PtrTo(ta)
 	fmt.Println(tp) // *[5]int
 	ts := reflect.SliceOf(tp)
 	fmt.Println(ts) // []*[5]int
 	tm := reflect.MapOf(ta, tc)
-	fmt.Println(tm) // map[[5]int]chan<- [5]int
+	fmt.Println(tm) // map[[5]int]chan&lt;- [5]int
 	tf := reflect.FuncOf([]reflect.Type{ta},
 				[]reflect.Type{tp, tc}, false)
-	fmt.Println(tf) // func([5]int) (*[5]int, chan<- [5]int)
+	fmt.Println(tf) // func([5]int) (*[5]int, chan&lt;- [5]int)
 	tt := reflect.StructOf([]reflect.StructField{
 		{Name: "Age", Type: reflect.TypeOf("abc")},
 	})
@@ -303,102 +298,80 @@ func main() {
 	fmt.Println(tt.NumField()) // 1
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-There are more <code>reflect.Type</code> methods which are not used
-in above examples, please read the <code>reflect</code> package
-documentation for their usages.
-</p>
-
-Note, up to now (Go 1.23), 
-<ul>
-<li>
-	There are no ways to create interface types through reflection.
+<p></p>
+<div class="tmd-usual">
+There are more <code class="tmd-code-span">reflect.Type</code> methods which are not used in above examples, please read the <code class="tmd-code-span">reflect</code> package documentation for their usages.
+</div>
+<p></p>
+<div class="tmd-usual">
+Note, up to now (Go 1.23),
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+There are no ways to create interface types through reflection.
+</div>
 </li>
-<li>
-	Although we can create a struct type with embedding fields through reflection, the way has many pitfalls.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Although we can create a struct type with embedding fields through reflection, the way has many pitfalls.
+</div>
 </li>
 </ul>
-
-<!--
-https://github.com/golang/go/issues/39717
-https://github.com/golang/go/issues/15924
-https://github.com/golang/go/issues/38783
--->
-
-<p>
-</p>
+<p></p>
+<p></p>
+<h3 class="tmd-header-3">
+The <code class="tmd-code-span">reflect.Value</code> Type and Values
+</h3>
+<p></p>
+<div class="tmd-usual">
+Similarly, we can create a <code class="tmd-code-span">reflect.Value</code> value from an arbitrary non-interface value by calling the <code class="tmd-code-span">reflect.ValueOf</code> function. The result <code class="tmd-code-span">reflect.Value</code> value represents the non-interface value. Same as the <code class="tmd-code-span">reflect.TypeOf</code> function, the <code class="tmd-code-span">reflect.ValueOf</code> function also has only one parameter of type <code class="tmd-code-span">interface{}</code>. When an interface argument is passed to a <code class="tmd-code-span">reflect.ValueOf</code> function call, the call will return a <code class="tmd-code-span">reflect.Value</code> value which represents the dynamic value of the interface argument. To get a <code class="tmd-code-span">reflect.Value</code> value which represents an interface value, we must use indirect ways which will be introduced below to achieve this goal.
+</div>
+<p></p>
+<div class="tmd-usual">
+The value represented by a <code class="tmd-code-span">reflect.Value</code> value <code class="tmd-code-span">v</code> is often called the underlying value of <code class="tmd-code-span">v</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+There are <a href="https://golang.org/pkg/reflect/">plenty of methods</a> declared for the <code class="tmd-code-span">reflect.Value</code> type. We can call these methods to inspect the information of (and manipulate) the underlying value of a <code class="tmd-code-span">reflect.Value</code> receiver value. Some of these methods apply for all kinds of values, some of them are one kind or several kinds specific. Please read the <code class="tmd-code-span">reflect</code> standard package documentation for details. Calling a kind-specific method with an improper <code class="tmd-code-span">reflect.Value</code> receiver value will produce a panic.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h3>The <code>reflect.Value</code> Type and Values</h3>
-
-<div>
-<p>
-Similarly, we can create a <code>reflect.Value</code> value from an arbitrary
-non-interface value by calling the <code>reflect.ValueOf</code> function.
-The result <code>reflect.Value</code> value represents the non-interface value.
-Same as the <code>reflect.TypeOf</code> function, the <code>reflect.ValueOf</code> function
-also has only one parameter of type <code>interface{}</code>.
-When an interface argument is passed to a <code>reflect.ValueOf</code> function call,
-the call will return a <code>reflect.Value</code> value which represents the dynamic value of the interface argument.
-To get a <code>reflect.Value</code> value which represents an interface value,
-we must use indirect ways which will be introduced below to achieve this goal.
-</p>
-
-<p>
-The value represented by a <code>reflect.Value</code> value <code>v</code>
-is often called the underlying value of <code>v</code>.
-</p>
-
-<p>
-There are <a href="https://golang.org/pkg/reflect/">plenty of methods</a>
-declared for the <code>reflect.Value</code> type.
-We can call these methods to inspect the information of (and manipulate)
-the underlying value of a <code>reflect.Value</code> receiver value.
-Some of these methods apply for all kinds of values, some of them are one kind or several kinds specific.
-Please read the <code>reflect</code> standard package documentation for details.
-Calling a kind-specific method with an improper <code>reflect.Value</code> receiver value will produce a panic.
-</p>
-
-<p>
-The <code>CanSet</code> method of a <code>reflect.Value</code> value
-returns whether or not the underlying value of the
-<code>reflect.Value</code> value is modifiable (can be assigned to).
-If the Go value is modifiable, we can call the <code>Set</code> method
-of the corresponding <code>reflect.Value</code> value to modify the Go value.
-Note, the <code>reflect.Value</code> values returned directly by
-<code>reflect.ValueOf</code> function calls are always read-only.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">CanSet</code> method of a <code class="tmd-code-span">reflect.Value</code> value returns whether or not the underlying value of the <code class="tmd-code-span">reflect.Value</code> value is modifiable (can be assigned to). If the Go value is modifiable, we can call the <code class="tmd-code-span">Set</code> method of the corresponding <code class="tmd-code-span">reflect.Value</code> value to modify the Go value. Note, the <code class="tmd-code-span">reflect.Value</code> values returned directly by <code class="tmd-code-span">reflect.ValueOf</code> function calls are always read-only.
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
 
 func main() {
 	n := 123
-	p := &n
+	p := &amp;n
 	vp := reflect.ValueOf(p)
 	fmt.Println(vp.CanSet(), vp.CanAddr()) // false false
 	vn := vp.Elem() // get the value referenced by vp
 	fmt.Println(vn.CanSet(), vn.CanAddr()) // true true
-	vn.Set(reflect.ValueOf(789)) // <=> vn.SetInt(789)
+	vn.Set(reflect.ValueOf(789)) // &lt;=&gt; vn.SetInt(789)
 	fmt.Println(n)               // 789
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 Non-exported fields of struct values can't be modified through reflections.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -408,7 +381,7 @@ func main() {
 		X interface{} // an exported field
 		y interface{} // a non-exported field
 	}
-	vp := reflect.ValueOf(&s)
+	vp := reflect.ValueOf(&amp;s)
 	// If vp represents a pointer. the following
 	// line is equivalent to "vs := vp.Elem()".
 	vs := reflect.Indirect(vp)
@@ -424,38 +397,38 @@ func main() {
 	fmt.Println(vx.IsNil(), vy.IsNil()) // false true
 }
 </code></pre>
-
-<p>
-</p>
-
-From the above two examples, we can learn that there are two ways to get a <code>reflect.Value</code> value
-whose underlying value is referenced by the underlying value (a pointer value) of another <code>reflect.Value</code> value.
-<ol>
-<li>
-	One way is by calling the <code>Elem</code> method of a <code>reflect.Value</code> value
-	which represents the pointer value.
+<p></p>
+<div class="tmd-usual">
+From the above two examples, we can learn that there are two ways to get a <code class="tmd-code-span">reflect.Value</code> value whose underlying value is referenced by the underlying value (a pointer value) of another <code class="tmd-code-span">reflect.Value</code> value.
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+One way is by calling the <code class="tmd-code-span">Elem</code> method of a <code class="tmd-code-span">reflect.Value</code> value which represents the pointer value.
+</div>
 </li>
-<li>
-	The other way is to pass a <code>reflect.Value</code> value which represents the pointer value
-	to a <code>reflect.Indirect</code> function call.
-	(If the argument passed to a <code>reflect.Indirect</code> function call doesn't
-	represent a pointer value, then the call returns a copy of the argument.)
+<li class="tmd-list-item">
+<div class="tmd-usual">
+The other way is to pass a <code class="tmd-code-span">reflect.Value</code> value which represents the pointer value to a <code class="tmd-code-span">reflect.Indirect</code> function call. (If the argument passed to a <code class="tmd-code-span">reflect.Indirect</code> function call doesn't represent a pointer value, then the call returns a copy of the argument.)
+</div>
 </li>
 </ol>
-
-Note, the <code>reflect.Value.Elem</code> method can be also used to get a <code>reflect.Value</code> value
-which represents the dynamic value of an interface value. For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+Note, the <code class="tmd-code-span">reflect.Value.Elem</code> method can be also used to get a <code class="tmd-code-span">reflect.Value</code> value which represents the dynamic value of an interface value. For example,
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
 
 func main() {
 	var z = 123
-	var y = &z
+	var y = &amp;z
 	var x interface{} = y
-	v := reflect.ValueOf(&x)
+	v := reflect.ValueOf(&amp;x)
 	vx := v.Elem()
 	vy := vx.Elem()
 	vz := vy.Elem()
@@ -463,18 +436,13 @@ func main() {
 	fmt.Println(z) // 789
 }
 </code></pre>
-
-<p>
-</p>
-
-The <code>reflect</code> standard package also declares
-some <code>reflect.Value</code> related functions.
-Each of these functions corresponds to a built-in function
-or a non-reflection functionality,
-The following example demonstrates how to bind a (kind of)
-custom generic function to different function values.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">reflect</code> standard package also declares some <code class="tmd-code-span">reflect.Value</code> related functions. Each of these functions corresponds to a built-in function or a non-reflection functionality, The following example demonstrates how to bind a (kind of) custom generic function to different function values.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -482,7 +450,7 @@ import "reflect"
 func InvertSlice(args []reflect.Value) []reflect.Value {
 	inSlice, n := args[0], args[0].Len()
 	outSlice := reflect.MakeSlice(inSlice.Type(), 0, n)
-	for i := n-1; i >= 0; i-- {
+	for i := n-1; i &gt;= 0; i-- {
 		element := inSlice.Index(i)
 		outSlice = reflect.Append(outSlice, element)
 	}
@@ -498,23 +466,21 @@ func Bind(p interface{},
 
 func main() {
 	var invertInts func([]int) []int
-	Bind(&invertInts, InvertSlice)
+	Bind(&amp;invertInts, InvertSlice)
 	fmt.Println(invertInts([]int{2, 3, 5})) // [5 3 2]
 
 	var invertStrs func([]string) []string
-	Bind(&invertStrs, InvertSlice)
+	Bind(&amp;invertStrs, InvertSlice)
 	fmt.Println(invertStrs([]string{"Go", "C"})) // [C Go]
 }
 </code></pre>
-
-<p>
-</p>
-
-If the underlying value of a <code>reflect.Value</code> is a function value,
-then we can call the <code>Call</code> method of the <code>reflect.Value</code>
-to call the underlying function.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+If the underlying value of a <code class="tmd-code-span">reflect.Value</code> is a function value, then we can call the <code class="tmd-code-span">Call</code> method of the <code class="tmd-code-span">reflect.Value</code> to call the underlying function.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -544,16 +510,17 @@ func main() {
 	})[0].Int()) // -5
 }
 </code></pre>
-
-<p>
-Please note that, non-exported fields shouldn't be used as arguments of reflection calls.
-If the line <code>vt.FieldByName("A")</code> in the above example is replaced
-with <code>vt.FieldByName("b")</code>, a panic will occur.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Please note that, non-exported fields shouldn't be used as arguments of reflection calls. If the line <code class="tmd-code-span">vt.FieldByName("A")</code> in the above example is replaced with <code class="tmd-code-span">vt.FieldByName("b")</code>, a panic will occur.
+</div>
+<p></p>
+<div class="tmd-usual">
 A reflection example for map values.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -570,14 +537,17 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-Please note that, the <code>MapRange</code> method is supported since Go 1.12.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Please note that, the <code class="tmd-code-span">MapRange</code> method is supported since Go 1.12.
+</div>
+<p></p>
+<div class="tmd-usual">
 A reflection example for channel values.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -600,18 +570,21 @@ func main() {
 	fmt.Println(succeeded)   // false
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">TrySend</code> and <code class="tmd-code-span">TryRecv</code> methods correspond to one-case-one-default <a href="channel.html#select"><code class="tmd-code-span">select</code> control flow code blocks</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The <code>TrySend</code> and <code>TryRecv</code> methods correspond to
-one-case-one-default <a href="channel.html#select"><code>select</code>
-control flow code blocks</a>.
-</p>
-
-We can use the <code>reflect.Select</code> function to simulate a
-<code>select</code> code block with dynamic number of <code>case</code> branches
-at run time.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+We can use the <code class="tmd-code-span">reflect.Select</code> function to simulate a <code class="tmd-code-span">select</code> code block with dynamic number of <code class="tmd-code-span">case</code> branches at run time.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "reflect"
@@ -639,14 +612,13 @@ func main() {
 	fmt.Println(selIndex, sentBeforeClosed) // 1 false
 }
 </code></pre>
-
-<p>
-</p>
-
-The respective underlying values of some <code>reflect.Value</code> values may be nothing.
-For example, zero <code>reflect.Value</code> values.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The respective underlying values of some <code class="tmd-code-span">reflect.Value</code> values may be nothing. For example, zero <code class="tmd-code-span">reflect.Value</code> values.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "reflect"
 import "fmt"
@@ -663,19 +635,13 @@ func main() {
 	fmt.Println(i.Elem())      // &lt;invalid reflect.Value&gt;
 }
 </code></pre>
-
-<p>
-</p>
-
-For a Go value, we can use the <code>reflect.ValueOf</code> function to create a <code>reflect.Value</code> value
-representing the Go value, through the help of <code>interface{}</code>.
-The inverse process in similar, we can call the <code>Interface</code> method of a <code>reflect.Value</code> value
-to get an <code>interface{}</code> value, then type assert on the <code>interface{}</code> value
-to get the Go value represented by (a.k.a., the underlying value of ) the <code>reflect.Value</code> value.
-But please note that, calling the <code>Interface</code> method of a <code>reflect.Value</code> value
-which represents a non-exported field causes a panic.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+For a Go value, we can use the <code class="tmd-code-span">reflect.ValueOf</code> function to create a <code class="tmd-code-span">reflect.Value</code> value representing the Go value, through the help of <code class="tmd-code-span">interface{}</code>. The inverse process in similar, we can call the <code class="tmd-code-span">Interface</code> method of a <code class="tmd-code-span">reflect.Value</code> value to get an <code class="tmd-code-span">interface{}</code> value, then type assert on the <code class="tmd-code-span">interface{}</code> value to get the Go value represented by (a.k.a., the underlying value of ) the <code class="tmd-code-span">reflect.Value</code> value. But please note that, calling the <code class="tmd-code-span">Interface</code> method of a <code class="tmd-code-span">reflect.Value</code> value which represents a non-exported field causes a panic.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -696,27 +662,31 @@ func main() {
 	fmt.Println(x, y, z, m()) // 123 abc [false true] true
 
 	type T struct {x int}
-	t := &T{3}
+	t := &amp;T{3}
 	v := reflect.ValueOf(t).Elem().Field(0)
 	fmt.Println(v)             // 3
 	fmt.Println(v.Interface()) // panic
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+The method <code class="tmd-code-span">reflect.Value.IsZero</code> was introduced in Go 1.13. It is used to check whether or not the underlying value of a <code class="tmd-code-span">reflect.Value</code> value is a zero value.
+</div>
+<p></p>
+<div class="tmd-usual">
+Since Go 1.17, <a href="container.html#slice-to-array-pointer">a slice may be converted to an array pointer</a>. However, such a conversion might panic if the length of the pointer base array type is too large. The method <code class="tmd-code-span">reflect.Value.CanConvert(T reflect.Type)</code> introduced in Go 1.17 is used to check whether or not a conversion will success.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The method <code>reflect.Value.IsZero</code> was introduced in Go 1.13.
-It is used to check whether or not the underlying value of a <code>reflect.Value</code> value is a zero value.
-</p>
-
-<p>
-Since Go 1.17, <a href="container.html#slice-to-array-pointer">a slice may be converted to an array pointer</a>.
-However, such a conversion might panic if the length of the pointer base array type is too large.
-The method <code>reflect.Value.CanConvert(T reflect.Type)</code> introduced in Go 1.17 is used to check whether or not a conversion will success.
-</p>
-
-An example using the <code>CanConvert</code> method:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+An example using the <code class="tmd-code-span">CanConvert</code> method:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -726,104 +696,20 @@ import (
 func main() {
 	s := reflect.ValueOf([]int{1, 2, 3, 4, 5})
 	ts := s.Type()
-	t1 := reflect.TypeOf(&[5]int{})
-	t2 := reflect.TypeOf(&[6]int{})
+	t1 := reflect.TypeOf(&amp;[5]int{})
+	t2 := reflect.TypeOf(&amp;[6]int{})
 	fmt.Println(ts.ConvertibleTo(t1)) // true
 	fmt.Println(ts.ConvertibleTo(t2)) // true
 	fmt.Println(s.CanConvert(t1))     // true
 	fmt.Println(s.CanConvert(t2))     // false
 }
 </code></pre>
-
-<p>
-</p>
-
-<a class="anchor" id="deep-equal"></a>
-<p>
-There are more <code>reflect.Value</code> related functions and methods
-which are not used in above examples,
-please read the <code>reflect</code> package documentation for their usages.
-In addition, please note that there are
-<a href="details.html#reflect-deep-equal">some reflection</a> related
-<a href="details.html#reflect-value-bytes">details</a>
-mentioned in <a href="details.html">Go details 101</a>.
-</p>
+<p></p>
+<div id="deep-equal" class="tmd-usual">
+There are more <code class="tmd-code-span">reflect.Value</code> related functions and methods which are not used in above examples, please read the <code class="tmd-code-span">reflect</code> package documentation for their usages. In addition, please note that there are <a href="details.html#reflect-deep-equal">some reflection</a> related <a href="details.html#reflect-value-bytes">details</a> mentioned in <a href="details.html">Go details 101</a>.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-
-
-<!--
-
-bug setcion in reflect docs
-
-interface type number methods, non-exported, ...
-
-
-https://github.com/golang/go/issues/15924
-https://github.com/golang/go/issues/16522
-https://github.com/golang/go/issues/20824
-
-https://github.com/golang/go/issues/22073
-
-https://github.com/golang/go/issues/22075
-* bug on reflect query method of interface type and value
-
-https://github.com/golang/go/issues/22143
-
-https://github.com/golang/go/issues/20541
-
-https://github.com/golang/go/issues/20013
-
-
-
-https://groups.google.com/forum/#!msg/golang-dev/coyYwxU3dfM/K_nSPAbOY4kJ;context-place=searchin/golang-dev/closure$20$20callable$20pointer%7Csort:date
-
-reflect.StructOf: StructOf currently does not generate wrapper methods for embedded fields.
-                  This limitation may be lifted in a future version.
-
-reflect.StructOf: anonymous fields: will not produce methods table
-
-https://github.com/golang/go/issues/15924
-
-https://github.com/golang/go/issues/24781
-
-https://github.com/golang/go/issues/20633
-https://github.com/golang/go/issues/20632
-https://github.com/golang/go/issues/20824
-
-https://github.com/golang/go/issues/24782
-* https://play.golang.org/p/Kd4igw-vOp7
-* https://play.golang.org/p/KCvFWtWRC1b
-
-https://github.com/golang/go/issues/25400 (not a bug)
-https://github.com/golang/go/issues/25401
-https://github.com/golang/go/issues/25402
-https://github.com/golang/go/issues/25403
-
-https://github.com/golang/go/issues/28761
-https://github.com/golang/go/issues/28748
-
-https://github.com/golang/go/issues/29381
-
-============================================
-
-
-
-
-================
-
-reflectutil
-* UnderlyingTypeOf(.)
-* IsZeroValue(.)
-  make using of reflect.Zero(type)
-
-======================
-
-generally, reflect can do any things non-reflect ways can do (not including the unsafe ways)
-reflect even can do non-reflect ways can't do.
-* SetLen and SetCap
-* select any number of cases
-* get the kind of a value
-* convert []MyByte to []byte
-
--->
+</div>
+<p></p>

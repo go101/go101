@@ -1,310 +1,426 @@
-<h1>Go Details 101</h1>
-
-<div>
+<h1 class="tmd-header-1">
+Go Details 101
+</h1>
+<p></p>
+<div class="tmd-usual">
 Index:
-
-<ul class="summaries" id="details.html">
-<li>
-	Code package related details:
-	<ul class="index">
-	<li>
-		<a class="index" href="#import-package-multiple-times">A package can be imported more than once in a source file.</a>
-	</li>
-	<!--li>
-		<a class="index" href="#force-import-path">The comment <code>// import "x.y.z/mypkg"</code> following <code>package mypkg</code> is meaningful for the standard Go compiler.</a>
-	</li-->
-	</ul>
-</li>
-<li>
-	Control flow related details:
-	<ul class="index">
-	<li>
-		<a class="index" href="#default-branch-position">The <code>default</code> branch in <code>switch</code> and <code>select</code> blocks can be put before all <code>case</code> branches, after all <code>case</code> branches, or between <code>case</code> branches.</a>
-	</li>
-	<li>
-		<a class="index" href="#constant-case-expressions">The numeric constant case expressions in a <code>switch</code> block can't be duplicate, but boolean ones can.</a>
-	</li>
-	<li>
-		<a class="index" href="#switch-expressions-are-typed">The switch expressions in <code>switch</code> block are always evaluated to typed values.</a>
-	</li>
-	<li>
-		<a class="index" href="#default-switch-expression-value">The default switch expression of a <code>switch</code> block is a typed value <code>true</code> of the predeclared type <code>bool</code>.</a>
-	</li>
-	<li>
-		<a class="index" href="#open-brace-on-the-next-line">Sometimes, the open brace <code>{</code> of an explicit code block can be put on the next line.</a>
-	</li>
-	<li>
-		<a class="index" href="#some-case-branch-blocks-must-be-explicit">Some <code>case</code> branch blocks must be explicit.</a>
-	</li>
-	<li>
-		<a class="index" href="#defer-modify-results">Nested deferred function calls can modify return result values of nesting functions.</a>
-	</li>
-	<li>
-		<a class="index" href="#no-op-recover-calls">Some <code>recover</code> calls may be no-ops.</a>
-	</li>
-	<li>
-		<a class="index" href="#os-exit-runtime-goexit">Exit a program with a <code>os.Exit</code> function call and exit a goroutine with a <code>runtime.Goexit</code> function call</a>.
-	</li>
-	</ul>
-</li>
-<li>
-	Operator related details:
-	<ul class="index">
-	<li>
-		<a class="index" href="#some-operator-precedence">The precedence of the increment operator <code>++</code> and the decrement <code>--</code> is lower than the dereference operator <code>*</code> and the address-taking operator <code>&amp;</code>, which are lower than the property selection operator <code>.</code> in selectors.</a>
-	</li>
-	<li>
-		<a class="index" href="#type-deduction-in-bit-shift">The type deduction rule for the left untyped operand of a bit-shift operation depends on whether or not the right operand is a constant.</a>
-	</li>
-	</ul>
-</li>
-<li>
-	Pointer related details:
-	<ul class="index">
-	<li>
-		<a class="index" href="#conversion-of-pointers-with-different-underlying-types">Values of two pointer types with different underlying types can be converted to each other if the base types of their underlying types share the same underlying type.</a>
-	</li>
-	<li>
-		<a class="index" href="#addresses-of-zeor-sized-values">Addresses of different zero-sized values may be equal, or not.</a>
-	</li>
-	<li>
-		<a class="index" href="#self-based-pointer-type">The base type of a pointer type may be the pointer type itself.</a>
-	</li>
-	<li>
-		<a class="index" href="#pointer-selector-shorthands">A detail about selector shorthands.</a>
-	</li>
-	</ul>
-</li>
-<li>
-	Container related details:
-	<ul class="index">
-	<li>
-		<a class="index" href="#composite-literal-simplification">Sometimes, nested composite literals can be simplified.</a>
-	</li>
-	<li>
-		<a class="index" href="#use-pointer-as-array">In some scenarios, it is ok to use array pointers as arrays.</a>
-	</li>
-	<li>
-		<a class="index" href="#nil-map-element-retrieving">Retrieving elements from nil maps will not panic. The result is a zero element value.</a>
-	</li>
-	<li>
-		<a class="index" href="#nil-map-element--deletion">Deleting an entry from a nil map will not panic. It is a no-op.</a>
-	</li>
-	<li>
-		<a class="index" href="#append-slice-elements">The result slice of an <code>append</code> function call may share some elements with the original slice, or not.</a>
-	</li>
-	<li>
-		<a class="index" href="#subslice">The length of a subslice may be larger than the base slice the subslice derives from.</a>
-	</li>
-	<li>
-		<a class="index" href="#derive-from-nil-slice">Deriving a subslice from a nil slice is ok if all the indexes used in the subslice expression are zero. The result subslice is also a nil slice.</a>
-	</li>
-	<li>
-		<a class="index" href="#range-over-nil-map-and-slice">Ranging over a nil maps or a nil slices is ok, it is a no-op.</a>
-	</li>
-	<li>
-		<a class="index" href="#range-over-nil-array-pointer">Range over a nil array pointer is ok if the second iteration variable is ignored or omitted.</a>
-	</li>
-	<li>
-		<a class="index" href="#modify-slice-length-and-capacity-separately">The length and capacity of a slice can be modified separately.</a>
-	</li>
-	<li>
-		<a class="index" href="#indexes-in-composite-literals">The indexes in slice and array composite literals must be constants and non-negative.</a>
-	</li>
-	<li>
-		<a class="index" href="#constant-keys-in-composite-literals">The constant indexes or keys in slice/array/map composite literals can't be duplicate.</a>
-	</li>
-	<li>
-		<a class="index" href="#array-slice-element-addressability">Elements of unaddressable arrays are also unaddressable, but elements of unaddressable slices are always addressable.</a>
-	</li>
-	<li>
-		<a class="index" href="#array-slice-derivable">It is ok to derive subslices from unaddressable slices, but not ok from unaddressable arrays. It is ok to take addresses for elements of unaddressable slices, but not ok for elements of unaddressable arrays.</a>
-	</li>
-	<li>
-		<a class="index" href="#nan-as-map-keys">Putting entries with <code>NaN</code> as keys to a map is like putting the entries in a black hole.</a>
-	</li>
-	<li>
-		<a class="index" href="#capacity-of-slice-from-string">The capacity of the result slice of a conversion from a string to byte/rune slice may be larger than the length of the result slice.</a>
-	</li>
-	<li>
-		<a class="index" href="#different-loops">For a slice <code>s</code>, the loop <code>for i = range s {...}</code> is not equivalent to the loop <code>for i = 0; i &lt; len(s); i++ {...}</code>.</a>
-	</li>
-	<li>
-		<a class="index" href="#map-entry-iteration">The iteration order over maps is not guaranteed to be the same from one iteration to the next.</a>
-	</li>
-	<li>
-		<a class="index" href="#create-entry-in-map-entry-iteration">If a map entry is created during an iteration of the map, that entry may be iterated during the iteration or may be skipped.</a>
-	</li>
-	</ul>
-</li>
-
-<li>
-	Function and method related details:
-	<ul class="index">
-	<li>
-		<a class="index" href="#call-as-expression">A multi-result function call can't mix with other expressions when the call is used as the sources in an assignment or the arguments of another function call.</a>
-	</li>
-	<li>
-		<a class="index" href="#compile-time-evaluated-calls">Some function calls are evaluated at compile time.</a>
-	</li>
-	<li>
-		<a class="index" href="#method-as-function">Each method corresponds to an implicit function.</a>
-	</li>
-	</ul>
-</li>
-<li>
-	Interface related details:
-	<ul class="index">
-	<li>
-		<a class="index" href="#comparison-interfaces-may-panic">Comparing two interface values with the same dynamic incomparable type produces a panic.</a>
-	</li>
-	<li>
-		<a class="index" href="#type-assertion-to-interface-type">Type assertions can be used to convert a value of an interface type to another interface type, even if the former interface type doesn't implement the latter one.</a>
-	</li>
-	<li>
-		<a class="index" href="#failed-type-assertion-may-panic">Whether or not the second optional result of a failed type assertion is present will affect the behavior of the type assertion.</a>
-	</li>
-	<li>
-		<a class="index" href="#impossible-to-interface-assertion">About the impossible to-interface assertions which can be detected at compile time.</a>
-	</li>
-	<!--
-	<li>
-		<a class="index" href="#interface-comparison-complexity">For the standard Go compiler, the time complexity of comparing two equal interface values may be <code><i>O</i>(1)</code> or <code><i>O</i>(n)</code>.</a>
-	</li>
-	<li>
-		<a class="index" href="#interface-copy-complexity">For the standard Go compiler, the time complexity of copying an interface value is <code><i>O</i>(1)</code>.</a>
-	</li>
-	-->
-	<li>
-		<a class="index" href="#errors-new-different-returns">Two <code>error</code> values returned by two <code>errors.New</code> calls with the same argument are not equal.</a>
-	</li>
-	</ul>
-</li>
-<li>
-	Channel related details:
-	<ul class="index">
-	<li>
-		<a class="index" href="#receive-only-channel-canot-be-closed">Receive-only channels can't be closed.</a>
-	</li>
-	<li>
-		<a class="index" href="#send-to-closed-channel-is-non-blocking">Sending a value to a closed channel is viewed as a non-blocking operation, and this operation causes a panic.</a>
-	</li>
-	</ul>
-</li>
-<li>
-	More type and value related details:
-	<ul class="index">
-	<li>
-		<a class="index" href="#local-type-declaration">Types can be declared within function bodies.</a>
-	</li>
-	<li>
-		<a class="index" href="#final-zero-size-field">For the standard compiler, zero-sized fields in a struct may be treated as one-byte-sized value.</a>
-	</li>
-	<li>
-		<a class="index" href="#nan-inf">NaN != NaN, Inf == Inf.</a>
-	</li>
-	<li>
-		<a class="index" href="#non-exported-names-from-different-packages">Non-exported method names and struct field names from different packages are viewed as different names.</a>
-	</li>
-	<!--li>
-		<a class="index" href="#compare-values-with-both-comparable-and-incomparable-parts">The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.</a>
-	</li-->
-	<li>
-		<a class="index" href="#blank-fields-are-ignored-in-comparisons">In struct value comparisons, blank fields will be ignored.</a>
-	</li>
-	</ul>
-</li>
-<li>
-	Miscellanies:
-	<ul class="index">
-	<li>
-		<a class="index" href="#sometimes-parentheses-are-required">Parentheses are required in several rare scenarios to make code compile okay.</a>
-	</li>
-	<!--
-	<li>
-		<a class="index" href="#main-entry-function-absence">A program doesn't need a <code>main</code> entry function to run.</a>
-	</li>
-	-->
-	<li>
-		<a class="index" href="#stack-overflow-is-unrecoverable">Stack overflow is unrecoverable.</a>
-	</li>
-	<li>
-		<a class="index" href="#some-evaluation-order-are-compiler-dependent">Some expression evaluation orders in Go are compiler implementation dependent.</a>
-	</li>
-
-	</ul>
-</li>
-<li>
-	Standard packages related:
-	<ul class="index">
-	<li>
-		<a class="index" href="#reflect-deep-equal">The results of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</a>
-	</li>
-	<li>
-		<a class="index" href="#reflect-value-bytes">The <code>reflect.Value.Bytes()</code> method returns a <code>[]byte</code> value, which element type, <code>byte</code>, might be not the same as the Go slice value represented by the receiver parameter.</a>
-	</li>
-	<li>
-		<a class="index" href="#check-file-existent">We should use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists.</a>
-	</li>
-	<li>
-		<a class="index" href="#boolean-flag">The <code>flag</code> standard package treats boolean command flags differently than number and string flags.</a>
-	</li>
-	<li>
-		<a class="index" href="#printf-positional-arguments"><code>[Sp|Fp|P]rintf</code> functions support positional arguments.</a>
-	</li>
-	</ul>
+</div>
+<p></p>
+<ul id="details.html" class="tmd-list summaries">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Code package related details:
+</div>
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#import-package-multiple-times">A package can be imported more than once in a source file.</a>
+</div>
 </li>
 </ul>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Control flow related details:
 </div>
-
-<div class="summaries-items">
-
-<a class="anchor" id="import-package-multiple-times"></a>
-<h3>A package can be imported more than once in a source file.</h3>
-
-<div>
-<p>
-A Go source file can imports the same package multiple times,
-but the import names must be different.
-These same-package imports reference the same package instance.
-</p>
-
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#default-branch-position">The <code class="tmd-code-span">default</code> branch in <code class="tmd-code-span">switch</code> and <code class="tmd-code-span">select</code> blocks can be put before all <code class="tmd-code-span">case</code> branches, after all <code class="tmd-code-span">case</code> branches, or between <code class="tmd-code-span">case</code> branches.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#constant-case-expressions">The numeric constant case expressions in a <code class="tmd-code-span">switch</code> block can't be duplicate, but boolean ones can.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#switch-expressions-are-typed">The switch expressions in <code class="tmd-code-span">switch</code> block are always evaluated to typed values.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#default-switch-expression-value">The default switch expression of a <code class="tmd-code-span">switch</code> block is a typed value <code class="tmd-code-span">true</code> of the predeclared type <code class="tmd-code-span">bool</code>.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#open-brace-on-the-next-line">Sometimes, the open brace <code class="tmd-code-span">{</code> of an explicit code block can be put on the next line.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#some-case-branch-blocks-must-be-explicit">Some <code class="tmd-code-span">case</code> branch blocks must be explicit.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#defer-modify-results">Nested deferred function calls can modify return result values of nesting functions.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#no-op-recover-calls">Some <code class="tmd-code-span">recover</code> calls may be no-ops.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#os-exit-runtime-goexit">Exit a program with a <code class="tmd-code-span">os.Exit</code> function call and exit a goroutine with a <code class="tmd-code-span">runtime.Goexit</code> function call</a>.
+</div>
+</li>
+</ul>
+<p></p>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Operator related details:
+</div>
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#some-operator-precedence">The precedence of the increment operator <code class="tmd-code-span">++</code> and the decrement <code class="tmd-code-span">--</code> is lower than the dereference operator <code class="tmd-code-span">*</code> and the address-taking operator <code class="tmd-code-span">&amp;</code>, which are lower than the property selection operator <code class="tmd-code-span">.</code> in selectors.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#type-deduction-in-bit-shift">The type deduction rule for the left untyped operand of a bit-shift operation depends on whether or not the right operand is a constant.</a>
+</div>
+</li>
+</ul>
+<p></p>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Pointer related details:
+</div>
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#conversion-of-pointers-with-different-underlying-types">Values of two pointer types with different underlying types can be converted to each other if the base types of their underlying types share the same underlying type.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#addresses-of-zeor-sized-values">Addresses of different zero-sized values may be equal, or not.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#self-based-pointer-type">The base type of a pointer type may be the pointer type itself.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#pointer-selector-shorthands">A detail about selector shorthands.</a>
+</div>
+</li>
+</ul>
+<p></p>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Container related details:
+</div>
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#composite-literal-simplification">Sometimes, nested composite literals can be simplified.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#use-pointer-as-array">In some scenarios, it is ok to use array pointers as arrays.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#nil-map-element-retrieving">Retrieving elements from nil maps will not panic. The result is a zero element value.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#nil-map-element--deletion">Deleting an entry from a nil map will not panic. It is a no-op.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#append-slice-elements">The result slice of an <code class="tmd-code-span">append</code> function call may share some elements with the original slice, or not.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#subslice">The length of a subslice may be larger than the base slice the subslice derives from.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#derive-from-nil-slice">Deriving a subslice from a nil slice is ok if all the indexes used in the subslice expression are zero. The result subslice is also a nil slice.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#range-over-nil-map-and-slice">Ranging over a nil maps or a nil slices is ok, it is a no-op.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#range-over-nil-array-pointer">Range over a nil array pointer is ok if the second iteration variable is ignored or omitted.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#modify-slice-length-and-capacity-separately">The length and capacity of a slice can be modified separately.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#indexes-in-composite-literals">The indexes in slice and array composite literals must be constants and non-negative.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#constant-keys-in-composite-literals">The constant indexes or keys in slice/array/map composite literals can't be duplicate.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#array-slice-element-addressability">Elements of unaddressable arrays are also unaddressable, but elements of unaddressable slices are always addressable.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#array-slice-derivable">It is ok to derive subslices from unaddressable slices, but not ok from unaddressable arrays. It is ok to take addresses for elements of unaddressable slices, but not ok for elements of unaddressable arrays.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#nan-as-map-keys">Putting entries with <code class="tmd-code-span">NaN</code> as keys to a map is like putting the entries in a black hole.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#capacity-of-slice-from-string">The capacity of the result slice of a conversion from a string to byte/rune slice may be larger than the length of the result slice.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#different-loops">For a slice <code class="tmd-code-span">s</code>, the loop <code class="tmd-code-span">for i = range s {...}</code> is not equivalent to the loop <code class="tmd-code-span">for i = 0; i &lt; len(s); i++ {...}</code>.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#map-entry-iteration">The iteration order over maps is not guaranteed to be the same from one iteration to the next.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#create-entry-in-map-entry-iteration">If a map entry is created during an iteration of the map, that entry may be iterated during the iteration or may be skipped.</a>
+</div>
+</li>
+</ul>
+<p></p>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Function and method related details:
+</div>
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#call-as-expression">A multi-result function call can't mix with other expressions when the call is used as the sources in an assignment or the arguments of another function call.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#compile-time-evaluated-calls">Some function calls are evaluated at compile time.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#method-as-function">Each method corresponds to an implicit function.</a>
+</div>
+</li>
+</ul>
+<p></p>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Interface related details:
+</div>
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#comparison-interfaces-may-panic">Comparing two interface values with the same dynamic incomparable type produces a panic.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#type-assertion-to-interface-type">Type assertions can be used to convert a value of an interface type to another interface type, even if the former interface type doesn't implement the latter one.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#failed-type-assertion-may-panic">Whether or not the second optional result of a failed type assertion is present will affect the behavior of the type assertion.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#impossible-to-interface-assertion">About the impossible to-interface assertions which can be detected at compile time.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#errors-new-different-returns">Two <code class="tmd-code-span">error</code> values returned by two <code class="tmd-code-span">errors.New</code> calls with the same argument are not equal.</a>
+</div>
+</li>
+</ul>
+<p></p>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Channel related details:
+</div>
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#receive-only-channel-canot-be-closed">Receive-only channels can't be closed.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#send-to-closed-channel-is-non-blocking">Sending a value to a closed channel is viewed as a non-blocking operation, and this operation causes a panic.</a>
+</div>
+</li>
+</ul>
+<p></p>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+More type and value related details:
+</div>
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#local-type-declaration">Types can be declared within function bodies.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#final-zero-size-field">For the standard compiler, zero-sized fields in a struct may be treated as one-byte-sized value.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#nan-inf">NaN != NaN, Inf == Inf.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#non-exported-names-from-different-packages">Non-exported method names and struct field names from different packages are viewed as different names.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#blank-fields-are-ignored-in-comparisons">In struct value comparisons, blank fields will be ignored.</a>
+</div>
+</li>
+</ul>
+<p></p>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Miscellanies:
+</div>
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#sometimes-parentheses-are-required">Parentheses are required in several rare scenarios to make code compile okay.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#stack-overflow-is-unrecoverable">Stack overflow is unrecoverable.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#some-evaluation-order-are-compiler-dependent">Some expression evaluation orders in Go are compiler implementation dependent.</a>
+</div>
+</li>
+</ul>
+<p></p>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Standard packages related:
+</div>
+<ul class="tmd-list index">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#reflect-deep-equal">The results of <code class="tmd-code-span">reflect.DeepEqual(x, y)</code> and <code class="tmd-code-span">x == y</code> may be different.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#reflect-value-bytes">The <code class="tmd-code-span">reflect.Value.Bytes()</code> method returns a <code class="tmd-code-span">[]byte</code> value, which element type, <code class="tmd-code-span">byte</code>, might be not the same as the Go slice value represented by the receiver parameter.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#check-file-existent">We should use <code class="tmd-code-span">os.IsNotExist(err)</code> instead of <code class="tmd-code-span">err == os.ErrNotExist</code> to check whether or not a file exists.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#boolean-flag">The <code class="tmd-code-span">flag</code> standard package treats boolean command flags differently than number and string flags.</a>
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<a href="#printf-positional-arguments"><code class="tmd-code-span">[Sp|Fp|P]rintf</code> functions support positional arguments.</a>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+<p></p>
+<div class="tmd-base summaries-items">
+<p></p>
+<h3 id="import-package-multiple-times" class="tmd-header-3">
+A package can be imported more than once in a source file.
+</h3>
+<p></p>
+<div class="tmd-usual">
+A Go source file can imports the same package multiple times, but the import names must be different. These same-package imports reference the same package instance.
+</div>
+<p></p>
+<div class="tmd-usual">
 For example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "io"
 import inout "io"
 
 func main() {
-	fmt.Println(&inout.EOF == &io.EOF) // true
+	fmt.Println(&amp;inout.EOF == &amp;io.EOF) // true
 }
 </code></pre>
-</div>
-
-<!--a class="anchor" id="force-import-path"></a>
-<h3>The comment <code>// import "x.y.z/mypkg"</code> following <code>package mypkg</code> is meaningful for the standard Go compiler.</h3>
-
-<div>
-For example, when the source files importing this package are compiled by the standard Go compiler,
-the import path of the following package must be <code>"x.y.z/mypkg"</code>.
-
-<pre class="line-numbers"><code class="language-go">package mypkg // import "x.y.z/mypkg"
-...
-</code></pre>
-
-<p>
-However, since Go Toolchain 1.11, the restriction <a href="https://golang.org/cmd/go/#hdr-Import_path_checking">doesn't apply for modules based and vendored packages</a>.
-</p>
-</div-->
-
-<a class="anchor" id="default-branch-position"></a>
-<h3>The <code>default</code> branch in <code>switch</code> and <code>select</code> blocks can be put before all <code>case</code> branches, after all <code>case</code> branches, or between <code>case</code> branches.</h3>
-
-<div>
+<p></p>
+<p></p>
+<h3 id="default-branch-position" class="tmd-header-3">
+The <code class="tmd-code-span">default</code> branch in <code class="tmd-code-span">switch</code> and <code class="tmd-code-span">select</code> blocks can be put before all <code class="tmd-code-span">case</code> branches, after all <code class="tmd-code-span">case</code> branches, or between <code class="tmd-code-span">case</code> branches.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example:
-
-<pre class="line-numbers"><code class="language-go">	switch n := rand.Intn(3); n {
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">	switch n := rand.Intn(3); n {
 	case 0: fmt.Println("n == 0")
 	case 1: fmt.Println("n == 1")
 	default: fmt.Println("n == 2")
@@ -325,36 +441,34 @@ For example:
 	var x, y chan int
 
 	select {
-	case <-x:
-	case y <- 1:
+	case &lt;-x:
+	case y &lt;- 1:
 	default:
 	}
 
 	select {
-	case <-x:
+	case &lt;-x:
 	default:
-	case y <- 1:
+	case y &lt;- 1:
 	}
 
 	select {
 	default:
-	case <-x:
-	case y <- 1:
+	case &lt;-x:
+	case y &lt;- 1:
 	}
 </code></pre>
-
-<p>
-</p>
-
-</div>
-
-<a class="anchor" id="constant-case-expressions"></a>
-<h3>The numeric constant case expressions in a <code>switch</code> block can't be duplicate, but boolean ones can.</h3>
-
-<div>
+<p></p>
+<h3 id="constant-case-expressions" class="tmd-header-3">
+The numeric constant case expressions in a <code class="tmd-code-span">switch</code> block can't be duplicate, but boolean ones can.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example, the following program fails to compile.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	switch 123 {
@@ -363,10 +477,13 @@ func main() {
 	}
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 But the following program compiles okay.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	switch false {
@@ -375,23 +492,25 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-For reasons, please read <a href="https://github.com/golang/go/issues/28357">this issue</a>.
-The behavior is compiler dependent.
-In fact, the standard Go compiler also doesn't allow duplicate string case expressions, but gccgo allows.
-</p>
+<p></p>
+<div class="tmd-usual">
+For reasons, please read <a href="https://github.com/golang/go/issues/28357">this issue</a>. The behavior is compiler dependent. In fact, the standard Go compiler also doesn't allow duplicate string case expressions, but gccgo allows.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="switch-expressions-are-typed"></a>
-<h3>The switch expressions in <code>switch</code> block are always evaluated to typed values.</h3>
-
-<div>
-For example, the switch expression <code>123</code> in the following <code>switch</code> block
-is viewed as a value of <code>int</code> instead of an untyped integer.
-So the following program fails to compile.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<h3 id="switch-expressions-are-typed" class="tmd-header-3">
+The switch expressions in <code class="tmd-code-span">switch</code> block are always evaluated to typed values.
+</h3>
+<p></p>
+<div class="tmd-usual">
+For example, the switch expression <code class="tmd-code-span">123</code> in the following <code class="tmd-code-span">switch</code> block is viewed as a value of <code class="tmd-code-span">int</code> instead of an untyped integer. So the following program fails to compile.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	switch 123 {
@@ -400,40 +519,38 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="default-switch-expression-value" class="tmd-header-3">
+The default switch expression of a <code class="tmd-code-span">switch</code> block is a typed value <code class="tmd-code-span">true</code> of the predeclared type <code class="tmd-code-span">bool</code>.
+</h3>
+<p></p>
+<div class="tmd-usual">
+For example, the following program will print <code class="tmd-code-span">true</code>.
 </div>
-
-<a class="anchor" id="default-switch-expression-value"></a>
-<h3>The default switch expression of a <code>switch</code> block is a typed value <code>true</code> of the predeclared type <code>bool</code>.</h3>
-
-<div>
-For example, the following program will print <code>true</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
 func main() {
-	switch { // <=> switch true {
+	switch { // &lt;=&gt; switch true {
 	case true:  fmt.Println("true")
 	case false: fmt.Println("false")
 	}
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="open-brace-on-the-next-line"></a>
-<h3>Sometimes, the open brace <code>{</code> of an explicit code block can be put on the next line.</h3>
-
-<div>
+<p></p>
+<h3 id="open-brace-on-the-next-line" class="tmd-header-3">
+Sometimes, the open brace <code class="tmd-code-span">{</code> of an explicit code block can be put on the next line.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var i = 0
@@ -450,14 +567,17 @@ Outer:
 	}
 }
 </code></pre>
-
 <p></p>
+<div class="tmd-usual">
+What result will the following program print? <code class="tmd-code-span">true</code> or <code class="tmd-code-span">false</code>? The answer is <code class="tmd-code-span">true</code>. Please read <a href="line-break-rules.html">line break rules in Go</a> for reasons.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-What result will the following program print? <code>true</code> or <code>false</code>?
-The answer is <code>true</code>.
-Please read <a href="line-break-rules.html">line break rules in Go</a> for reasons.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -473,22 +593,20 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-</p>
-
-</div>
-
-<a class="anchor" id="some-case-branch-blocks-must-be-explicit"></a>
-<h3>Some <code>case</code> branch blocks must be explicit.</h3>
-
-<div>
+<p></p>
+<h3 id="some-case-branch-blocks-must-be-explicit" class="tmd-header-3">
+Some <code class="tmd-code-span">case</code> branch blocks must be explicit.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example, the following program fails to compile.
-
-<pre class="line-numbers"><code class="language-go">func demo(n, m int) (r int) {
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func demo(n, m int) (r int) {
 	switch n {
 	case 123:
-		if m > 0 {
+		if m &gt; 0 {
 			goto End
 		}
 		r++
@@ -500,13 +618,16 @@ For example, the following program fails to compile.
 	return
 }
 </code></pre>
-
-To make it compile okay, the <code>case</code> branch code block should be explicit:
-
-<pre class="line-numbers"><code class="language-go">func demo(n, m int) (r int) {
+<p></p>
+<div class="tmd-usual">
+To make it compile okay, the <code class="tmd-code-span">case</code> branch code block should be explicit:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func demo(n, m int) (r int) {
 	switch n {
 	case 123: {
-		if m > 0 {
+		if m &gt; 0 {
 			goto End
 		}
 		r++
@@ -519,13 +640,16 @@ To make it compile okay, the <code>case</code> branch code block should be expli
 	return
 }
 </code></pre>
-
-Alternatively, we can let a semicolon follow the label declaration <code>End:</code>:
-
-<pre class="line-numbers"><code class="language-go">func demo(n, m int) (r int) {
+<p></p>
+<div class="tmd-usual">
+Alternatively, we can let a semicolon follow the label declaration <code class="tmd-code-span">End:</code>:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func demo(n, m int) (r int) {
 	switch n {
 	case 123:
-		if m > 0 {
+		if m &gt; 0 {
 			goto End
 		}
 		r++
@@ -537,20 +661,21 @@ Alternatively, we can let a semicolon follow the label declaration <code>End:</c
 	return
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="line-break-rules.html">line break rules in Go</a> for reasons.
-</p>
-
 </div>
-
-<a class="anchor" id="defer-modify-results"></a>
-<h3>A nested deferred function calls can modify return result values of its innermost nesting function.</h3>
-
-<div>
+<p></p>
+<h3 id="defer-modify-results" class="tmd-header-3">
+A nested deferred function calls can modify return result values of its innermost nesting function.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -559,43 +684,41 @@ func F() (r int) {
 		r = 789
 	}()
 
-	return 123 // <=> r = 123; return
+	return 123 // &lt;=&gt; r = 123; return
 }
 
 func main() {
 	fmt.Println(F()) // 789
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="no-op-recover-calls" class="tmd-header-3">
+Some <code class="tmd-code-span">recover</code> calls may be no-ops.
+</h3>
+<p></p>
+<div class="tmd-usual">
+We should call the <code class="tmd-code-span">recover</code> function at the right places. Please read <a href="panic-and-recover-more.html">the right places to call the built-in <code class="tmd-code-span">recover</code> function</a> for details.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="no-op-recover-calls"></a>
-<h3>Some <code>recover</code> calls may be no-ops.</h3>
-
-<p>
-We should call the <code>recover</code> function at the right places.
-Please read <a href="panic-and-recover-more.html">the right places to call the built-in <code>recover</code> function</a> for details.
-</p>
-
-<a class="anchor" id="os-exit-runtime-goexit"></a>
-<h3>Exit a program with a <code>os.Exit</code> function call and exit a goroutine with a <code>runtime.Goexit</code> function call.</h3>
-
-<!--
-https://github.com/golang/go/issues/29226 a bug of goexit
--->
-
-<div>
-<p>
-We can exit a program from any function by calling the <code>os.Exit</code> function.
-An <code>os.Exit</code> function call takes an <code>int</code> code as
-argument and returns the code to operating system.
-</p>
-
+</div>
+<p></p>
+<h3 id="os-exit-runtime-goexit" class="tmd-header-3">
+Exit a program with a <code class="tmd-code-span">os.Exit</code> function call and exit a goroutine with a <code class="tmd-code-span">runtime.Goexit</code> function call.
+</h3>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+We can exit a program from any function by calling the <code class="tmd-code-span">os.Exit</code> function. An <code class="tmd-code-span">os.Exit</code> function call takes an <code class="tmd-code-span">int</code> code as argument and returns the code to operating system.
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-
-<pre class="line-numbers"><code class="language-go">// exit-example.go
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// exit-example.go
 package main
 
 import "os"
@@ -609,26 +732,28 @@ func main() {
 	select{}
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 Run it:
-
-<pre class="output"><code>$ go run a.go
+</div>
+<p></p>
+<pre class="tmd-code output">
+$ go run a.go
 exit status 1
 $ echo $?
 1
-</code></pre>
-
-<p>
-</p>
-
-<p>
-We can make a goroutine exit by calling the <code>runtime.Goexit</code> function.
-The <code>runtime.Goexit</code> function has no parameters.
-</p>
-
-In the following example, the <code>Java</code> word will not be printed.
-
-<pre class="line-numbers"><code class="language-go">package main
+</pre>
+<p></p>
+<div class="tmd-usual">
+We can make a goroutine exit by calling the <code class="tmd-code-span">runtime.Goexit</code> function. The <code class="tmd-code-span">runtime.Goexit</code> function has no parameters.
+</div>
+<p></p>
+<div class="tmd-usual">
+In the following example, the <code class="tmd-code-span">Java</code> word will not be printed.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "runtime"
@@ -636,7 +761,7 @@ import "runtime"
 func main() {
 	c := make(chan int)
 	go func() {
-		defer func() {c <- 1}()
+		defer func() {c &lt;- 1}()
 		defer fmt.Println("Go")
 		func() {
 			defer fmt.Println("C")
@@ -644,22 +769,20 @@ func main() {
 		}()
 		fmt.Println("Java")
 	}()
-	<-c
+	&lt;-c
 }
 </code></pre>
-
-<p>
-</p>
-
-</div>
-
-<a class="anchor" id="some-operator-precedence"></a>
-<h3>The precedence of the increment operator <code>++</code> and the decrement <code>--</code> is lower than the dereference operator <code>*</code> and the address-taking operator <code>&amp;</code>, which are lower than the property selection operator <code>.</code> in selectors.</h3>
-
-<div>
+<p></p>
+<h3 id="some-operator-precedence" class="tmd-header-3">
+The precedence of the increment operator <code class="tmd-code-span">++</code> and the decrement <code class="tmd-code-span">--</code> is lower than the dereference operator <code class="tmd-code-span">*</code> and the address-taking operator <code class="tmd-code-span">&amp;</code>, which are lower than the property selection operator <code class="tmd-code-span">.</code> in selectors.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -670,55 +793,55 @@ type T struct {
 
 func main() {
 	var t T
-	p := &t.x // <=> p := &(t.x)
+	p := &amp;t.x // &lt;=&gt; p := &amp;(t.x)
 	fmt.Printf("%T\n", p) // *int
 
-	*p++ // <=> (*p)++
-	*p-- // <=> (*p)--
+	*p++ // &lt;=&gt; (*p)++
+	*p-- // &lt;=&gt; (*p)--
 
 	t.y = p
-	a := *t.y // <=> *(t.y)
+	a := *t.y // &lt;=&gt; *(t.y)
 	fmt.Printf("%T\n", a) // int
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="type-deduction-in-bit-shift"></a>
-<h3>The type deduction rule for the left untyped operand of a bit-shift operation depends on whether or not the right operand is a constant.</h3>
-
-<div>
-
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<h3 id="type-deduction-in-bit-shift" class="tmd-header-3">
+The type deduction rule for the left untyped operand of a bit-shift operation depends on whether or not the right operand is a constant.
+</h3>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 }
 
 const M  = 2
 // Compiles okay. 1.0 is deduced as an int value.
-var _ = 1.0 << M
+var _ = 1.0 &lt;&lt; M
 
 var N = 2
 // Fails to compile. 1.0 is deduced as a float64 value.
-var _ = 1.0 << N
+var _ = 1.0 &lt;&lt; N
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="operators.html#bitwise-shift-left-operand-type-deduction">this article</a> for reasons.
-</p>
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="conversion-of-pointers-with-different-underlying-types"></a>
-<h3>Values of two pointer types with different underlying types can be converted to each other if the base types of their underlying types share the same underlying type.</h3>
-
-<div>
-
+</div>
+<p></p>
+<h3 id="conversion-of-pointers-with-different-underlying-types" class="tmd-header-3">
+Values of two pointer types with different underlying types can be converted to each other if the base types of their underlying types share the same underlying type.
+</h3>
+<p></p>
+<div class="tmd-usual">
 An example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type MyInt int64
 type Ta    *int64
@@ -734,28 +857,23 @@ func main() {
 	// But indirect conversion is possible.
 	y := (*MyInt)(b)
 	x := (*int64)(y)
-	a = x           // <=> the next line
-	a = (*int64)(y) // <=> the next line
+	a = x           // &lt;=&gt; the next line
+	a = (*int64)(y) // &lt;=&gt; the next line
 	a = (*int64)((*MyInt)(b))
 	_ = a
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="addresses-of-zeor-sized-values" class="tmd-header-3">
+Addresses of different zero-sized values may be equal, or not.
+</h3>
+<p></p>
+<div class="tmd-usual">
+Whether or not the addresses of two zero-sized values are equal is compiler and compiler version dependent.
 </div>
-
-<a class="anchor" id="addresses-of-zeor-sized-values"></a>
-<h3>Addresses of different zero-sized values may be equal, or not.</h3>
-<!--
-https://github.com/golang/go/issues/12726
--->
-
-<div>
-Whether or not the addresses of two zero-sized values are equal
-is compiler and compiler version dependent.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -769,64 +887,73 @@ func main() {
 	o := [10]struct{}{}
 	p := [10]struct{}{}
 
-	fmt.Println(&x, &y, &o, &p)
+	fmt.Println(&amp;x, &amp;y, &amp;o, &amp;p)
 
 	// For the standard Go compiler (1.23.n),
 	// x, y, o and p escape to heap, but
 	// a, b, m and n are allocated on stack.
 
-	fmt.Println(&a == &b) // false
-	fmt.Println(&x == &y) // true
-	fmt.Println(&a == &x) // false
+	fmt.Println(&amp;a == &amp;b) // false
+	fmt.Println(&amp;x == &amp;y) // true
+	fmt.Println(&amp;a == &amp;x) // false
 
-	fmt.Println(&m == &n) // false
-	fmt.Println(&o == &p) // true
-	fmt.Println(&n == &p) // false
+	fmt.Println(&amp;m == &amp;n) // false
+	fmt.Println(&amp;o == &amp;p) // true
+	fmt.Println(&amp;n == &amp;p) // false
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 The outputs indicated in the above code are for the standard Go compiler 1.23.n.
-</p>
 </div>
-
-<a class="anchor" id="self-based-pointer-type"></a>
-<h3>The base type of a pointer type may be the pointer type itself.</h3>
-
-<div>
-
+<p></p>
+<h3 id="self-based-pointer-type" class="tmd-header-3">
+The base type of a pointer type may be the pointer type itself.
+</h3>
+<p></p>
+<div class="tmd-usual">
 An example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	type P *P
 	var p P
-	p = &p
+	p = &amp;p
 	p = **************p
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 Similarly,
-<ul>
-<li>
-	the element type of a slice type can be the slice type itself,
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the element type of a slice type can be the slice type itself,
+</div>
 </li>
-<li>
-	the element type of a map type can be the map type itself,
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the element type of a map type can be the map type itself,
+</div>
 </li>
-<li>
-	the element type of a channel type can be the channel type itself,
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the element type of a channel type can be the channel type itself,
+</div>
 </li>
-<li>
-	and the argument and result types of a function type can be the function type itself.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+and the argument and result types of a function type can be the function type itself.
+</div>
 </li>
 </ul>
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	type S []S
@@ -839,38 +966,27 @@ func main() {
 	m := M{"Go": nil}
 	m["Go"] = m
 	c := make(C, 3)
-	c <- c; c <- c; c <- c
+	c &lt;- c; c &lt;- c; c &lt;- c
 	var f F
 	f = func(F)F {return f}
 
 	_ = s[0][0][0][0][0][0][0][0]
 	_ = m["Go"]["Go"]["Go"]["Go"]
-	<-<-<-c
+	&lt;-&lt;-&lt;-c
 	f(f(f(f(f))))
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h3 id="pointer-selector-shorthands" class="tmd-header-3">
+A detail about selector shorthands.
+</h3>
+<p></p>
+<div class="tmd-usual">
+For a pointer value, which type is either named or not, if the base type of its (pointer) type is a struct type, then we can select the fields of the struct value referenced by the pointer value through the pointer value. However, if the type of the pointer value is a named type, then we can't select the methods of the struct value referenced by the pointer value through the pointer value.
 </div>
-
-<a class="anchor" id="pointer-selector-shorthands"></a>
-<h3>A detail about selector shorthands.</h3>
-
-<div>
-
-<p>
-For a pointer value, which type is either named or not,
-if the base type of its (pointer) type is a struct type,
-then we can select the fields of the struct value
-referenced by the pointer value through the pointer value.
-However, if the type of the pointer value is a named type,
-then we can't select the methods of the struct value
-referenced by the pointer value through the pointer value.
-</p>
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type T struct {
 	x int
@@ -882,10 +998,10 @@ type PP *P // a named two-level pointer type.
 
 func main() {
 	var t T
-	var tp = &t
-	var tpp = &tp
+	var tp = &amp;t
+	var tpp = &amp;tp
 	var p P = tp
-	var pp PP = &p
+	var pp PP = &amp;p
 	tp.x = 12  // okay
 	p.x = 34   // okay
 	pp.x = 56  // error: type PP has no field or method x
@@ -897,33 +1013,41 @@ func main() {
 	tpp.m() // error: type **T has no field or method m
 }
 </code></pre>
-<p>
-</p>
-</div>
-
-<a class="anchor" id="composite-literal-simplification"></a>
-<h3>Sometimes, nested composite literals can be simplified.</h3>
-
-<p>
+<p></p>
+<h3 id="composite-literal-simplification" class="tmd-header-3">
+Sometimes, nested composite literals can be simplified.
+</h3>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="container.html#composite-literal-simplification">nested composite literals can be simplified</a> for details.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="use-pointer-as-array"></a>
-<h3>In some scenarios, it is ok to use array pointers as arrays.</h3>
-
-<p>
+</div>
+<p></p>
+<h3 id="use-pointer-as-array" class="tmd-header-3">
+In some scenarios, it is ok to use array pointers as arrays.
+</h3>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="container.html#use-pointer-as-array">use array pointers as arrays</a> for details.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="nil-map-element-retrieving"></a>
-<h3>Retrieving elements from nil maps will not panic. The result is a zero element value.</h3>
-
-<div>
-
-For example, the <code>Foo1</code> and the <code>Foo2</code> functions are equivalent,
-but the function <code>Foo2</code> is much tidier than the function <code>Foo1</code>.
-
-<pre class="line-numbers"><code class="language-go">func Foo1(m map[string]int) int {
+</div>
+<p></p>
+<h3 id="nil-map-element-retrieving" class="tmd-header-3">
+Retrieving elements from nil maps will not panic. The result is a zero element value.
+</h3>
+<p></p>
+<div class="tmd-usual">
+For example, the <code class="tmd-code-span">Foo1</code> and the <code class="tmd-code-span">Foo2</code> functions are equivalent, but the function <code class="tmd-code-span">Foo2</code> is much tidier than the function <code class="tmd-code-span">Foo1</code>.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func Foo1(m map[string]int) int {
 	if m != nil {
 		return m["foo"]
 	}
@@ -934,45 +1058,46 @@ func Foo2(m map[string]int) int {
 	return m["foo"]
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="nil-map-element--deletion"></a>
-<h3>Deleting an entry from a nil map will not panic. It is a no-op.</h3>
-
-<div>
-
+<p></p>
+<h3 id="nil-map-element--deletion" class="tmd-header-3">
+Deleting an entry from a nil map will not panic. It is a no-op.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example, the following program will not panic.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var m map[string]int // nil
 	delete(m, "foo")
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="append-slice-elements"></a>
-<h3>The result slice of an <code>append</code> function call may share some elements with the original slice, or not.</h3>
-
-<p>
+<p></p>
+<h3 id="append-slice-elements" class="tmd-header-3">
+The result slice of an <code class="tmd-code-span">append</code> function call may share some elements with the original slice, or not.
+</h3>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="container.html#element-addition-deletion">append and delete container elements</a> for details.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="subslice"></a>
-<h3>The length of a subslice may be larger than the base slice the subslice derives from.</h3>
-
-<div>
-
+</div>
+<p></p>
+<h3 id="subslice" class="tmd-header-3">
+The length of a subslice may be larger than the base slice the subslice derives from.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -983,20 +1108,25 @@ func main() {
 	fmt.Println(len(s2)) // 5
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="container.html#subslice">derive slices from arrays and slices</a> for details.
-</p>
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="derive-from-nil-slice"></a>
-<h3>Deriving a subslice from a nil slice is ok if all the indexes used in the subslice expression are zero. The result subslice is also a nil slice.</h3>
-
-<div>
-
+</div>
+<p></p>
+<h3 id="derive-from-nil-slice" class="tmd-header-3">
+Deriving a subslice from a nil slice is ok if all the indexes used in the subslice expression are zero. The result subslice is also a nil slice.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example, the following program will not panic at run time.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1009,20 +1139,21 @@ func main() {
 	fmt.Println(a == nil, b == nil, c == nil)
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="container.html#subslice">derive slices from arrays and slices</a> for details.
-</p>
 </div>
-
-<a class="anchor" id="range-over-nil-map-and-slice"></a>
-<h3>Ranging over a nil maps or a nil slices is ok, it is a no-op.</h3>
-
-<div>
-
+<p></p>
+<h3 id="range-over-nil-map-and-slice" class="tmd-header-3">
+Ranging over a nil maps or a nil slices is ok, it is a no-op.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example, the following program compiles okay.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var s []int // nil
@@ -1034,19 +1165,17 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="range-over-nil-array-pointer" class="tmd-header-3">
+Range over a nil array pointer is ok if the second iteration variable is ignored or omitted.
+</h3>
+<p></p>
+<div class="tmd-usual">
+For example, the following program will print <code class="tmd-code-span">01234</code>.
 </div>
-
-<a class="anchor" id="range-over-nil-array-pointer"></a>
-<h3>Range over a nil array pointer is ok if the second iteration variable is ignored or omitted.</h3>
-
-<div>
-
-For example, the following program will print <code>01234</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1057,78 +1186,90 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="modify-slice-length-and-capacity-separately" class="tmd-header-3">
+The length and capacity of a slice can be modified separately.
+</h3>
+<p></p>
+<div class="tmd-usual">
+We can modify the length and capacity of a slice separately through the reflection way. Please read <a href="container.html#modify-slice-length-and-capacity">modify the length and capacity properties of a slice individually</a> for details.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="modify-slice-length-and-capacity-separately"></a>
-<h3>The length and capacity of a slice can be modified separately.</h3>
-
-<p>
-We can modify the length and capacity of a slice separately through the reflection way.
-Please read <a href="container.html#modify-slice-length-and-capacity">modify the length and capacity properties of a slice individually</a> for details.
-</p>
-
-<a class="anchor" id="indexes-in-composite-literals"></a>
-<h3>The indexes in slice and array composite literals must be constants and non-negative.</h3>
-
-<div>
+</div>
+<p></p>
+<h3 id="indexes-in-composite-literals" class="tmd-header-3">
+The indexes in slice and array composite literals must be constants and non-negative.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example, the following code fails to compile.
-
-<pre class="line-numbers"><code class="language-go">var k = 1
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var k = 1
 // error: index must be non-negative integer constant
 var x = [2]int{k: 1}
 // error: index must be non-negative integer constant
 var y = []int{k: 1}
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Note, the keys in map composite literals are not required to be constants.
-</p>
 </div>
-
-<a class="anchor" id="constant-keys-in-composite-literals"></a>
-<h3>The constant indexes or keys in slice/array/map composite literals can't be duplicate.</h3>
-
-<div>
+<p></p>
+<h3 id="constant-keys-in-composite-literals" class="tmd-header-3">
+The constant indexes or keys in slice/array/map composite literals can't be duplicate.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example, the following code fails to compile.
-
-<pre class="line-numbers"><code class="language-go">// error: duplicate index in array literal: 1
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// error: duplicate index in array literal: 1
 var a = []bool{0: false, 1: true, 1: true}
 // error: duplicate index in array literal: 0
 var b = [...]string{0: "foo", 1: "bar", 0: "foo"}
 // error: duplicate key "foo" in map literal
 var c = map[string]int{"foo": 1, "foo": 2}
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 This feature can be used to <a href="tips.html#assert-at-compile-time">assert some conditions at compile time</a>.
-</p>
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="array-slice-element-addressability"></a>
-<h3>Elements of unaddressable arrays are also unaddressable, but elements of unaddressable slices are always addressable.</h3>
+</div>
+<p></p>
+<h3 id="array-slice-element-addressability" class="tmd-header-3">
+Elements of unaddressable arrays are also unaddressable, but elements of unaddressable slices are always addressable.
+</h3>
+<p></p>
+<div class="tmd-usual">
+The reason is the elements of an array value and the array will be stored in the same memory block when the array is stored in memory. But <a href="unofficial-faq.html#slice-elements-always-addressable">the situation is different for slices</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<div>
-<p>
-The reason is the elements of an array value and the array will be stored
-in the same memory block when the array is stored in memory.
-But <a href="unofficial-faq.html#slice-elements-always-addressable">the
-situation is different for slices</a>.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	// Container composite literals are unaddressable.
 
 	// It is ok to take slice literal element addresses.
-	_ = &[]int{1}[0] // ok
+	_ = &amp;[]int{1}[0] // ok
 	// Cannot take addresses of array literal elements.
-	_ = &[5]int{}[0] // error
+	_ = &amp;[5]int{}[0] // error
 
 	// It is ok to modify slice literal elements.
 	[]int{1,2,3}[1] = 9  // ok
@@ -1136,23 +1277,20 @@ func main() {
 	[3]int{1,2,3}[1] = 9 // error
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="array-slice-derivable"></a>
-<h3>
+<p></p>
+<h3 id="array-slice-derivable" class="tmd-header-3">
 It is ok to derive subslices from unaddressable slices, but not ok from unaddressable arrays.
 </h3>
-
-<div>
-<p>
+<p></p>
+<div class="tmd-usual">
 The reason is the same as the last detail.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	// Map elements are unaddressable in Go.
@@ -1172,20 +1310,21 @@ func main() {
 	*/
 }
 </code></pre>
-<p>
-</p>
+<p></p>
+<h3 id="nan-as-map-keys" class="tmd-header-3">
+Putting entries with <code class="tmd-code-span">NaN</code> as keys to a map is like putting the entries in a black hole.
+</h3>
+<p></p>
+<div class="tmd-usual">
+This reason is <code class="tmd-code-span">NaN != NaN</code>, which is another detail will be described <a href="#nan-inf">below</a>. Before Go 1.12, the elements with <code class="tmd-code-span">NaN</code> as keys can only be found out in a <code class="tmd-code-span">for-range</code> loop, Since Go 1.12, the elements with <code class="tmd-code-span">NaN</code> as keys can also be printed out by <code class="tmd-code-span">fmt.Print</code> alike functions.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="nan-as-map-keys"></a>
-<h3>Putting entries with <code>NaN</code> as keys to a map is like putting the entries in a black hole.</h3>
-
-<div>
-This reason is <code>NaN != NaN</code>, which is another detail will be described <a href="#nan-inf">below</a>.
-Before Go 1.12, the elements with <code>NaN</code> as keys can only be found out in a <code>for-range</code> loop,
-Since Go 1.12, the elements with <code>NaN</code> as keys can also be printed out by
-<code>fmt.Print</code> alike functions.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "math"
@@ -1214,27 +1353,25 @@ func main() {
 	// NaN 789
 }
 </code></pre>
-
-<p>
-Please note, before Go 1.12, the two <code>fmt.Println(m)</code>
-calls both printed <code>map[NaN:&lt;nil&gt; NaN:&lt;nil&gt;]</code>.
-</p>
+<p></p>
+<div class="tmd-usual">
+Please note, before Go 1.12, the two <code class="tmd-code-span">fmt.Println(m)</code> calls both printed <code class="tmd-code-span">map[NaN:&lt;nil&gt; NaN:&lt;nil&gt;]</code>.
 </div>
-
-<a class="anchor" id="capacity-of-slice-from-string"></a>
-<h3>The capacity of the result slice of a conversion from a string to byte/rune slice may be larger than the length of the result slice.</h3>
-
-<div>
-<p>
+<p></p>
+<h3 id="capacity-of-slice-from-string" class="tmd-header-3">
+The capacity of the result slice of a conversion from a string to byte/rune slice may be larger than the length of the result slice.
+</h3>
+<p></p>
+<div class="tmd-usual">
 We should not assume the length and the capacity of the result slice are always equal.
-</p>
-
-In the following example, if the last <code>fmt.Println</code> line is removed,
-the outputs of the two lines before it print the same value <code>5</code>;
-otherwise, one print <code>5</code> and one print <code>8</code>
-(for the standard Go compiler 1.23.n).
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+In the following example, if the last <code class="tmd-code-span">fmt.Println</code> line is removed, the outputs of the two lines before it print the same value <code class="tmd-code-span">5</code>; otherwise, one print <code class="tmd-code-span">5</code> and one print <code class="tmd-code-span">8</code> (for the standard Go compiler 1.23.n).
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1246,20 +1383,25 @@ func main() {
 	fmt.Println(x)
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 <a href="https://github.com/go101/go101/wiki/The-capacity-of-the-result-byte-%28or-rune%29-slice-of-a-conversion-from-a-string-is-undefined">Some buggy code will be written</a> if we assume the length and the capacity of the result slice are always equal.
-</p>
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="different-loops"></a>
-<h3>For a slice <code>s</code>, the loop <code>for i = range s {...}</code> is not equivalent to the loop <code>for i = 0; i &lt; len(s); i++ {...}</code>.</h3>
-
-<div>
-The respective final values of the iteration variable <code>i</code>
-may be different for the two loops.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<h3 id="different-loops" class="tmd-header-3">
+For a slice <code class="tmd-code-span">s</code>, the loop <code class="tmd-code-span">for i = range s {...}</code> is not equivalent to the loop <code class="tmd-code-span">for i = 0; i &lt; len(s); i++ {...}</code>.
+</h3>
+<p></p>
+<div class="tmd-usual">
+The respective final values of the iteration variable <code class="tmd-code-span">i</code> may be different for the two loops.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1267,7 +1409,7 @@ var i int
 
 func fa(s []int, n int) int {
 	i = n
-	for i = 0; i < len(s); i++ {}
+	for i = 0; i &lt; len(s); i++ {}
 	return i
 }
 
@@ -1284,18 +1426,16 @@ func main() {
 	fmt.Println(fa(s, -1), fb(s, -1)) // 0 -1
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="map-entry-iteration"></a>
-<h3>The iteration order over maps is not guaranteed to be the same from one iteration to the next.</h3>
-
-<div>
-
+<p></p>
+<h3 id="map-entry-iteration" class="tmd-header-3">
+The iteration order over maps is not guaranteed to be the same from one iteration to the next.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example, the following program will not run infinitely:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1320,20 +1460,20 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-Please note, the entries in the JSON marshal result on maps are sorted by their keys.
-And since Go 1.12, printing maps (with the print functions in the standard
-<code>fmt</code> package) also results sorted entries.
-</p>
+<p></p>
+<div class="tmd-usual">
+Please note, the entries in the JSON marshal result on maps are sorted by their keys. And since Go 1.12, printing maps (with the print functions in the standard <code class="tmd-code-span">fmt</code> package) also results sorted entries.
 </div>
-
-<a class="anchor" id="create-entry-in-map-entry-iteration"></a>
-<h3>If a map entry is created during an iteration of the map, that entry may be iterated during the iteration or may be skipped.</h3>
-
-<div>
+<p></p>
+<h3 id="create-entry-in-map-entry-iteration" class="tmd-header-3">
+If a map entry is created during an iteration of the map, that entry may be iterated during the iteration or may be skipped.
+</h3>
+<p></p>
+<div class="tmd-usual">
 A proof:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1350,58 +1490,78 @@ func main() {
 	)
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Thanks to Valentin Deleplace for the above <a href="https://twitter.com/val_deleplace/status/1358784287399698434">two detail suggestions</a>.
-</p>
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="call-as-expression"></a>
-<h3>A multi-result function call can't mix with other expressions when the call is used as the sources in an assignment or the arguments of another function call.</h3>
-
-<p>
+</div>
+<p></p>
+<h3 id="call-as-expression" class="tmd-header-3">
+A multi-result function call can't mix with other expressions when the call is used as the sources in an assignment or the arguments of another function call.
+</h3>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="function.html#call-as-expression">use function calls as expressions</a> for details.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="compile-time-evaluated-calls"></a>
-<h3>Some function calls are evaluated at compile time.</h3>
-
-<p>
+</div>
+<p></p>
+<h3 id="compile-time-evaluated-calls" class="tmd-header-3">
+Some function calls are evaluated at compile time.
+</h3>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="function.html#compile-time-evaluated-calls">some function calls are evaluated at compile time</a> for details.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="method-as-function"></a>
-<h3>Each method corresponds to an implicit function.</h3>
+</div>
+<p></p>
+<h3 id="method-as-function" class="tmd-header-3">
+Each method corresponds to an implicit function.
+</h3>
+<p></p>
+<div class="tmd-usual">
+Please read <a href="method.html#method-as-function">each method corresponds to an implicit function</a> for details.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Please read <a href="method.html#method-as-function">each Method Corresponds to an Implicit Function</a> for details.
-</p>
-
-<a class="anchor" id="comparison-interfaces-may-panic"></a>
-<h3>Comparing two interface values with the same dynamic incomparable type produces a panic.</h3>
-
-<div>
+</div>
+<p></p>
+<h3 id="comparison-interfaces-may-panic" class="tmd-header-3">
+Comparing two interface values with the same dynamic incomparable type produces a panic.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var x interface{} = []int{}
 	_ = x == x // panic
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="type-assertion-to-interface-type"></a>
-<h3>Type assertions can be used to convert a value of an interface type to another interface type, even if the former interface type doesn't implement the latter one.</h3>
-
-<div>
+<p></p>
+<h3 id="type-assertion-to-interface-type" class="tmd-header-3">
+Type assertions can be used to convert a value of an interface type to another interface type, even if the former interface type doesn't implement the latter one.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type Foo interface {
 	foo()
@@ -1422,20 +1582,17 @@ func main() {
 	var _ = x.(Foo) // okay
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="failed-type-assertion-may-panic" class="tmd-header-3">
+Whether or not the second optional result of a type assertion is present will affect the behavior of the type assertion.
+</h3>
+<p></p>
+<div class="tmd-usual">
+If the second optional result presents in a failed type assertion, the type assertion will not produce a panic. Otherwise, a panic will occur. For example:
 </div>
-
-<a class="anchor" id="failed-type-assertion-may-panic"></a>
-<h3>Whether or not the second optional result of a type assertion is present will affect the behavior of the type assertion.</h3>
-
-<div>
-If the second optional result presents in a failed type assertion, the type assertion will not produce a panic.
-Otherwise, a panic will occur.
-For example:
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var x interface{} = true
@@ -1447,19 +1604,17 @@ func main() {
 	_ = x.(int)
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="impossible-to-interface-assertion" class="tmd-header-3">
+About the impossible to-interface assertions which can be detected at compile time.
+</h3>
+<p></p>
+<div class="tmd-usual">
+At compile time, some to-interface assertions can be deducted as impossible to succeed. For example, the assertion shown in the following code:
 </div>
-
-<a class="anchor" id="impossible-to-interface-assertion"></a>
-<h3>About the impossible to-interface assertions which can be detected at compile time.</h3>
-
-<div>
-At compile time, some to-interface assertions can be deducted as impossible to succeed.
-For example, the assertion shown in the following code:
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type Ia interface {
 	m()
@@ -1478,95 +1633,22 @@ func main() {
 	_ = x.(Ib) // panic: main.T is not main.Ib
 }
 </code></pre>
-
-<p>
-Such assertions will not make code compilations fail (but the program will panic at run time).
-Since Go Toolchain 1.15, the <code>go vet</code> command warns on such assertions.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Such assertions will not make code compilations fail (but the program will panic at run time). Since Go Toolchain 1.15, the <code class="tmd-code-span">go vet</code> command warns on such assertions.
 </div>
-
-<!--
-<a class="anchor" id="interface-comparison-complexity"></a>
-<h3>For the standard Go compiler, the time complexity of comparing two equal interface values may be <code><i>O</i>(1)</code> or <code><i>O</i>(n)</code>.</h3>
-
-<div>
-The time complexity depends on whether or not the direct parts
-of the two equal interfaces both reference the underlying value.
-Please read the article <a href="value-part.html#interface-structure">value parts</a> for detail.
-
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-import "time"
-
-func main() {
-	bigarr := [1 << 20]int{}
-
-	type I interface{}
-
-	// i0, i1 and i2 are three equal interfaces.
-	var i0 I = bigarr // the dynamic value of i0 is a copy of bigarr.
-	var i1 I = bigarr // the dynamic value of i1 is also a copy of bigarr.
-	                  // Note, the dynamic values of i0 and i1 are
-	                  // two different copies of bigarr.
-	var i2 I = i1 // i2 shares the same dynamic value copy with i1.
-
-	startTime := time.Now()
-	_ = i0 == i1
-	duration := time.Since(startTime)
-	fmt.Println("duration for (i0 == i1):", duration)
-
-	startTime = time.Now()
-	_ = i1 == i2
-	duration = time.Since(startTime)
-	fmt.Println("duration for (i1 == i2):", duration)
-}
-</code></pre>
-
-The output:
-<pre class="output"><code>duration for (i0 == i1): 1.381337ms
-duration for (i1 == i2): 609ns
-</code></pre>
-<p>
-1ms is 1000000ns!
-</p>
+<p></p>
+<p></p>
+<h3 id="errors-new-different-returns" class="tmd-header-3">
+Two <code class="tmd-code-span">error</code> values returned by two <code class="tmd-code-span">errors.New</code> calls with the same argument are not equal.
+</h3>
+<p></p>
+<div class="tmd-usual">
+The reason is the <code class="tmd-code-span">errors.New</code> function will copy the input string argument and use a pointer to the copied string as the dynamic value of the returned <code class="tmd-code-span">error</code> value. Two different calls will produce two different pointers.
 </div>
-
-<a class="anchor" id="interface-copy-complexity"></a>
-<h3>About the time complexity of copying a non-nil interface value.</h3>
-
-<p>
-The <a href="https://golang.org/doc/faq#pass_by_value">official Go FAQ</a>
-says <b><i>copying an interface value makes a copy of the thing stored in the interface value.</i></b>.
-The article <a href="interface.html#boxing">interfaces in Go</a> mentions that,
-for the standard Go compiler, the time complexity of copying an interface value
-is <code><i>O</i>(1)</code>.
-But the sizes of different dynamic values stored in interface values may
-be different, why isn't the complexity <code><i>O</i>(n)</code>?
-</p>
-
-<p>
-The reason is the dynamic values of interface values are all immutable,
-so the standard Go compiler makes an optimization here.
-As the article <a href="value-part.html#interface-structure">value parts</a>
-has explained, an non-nil interface value has an underlying part and
-the direct part of the interface value stores a pointer which
-references the underlying part. When the interface value is copied,
-only its direct part is copied. For the standard Go compiler,
-the sizes of the direct parts of all interface values are the same.
-</p>
--->
-
-<a class="anchor" id="errors-new-different-returns"></a>
-<h3>Two <code>error</code> values returned by two <code>errors.New</code> calls with the same argument are not equal.</h3>
-
-<div>
-The reason is the <code>errors.New</code> function will copy the input string argument
-and use a pointer to the copied string as the dynamic value of the returned <code>error</code> value.
-Two different calls will produce two different pointers.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "errors"
@@ -1577,84 +1659,86 @@ func main() {
 	fmt.Println(a == b) // false
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="receive-only-channel-canot-be-closed"></a>
-<h3>Receive-only channels can't be closed.</h3>
-
-<div>
+<p></p>
+<h3 id="receive-only-channel-canot-be-closed" class="tmd-header-3">
+Receive-only channels can't be closed.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example, the following code fails to compile.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 }
 
-func foo(c <-chan int) {
+func foo(c &lt;-chan int) {
 	close(c) // error: cannot close receive-only channel
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="send-to-closed-channel-is-non-blocking" class="tmd-header-3">
+Sending a value to a closed channel is viewed as a non-blocking operation, and this operation causes a panic.
+</h3>
+<p></p>
+<div class="tmd-usual">
+For example, in the following program, when the second <code class="tmd-code-span">case</code> branch gets selected, it will produce a panic at run time.
 </div>
-
-<a class="anchor" id="send-to-closed-channel-is-non-blocking"></a>
-<h3>Sending a value to a closed channel is viewed as a non-blocking operation, and this operation causes a panic.</h3>
-
-<div>
-For example, in the following program, when the second <code>case</code> branch gets selected, it will produce a panic at run time.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var c = make(chan bool)
 	close(c)
 	select {
-	case <-c:
-	case c <- true: // panic: send on closed channel
+	case &lt;-c:
+	case c &lt;- true: // panic: send on closed channel
 	default:
 	}
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="local-type-declaration"></a>
-<h3>Types can be declared within function bodies.</h3>
-
-<div>
+<p></p>
+<h3 id="local-type-declaration" class="tmd-header-3">
+Types can be declared within function bodies.
+</h3>
+<p></p>
+<div class="tmd-usual">
 Types can be declared in function bodies. For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	type T struct{}
 	type S = []int
 }
 </code></pre>
-<p>
-</p>
-</div>
-
-<a class="anchor" id="final-zero-size-field"></a>
-<h3>For the standard compiler, zero-sized fields in a struct may be treated as one-byte-sized value.</h3>
-
-<p>
+<p></p>
+<h3 id="final-zero-size-field" class="tmd-header-3">
+For the standard compiler, zero-sized fields in a struct may be treated as one-byte-sized value.
+</h3>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="unofficial-faq.html#final-zero-size-field">this FAQ item</a> for details.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="nan-inf"></a>
-<h3>NaN != NaN, Inf == Inf.</h3>
-
-<div>
+</div>
+<p></p>
+<h3 id="nan-inf" class="tmd-header-3">
+NaN != NaN, Inf == Inf.
+</h3>
+<p></p>
+<div class="tmd-usual">
 This follows IEEE-754 standard and is consistent with most other programming languages:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "math"
@@ -1670,17 +1754,17 @@ func main() {
 	fmt.Println(y, z, y == z) // +Inf +Inf true
 }
 </code></pre>
-<p>
-</p>
+<p></p>
+<h3 id="non-exported-names-from-different-packages" class="tmd-header-3">
+Non-exported method names and struct field names from different packages are viewed as different names.
+</h3>
+<p></p>
+<div class="tmd-usual">
+For example, if the following types are declared in package <code class="tmd-code-span">foo</code>:
 </div>
-
-<a class="anchor" id="non-exported-names-from-different-packages"></a>
-<h3>Non-exported method names and struct field names from different packages are viewed as different names.</h3>
-
-<div>
-For example, if the following types are declared in package <code>foo</code>:
-
-<pre class="line-numbers"><code class="language-go">package foo
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package foo
 
 type I = interface {
 	about() string
@@ -1694,10 +1778,13 @@ func (s S) about() string {
 	return s.a
 }
 </code></pre>
-
-and the following types are declared in package <code>bar</code>:
-
-<pre class="line-numbers"><code class="language-go">package bar
+<p></p>
+<div class="tmd-usual">
+and the following types are declared in package <code class="tmd-code-span">bar</code>:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package bar
 
 type I = interface {
 	about() string
@@ -1711,26 +1798,35 @@ func (s S) about() string {
 	return s.a
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 then,
-<ul>
-<li>
-	values of the two respective types <code>S</code> from the two packages
-	can't be converted to each other.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+values of the two respective types <code class="tmd-code-span">S</code> from the two packages can't be converted to each other.
+</div>
 </li>
-<li>
-	the two respective interface types <code>S</code> from the two packages
-	denote two distinct method sets.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the two respective interface types <code class="tmd-code-span">S</code> from the two packages denote two distinct method sets.
+</div>
 </li>
-<li>
-	type <code>foo.S</code> doesn't implement the interface type <code>bar.I</code>.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+type <code class="tmd-code-span">foo.S</code> doesn't implement the interface type <code class="tmd-code-span">bar.I</code>.
+</div>
 </li>
-<li>
-	type <code>bar.S</code> doesn't implement the interface type <code>foo.I</code>.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+type <code class="tmd-code-span">bar.S</code> doesn't implement the interface type <code class="tmd-code-span">foo.I</code>.
+</div>
 </li>
 </ul>
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "包2/foo"
 import "包2/bar"
@@ -1748,68 +1844,18 @@ func main() {
 	var _ bar.I = x
 }
 </code></pre>
-
+<p></p>
+<p></p>
+<h3 id="blank-fields-are-ignored-in-comparisons" class="tmd-header-3">
+In struct value comparisons, blank fields will be ignored.
+</h3>
+<p></p>
+<div class="tmd-usual">
+Blank fields are those fields whose name are the blank identifier <code class="tmd-code-span">_</code>. The following program will print <code class="tmd-code-span">true</code>.
 </div>
-
-
-<!--
-<a class="anchor" id="compare-values-with-both-comparable-and-incomparable-parts"></a>
-<h3>The behavior of comparing struct values with both comparable and incomparable fields or array values with both comparable and incomparable elements is unspecified.</h3>
-
-<div>
-<p>
-Surely, the mentioned incomparable values here must present as interfaces, otherwise, the comparisons fail to compile.
-</p>
-
-Although it looks the implementation by the official standard Go compiler is comparing struct values fields by fields,
-and comparing array values elements by elements, until an inequality is found or a panic occurs, 
-but <a href="https://github.com/golang/go/issues/8606">the behavior is really unspecified</a> currently (Go 1.15).
-
-<pre class="line-numbers"><code class="language-go">package main
-
-import "fmt"
-
-func cmpS(a, b S) {
-	defer func() {
-		if recover() != nil {
-			fmt.Println("panic")
-		}
-	}()
-	fmt.Println(a == b)
-}
-
-func cmpA(x, y A) {
-	defer func() {
-		if recover() != nil {
-			fmt.Println("panic")
-		}
-	}()
-	fmt.Println(x == y)
-}
-
-type S struct{x, y interface{}}
-type A [2]interface{}
-
-func main() {
-	var f func()
-	cmpS(S{1, f}, S{2, f}) // false (but panic is ok)
-	cmpS(S{f, 1}, S{f, 2}) // panic (but false is ok)
-	cmpA(A{1, f}, A{2, f}) // false (but panic is ok)
-	cmpA(A{f, 1}, A{f, 2}) // panic (but false is ok)
-}
-</code></pre>
-
-</div>
--->
-
-<a class="anchor" id="blank-fields-are-ignored-in-comparisons"></a>
-<h3>In struct value comparisons, blank fields will be ignored.</h3>
-
-<div>
-Blank fields are those fields whose name are the blank identifier <code>_</code>.
-The following program will print <code>true</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1824,19 +1870,17 @@ func main() {
 	fmt.Println(t1 == t2) // true
 }
 </code></pre>
-
-<p>
-</p>
-
-</div>	
-
-<a class="anchor" id="sometimes-parentheses-are-required"></a>
-<h3>Parentheses are required in several rare scenarios to make code compile okay.</h3>
-
-<div>
+<p></p>
+<h3 id="sometimes-parentheses-are-required" class="tmd-header-3">
+Parentheses are required in several rare scenarios to make code compile okay.
+</h3>
+<p></p>
+<div class="tmd-usual">
 For example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 type T struct{x, y int}
 
@@ -1857,51 +1901,18 @@ func main() {
 	var _ = (func())(nil) // nil is viewed as a value
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<p></p>
+<h3 id="stack-overflow-is-unrecoverable" class="tmd-header-3">
+Stack overflow is not panic.
+</h3>
+<p></p>
+<div class="tmd-usual">
+For the current main stream Go compilers, stack overflows are fatal errors. Once a stack overflow happens, the whole program will crash without recovery ways.
 </div>
-
-<!--
-<a class="anchor" id="main-entry-function-absence"></a>
-<h3>A program doesn't need a <code>main</code> entry function to run.</h3>
-
-<div>
-The following program <a href="https://github.com/golang/go/issues/21256">compiles okay before Go 1.11</a>,
-for the standard Go compiler.
-But since Go 1.11, it fails to compile.
-
-<pre class="line-numbers"><code class="language-go">package main
-
-import (
-    "fmt"
-    "time"
-)
-
-func init() {
-	for {
-		time.Sleep(time.Second)
-		fmt.Println("hi")
-	}
-}
-
-var main int
-</code></pre>
-
-<p>
-</p>
-</div>
--->
-
-<a class="anchor" id="stack-overflow-is-unrecoverable"></a>
-<h3>Stack overflow is not panic.</h3>
-
-<div>
-
-For the current main stream Go compilers, stack overflows are fatal errors.
-Once a stack overflow happens, the whole program will crash without recovery ways.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func f() {
 	f()
@@ -1914,65 +1925,65 @@ func main() {
 	f()
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 the running result:
-
-<pre class="output"><code>runtime: goroutine stack exceeds 1000000000-byte limit
+</div>
+<p></p>
+<pre class="tmd-code output">
+runtime: goroutine stack exceeds 1000000000-byte limit
 fatal error: stack overflow
 
 runtime stack:
 ...
-</code></pre>
-
-<p>
-</p>
-
-<p>
+</pre>
+<p></p>
+<div class="tmd-usual">
 About more crash cases, please read <a href="https://github.com/go101/go101/wiki/Panic-and-crash-cases">this wiki article</a>.
-</p>
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="some-evaluation-order-are-compiler-dependent"></a>
-<h3>Some expression evaluation orders in Go are compiler implementation dependent.</h3>
-
-<p>
+</div>
+<p></p>
+<h3 id="some-evaluation-order-are-compiler-dependent" class="tmd-header-3">
+Some expression evaluation orders in Go are compiler implementation dependent.
+</h3>
+<p></p>
+<div class="tmd-usual">
 Please read <a href="evaluation-orders.html">expression evaluation orders in Go</a> for details.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="reflect-deep-equal"></a>
-<h3>The results of <code>reflect.DeepEqual(x, y)</code> and <code>x == y</code> may be different.</h3>
-
-<div>
-<p>
-The function call <code>reflect.DeepEqual(x, y)</code> will always return
-<code>false</code> if the types of its two arguments are different,
-whereas <code>x == y</code> may return <code>true</code> even if
-the types of the two operands are different.
-</p>
-
-<p>
-The second difference is a <code>DeepEqual</code> call with
-two pointer argument values of the same type returns whether or not
-the two respective values referenced by the two pointers are deep equal.
-So the call might return <code>true</code> even if the two pointers are not equal.
-</p>
-
-<p>
-The third difference is the result of a <code>DeepEqual</code> call might return
-<code>true</code> if both of its arguments are in cyclic reference chains
-(to avoid infinite looping in the call).
-</p>
-
-<p>
-The fourth difference is, the function call
-<code>reflect.DeepEqual(x, y)</code> is not expected to panic generally,
-whereas <code>x == y</code> will panic if the two operands are both
-interface values and their dynamic types are identical and incomparable.
-</p>
-
+</div>
+<p></p>
+<h3 id="reflect-deep-equal" class="tmd-header-3">
+The results of <code class="tmd-code-span">reflect.DeepEqual(x, y)</code> and <code class="tmd-code-span">x == y</code> may be different.
+</h3>
+<p></p>
+<div class="tmd-usual">
+The function call <code class="tmd-code-span">reflect.DeepEqual(x, y)</code> will always return <code class="tmd-code-span">false</code> if the types of its two arguments are different, whereas <code class="tmd-code-span">x == y</code> may return <code class="tmd-code-span">true</code> even if the types of the two operands are different.
+</div>
+<p></p>
+<div class="tmd-usual">
+The second difference is a <code class="tmd-code-span">DeepEqual</code> call with two pointer argument values of the same type returns whether or not the two respective values referenced by the two pointers are deep equal. So the call might return <code class="tmd-code-span">true</code> even if the two pointers are not equal.
+</div>
+<p></p>
+<div class="tmd-usual">
+The third difference is the result of a <code class="tmd-code-span">DeepEqual</code> call might return <code class="tmd-code-span">true</code> if both of its arguments are in cyclic reference chains (to avoid infinite looping in the call).
+</div>
+<p></p>
+<div class="tmd-usual">
+The fourth difference is, the function call <code class="tmd-code-span">reflect.DeepEqual(x, y)</code> is not expected to panic generally, whereas <code class="tmd-code-span">x == y</code> will panic if the two operands are both interface values and their dynamic types are identical and incomparable.
+</div>
+<p></p>
+<div class="tmd-usual">
 An example showing these differences:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -1987,15 +1998,15 @@ func main() {
 	fmt.Println(x == y)                  // true
 
 	z := Book{123}
-	fmt.Println(reflect.DeepEqual(&z, &y)) // true
-	fmt.Println(&z == &y)                  // false
+	fmt.Println(reflect.DeepEqual(&amp;z, &amp;y)) // true
+	fmt.Println(&amp;z == &amp;y)                  // false
 
 	type Node struct{peer *Node}
 	var q, r, s Node
-	q.peer = &q // form a cyclic reference chain
-	r.peer = &s // form a cyclic reference chain
-	s.peer = &r
-	println(reflect.DeepEqual(&q, &r)) // true
+	q.peer = &amp;q // form a cyclic reference chain
+	r.peer = &amp;s // form a cyclic reference chain
+	s.peer = &amp;r
+	println(reflect.DeepEqual(&amp;q, &amp;r)) // true
 	fmt.Println(q == r)                // false
 
 	var f1, f2 func() = nil, func(){}
@@ -2007,18 +2018,13 @@ func main() {
 	fmt.Println(a == b)                  // panic
 }
 </code></pre>
-
-<p>
-</p>
-
-Note, if the two arguments of a <code>DeepEqual</code> call are both function values,
-then the call returns <code>true</code> only if the two function arguments are both nil and their types are identical.
-It is similar to compare container values whose elements contain function values or compare struct values whose fields contain function values.
-But please also note that the result of comparing two slices (of the same type) is always <code>true</code> if the two slices exactly share
-the same elements (in other words, they have the same length and each pair of their corresponding elements have the same address).
-An example:
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+Note, if the two arguments of a <code class="tmd-code-span">DeepEqual</code> call are both function values, then the call returns <code class="tmd-code-span">true</code> only if the two function arguments are both nil and their types are identical. It is similar to compare container values whose elements contain function values or compare struct values whose fields contain function values. But please also note that the result of comparing two slices (of the same type) is always <code class="tmd-code-span">true</code> if the two slices exactly share the same elements (in other words, they have the same length and each pair of their corresponding elements have the same address). An example:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -2035,27 +2041,21 @@ func main() {
 	fmt.Println(reflect.DeepEqual(a[:], b[:])) // true
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="reflect-value-bytes" class="tmd-header-3">
+The <code class="tmd-code-span">reflect.Value.Bytes()</code> method returns a <code class="tmd-code-span">[]byte</code> value, which element type, <code class="tmd-code-span">byte</code>, might be not the same as the Go slice value represented by the receiver parameter.
+</h3>
+<p></p>
+<div class="tmd-usual">
+Assume the underlying type of a defined type <code class="tmd-code-span">MyByte</code> is the predeclared type <code class="tmd-code-span">byte</code>, we know that Go type system forbids the conversions between <code class="tmd-code-span">[]MyByte</code> and <code class="tmd-code-span">[]byte</code> values. However, it looks the implementation of the method <code class="tmd-code-span">Bytes</code> of the <code class="tmd-code-span">reflect.Value</code> type partially violates this restriction unintentionally, by allowing converting a <code class="tmd-code-span">[]MyByte</code> value to <code class="tmd-code-span">[]byte</code>.
 </div>
-
-<a class="anchor" id="reflect-value-bytes"></a>
-<h3>The <code>reflect.Value.Bytes()</code> method returns a <code>[]byte</code> value, which element type, <code>byte</code>, might be not the same as the Go slice value represented by the receiver parameter.</h3>
-
-<div>
-<p>
-Assume the underlying type of a defined type <code>MyByte</code> is the
-predeclared type <code>byte</code>, we know that Go type system forbids
-the conversions between <code>[]MyByte</code> and <code>[]byte</code> values.
-However, it looks the implementation of the method <code>Bytes</code> of the
-<code>reflect.Value</code> type partially violates this restriction unintentionally,
-by allowing converting a <code>[]MyByte</code> value to <code>[]byte</code>.
-</p>
-
+<p></p>
+<div class="tmd-usual">
 Example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "bytes"
 import "fmt"
@@ -2077,28 +2077,29 @@ func main() {
 	fmt.Printf("%s \n", mybs) // art
 }
 </code></pre>
-
-<p>
-But it looks the violation is not harmful.
-On the contrary, it makes some benefits.
-For example, with this violation, we can use the functions in the
-<code>bytes</code> standard package for the <code>[]MyByte</code> values.
-</p>
-
-<p>
-Note, the <code>reflect.Value.Bytes()</code> method <a href="https://github.com/golang/go/issues/27727">might be removed later</a>.
-</p>
+<p></p>
+<div class="tmd-usual">
+But it looks the violation is not harmful. On the contrary, it makes some benefits. For example, with this violation, we can use the functions in the <code class="tmd-code-span">bytes</code> standard package for the <code class="tmd-code-span">[]MyByte</code> values.
+</div>
+<p></p>
+<div class="tmd-usual">
+Note, the <code class="tmd-code-span">reflect.Value.Bytes()</code> method <a href="https://github.com/golang/go/issues/27727">might be removed later</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="check-file-existent"></a>
-<h3>We should use <code>os.IsNotExist(err)</code> instead of <code>err == os.ErrNotExist</code> to check whether or not a file exists.</h3>
-
-<div>
-
-Using <code>err == os.ErrNotExist</code> may miss errors.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<h3 id="check-file-existent" class="tmd-header-3">
+We should use <code class="tmd-code-span">os.IsNotExist(err)</code> instead of <code class="tmd-code-span">err == os.ErrNotExist</code> to check whether or not a file exists.
+</h3>
+<p></p>
+<div class="tmd-usual">
+Using <code class="tmd-code-span">err == os.ErrNotExist</code> may miss errors.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -2111,14 +2112,17 @@ func main() {
 	fmt.Println(err == os.ErrNotExist) // false
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+For projects only supporting Go 1.13+, <code class="tmd-code-span">errors.Is(err, os.ErrNotExist)</code> is <a href="https://github.com/golang/go/issues/38198">more recommended to be used</a> to check whether or not a file exists.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-</p>
-
-For projects only supporting Go 1.13+, <code>errors.Is(err, os.ErrNotExist)</code> is
-<a href="https://github.com/golang/go/issues/38198">more recommended to be used</a> to check whether or not a file exists.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"errors"
@@ -2131,34 +2135,38 @@ func main() {
 	fmt.Println(errors.Is(err, os.ErrNotExist)) // true
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="boolean-flag"></a>
-<h3>The <code>flag</code> standard package treats boolean command flags differently than integer and string flags.</h3>
-
-<div>
+<p></p>
+<h3 id="boolean-flag" class="tmd-header-3">
+The <code class="tmd-code-span">flag</code> standard package treats boolean command flags differently than integer and string flags.
+</h3>
+<p></p>
+<div class="tmd-usual">
 There are three forms to pass flag options.
-<ol>
-<li>
-	<code>-flag</code>, for boolean flags only.
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">-flag</code>, for boolean flags only.
+</div>
 </li>
-<li>
-	<code>-flag=x</code>, for any flag.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">-flag=x</code>, for any flag.
+</div>
 </li>
-<li>
-	<code>-flag x</code>, for non-boolean flags only.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">-flag x</code>, for non-boolean flags only.
+</div>
 </li>
 </ol>
-
-<p>
-And please note that, a boolean flag with the first form
-is viewed as the last flag, all items following it are viewed as arguments.
-</p>
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+And please note that, a boolean flag with the first form is viewed as the last flag, all items following it are viewed as arguments.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "flag"
@@ -2173,54 +2181,64 @@ func main() {
 	fmt.Println("arguments:", flag.Args())
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 If we run this program with the below shown flags and arguments
-
-<pre class="output"><code>./exampleProgram -b false -i 789 -s bye arg0 arg1
-</code></pre>
-
-the output will be
-
-<pre class="output"><code>b=true, i=123, s=hi
-arguments: [false -i 789 -s bye arg0 arg1]
-</code></pre>
-
-<p>
-This output is obviously not what we expect.
-</p>
-
-We should pass the flags and arguments like
-
-<pre class="output"><code>./exampleProgram -b=false -i 789 -s bye arg0 arg1
-</code></pre>
-
-or
-
-<pre class="output"><code>./exampleProgram -i 789 -s bye -b arg0 arg1
-</code></pre>
-
-to get the output we expect:
-
-<pre class="output"><code>b=true, i=789, s=bye
-arguments: [arg0 arg1]
-</code></pre>
-
-<!--
-reason: https://github.com/golang/go/issues/36263#thread-subscription-status
--->
-
 </div>
-
-<a class="anchor" id="printf-positional-arguments"></a>
-<h3><code>[Sp|Fp|P]rintf</code> functions support positional arguments.</h3>
-
-<div>
-The following program will print <code>coco</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code output">
+./exampleProgram -b false -i 789 -s bye arg0 arg1
+</pre>
+<p></p>
+<div class="tmd-usual">
+the output will be
+</div>
+<p></p>
+<pre class="tmd-code output">
+b=true, i=123, s=hi
+arguments: [false -i 789 -s bye arg0 arg1]
+</pre>
+<p></p>
+<div class="tmd-usual">
+This output is obviously not what we expect.
+</div>
+<p></p>
+<div class="tmd-usual">
+We should pass the flags and arguments like
+</div>
+<p></p>
+<pre class="tmd-code output">
+./exampleProgram -b=false -i 789 -s bye arg0 arg1
+</pre>
+<p></p>
+<div class="tmd-usual">
+or
+</div>
+<p></p>
+<pre class="tmd-code output">
+./exampleProgram -i 789 -s bye -b arg0 arg1
+</pre>
+<p></p>
+<div class="tmd-usual">
+to get the output we expect:
+</div>
+<p></p>
+<pre class="tmd-code output">
+b=true, i=789, s=bye
+arguments: [arg0 arg1]
+</pre>
+<p></p>
+<p></p>
+<h3 id="printf-positional-arguments" class="tmd-header-3">
+<code class="tmd-code-span">[Sp|Fp|P]rintf</code> functions support positional arguments.
+</h3>
+<p></p>
+<div class="tmd-usual">
+The following program will print <code class="tmd-code-span">coco</code>.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -2229,270 +2247,6 @@ func main() {
 	fmt.Printf("%[2]v%[1]v%[2]v%[1]v", "o", "c")
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
 </div>
-
-
-
-
-</div> <!-- summaries-items -->
-
-<!--
-<a class="anchor" id="remove-spaces-in-template"></a>
-<h3>Since Go 1.6, we can .</h3>
-
-https://golang.org/doc/go1.6 : {{a -}} sss {{- b}}
-
-
-
-The exported fields and methods of embedded non-exported fields
-are still exported for the embedding struct type.
-
-
-json:"name: empty" // doesn't work
-
-syscall package docs show current O arch defaultly
-  https://golang.org/pkg/syscall/?GOOS=linux&GOARCH=mips64le
-
-two unnamed struct types embedding two type aliases which denote the same type are two different types.
-if the two aliases have different names.
-
-non-exported field can't be set by reflection, but can be listed. Can read?
-
-reflection created embedding type will not obtain methods. still?
-
-
-
-https://golang.org/pkg/reflect/#pkg-note-BUG
-
-https://golang.org/pkg/reflect/#Value.String
-Print functions not always print the result of the String() method of a value.
-
-
-
-
-an untyped rune or int constant can be bound with a value which is larger than the max <code>rune</code> or <code>int</code> value in memory.
-
--128/-1 = -128
-
-
-greedy goroutine https://github.com/golang/go/issues/10958
-* It look some goroutines never get yielded, this make some other goroutines never get chances to run, why?
-http://stackoverflow.com/questions/13107958/what-exactly-does-runtime-gosched-do
-tight loops should be preemptible
-https://github.com/golang/go/issues/10958
-(eliminated since Go Toolchain 1.15) https://twitter.com/zigo_101/status/1225258083745558528
-
-internal package
-
-"go doc xyz" may show the docs of the first package named with "xyz"
-https://github.com/golang/go/issues/24462
-For example, "go doc rand" show docs of "math/rand" instead of "crypto/rand".
-
-
-runtime.Caller/ Callers: depth inconsistency
-
-https://github.com/golang/go/issues/13890
-
-https://github.com/golang/go/issues/24693
-
-https://github.com/golang/go/issues/24721
-
-
-
-Try not to use multi-value assignments.
-Reason 1: maybe bug. Reason 3: unspecified behaviors. 2: maybe inefficient.
-https://github.com/golang/go/issues/23188#issuecomment-361482955
-https://github.com/golang/go/issues/23017
-https://github.com/golang/go/issues/22881
-https://github.com/golang/go/issues/24448
-
-https://github.com/golang/go/issues/24746
-
-https://github.com/golang/go/issues/20135
-https://github.com/golang/go/issues/26463 maps do not shrink
-
-Values of <code>expvar.Int</code> and <code>expvar.Float</code> need to be 64-bit aligned.
-
-func main() {
-	var a, b = 1.0, 0.0
-	x, y := a/b, 0.0
-	println(x, y) // +Inf +0.000000e+000
-	println(x * y) // NaN
-}
-
-The String method of a reflect.Value value v returns the string form of the underlying value of v.
-However, the functions in the fmt package try to print the string form of the underlying value of the underlying value of v,
-if the underlying value of v is also a reflect.Value value.
-
-	package main
-
-	import (
-		"fmt"
-		"reflect"
-	)
-
-	func main() {
-		var v reflect.Value
-		fmt.Println(v.IsValid()) // false
-		fmt.Println(v)           // &lt;invalid reflect.Value&gt;
-		fmt.Println(v.String())  // &lt;invalid Value&gt;
-		
-		v = reflect.ValueOf(v)
-		fmt.Println(v.IsValid()) // true
-		fmt.Println(v)           // &lt;invalid Value&gt;
-		fmt.Println(v.String())  // &lt;reflect.Value Value&gt;
-		
-		v = reflect.ValueOf(v)
-		fmt.Println(v.IsValid()) // true
-		fmt.Println(v)           // &lt;reflect.Value Value&gt;
-		fmt.Println(v.String())  // &lt;reflect.Value Value&gt;
-	}
-
-io/ioutil since Go 1.11
-    The TempFile function now supports specifying where the random characters in the filename are placed.
-    If the prefix argument includes a "*", the random string replaces the "*".
-    For example, a prefix argument of "myname.*.bat" will result in a random filename such as "myname.123456.bat".
-    If no "*" is included the old behavior is retained, and the random digits are appended to the end.
-io/ioutil is deprecated since Go 1.16
-
-
-
-go term(inoledgie)s 101
-
-go contests 101 / summaries / snippets
-
-
-
-1.13+: one more DeepEqual exception: https://go-review.googlesource.com/c/go/+/168438/3/src/reflect/deepequal.go
-* (cancelled)
-
-bytes.TrimSpace may return nil even if the input is not: https://github.com/golang/go/issues/31038
-
-
-
-
-method value evaluation timing
-* https://github.com/golang/go/issues/32021
-* https://github.com/golang/go/issues/32035
-
-https://github.com/golang/go/issues/22075
-
-https://github.com/golang/go/issues/18531
-
-https://github.com/golang/go/issues/23224
-
-deferred calls will be called after runtime.Goexit 
-but will not after os.Exit. Note, log.Fatal wraps os.Exit.
-If a program does clean-up work in deferred calls, don't use os.Exit to terminate the program.
-
-package main
-import "C" // program crashes if this line is commented out
-func main() {
-  select{}
-}
-
-https://github.com/golang/go/issues/34684
-
-The print result of nil and blank slices are the same. (Similar to maps).
-* history reason
-
-
-the source part of a type alias declaration can't reference the declared alias.
-
-cgo should not call Go before all init functions exit:
-https://github.com/golang/go/issues/36530#issuecomment-574213023
-
-force gc every 2 minutes: https://github.com/golang/go/blob/895b7c85addfffe19b66d8ca71c31799d6e55990/src/runtime/proc.go#L4481-L448
-
-Go time
-https://github.com/golang/go/issues/27090
-
-Remove element from list
-	for e := l.Front(); e != nil; e = e.Next() {
-		l.Remove(e) // bug
-	}
-	for e := l.Front(); e != nil; {
-		next = e.Next()
-		l.Remove(e)
-		e = next
-	}
-
-reflect: DeepEqual always returns true for unexported C structures in dynamic library
-https://github.com/golang/go/issues/38980
-
-
-https://twitter.com/dgryski/status/1302984936870223874
-An http.ResponseWriter will set the status to "200 Ok" if Write() is called before the status code is set explicitly with WriteHeader().
-If you call WriteHeader afterwards, the new status code is ignored but the server will log to stderr.
-Check your logs!
-
-
-...
-f is much faster than g, for f makes no allocations (optimized by Go Toolchain).
-	func f(x, y, z []byte){
-	  switch {
-	  case string(x) == string(y):
-	  case string(x) == string(z):
-	  }
-	}
-	func g(x, y, z []byte){
-	  switch string(x) {
-	  case string(y):
-	  case string(z):
-	  }
-	}
-
-func foo(buf []byte) {
-	f := func() {
-		type buf struct{} // mute buf in this block to avoid misusing it.
-		data := make([]byte, 100)
-		...
-	}
-}
-
-
-"// +build go1.16" specify the minimum Go Toolchain version needed to compile a source file.
-"go 1.N" directive in a "go.mod" file specifies the features the containing module could use (https://golang.org/ref/mod#go-mod-file-go). It likes the "-lang=go1.N" compilation option. So
-  it doesn't specify the minimum Go Toolchain version to compile the module. Higher or lower Toolchain versions may be used if the desired features are supported these Toolchain versions.
-  it doesn't cover other modules in a program. https://play.golang.org/p/hMNDpRPh7Em
-
-
-https://github.com/golang/go/issues/44391
-https://github.com/golang/go/issues/14830
-	key := []byte{}
-	fmt.Printf("%#[1]v %[1]T\n", key)  // []byte{} []uint8
-	fmt.Printf("%#[1]v %[1]T\n", &key) // &[]uint8{} *[]uint8
-
-
-https://groups.google.com/g/golang-nuts/c/90fYaXNRmVM
-https://groups.google.com/g/golang-nuts/c/90fYaXNRmVM/m/ZfKRE1vwFQAJ
-
-https://github.com/golang/go/issues/44830
-reflect: TypeOf(unsafe.Pointer(nil)).PkgPath() returns "", not "unsafe"
-
-https://github.com/golang/go/issues/46789
-runtime.NumCgoCall() decrease when some goroutines exit? bug or should?
-
-https://github.com/golang/go/issues/46827#issuecomment-864694337
-tiny object might implicitly share memory blocks with others.
-https://go-review.googlesource.com/c/go/+/337391/5/src/runtime/mfinal.go
-
-Max embed size is 2G: https://github.com/golang/go/issues/47627
-
-Missing go directive in go.mod: language version is defaulted to 1.16:
-https://groups.google.com/g/golang-nuts/c/lhedc8YaWlM
-https://github.com/golang/go/issues/44976
-
-
--->
-
-
-
-
-
-
-
-
+<p></p>

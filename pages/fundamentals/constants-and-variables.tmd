@@ -1,0 +1,998 @@
+### Constants and Variables
+
+This article will introduce constant and variable declarations in Go.
+The concept of untyped values and explicit conversions will also be introduced.
+
+The literals introduced in __the last article__
+are all called unnamed constants (or literal constants),
+except `false` and `true`,
+which are two predeclared (built-in) named constants.
+Custom named constant declarations will be introduced below in this article.
+
+// __ the last article :: basic-types-and-value-literals.html
+
+@@@ #untyped-value
+###+++++++++++ Untyped Values and Typed Values
+
+In Go, some values are untyped.
+An untyped value means the type of the value has not been confirmed yet.
+On the contrary, the type of a typed value is determined.
+
+For most untyped values, each of them has one default type.
+The predeclared `nil` is the only untyped value
+which has no default type.
+We will learn more about `nil` in other Go 101 articles later.
+
+All literal constants (unnamed constants) are untyped values. In fact, in Go,
+most untyped values are literal constants and named constants (which will be introduced
+below in the current article). The other untyped values include the just mentioned
+`nil` and some boolean results returned by some operations
+which will be introduced in other articles later.
+
+The default type of a literal constant is determined by its literal form.
+*
+	The default type of a string literal is `string`.
+*
+	The default type of a boolean literal is `bool`.
+*
+	The default type of an integer literal is `int`.
+*
+	The default type of a rune literal is `rune` (a.k.a., `int32`).
+*
+	The default type of a floating-point literal is `float64`.
+*
+	If a literal contains an imaginary part,
+	then its default type is `complex128`.
+
+@@@ #explicit-conversion
+###+++++++++++ Explicit Conversions of Untyped Constants
+
+Like many other languages, Go also supports value conversions.
+We can use the form `T(v)` to convert a value `v`
+to the type denoted by `T`
+(or simply speaking, type `T`).
+If the conversion `T(v)` is legal,
+Go compilers view `T(v)` as a typed value of type `T`.
+Surely, for a certain type `T`,
+to make the conversion `T(v)` legal,
+the value `v` can't be arbitrary.
+
+The following mentioned rules apply for both the literal constants introduced in
+the last article and the untyped named constants which will be introduced soon.
+
+For an untyped constant value `v`,
+there are two scenarios where `T(v)` is legal.
+*.
+	`v` (or the literal denoted by `v`) is
+	__representable__
+	as a value of a basic type `T`.
+	The result value is a typed constant of type `T`.
+*.
+	The default type of `v` is an integer type (`int`
+	or `rune`) and `T` is a string type.
+	The result of `T(v)` is a string of type `T`
+	and contains the UTF-8 representation of the integer as a Unicode code point.
+	Integer values outside the range of valid Unicode code points
+	result strings represented by `"\uFFFD"`
+	(a.k.a., `"\xef\xbf\xbd"`).
+	`0xFFFD` is the code point for the Unicode replacement character.
+	The result string of a conversion from an integer always contains one and only one rune.
+	(Note, later Go version might __only allow converting rune or byte integers to strings__.
+	Since Go Toolchain 1.15, the `go vet` command warns on conversions from non-rune and non-byte integers to strings.)
+
+// __ representable :: basic-types-and-value-literals.html#representability
+// __ ... to strings :: https://github.com/golang/go/issues/3939
+
+!
+	In fact, the second scenario doesn't require `v` to be a constant.
+	If `v` is a constant, then the result of the conversion is also a constant;
+	otherwise, the result is not a constant.
+
+For example, the following conversions are all legal.
+@@@ .disable-line-numbers111
+'''go
+// Rounding happens in the following 3 lines.
+complex128(1 + -1e-1000i)  // 1.0+0.0i
+float32(0.49999999)        // 0.5
+float32(17000000000000000)
+// No rounding in the these lines.
+float32(123)
+uint(1.0)
+int8(-123)
+int16(6+0i)
+complex128(789)
+
+string(65)          // "A"
+string('A')         // "A"
+string('\u68ee')    // "森"
+string(-1)          // "\uFFFD"
+string(0xFFFD)      // "\uFFFD"
+string(0x2FFFFFFFF) // "\uFFFD"
+'''
+
+And the following conversions are all illegal.
+@@@ .disable-line-numbers111
+'''go
+// 1.23 is not representable as a value of int.
+int(1.23)
+// -1 is not representable as a value of uint8.
+uint8(-1)
+// 1+2i is not representable as a value of float64.
+float64(1+2i)
+
+// Constant -1e+1000 overflows float64.
+float64(-1e1000)
+// Constant 0x10000000000000000 overflows int.
+int(0x10000000000000000)
+
+// The default type of 65.0 is float64,
+// which is not an integer type.
+string(65.0)
+// The default type of 66+0i is complex128,
+// which is not an integer type.
+string(66+0i)
+'''
+
+!
+	From the above examples, we know that an untyped constant,
+	(for example `-1e1000` and `0x10000000000000000`),
+	may even not be able to represent as a value of its default type.
+
+Please note,
+sometimes, the form of explicit conversions must
+be written as `(T)(v)` to avoid ambiguities.
+Such situations often happen in case of `T` is not an identifier.
+
+We will learn more explicit conversion rules later in other Go 101 articles.
+
+@@@ #type-deduce
+###+++++++++++ Introduction of Type Deductions in Go
+
+Go supports type deduction. In other words, in many circumstances, programmers
+don't need to explicitly specify the types of some values in code.
+Go compilers will deduce the types for these values by context.
+
+Type deduction is also often called type inference.
+
+In Go code, if a place needs a value of a certain type and an untyped value
+(often a constant) is representable as a value of the certain type,
+then the untyped value can be used in the place.
+Go compilers will view the untyped value as a typed value of the certain type.
+Such places include an operand in an operator operation, an argument in
+a function call, a destination value or a source value in an assignment, etc.
+
+Some circumstances have no requirements on the types of the used values.
+If an untyped value is used in such a circumstance, Go compilers will
+treat the untyped value as a typed value of its default type.
+
+The two type deduction cases can be viewed as implicit conversions.
+
+The below constant and variable declaration sections will show some type deduction cases.
+More type deduction rules and cases will be introduced in other articles.
+
+@@@ #constant
+###+++++++++++ Constant Declarations
+
+Unnamed constants are all boolean, numeric and string values.
+Like unnamed constants, named constants can also be only
+boolean, numeric and string values.
+The keyword `const` is used to declare named constants.
+The following program contains some constant declarations.
+
+@@@ .line-numbers;must-line-numbers
+'''go
+package main
+
+// Declare two individual constants. Yes,
+// non-ASCII letters can be used in identifiers.
+const π = 3.1416
+const Pi = π // <=> const Pi = 3.1416
+
+// Declare multiple constants in a group.
+const (
+	No         = !Yes
+	Yes        = true
+	MaxDegrees = 360
+	Unit       = "radian"
+)
+
+func main() {
+	// Declare multiple constants in one line.
+	const TwoPi, HalfPi, Unit2 = π * 2, π * 0.5, "degree"
+}
+'''
+
+Go specification calls each of the lines containing a `=` symbol in
+the above constant declaration group as a **%% constant specification %%**.
+
+In the above example,
+the `*` symbol is the multiplication operator
+and the `!` symbol is the boolean-not operator.
+Operators will be introduced in the next article,
+__common operators__.
+
+// __ common operators :: operators.html
+
+The `=` symbol means "bind" instead of "assign".
+We should interpret each constant specification
+as a declared identifier is bound to a corresponding basic value literal.
+Please read the last section in the current article for more explanations.
+
+In the above example, the name constants `π` and `Pi`
+are both bound to the literal `3.1416`.
+The two named constants may be used at many places in code.
+Without constant declarations, the literal `3.1416` would be
+populated at those places. If we want to change the literal
+to `3.14` later, many places need to be modified.
+With the help of constant declarations, the literal `3.1416`
+will only appear in one constant declaration,
+so only one place needs to be modified.
+This is the main purpose of constant declarations.
+
+Later, we use the terminology **%% non-constant %%** values
+to denote the values who are not constants.
+The to be introduced variables below,
+all belong to one kind of non-constant values.
+
+Please note that, constants can be declared both
+at package level (out of any function body) and in function bodies.
+The constants declared in function bodies are called local constants.
+The constants declared out of any function body
+are called package-level constants.
+We also often call package-level constants as global constants.
+
+The declaration orders of two package-level constants are not important.
+In the above example, the declaration orders of
+`No` and `Yes` can be exchanged.
+
+All constants declared in the last example are untyped.
+The default type of a named untyped constant is
+the same as the literal bound to it.
+
+###----------- Typed named constants
+
+We can declare typed constants, typed constants are all named.
+In the following example, all the four declared constants are typed values.
+The types of `X` and `Y` are both `float32`
+and the types of `A` and `B` are both `int64`.
+
+@@@ .line-numbers
+'''go
+const X float32 = 3.14
+
+const (
+	A, B int64   = -3, 5
+	Y    float32 = 2.718
+)
+'''
+
+If multiple typed constants are declared in the same constant specification,
+then their types must be the same, just as the constants
+`A` and `B` in the above example.
+
+We can also use explicit conversions to provide enough information
+for Go compilers to deduce the types of typed named constants.
+The above code snippet is equivalent to the following one,
+in which `X`, `Y`, `A` and `B`
+are all typed constants.
+
+@@@ .line-numbers
+'''go
+const X = float32(3.14)
+
+const (
+	A, B = int64(-3), int64(5)
+	Y    = float32(2.718)
+)
+'''
+
+If a basic value literal is bound to a typed constant, the basic value
+literal must be representable as a value of the type of the constant.
+The following typed constant declarations are invalid.
+
+@@@ .line-numbers
+'''go
+// error: 256 overflows uint8
+const a uint8 = 256
+// error: 256 overflows uint8
+const b = uint8(255) + uint8(1)
+// error: 128 overflows int8
+const c = int8(-128) / int8(-1)
+// error: -1 overflows uint
+const MaxUint_a = uint(^0)
+// error: -1 overflows uint
+const MaxUint_b uint = ^0
+'''
+
+In the above and following examples `^` is bitwise-not operator.
+
+The following typed constant declaration is valid on 64-bit OSes,
+but invalid on 32-bit OSes.
+For each `uint` value has only 32 bits on 32-bit OSes.
+`(1 << 64) - 1` is not representable as 32-bit values.
+(Here, `<<` is bitwise-left-shift operator.)
+
+@@@ .line-numbers
+'''go
+const MaxUint uint = (1 << 64) - 1
+'''
+
+Then how to declare a typed `uint` constant and bind
+the largest `uint` value to it? Use the following way instead.
+
+@@@ .line-numbers
+'''go
+const MaxUint = ^uint(0)
+'''
+
+Similarly, we can declare a typed `int` constant
+and bind the largest `int` value to it.
+(Here, `>>` is bitwise-right-shift operator.)
+
+@@@ .line-numbers
+'''go
+const MaxInt = int(^uint(0) >> 1)
+'''
+
+A similar method can be used to get the number of bits of a native word,
+and check the current OS is 32-bit or 64-bit.
+
+@@@ .line-numbers
+'''go
+// NativeWordBits is 64 or 32.
+const NativeWordBits = 32 << (^uint(0) >> 63)
+const Is64bitOS = ^uint(0) >> 63 != 0
+const Is32bitOS = ^uint(0) >> 32 == 0
+'''
+
+Here, `!=` and `==` are not-equal-to and equal-to operators.
+
+###----------- Autocomplete in constant declarations
+
+In a group-style constant declaration, except the first constant specification,
+other constant specifications can be incomplete.
+An incomplete constant specification only contains an identifier list.
+Compilers will autocomplete the incomplete lines for us by
+copying the missing part from the first preceding complete constant specification.
+For example, at compile time, compilers will automatically
+complete the following code
+
+@@@ .line-numbers
+'''go
+const (
+	X float32 = 3.14
+	Y           // here must be one identifier
+	Z           // here must be one identifier
+
+	A, B = "Go", "language"
+	C, _
+	// In the above line, the blank identifier
+	// is required to be present.
+)
+'''
+
+as
+
+@@@ .line-numbers
+'''go
+const (
+	X float32 = 3.14
+	Y float32 = 3.14
+	Z float32 = 3.14
+
+	A, B = "Go", "language"
+	C, _ = "Go", "language"
+)
+'''
+
+###----------- `iota` in constant declarations
+
+The autocomplete feature plus the `iota` constant generator
+feature brings much convenience to Go programming.
+`iota` is a predeclared constant
+which can only be used in other constant declarations.
+It is declared as
+
+@@@ .line-numbers
+'''go
+const iota = 0
+'''
+
+But the value of an `iota` in code may be not always `0`.
+When the predeclared `iota` constant is used in
+a custom constant declaration, at compile time,
+within the custom constant declaration,
+its value will be reset to `0` at the first constant specification of each group of constants
+and will increase `1` constant specification by constant specification.
+In other words, in the **%% n %%**th constant specification
+of a constant declaration, the value of `iota` is **%% n %%** (starting from zero).
+So `iota` is only useful in group-style constant declarations.
+
+Here is an example using both the autocomplete
+and the `iota` constant generator features.
+Please read the comments to get what will happen at compile time.
+The `+` symbol in this example is the addition operator.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	const (
+		k = 3 // now, iota == 0
+
+		m float32 = iota + .5 // m float32 = 1 + .5
+		n                     // n float32 = 2 + .5
+
+		p = 9             // now, iota == 3
+		q = iota * 2      // q = 4 * 2
+		_                 // _ = 5 * 2
+		r                 // r = 6 * 2
+		s, t = iota, iota // s, t = 7, 7
+		u, v              // u, v = 8, 8
+		_, w              // _, w = 9, 9
+	)
+
+	const x = iota // x = 0
+	const (
+		y = iota // y = 0
+		z        // z = 1
+	)
+
+	println(m)             // +1.500000e+000
+	println(n)             // +2.500000e+000
+	println(q, r)          // 8 12
+	println(s, t, u, v, w) // 7 7 8 8 9
+	println(x, y, z)       // 0 0 1
+}
+'''
+
+The above example is just to demo the rules of
+the `iota` constant generator feature.
+Surely, in practice, we should use it in more meaningful ways.
+For example,
+
+@@@ .line-numbers
+'''go
+const (
+	Failed = iota - 1 // == -1
+	Unknown           // == 0
+	Succeeded         // == 1
+)
+
+const (
+	Readable = 1 << iota // == 1
+	Writable             // == 2
+	Executable           // == 4
+)
+'''
+
+Here, the `-` symbol is the subtraction operator,
+and the `<<` symbol is the left-shift operator.
+Both of these operators will be introduced in the next article.
+
+@@@ #variable
+###+++++++++++ Variables, Variable Declarations and Value Assignments
+
+Variables are named values.
+Variables are stored in memory at run time.
+The value represented by a variable can be modified at run time.
+
+All variables are typed values.
+When declaring a variable, there must be sufficient information provided
+for compilers to deduce the type of the variable.
+
+The variables declared within function bodies are called local variables.
+The variables declared out of any function body
+are called package-level variables.
+We also often call package-level variables as global variables.
+
+There are two basic variable declaration forms,
+the standard one and the short one.
+The short form can only be used to declare local variables.
+
+###----------- Standard variable declaration forms
+
+Each standard declaration starts with the `var` keyword,
+which is followed by the declared variable name.
+Variable names must be __identifiers__.
+
+// __ identifiers :: keywords-and-identifiers.html#identifier
+
+The following are some full standard declaration forms.
+In these declarations,
+the types and initial values of the declared variables are all specified.
+@@@ .line-numbers;must-line-numbers
+'''go
+var lang, website string = "Go", "https://golang.org"
+var compiled, dynamic bool = true, false
+var announceYear int = 2009
+'''
+
+As we have found, multiple variables can be declared together
+in one variable declaration.
+Please note, there can be just one type specified in a variable declaration.
+So the types of the multiple variables declared in the same declaration line must be identical.
+
+Full standard variable declaration forms are seldom used in practice, since they are verbose.
+In practice, the two standard variable declaration variant forms introduced
+below are used more often.
+In the two variants, either the types or the initial values of
+the declared variables are absent.
+
+The following are some standard variable declarations without specifying variable types.
+Compilers will deduce the types of the declared variables as the types
+(or default types) of their respective initial values.
+The following declarations are equivalent to the above ones in fact.
+Please note, in the following declarations, the types of the multiple variables
+declared in the same declaration line can be different.
+
+@@@ .line-numbers
+'''go
+// The types of the lang and dynamic variables
+// will be deduced as built-in types "string"
+// and "bool" by compilers, respectively.
+var lang, dynamic = "Go", false
+
+// The types of the compiled and announceYear
+// variables will be deduced as built-in
+// types "bool" and "int", respectively.
+var compiled, announceYear = true, 2009
+
+// The types of the website variable will be
+// deduced as the built-in type "string".
+var website = "https://golang.org"
+'''
+
+The type deductions in the above example can be viewed as implicit conversions.
+
+The following are some standard declarations without specifying variable initial values.
+In these declarations, all declared variables are initialized
+as the zero values of their respective types.
+
+@@@ .line-numbers
+'''go
+// Both are initialized as blank strings.
+var lang, website string
+// Both are initialized as false.
+var interpreted, dynamic bool
+// n is initialized as 0.
+var n int
+'''
+
+Multiple variables can be grouped into one standard form declaration
+by using `()`. For example:
+
+@@@ .line-numbers
+'''go
+var (
+	lang, bornYear, compiled     = "Go", 2007, true
+	announceAt, releaseAt    int = 2009, 2012
+	createdBy, website       string
+)
+'''
+
+The above example is formatted by using the `go fmt` command
+provided in Go Toolchain.
+In the above example, each of the three lines are enclosed in `()`
+this is known as variable specification.
+
+Generally, declaring related variables together will
+make code more readable.
+
+@@@ #assignment
+###----------- Pure value assignments
+
+In the above variable declarations, the sign `=` means assignment.
+Once a variable is declared, we can modify its value by using pure value assignments.
+Like variable declarations, multiple values can be assigned in a pure assignment.
+
+The expression items at the left of `=` symbol in a pure assignment
+are called destination or target values.
+They must be addressable values, map index expressions, or the blank identifier.
+Value addresses and maps will be introduced in later articles.
+
+Constants are immutable, so a constant can't show up at the left side of a pure assignment
+as a destination value, it can only appear at the right side as a source value.
+Variables can be used as both source values and destination values,
+so they can appear at both sides of pure value assignments.
+
+Blank identifiers can also appear at the left side of pure value assignments as
+destination values, in which case, it means we ignore the destination values.
+Blank identifiers can't be used as source values in assignments.
+
+Example:
+@@@ .line-numbers
+'''go
+const N = 123
+var x int
+var y, z float32
+
+N = 9 // error: constant N is not modifiable
+y = N // ok: N is deduced as a float32 value
+x = y // error: type mismatch
+x = N // ok: N is deduced as an int value
+y = x // error: type mismatch
+z = y // ok
+_ = y // ok
+
+x, y = y, x // error: type mismatch
+x, y = int(y), float32(x) // ok
+z, y = y, z               // ok
+_, y = y, z               // ok
+z, _ = y, z               // ok
+_, _ = y, z               // ok
+x, y = 69, 1.23           // ok
+'''
+
+The code at last line in the above example uses explicit conversions to
+make the corresponding destination and source values matched.
+The explicit conversion rules for non-constant numeric values
+are introduced below.
+Go doesn't support assignment chain. For example, the following code is illegal.
+@@@ .line-numbers
+'''go
+var a, b int
+a = b = 123 // syntax error
+'''
+
+###----------- Short variable declaration forms
+
+We can also use short variable declaration forms to declare variables.
+Short variable declarations can only be used to declare local variables.
+Let's view an example which uses some short variable declarations.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	// Both lang and year are newly declared.
+	lang, year := "Go language", 2007
+
+	// Only createdBy is a new declared variable.
+	// The year variable has already been
+	// declared before, so here its value is just
+	// modified, or we can say it is redeclared.
+	year, createdBy := 2009, "Google Research"
+
+	// This is a pure assignment.
+	lang, year = "Go", 2012
+
+	print(lang, " is created by ", createdBy)
+	println(", and released at year", year)
+}
+'''
+Each short variable declaration must declare at least one new variable.
+
+There are several differences between short and standard variable declarations.
+*.
+	In the short declaration form, the `var` keyword and
+	variable types must be omitted.
+*.
+	The assignment sign must be `:=` instead of `=`.
+*.
+	In the short variable declaration, old variables and new
+	variables can mix at the left of `:=`. But there must be
+	at least one new variable at the left.
+
+!
+	Please note, comparing to pure assignments, there is a limit for short variable declarations.
+	**In a short variable declaration, all items at the left of the
+	`:=` sign must pure identifiers.**
+	This means some other items which can be assigned to,
+	which will be introduced in other articles,
+	can't appear at the left of `:=`.
+	These items include qualified identifiers, container elements,
+	pointer dereferences and struct field selectors.
+	Pure assignments have no such limit.
+
+###----------- About the terminology "assignment"
+
+Later, when the word "assignment" is mentioned,
+it may mean a pure assignment, a short variable declaration,
+or a variable specification with initial values in a standard variable declaration.
+In fact, a more general definition also includes
+__function argument passing__ introduced in a follow-up article.
+
+// __ function argument passing :: function-declarations-and-calls.html#call
+
+We say **%% `x` is assignable to `y` %%**
+if `y = x` is a legal statement (compiles okay).
+Assume the type of `y` is `Ty`,
+sometimes, for description convenience, we can also say
+**%% `x` is assignable to type `Ty` %%**.
+
+Generally, if `x` is assignable to `y`,
+then `y` should be mutable, and the types of `x` and
+`y` are identical or `x` can be implicitly converted to
+the type of `y`.
+Surely, `y` can also be the blank identifier `_`.
+
+###----------- Each local declared variable must be used at least once effectively
+
+Please note, the standard Go compiler and gccgo both don't allow local variables declared but not used.
+Package-level variables have no such limit.
+
+If a local variable is only ever used as destination values,
+it will also be viewed as unused.
+For example, in the following program, `r` is only used as destination.
+
+@@@ .line-numbers
+'''go
+package main
+
+// Some package-level variables.
+var x, y, z = 123, true, "foo"
+
+func main() {
+	var q, r = 789, false
+	r, s := true, "bar"
+	r = y // r is unused.
+	x = q // q is used.
+}
+'''
+Compiling the above program will result to the following compilation errors
+(assume the source file is name `example-unused.go`):
+
+@@@ .output
+'''
+./example-unused.go:6:6: r declared and not used
+./example-unused.go:7:16: s declared and not used
+'''
+
+The fix is easy, we can assign `r` and `s`
+to blank identifiers to avoid compilation errors.
+
+@@@ .line-numbers
+'''go
+package main
+
+var x, y, z = 123, true, "foo"
+
+func main() {
+	var q, r = 789, false
+	r, s := true, "bar"
+	r = y
+	x = q
+
+	_, _ = r, s // make r and s used.
+}
+'''
+
+Generally, the above fix is not recommended to be used in production code.
+It should be used in development/debug phase only.
+It is not a good habit to leave unused local variables in code,
+for unused local variables have negative effects on both code readability and program execution performance.
+
+###----------- Dependency relations of package-Level variables affect their initialization order
+
+For the following example,
+
+@@@ .line-numbers
+'''go
+var x, y = a+1, 5         // 8 5
+var a, b, c = b+1, c+1, y // 7 6 5
+'''
+
+the initialization order of the package-level variables are `y = 5`,
+`c = y`, `b = c+1`, `a = b+1`,
+and `x = a+1`.
+
+Here, the `+` symbol is the addition operator,
+which will be introduced in the next article.
+
+Package-level variables can't be depended circularly in their declaration.
+The following code fails to compile.
+
+@@@ .line-numbers
+'''go
+var x, y = y, x
+'''
+
+###+++++++++++ Value Addressability
+
+In Go, some values are addressable (there is an address to find them).
+All variables are addressable and all constants are unaddressable.
+We can learn more about addresses and pointers from the article __pointers in Go__
+and learn other addressable and unaddressable values from other articles later.
+
+// __ pointers in Go :: pointer.html
+
+###+++++++++++ Explicit Conversions on Non-Constant Numeric Values
+
+In Go, two typed values of two different basic types can't be assigned to each other.
+In other words, the types of the destination and source values in an
+assignment must be identical if the two values are both basic values.
+If the type of the source basic value is not same as the type of
+the destination basic value, then the source value must be explicitly
+converted to the type of the destination value.
+
+As mentioned above, non-constant integer values can be converted to strings.
+Here we introduce two more legal non-constant numeric values
+related conversion cases.
+
+*
+	Non-constant floating-point and integer values can be explicitly
+	converted to any other floating-point and integer types.
+*
+	Non-constant complex values can be explicitly
+	converted to any other complex types.
+
+Unlike constant number conversions, overflows are allowed in non-constant number conversions.
+And when converting a non-constant floating-point value to an integer, rounding is also allowed.
+If a non-constant floating-point value doesn't overflow an integer type,
+the fraction part of the floating-point value will be discarded
+(towards zero) when it is converted to the integer type.
+
+In all non-constant conversions involving floating-point or complex values,
+if the result type cannot represent the value,
+then the conversion succeeds but the result value is implementation-dependent.
+
+In the following example, the intended implicit conversions
+at line %% 7 %% and line %% 18 %% both don't work.
+The explicit conversions at line %% 5 %% and line %% 16 %% are also disallowed.
+
+@@@ .line-numbers;must-line-numbers
+'''go
+const a = -1.23
+// The type of b is deduced as float64.
+var b = a
+// error: constant 1.23 truncated to integer.
+var x = int32(a)
+// error: cannot assign float64 to int32.
+var y int32 = b
+// okay: z == -1, and the type of z is int32.
+//       The fraction part of b is discarded.
+var z = int32(b)
+
+const k int16 = 255
+// The type of n is deduced as int16.
+var n = k
+// error: constant 256 overflows uint8.
+var f = uint8(k + 1)
+// error: cannot assign int16 to uint8.
+var g uint8 = n + 1
+// okay: h == 0, and the type of h is uint8.
+//       n+1 overflows uint8 and is truncated.
+var h = uint8(n + 1)
+
+'''
+
+We can think that value `a` at line %% 3 %% is implicitly
+converted to its default type (`float64`), so that the type
+of `b` is deducted as `float64`.
+More implicit conversion rules will be introduced in other articles later.
+
+###+++++++++++ Scopes of Variables and Named Constants
+
+In Go, we can use a pair of `{` and `}` to form a code block.
+A code block can nest other code blocks.
+A variable or a named constant declared in an inner code block will shadow
+the variables and constants declared with the same name in outer code blocks.
+For examples, the following program declares three distinct variables,
+all of them are called `x`.
+An inner `x` shadows an outer one.
+
+@@@ .line-numbers
+'''go
+package main
+
+const y = 789
+var x int = 123
+
+func main() {
+	// The x variable shadows the above declared
+	// package-level variable x.
+	var x = true
+
+	// A nested code block.
+	{
+		// Here, the left x and y are both
+		// new declared variable. The right
+		// ones are declared in outer blocks.
+		x, y := x, y
+
+		// In this code block, the just new
+		// declared x and y shadow the outer
+		// declared same-name identifiers.
+		x, z := !x, y/10 // only z is new declared
+		y /= 100
+		println(x, y, z) // false 7 78
+	}
+	println(x) // true
+	println(z) // error: z is undefined.
+}
+'''
+
+The scope (visibility range in code) of a package-level variable
+(or a named constant) is the whole package of the variable
+(or the named constant) is declared in.
+The scope of a local variable (or a named constant) begins at the end of
+its declaration and ends at the end of its innermost containing code block.
+This is why the last line in the `main` function
+of the above example doesn't compile.
+
+Code blocks and identifier scopes will be explained in detail in
+__blocks and scopes__ later.
+
+// __ blocks and scopes :: blocks-and-scopes.html
+
+###+++++++++++ More About Constant Declarations
+
+###----------- The value denoted by an untyped constant can overflow its default type
+
+For example, the following code compiles okay.
+
+@@@ .line-numbers
+'''go
+// 3 untyped named constants. Their bound
+// values all overflow their respective
+// default types. This is allowed.
+const n = 1 << 64          // overflows int
+const r = 'a' + 0x7FFFFFFF // overflows rune
+const x = 2e+308           // overflows float64
+
+func main() {
+	_ = n >> 2
+	_ = r - 0x7FFFFFFF
+	_ = x / 2
+}
+'''
+
+But the following code does't compile, for the constants are all typed.
+
+@@@ .line-numbers
+'''go
+// 3 typed named constants. Their bound
+// values are not allowed to overflow their
+// respective default types. The 3 lines
+// all fail to compile.
+const n int = 1 << 64           // overflows int
+const r rune = 'a' + 0x7FFFFFFF // overflows rune
+const x float64 = 2e+308        // overflows float64
+'''
+
+###----------- Each named constant identifier will be replaced with its bound literal value at compile time
+
+Constant declarations can be viewed as enhanced `#define` macros in C.
+A constant declaration defines a named constant which represents a literal.
+All the occurrences of a named constant will be replaced with the literal
+it represents at compile time.
+
+If the two operands of an operator operation are both constants,
+then the operation will be evaluated at compile time.
+Please read the next article __common operators__ for details.
+
+// __ common operators :: operators.html
+
+For example, at compile time, the following code
+
+@@@ .line-numbers
+'''go
+package main
+
+const X = 3
+const Y = X + X
+var a = X
+
+func main() {
+	b := Y
+	println(a, b, X, Y)
+}
+'''
+
+will be viewed as
+
+@@@ .line-numbers
+'''go
+package main
+
+var a = 3
+
+func main() {
+	b := 6
+	println(a, b, 3, 6)
+}
+'''
+

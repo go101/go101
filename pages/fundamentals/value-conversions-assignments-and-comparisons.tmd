@@ -1,0 +1,595 @@
+### Value Conversion, Assignment and Comparison Rules in Go
+
+This article will list all the value comparison, conversion and comparison rules in Go.
+Please note that type parameter types (used frequently in custom generics) are deliberately ignored
+in the descriptions of conversion, assignability and comparison rules.
+In other words, this book doesn't consider the situations in which
+__custom generics__ are involved.
+
+// __ custom generics :: https://go101.org/generics/101.html
+
+@@@ #conversion
+###+++++++++++ Value Conversion Rules
+
+{//
+Note, the definition of conversion in Go 101 is not exactly the same as Go specification.
+The conversion in Go spec means explicit conversion.
+The conversions in Go 101 include both explicit and implicit conversions.
+}
+
+In Go, if a value `v` can be explicitly converted to type `T`,
+the conversion can be represented as the form `(T)(v)`.
+For most cases, in particular `T` is a type name (an identifier),
+the form can be simplified to `T(v)`.
+
+One fact we should know is,
+when it says a value `x` can be implicitly converted to a type `T`,
+then it means `x` can also be explicitly converted to type `T`.
+
+###----------- 1. the apparent conversion rule
+
+@@@ .well
+If two types denote the identical type,
+then their values can be **implicitly** converted to either type of the two.
+
+For example,
+*
+	values of type `byte` and `uint8` can be converted to each other.
+*
+	values of type `rune` and `int32` can be converted to each other.
+*
+	values of type `[]byte` and `[]uint8` can be converted to each other.
+
+
+Nothing more to explain about this rule, whether you think this case involves conversions or not.
+
+@@@ #conversion-rule-underlying-types
+###----------- 2. underlying type related conversion rules
+
+@@@ .well
+{
+Given a non-interface value `x` and a non-interface type `T`, assume the type of `x` is `Tx`,
+*
+	if `Tx` and `T` share the same __underlying type__ (ignoring struct tags),
+	then `x` can be explicitly converted to `T`.
+*
+	if either `Tx` or `T` is a __unnamed type__
+	and their underlying types are identical (considering struct tags),
+	then `x` can be **implicitly** converted to `T`.
+*
+	if `Tx` and `T` have different underlying types,
+	but both `Tx` and `T` are unnamed pointer types
+	and their base types share the same underlying type (ignoring struct tags),
+	then `x` can be explicitly converted to `T`.
+}
+
+// __ underlying type :: type-system-overview.html#underlying-type
+// __ unnamed type :: type-system-overview.html#named-type
+
+%% (Note, the two **ignoring struct tags** occurrences have taken effect since Go 1.8.)
+
+
+An example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	// []int, IntSlice and MySlice share
+	// the same underlying type: []int
+	type IntSlice []int
+	type MySlice  []int
+	type Foo = struct{n int `foo`}
+	type Bar = struct{n int `bar`}
+
+	var s  = []int{}
+	var is = IntSlice{}
+	var ms = MySlice{}
+	var x map[Bar]Foo
+	var y map[Foo]Bar
+
+	// The two implicit conversions both doesn't work.
+	/*
+	is = ms // error
+	ms = is // error
+	*/
+
+	// Must use explicit conversions here.
+	is = IntSlice(ms)
+	ms = MySlice(is)
+	x = map[Bar]Foo(y)
+	y = map[Foo]Bar(x)
+
+	// Implicit conversions are okay here.
+	s = is
+	is = s
+	s = ms
+	ms = s
+}
+'''
+
+
+Pointer related conversion example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	type MyInt int
+	type IntPtr *int
+	type MyIntPtr *MyInt
+
+	var pi = new(int)  // the type of pi is *int
+	// ip and pi have the same underlying type,
+	// and the type of pi is unnamed, so
+	// the implicit conversion works.
+	var ip IntPtr = pi
+
+	// var _ *MyInt = pi // can't convert implicitly
+	var _ = (*MyInt)(pi) // ok, must explicitly
+
+	// Values of *int can't be converted to MyIntPtr
+	// directly, but can indirectly.
+	/*
+	var _ MyIntPtr = pi  // can't convert implicitly
+	var _ = MyIntPtr(pi) // can't convert explicitly
+	*/
+	var _ MyIntPtr = (*MyInt)(pi)  // ok
+	var _ = MyIntPtr((*MyInt)(pi)) // ok
+
+	// Values of IntPtr can't be converted to
+	// MyIntPtr directly, but can indirectly.
+	/*
+	var _ MyIntPtr = ip  // can't convert implicitly
+	var _ = MyIntPtr(ip) // can't convert explicitly
+	*/
+	var _ MyIntPtr = (*MyInt)((*int)(ip))  // ok
+	var _ = MyIntPtr((*MyInt)((*int)(ip))) // ok
+}
+'''
+
+###----------- 3. channel specific conversion rule
+
+@@@ .well
+Given a channel value `x`, assume its type `Tx` is a
+bidirectional channel type, `T` is also a channel type (bidirectional or not).
+If `Tx` and `T` have the identical element type,
+and either `Tx` or `T` is an unnamed type,
+then `x` can be **implicitly** converted to `T`.
+
+{//
+a potential bug: https://github.com/golang/go/issues/29469
+}
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	type C chan string
+	type C1 chan<- string
+	type C2 <-chan string
+
+	var ca C
+	var cb chan string
+
+	cb = ca // ok, same underlying type
+	ca = cb // ok, same underlying type
+
+	// The 4 lines compile okay for this 3rd rule.
+	var _, _ chan<- string = ca, cb // ok
+	var _, _ <-chan string = ca, cb // ok
+	var _ C1 = cb                   // ok
+	var _ C2 = cb                   // ok
+
+	// Values of C can't be converted
+	// to C1 and C2 directly.
+	/*
+	var _ = C1(ca) // compile error
+	var _ = C2(ca) // compile error
+	*/
+
+	// Values of C can be converted
+	// to C1 and C2 indirectly.
+	var _ = C1((chan<- string)(ca)) // ok
+	var _ = C2((<-chan string)(ca)) // ok
+	var _ C1 = (chan<- string)(ca)  // ok
+	var _ C2 = (<-chan string)(ca)  // ok
+}
+'''
+
+@@@ #conversion-rule-implementation
+###----------- 4. interface implementation related conversion rules
+
+@@@ .well
+{
+Given a value `x` and an interface type `I`,
+if the type (or the default type) of `x` is `Tx`
+and `Tx` implements `I`,
+then `x` can be **implicitly** converted to type `I`.
+The conversion result is an interface value (of type `I`),
+which boxes
+* a copy of `x`, if `Tx` is a non-interface type;
+*. a copy of the dynamic value of `x`, if `Tx` is an interface type.
+}
+
+Please read __interfaces in Go__ for details and examples.
+
+// __ interfaces in Go :: interface.html
+
+###----------- 5. untyped value conversion rule
+
+@@@ .well
+An untyped value can be **implicitly** converted to type `T`,
+if the untyped value can represent as values of type `T`.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var _ []int = nil
+	var _ map[string]int = nil
+	var _ chan string = nil
+	var _ func()() = nil
+	var _ *bool = nil
+	var _ interface{} = nil
+
+	var _ int = 123.0
+	var _ float64 = 123
+	var _ int32 = 1.23e2
+	var _ int8 = 1 + 0i
+}
+'''
+
+###----------- 6. constants conversion rule
+
+%%
+(This rule is some overlapped with the last one.)
+
+
+Generally, converting a constant still yields a constant as result
+(except that the target type is not a basic type).
+
+@@@ .well
+Given a constant value `x` and a basic type `T`, if `x` is representable as a value of type `T`,
+then `x` can be explicitly converted to `T`. In particular if `x` is an untyped value,
+then `x` can be **implicitly** converted to `T`.
+
+{//
+Note, in case of `x` is a floating-point constant and `T` is a floating-point type,
+the conversion result `T(x)` is the rounded value of `x` by using IEEE 754 round-to-even rules,
+but with an IEEE `-0.0` further rounded to an unsigned `0.0`.
+}
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	// The implicit conversions are all legal.
+	const I = 123
+	const I1, I2 int8 = 0x7F, -0x80
+	const I3, I4 int8 = I, 0.0
+	const F = 0.123456789
+	const F32 float32 = F
+	const F32b float32 = I
+	const F64 float64 = F
+	const C1, C2 complex64 = F, I
+	
+	// const F64b float64 = I3 // doesn't compile
+	const F64b = float64(I3)   // compiles okay
+	
+	// const I5 int = C2 // doesn't compile
+	const I5 = int(C2)   // compiles okay
+}
+'''
+
+###----------- 7. non-constant number conversion rules
+
+@@@ .well
+Non-constant floating-point and integer values can be explicitly
+converted to any floating-point and integer types.
+
+@@@ .well
+Non-constant complex values can be explicitly converted to any complex types.
+
+Note,
+* Complex non-constant values can't be converted to floating-point and integer types.
+* Floating-point and integer non-constant values can't be converted to complex types.
+* Data overflow and rounding are allowed in non-constant number conversions.
+	When converting a floating-point non-constant number to an integer, the fraction is discarded (truncation towards zero).
+
+
+An example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	var a, b = 1.6, -1.6 // both are float64
+	fmt.Println(int(a), int(b)) // 1 -1
+
+	var i, j int16 = 0x7FFF, -0x8000
+	fmt.Println(int8(i), uint16(j)) // -1 32768
+
+	var c1 complex64 = 1 + 2i
+	var _ = complex128(c1)
+}
+'''
+
+###----------- 8. string related conversion rules
+
+@@@ .well
+If the type (or default type) of a value is an integer type,
+then the value can be explicitly converted to string types.
+
+@@@ .well
+A string value can be explicitly converted to a slice type
+whose underlying type is `[]byte` (a.k.a., `[]uint8`),
+and vice versa.
+
+@@@ .well
+A string value can be explicitly converted to a slice type
+whose underlying type is `[]rune` (a.k.a., `[]int32`),
+and vice versa.
+
+Please read __strings in Go__ for details and examples.
+
+// __ strings in Go :: string.html#conversions
+
+###----------- 9. slices related conversions
+
+@@@ .well
+Since Go 1.17, a slice may be converted to an array pointer.
+In such a conversion, if the length of the base array type of the pointer type
+is larger than the length of the slice, a panic occurs.
+
+Here is __an example__.
+
+// __ an example :: container.html#slice-to-array-pointer
+
+@@@ .well
+Since Go 1.20, a slice may be converted to an array.
+In such a conversion, if the length of the array type
+is larger than the length of the slice, a panic occurs.
+
+Here is __an example__.
+
+// __ an example :: container.html#slice-to-array
+
+###----------- 10. unsafe pointers related conversion rules
+
+@@@ .well
+A pointer value of any type can be explicitly converted to a type whose underlying type is `unsafe.Pointer`, and vice versa.
+
+@@@ .well
+An uintptr value can be explicitly converted to a type whose underlying type is `unsafe.Pointer`, and vice versa.
+
+Please read __type-unsafe pointers in Go__ for details and examples.
+
+// __ type-unsafe pointers in Go :: unsafe.html
+
+###+++++++++++ Value Assignment Rules
+
+Assignments can be viewed as implicit conversions.
+Implicit conversion rules are listed among all conversion rules in the last section.
+
+Besides these rules, the destination values in assignments must be
+addressable values, map index expressions, or the blank identifier.
+
+{//
+@@@ .well
+{
+In an assignment, if the target value is a new declared variable without given a
+type in code, then the type of the new variable is
+* the type of the source value, if the source value is a typed value;
+* the default type of the source value, if the source value is an untyped constant.
+}
+}
+
+In an assignment, the source value is copied to the destination value.
+Precisely speaking, the __direct part__
+of the source value is copied to the destination value.
+
+// __ direct part :: value-part.html
+
+Note, parameter passing and result returning are both value assignments actually.
+
+{//
+For most value assignments, the __direct part__
+of each source value is copied to the direct part of the corresponding
+destination value, except that destination value is an interface value.
+
+In an assignment, if the destination value is an interface value but
+the source value is not, then (the direct part of) the source value
+will be copied and the copy result will be stored in
+the destination interface value as dynamic value.
+The standard compiler makes some special treatments here
+if the source value is not a pointer value.
+If the source value is not a pointer value,
+the direct part of the source value
+will be copied and a pointer to the (hidden and immutable) copy
+will be stored in the destination interface value.
+
+In an assignment,
+if both the destination and source values are interface values,
+then (the direct part of) the dynamic value of the source interface value
+will be copied and the copy result will be stored in
+the destination interface value as dynamic value.
+The standard compiler makes some optimizations here so that
+a pointer is always copied in the process.
+}
+
+@@@ #comparison-rules
+###+++++++++++ Value Comparison Rules
+
+// __ states :: https://golang.org/ref/spec#Comparison_operators
+
+Go specification __states__:
+
+@@@ .alert;alert-success
+In any comparison, the first operand must be assignable to the type of the second operand, or vice versa.
+
+So, the comparison rule is much like the assignment rule.
+In other words, two values are comparable if one of them can be implicitly converted to the type of the other.
+Right? Almost, for there is another rule which has a higher priority than the above basic comparison rule.
+
+{//
+https://github.com/golang/go/issues/28164#issuecomment-430733364
+}
+
+@@@ .alert;alert-danger
+If both of the two operands in a comparison are typed, then their types must be both __comparable types__.
+
+// __ comparable types :: type-system-overview.html#types-not-support-comparison
+
+By the above rule, if an incomparable type (which must be a non-interface type) implements an interface type,
+then it is illegal to compare values of the two types, even if values of the
+former (non-interface) type can be implicitly converted to the latter (interface) type.
+
+Note, although values of slice/map/function types don't support comparisons,
+they can be compared with untyped nil values (a.k.a., bare `nil` identifiers).
+
+The above described basic rules don't cover all cases.
+What about if both of the two operands in a comparison are untyped (constant) values?
+The additional rules are simple:
+*
+	untyped boolean values can be compared with untyped boolean values.
+*
+	untyped numeric values can be compared with untyped numeric values.
+*
+	untyped string values can be compared with untyped string values.
+
+
+The results of comparing two untyped numeric values obey intuition.
+
+Note, an untyped nil value can't be compared with another untyped nil value.
+
+Any comparison results in an untyped boolean value.
+
+The following example shows some incomparable types related comparisons.
+
+@@@ .line-numbers
+'''go
+package main
+
+// Some variables of incomparable types.
+var s []int
+var m map[int]int
+var f func()()
+var t struct {x []int}
+var a [5]map[int]int
+
+func main() {
+	// The following lines fail to compile.
+	/*
+	_ = s == s
+	_ = m == m
+	_ = f == f
+	_ = t == t
+	_ = a == a
+	_ = nil == nil
+	_ = s == interface{}(nil)
+	_ = m == interface{}(nil)
+	_ = f == interface{}(nil)
+	*/
+
+	// The following lines compile okay.
+	_ = s == nil
+	_ = m == nil
+	_ = f == nil
+	_ = 123 == interface{}(nil)
+	_ = true == interface{}(nil)
+	_ = "abc" == interface{}(nil)
+}
+'''
+
+
+
+@@@ #comparison-implementation
+###----------- How Are Two Values Compared?
+
+Assume two values are comparable, and they have the same type `T`.
+(If they have different types, one of them must be implicitly convertible to the type of the other.
+Here we don't consider the cases in which both the two values are untyped.)
+*.
+	If `T` is a boolean type,
+	then the two values are equal only if they are both `true` or both `false`.
+*.
+	If `T` is an integer type,
+	then the two values are equal only if they have the same representation in memory.
+*.
+	If `T` is a floating-point type,
+	then the two values are equal only if any of the following conditions is satisfied:
+	*
+		they are both `+Inf`.
+	*.
+		they are both `-Inf`.
+	*.
+		each of them is either `-0.0` or `+0.0`.
+	*.
+		they are both not `NaN` and they have the same bytes representations in memory.
+	
+*.
+	If `T` is a complex type,
+	then the two values are equal only if their real parts (as floating-point values)
+	and imaginary parts (as floating-point values) are both equal.
+*.
+	If `T` is a pointer type (either safe or unsafe),
+	then the two values are equal only if the memory addresses stored in them are equal.
+*.
+	If `T` is a channel type, the two channel values are equal
+	if they both reference the same underlying internal channel structure value
+	or they are both nil channels.
+*.
+	If `T` is a struct type, then
+	__each pair of the corresponding
+	fields of the two struct values will be compared__.
+*.
+	If `T` is an array type, then
+	__each pair of the corresponding
+	elements of the two array values will be compared__.
+*.
+	If `T` is an interface type, please read
+	__how two interface values are compared__.
+*.
+	If `T` is a string type, please read
+	__how two string values are compared__.
+
+// __ ... struct values will be compared :: struct.html#comparison
+// __ ... array values will be compared :: container.html#comparison
+// __ ... interface values are compared :: interface.html#comparison
+// __ ... string values are compared :: string.html#comparison
+
+Please note, comparing two interfaces with the same incomparable dynamic type
+produces a panic.
+The following is an example in which some panics will occur in comparisons.
+
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	type T struct {
+		a interface{}
+		b int
+	}
+	var x interface{} = []int{}
+	var y = T{a: x}
+	var z = [3]T{{a: y}}
+
+	// Each of the following line can produce a panic.
+	_ = x == x
+	_ = y == y
+	_ = z == z
+}
+'''
+
+
+

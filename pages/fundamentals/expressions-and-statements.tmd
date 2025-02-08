@@ -1,0 +1,176 @@
+### Expressions, Statements and Simple Statements
+
+This article will introduce expressions and statements in Go.
+
+Simply speaking, an expression represents a value and a statement represents an operation.
+However, in fact, some special expressions may be composed of and represent several values,
+and some statements may be composed of several sub operations/statements.
+By context, some statements can be also viewed as expressions.
+
+Simple statements are some special statements.
+In Go, some portions of all kinds of control flows must be
+simple statements, and some portions must be expressions.
+Control flows will be introduced in the next Go 101 article.
+
+This article will not make accurate definitions for expressions and statements.
+It is hard to achieve this.
+This article will only list some expression and statement cases.
+Not all kinds of expressions and statements will be covered in this article,
+but all kinds of simple statements will be listed.
+
+@@@ #expressions
+###+++++++++++ Some Expression Cases
+
+Most expressions in Go are single-value expressions.
+Each of them represents one value. Other expressions represent multiple values
+and they are named multi-value expressions.
+
+In the scope of this document, when an expression is mentioned, we mean it is
+a single-value expression, unless otherwise specified.
+
+Value literals, variables, and named constants are all single-value expressions,
+also called elementary expressions.
+
+Operations (without the assignment parts) using the operators introduced in
+the article __common operators__ are all single-value expressions.
+
+// __ common operators :: operators.html
+
+If a function returns at least one result, then its calls (without the
+assignment parts) are expressions. In particular, if a function returns more
+than one results, then its calls belong to multi-value expressions. Calls to
+functions without results are not expressions.
+
+Methods can be viewed as special functions.
+So the aforementioned function cases also apply to methods.
+Methods will be explained in detail in the article
+__method in Go__ later.
+
+// __ method in Go :: method.html
+
+In fact, later we will learn that custom functions, including methods,
+are all function values, so they are also (single-value) expressions.
+We will learn more about __function types and values__ later.
+
+// __ function types and values :: function.html
+
+Channel receive operations (without the assignment parts) are also expressions.
+Channel operations will be explained in the article
+__channels in Go__ later.
+
+// __ channels in Go :: channel.html
+
+Some expressions in Go, including channel receive operations, may have optional results in Go.
+Such expressions can present as both single-value and multi-value expressions, depending on different contexts.
+We can learn such expressions in other Go 101 articles later.
+
+@@@ #simple-statements
+###+++++++++++ Simple Statement Cases
+
+There are six kinds of simple statements.
+
+*.
+	short variable declaration forms
+*.
+	pure value assignments (not mixing with variable declarations),
+	including `x op= y` operations.
+*.
+	function/method calls and channel receive operations.
+	As mentioned in the last section, these simple statements can also be used as expressions.
+*.
+	channel send operations.
+*.
+	nothing (a.k.a., blank statements).
+	We will learn some uses of blank statements in the next article.
+*.
+	`x++` and `x--`.
+
+
+Again, channel receive and sent operations will be introduced in the article
+__channels in Go__.
+
+Note, `x++` and `x--` can't be used as expressions.
+And Go doesn't support the `++x` and `--x` syntax forms.
+
+
+###+++++++++++ Some Non-Simple Statement Cases
+
+An incomplete non-simple statements list:
+
+*
+	standard variable declaration forms.
+	Yes, short variable declarations are simple statements,
+	but standard ones are not.
+*
+	named constant declarations.
+*
+	custom type declarations.
+*
+	package import declarations.
+*
+	explicit code blocks.
+	An explicit code block starts with a `{` and ends with a `}`.
+	A code block may contain many sub-statements.
+*
+	function declarations.
+	A function declaration may contain many sub-statements.
+*
+	control flows and code execution jumps.
+	Please read __the next article__ for details.
+*
+	`return` lines in function declarations.
+*
+	deferred function calls and goroutine creations.
+	The two will be introduced in __the article after next__.
+
+// __ the next article :: control-flows.html
+// __ the article after next :: control-flows-more.html
+
+###+++++++++++ Examples of Expressions and Statements
+
+@@@ .line-numbers
+'''go
+// Some non-simple statements.
+import "time"
+var a = 123
+const B = "Go"
+type Choice bool
+func f() int {
+	for a < 10 {
+		break
+	}
+
+	// This is an explicit code block.
+	{
+		// ...
+	}
+	return 567
+}
+
+// Some simple statements:
+c := make(chan bool) // channels will be explained later
+a = 789
+a += 5
+a = f() // here f() is used as an expression
+a++
+a--
+c <- true // a channel send operation
+z := <-c  // a channel receive operation used as the
+          // source value in an assignment statement.
+
+// Some expressions:
+123
+true
+B
+B + " language"
+a - 789
+a > 0 // an untyped boolean value
+f     // a function value of type "func ()"
+
+// The following ones can be used as both
+// simple statements and expressions.
+f()
+<-c // a channel receive operation
+'''
+
+

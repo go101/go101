@@ -1,50 +1,57 @@
-﻿<h1>How to Gracefully Close Channels</h1>
+<h1 class="tmd-header-1">
+How to Gracefully Close Channels
+</h1>
+<p></p>
+<div class="tmd-usual">
+Several days ago, I wrote an article which explains <a href="channel.html">the channel rules in Go</a>. That article got many votes on <a href="https://www.reddit.com/r/golang/comments/5k489v/the_full_list_of_channel_rules_in_golang/">reddit</a> and <a href="https://news.ycombinator.com/item?id=13252416">HN</a>, but there are also some criticisms on Go channel design details.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<div>
-<p>
-Several days ago, I wrote an article which explains
-<a href="channel.html">the channel rules in Go</a>.
-That article got many votes
-on <a href="https://www.reddit.com/r/golang/comments/5k489v/the_full_list_of_channel_rules_in_golang/">reddit</a>
-and <a href="https://news.ycombinator.com/item?id=13252416">HN</a>,
-but there are also some criticisms on Go channel design details.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 I collected some criticisms on the following designs and rules of Go channels:
-<ol>
-<li>
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
 no easy and universal ways to check whether or not a channel is closed without modifying the status of the channel.
+</div>
 </li>
-<li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
 closing a closed channel will panic, so it is dangerous to close a channel if the closers don't know whether or not the channel is closed.
+</div>
 </li>
-<li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
 sending values to a closed channel will panic, so it is dangerous to send values to a channel if the senders don't know whether or not the channel is closed.
+</div>
 </li>
 </ol>
-<p>
-</p>
+<p></p>
+<div class="tmd-usual">
+The criticisms look reasonable, however in fact are not. Yes, there is really not a built-in function to check whether or not a channel has been closed.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The criticisms look reasonable (in fact not).
-Yes, there is really not a built-in function to check whether or not a channel has been closed.
-</p>
-
-<div>
-There is indeed a simple method to check whether or not a channel is closed
-if you can make sure no values were (and will be) ever sent to the channel.
-The method has been shown in <a href="channel-use-cases.html#check-closed-status">the last article</a>.
-Here, for better coherence, the method is listed in the following example again.
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+There is indeed a simple method to check whether or not a channel is closed if you can make sure no values were (and will be) ever sent to the channel. The method has been shown in <a href="channel-use-cases.html#check-closed-status">the last article</a>. Here, for better coherence, the method is listed in the following example again.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
 type T int
 
-func IsClosed(ch <-chan T) bool {
+func IsClosed(ch &lt;-chan T) bool {
 	select {
-	case <-ch:
+	case &lt;-ch:
 		return true
 	default:
 	}
@@ -59,59 +66,44 @@ func main() {
 	fmt.Println(IsClosed(c)) // true
 }
 </code></pre>
-<p>
+<p></p>
+<div class="tmd-usual">
 As above mentioned, this is not a universal way to check whether a channel is closed.
-</p>
 </div>
+<p></p>
+<div class="tmd-usual">
+In fact, even if there is a simple built-in <code class="tmd-code-span">closed</code> function to check whether or not a channel has been closed, its usefulness would be very limited, just like the built-in <code class="tmd-code-span">len</code> function for checking the current number of values stored in the value buffer of a channel. The reason is that the status of the checked channel may have changed just after a call to such functions returns, so that the returned value has already not been able to reflect the latest status of the just checked channel. Although it is okay to stop sending values to a channel <code class="tmd-code-span">ch</code> if the call <code class="tmd-code-span">closed(ch)</code> returns <code class="tmd-code-span">true</code>, it is not safe to close the channel or continue sending values to the channel if the call <code class="tmd-code-span">closed(ch)</code> returns <code class="tmd-code-span">false</code>.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+The Channel Closing Principle
+</h3>
+<p></p>
+<div class="tmd-usual">
+One general principle of using Go channels is <span class="tmd-bold">don't close a channel from the receiver side and don't close a channel if the channel has multiple concurrent senders</span>. In other words, we should only close a channel in a sender goroutine if the sender is the only sender of the channel.
+</div>
+<p></p>
+<div class="tmd-usual">
+<span class="tmd-italic">(Below, we will call the above principle as <span class="tmd-bold">channel closing principle</span>.)</span>
+</div>
+<p></p>
+<div class="tmd-usual">
+Surely, this is not a universal principle to close channels. The universal principle is <span class="tmd-bold">don't close (or send values to) closed channels</span>. If we can guarantee that no goroutines will close and send values to a non-closed non-nil channel any more, then a goroutine can close the channel safely. However, making such guarantees by a receiver or by one of many senders of a channel usually needs much effort, and often makes code complicated. On the contrary, it is much easy to hold the <span class="tmd-bold">channel closing principle</span> mentioned above.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Solutions Which Close Channels Rudely
+</h3>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-In fact, even if there is a simple built-in <code>closed</code> function
-to check whether or not a channel has been closed,
-its usefulness would be very limited, just like the built-in <code>len</code>
-function for checking the current number of values stored in the value buffer of a channel.
-The reason is that the status of the checked channel may have changed
-just after a call to such functions returns,
-so that the returned value has already not been able to
-reflect the latest status of the just checked channel.
-Although it is okay to stop sending values to a channel <code>ch</code> if the
-call <code>closed(ch)</code> returns <code>true</code>,
-it is not safe to close the channel or continue sending values to the channel if the
-call <code>closed(ch)</code> returns <code>false</code>.
-</p>
-
-<h3>The Channel Closing Principle</h3>
-
-<p>
-One general principle of using Go channels is
-<b>don't close a channel from the receiver side
-and don't close a channel if the channel has multiple concurrent senders</b>.
-In other words, we should only close a channel in a sender goroutine
-if the sender is the only sender of the channel.
-</p>
-
-<p>
-<i>(Below, we will call the above principle as <b>channel closing principle</b>.)</i>
-</p>
-
-<p>
-Surely, this is not a universal principle to close channels.
-The universal principle is <b>don't close (or send values to) closed channels</b>.
-If we can guarantee that no goroutines will close
-and send values to a non-closed non-nil channel any more,
-then a goroutine can close the channel safely.
-However, making such guarantees by a receiver or by one of many senders of a channel
-usually needs much effort, and often makes code complicated.
-On the contrary, it is much easy to hold the <b>channel closing principle</b> mentioned above.
-</p>
-
-<h3>Solutions Which Close Channels Rudely</h3>
-
-<div>
-If you would close a channel from the receiver side or in one of the multiple senders
-of the channel anyway, then you can use <a href="control-flows-more.html#panic-recover">the recover mechanism</a>
-to prevent the possible panic from crashing your program.
-Here is an example (assume the channel element type is <code>T</code>).
-<pre class="line-numbers"><code class="language-go">func SafeClose(ch chan T) (justClosed bool) {
+</div>
+<p></p>
+<div class="tmd-usual">
+If you would close a channel from the receiver side or in one of the multiple senders of the channel anyway, then you can use <a href="control-flows-more.html#panic-recover">the recover mechanism</a> to prevent the possible panic from crashing your program. Here is an example (assume the channel element type is <code class="tmd-code-span">T</code>).
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func SafeClose(ch chan T) (justClosed bool) {
 	defer func() {
 		if recover() != nil {
 			// The return result can be altered
@@ -122,45 +114,49 @@ Here is an example (assume the channel element type is <code>T</code>).
 
 	// assume ch != nil here.
 	close(ch)   // panic if ch is closed
-	return true // <=> justClosed = true; return
+	return true // &lt;=&gt; justClosed = true; return
 }
 </code></pre>
-
-<p>
-This solution obviously breaks the <b>channel closing principle</b>.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+This solution obviously breaks the <span class="tmd-bold">channel closing principle</span>.
+</div>
+<p></p>
+<div class="tmd-usual">
 The same idea can be used for sending values to a potential closed channel.
-<pre class="line-numbers"><code class="language-go">func SafeSend(ch chan T, value T) (closed bool) {
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func SafeSend(ch chan T, value T) (closed bool) {
 	defer func() {
 		if recover() != nil {
 			closed = true
 		}
 	}()
 
-	ch <- value  // panic if ch is closed
-	return false // <=> closed = false; return
+	ch &lt;- value  // panic if ch is closed
+	return false // &lt;=&gt; closed = false; return
 }
 </code></pre>
 <p></p>
-
-<p>
-Not only does the rude solution break the <b>channel closing principle</b>,
-but data races might also happen in the process.
-</p>
+<div class="tmd-usual">
+Not only does the rude solution break the <span class="tmd-bold">channel closing principle</span>, but data races might also happen in the process.
 </div>
-
-<h3>Solutions Which Close Channels Politely</h3>
-
-<div>
-Many people prefer using <code>sync.Once</code> to close channels:
-<pre class="line-numbers"><code class="language-go">type MyChannel struct {
+<p></p>
+<h3 class="tmd-header-3">
+Solutions Which Close Channels Politely
+</h3>
+<p></p>
+<div class="tmd-usual">
+Many people prefer using <code class="tmd-code-span">sync.Once</code> to close channels:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type MyChannel struct {
 	C    chan T
 	once sync.Once
 }
 
 func NewMyChannel() *MyChannel {
-	return &MyChannel{C: make(chan T)}
+	return &amp;MyChannel{C: make(chan T)}
 }
 
 func (mc *MyChannel) SafeClose() {
@@ -170,16 +166,18 @@ func (mc *MyChannel) SafeClose() {
 }
 </code></pre>
 <p></p>
-
-Surely, we can also use <code>sync.Mutex</code> to avoid closing a channel multiple times:
-<pre class="line-numbers"><code class="language-go">type MyChannel struct {
+<div class="tmd-usual">
+Surely, we can also use <code class="tmd-code-span">sync.Mutex</code> to avoid closing a channel multiple times:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type MyChannel struct {
 	C      chan T
 	closed bool
 	mutex  sync.Mutex
 }
 
 func NewMyChannel() *MyChannel {
-	return &MyChannel{C: make(chan T)}
+	return &amp;MyChannel{C: make(chan T)}
 }
 
 func (mc *MyChannel) SafeClose() {
@@ -198,39 +196,31 @@ func (mc *MyChannel) IsClosed() bool {
 }
 </code></pre>
 <p></p>
-
-<p>
-These ways may be polite, but they may not avoid data races.
-Currently, Go specification doesn't guarantee that there are no data races happening
-when a channel close and a channel send operations are executed concurrently.
-If a <code>SafeClose</code> function is called concurrently with a channel send operation to the same channel,
-data races might happen (though such data races generally don't do any harm).
-</p>
+<div class="tmd-usual">
+These ways may be polite, but they may not avoid data races. Currently, Go specification doesn't guarantee that there are no data races happening when a channel close and a channel send operations are executed concurrently. If a <code class="tmd-code-span">SafeClose</code> function is called concurrently with a channel send operation to the same channel, data races might happen (though such data races generally don't do any harm).
 </div>
-
-<h3>Solutions Which Close Channels Gracefully</h3>
-
-<p>
-One drawback of the above <code>SafeSend</code> function is that its calls can't be used as
-send operations that follow the <code>case</code> keyword in <code>select</code> blocks.
-The other drawback of the above <code>SafeSend</code> and  <code>SafeClose</code> functions
-is that many people, including me, would think the above solutions
-by using <code>panic</code>/<code>recover</code> and <code>sync</code> package are not graceful.
-Following, some pure-channel solutions without using <code>panic</code>/<code>recover</code>
-and <code>sync</code> package will be introduced, for all kinds of situations.
-</p>
-
-<p><i>
-(In the following examples, <code>sync.WaitGroup</code> is used to make the examples complete.
-It may be not always essential to use it in real practice.)
-</i></p>
-
-<h4>1. M receivers, one sender, the sender says "no more sends" by closing the data channel</h4>
-
-<div>
-This is the simplest situation, just let the sender close the data channel
-when it doesn't want to send more.
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<h3 class="tmd-header-3">
+Solutions Which Close Channels Gracefully
+</h3>
+<p></p>
+<div class="tmd-usual">
+One drawback of the above <code class="tmd-code-span">SafeSend</code> function is that its calls can't be used as send operations that follow the <code class="tmd-code-span">case</code> keyword in <code class="tmd-code-span">select</code> blocks. The other drawback of the above <code class="tmd-code-span">SafeSend</code> and  <code class="tmd-code-span">SafeClose</code> functions is that many people, including me, would think the above solutions by using <code class="tmd-code-span">panic</code>/<code class="tmd-code-span">recover</code> and <code class="tmd-code-span">sync</code> package are not graceful. Following, some pure-channel solutions without using <code class="tmd-code-span">panic</code>/<code class="tmd-code-span">recover</code> and <code class="tmd-code-span">sync</code> package will be introduced, for all kinds of situations.
+</div>
+<p></p>
+<div class="tmd-usual">
+<span class="tmd-italic">(In the following examples, <code class="tmd-code-span">sync.WaitGroup</code> is used to make the examples complete. It may be not always essential to use it in real practice.)</span>
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+1. M receivers, one sender, the sender says "no more sends" by closing the data channel
+</h4>
+<p></p>
+<div class="tmd-usual">
+This is the simplest situation, just let the sender close the data channel when it doesn't want to send more.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"time"
@@ -262,13 +252,13 @@ func main() {
 				close(dataCh)
 				return
 			} else {
-				dataCh <- value
+				dataCh &lt;- value
 			}
 		}
 	}()
 
 	// receivers
-	for i := 0; i < NumReceivers; i++ {
+	for i := 0; i &lt; NumReceivers; i++ {
 		go func() {
 			defer wgReceivers.Done()
 
@@ -285,17 +275,15 @@ func main() {
 }
 </code></pre>
 <p></p>
+<h4 class="tmd-header-4">
+2. One receiver, N senders, the only receiver says "please stop sending more" by closing an additional signal channel
+</h4>
+<p></p>
+<div class="tmd-usual">
+This is a situation a little more complicated than the above one. We can't let the receiver close the data channel to stop data transferring, since doing this will break the <span class="tmd-bold">channel closing principle</span>. But we can let the receiver close an additional signal channel to notify senders to stop sending values.
 </div>
-
-<h4>2. One receiver, N senders, the only receiver says "please stop sending more" by closing an additional signal channel</h4>
-
-<div>
-This is a situation a little more complicated than the above one.
-We can't let the receiver close the data channel to stop data transferring,
-since doing this will break the <b>channel closing principle</b>.
-But we can let the receiver close an additional signal channel to
-notify senders to stop sending values.
-<pre class="line-numbers"><code class="language-go">package main
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"time"
@@ -324,7 +312,7 @@ func main() {
 		// senders of channel dataCh.
 
 	// senders
-	for i := 0; i < NumSenders; i++ {
+	for i := 0; i &lt; NumSenders; i++ {
 		go func() {
 			for {
 				// The try-receive operation is to try
@@ -332,7 +320,7 @@ func main() {
 				// possible. For this specified example,
 				// it is not essential.
 				select {
-				case <- stopCh:
+				case &lt;- stopCh:
 					return
 				default:
 				}
@@ -345,9 +333,9 @@ func main() {
 				// example, so the first select block
 				// above can be omitted.
 				select {
-				case <- stopCh:
+				case &lt;- stopCh:
 					return
-				case dataCh <- rand.Intn(Max):
+				case dataCh &lt;- rand.Intn(Max):
 				}
 			}
 		}()
@@ -374,35 +362,25 @@ func main() {
 	wgReceivers.Wait()
 }
 </code></pre>
-<p>
-As mentioned in the comments, for the additional signal channel,
-its sender is the receiver of the data channel.
-The additional signal channel is closed by its only sender,
-which holds the <b>channel closing principle</b>.
-</p>
-
-<p>
-In this example, the channel <code>dataCh</code> is never closed.
-Yes, channels don't have to be closed.
-A channel will be eventually garbage collected if no goroutines reference it any more,
-whether it is closed or not.
-So the gracefulness of closing a channel here is not to close the channel.
-</p>
+<p></p>
+<div class="tmd-usual">
+As mentioned in the comments, for the additional signal channel, its sender is the receiver of the data channel. The additional signal channel is closed by its only sender, which holds the <span class="tmd-bold">channel closing principle</span>.
 </div>
-
-<h4>3. M receivers, N senders, any one of them says "let's end the game" by notifying a moderator to close an additional signal channel</h4>
-
-<div>
-This is the most complicated situation.
-We can't let any of the receivers and the senders close the data channel.
-And we can't let any of the receivers close an additional signal channel to
-notify all senders and receivers to exit the game.
-Doing either will break the <b>channel closing principle</b>.
-However, we can introduce a moderator role to close the additional signal channel.
-One trick in the following example is how to use a try-send operation to
-notify the moderator to close the additional signal channel.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+In this example, the channel <code class="tmd-code-span">dataCh</code> is never closed. Yes, channels don't have to be closed. A channel will be eventually garbage collected if no goroutines reference it any more, whether it is closed or not. So the gracefulness of closing a channel here is not to close the channel.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+3. M receivers, N senders, any one of them says "let's end the game" by notifying a moderator to close an additional signal channel
+</h4>
+<p></p>
+<div class="tmd-usual">
+This is the most complicated situation. We can't let any of the receivers and the senders close the data channel. And we can't let any of the receivers close an additional signal channel to notify all senders and receivers to exit the game. Doing either will break the <span class="tmd-bold">channel closing principle</span>. However, we can introduce a moderator role to close the additional signal channel. One trick in the following example is how to use a try-send operation to notify the moderator to close the additional signal channel.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"time"
@@ -443,12 +421,12 @@ func main() {
 
 	// moderator
 	go func() {
-		stoppedBy = <-toStop
+		stoppedBy = &lt;-toStop
 		close(stopCh)
 	}()
 
 	// senders
-	for i := 0; i < NumSenders; i++ {
+	for i := 0; i &lt; NumSenders; i++ {
 		go func(id string) {
 			for {
 				value := rand.Intn(Max)
@@ -457,7 +435,7 @@ func main() {
 					// to notify the moderator to close
 					// the additional signal channel.
 					select {
-					case toStop <- "sender#" + id:
+					case toStop &lt;- "sender#" + id:
 					default:
 					}
 					return
@@ -470,7 +448,7 @@ func main() {
 				// optimized by the standard Go
 				// compiler, so they are very efficient.
 				select {
-				case <- stopCh:
+				case &lt;- stopCh:
 					return
 				default:
 				}
@@ -483,16 +461,16 @@ func main() {
 				// this is unacceptable, then the above
 				// try-receive operation is essential.
 				select {
-				case <- stopCh:
+				case &lt;- stopCh:
 					return
-				case dataCh <- value:
+				case dataCh &lt;- value:
 				}
 			}
 		}(strconv.Itoa(i))
 	}
 
 	// receivers
-	for i := 0; i < NumReceivers; i++ {
+	for i := 0; i &lt; NumReceivers; i++ {
 		go func(id string) {
 			defer wgReceivers.Done()
 
@@ -502,7 +480,7 @@ func main() {
 				// try to exit the receiver goroutine
 				// as early as possible.
 				select {
-				case <- stopCh:
+				case &lt;- stopCh:
 					return
 				default:
 				}
@@ -515,16 +493,16 @@ func main() {
 				// this is not acceptable, then the above
 				// try-receive operation is essential.
 				select {
-				case <- stopCh:
+				case &lt;- stopCh:
 					return
-				case value := <-dataCh:
+				case value := &lt;-dataCh:
 					if value == Max-1 {
 						// Here, the same trick is
 						// used to notify the moderator
 						// to close the additional
 						// signal channel.
 						select {
-						case toStop <- "receiver#" + id:
+						case toStop &lt;- "receiver#" + id:
 						default:
 						}
 						return
@@ -541,46 +519,45 @@ func main() {
 	log.Println("stopped by", stoppedBy)
 }
 </code></pre>
-
-<p>
-In this example, the <b>channel closing principle</b> is still held.
-</p>
-
-<p>
-Please note that the buffer size (capacity) of channel <code>toStop</code> is one.
-This is to avoid the first notification is missed
-when it is sent before the moderator goroutine gets ready to receive notification
-from <code>toStop</code>.
-</p>
-
-We can also set the capacity of the <code>toStop</code> channel
-as the sum number of senders and receivers,
-then we don't need a try-send <code>select</code> block to notify the moderator.
-<pre class="line-numbers"><code class="language-go">...
+<p></p>
+<div class="tmd-usual">
+In this example, the <span class="tmd-bold">channel closing principle</span> is still held.
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note that the buffer size (capacity) of channel <code class="tmd-code-span">toStop</code> is one. This is to avoid the first notification is missed when it is sent before the moderator goroutine gets ready to receive notification from <code class="tmd-code-span">toStop</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+We can also set the capacity of the <code class="tmd-code-span">toStop</code> channel as the sum number of senders and receivers, then we don't need a try-send <code class="tmd-code-span">select</code> block to notify the moderator.
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">...
 toStop := make(chan string, NumReceivers + NumSenders)
 ...
 			value := rand.Intn(Max)
 			if value == 0 {
-				toStop <- "sender#" + id
+				toStop &lt;- "sender#" + id
 				return
 			}
 ...
 				if value == Max-1 {
-					toStop <- "receiver#" + id
+					toStop &lt;- "receiver#" + id
 					return
 				}
 ...
 </code></pre>
+<p></p>
+<h4 class="tmd-header-4">
+4. A variant of the "M receivers, one sender" situation: the close request is made by a third-party goroutine
+</h4>
+<p></p>
+<div class="tmd-usual">
+Sometimes, it is needed that the close signal must be made by a third-party goroutine. For such cases, we can use an extra signal channel to notify the sender to close the data channel. For example,
 </div>
-
-<h4>4. A variant of the "M receivers, one sender" situation: the close request is made by a third-party goroutine</h4>
-
-<div>
-Sometimes, it is needed that the close signal must be made by a third-party goroutine.
-For such cases, we can use an extra signal channel to notify the sender
-to close the data channel. For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"time"
@@ -610,14 +587,14 @@ func main() {
 	// multiple times safely.
 	stop := func() {
 		select {
-		case closing<-struct{}{}:
-			<-closed
-		case <-closed:
+		case closing&lt;-struct{}{}:
+			&lt;-closed
+		case &lt;-closed:
 		}
 	}
 	
 	// some third-party goroutines
-	for i := 0; i < NumThirdParties; i++ {
+	for i := 0; i &lt; NumThirdParties; i++ {
 		go func() {
 			r := 1 + rand.Intn(3)
 			time.Sleep(time.Duration(r) * time.Second)
@@ -634,19 +611,19 @@ func main() {
 
 		for {
 			select{
-			case <-closing: return
+			case &lt;-closing: return
 			default:
 			}
 
 			select{
-			case <-closing: return
-			case dataCh <- rand.Intn(Max):
+			case &lt;-closing: return
+			case dataCh &lt;- rand.Intn(Max):
 			}
 		}
 	}()
 
 	// receivers
-	for i := 0; i < NumReceivers; i++ {
+	for i := 0; i &lt; NumReceivers; i++ {
 		go func() {
 			defer wgReceivers.Done()
 
@@ -659,23 +636,25 @@ func main() {
 	wgReceivers.Wait()
 }
 </code></pre>
-
-<p>
-The idea used in the <code>stop</code> function is learned from
-<a href="https://groups.google.com/forum/#!msg/golang-nuts/lEKehHH7kZY/SRmCtXDZAAAJ">a comment</a> made by Roger Peppe.
-</p>
+<p></p>
+<div class="tmd-usual">
+The idea used in the <code class="tmd-code-span">stop</code> function is learned from <a href="https://groups.google.com/forum/#!msg/golang-nuts/lEKehHH7kZY/SRmCtXDZAAAJ">a comment</a> made by Roger Peppe.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<h4>5. A variant of the "N sender" situation: the data channel must be closed to tell receivers that data sending is over</h4>
-
-<div>
-In the solutions for the above N-sender situations, to hold the <b>channel closing principle</b>,
-we avoid closing the data channels. However, sometimes, it is required that the data channels must be closed in the end
-to let receivers know data sending is over.
-For such cases, we can translate a N-sender situation to a one-sender situation by using a middle channel.
-The middle channel has only one sender, so that we can close it instead of closing the original data channel.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+5. A variant of the "N sender" situation: the data channel must be closed to tell receivers that data sending is over
+</h4>
+<p></p>
+<div class="tmd-usual">
+In the solutions for the above N-sender situations, to hold the <span class="tmd-bold">channel closing principle</span>, we avoid closing the data channels. However, sometimes, it is required that the data channels must be closed in the end to let receivers know data sending is over. For such cases, we can translate a N-sender situation to a one-sender situation by using a middle channel. The middle channel has only one sender, so that we can close it instead of closing the original data channel.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"time"
@@ -710,9 +689,9 @@ func main() {
 	// multiple times safely.
 	stop := func(by string) {
 		select {
-		case closing <- by:
-			<-closed
-		case <-closed:
+		case closing &lt;- by:
+			&lt;-closed
+		case &lt;-closed:
 		}
 	}
 	
@@ -721,29 +700,29 @@ func main() {
 		exit := func(v int, needSend bool) {
 			close(closed)
 			if needSend {
-				dataCh <- v
+				dataCh &lt;- v
 			}
 			close(dataCh)
 		}
 
 		for {
 			select {
-			case stoppedBy = <-closing:
+			case stoppedBy = &lt;-closing:
 				exit(0, false)
 				return
-			case v := <- middleCh:
+			case v := &lt;- middleCh:
 				select {
-				case stoppedBy = <-closing:
+				case stoppedBy = &lt;-closing:
 					exit(v, true)
 					return
-				case dataCh <- v:
+				case dataCh &lt;- v:
 				}
 			}
 		}
 	}()
 	
 	// some third-party goroutines
-	for i := 0; i < NumThirdParties; i++ {
+	for i := 0; i &lt; NumThirdParties; i++ {
 		go func(id string) {
 			r := 1 + rand.Intn(3)
 			time.Sleep(time.Duration(r) * time.Second)
@@ -752,7 +731,7 @@ func main() {
 	}
 
 	// senders
-	for i := 0; i < NumSenders; i++ {
+	for i := 0; i &lt; NumSenders; i++ {
 		go func(id string) {
 			for {
 				value := rand.Intn(Max)
@@ -762,15 +741,15 @@ func main() {
 				}
 
 				select {
-				case <- closed:
+				case &lt;- closed:
 					return
 				default:
 				}
 
 				select {
-				case <- closed:
+				case &lt;- closed:
 					return
-				case middleCh <- value:
+				case middleCh &lt;- value:
 				}
 			}
 		}(strconv.Itoa(i))
@@ -792,26 +771,24 @@ func main() {
 	log.Println("stopped by", stoppedBy)
 }
 </code></pre>
-
 <p></p>
-
+<h4 class="tmd-header-4">
+More situations?
+</h4>
+<p></p>
+<div class="tmd-usual">
+There should be more situation variants, but the above shown ones are the most common and basic ones. By using channels (and other concurrent programming techniques) cleverly, I believe a solution holding the <span class="tmd-bold">channel closing principle</span> for each situation variant can always be found.
 </div>
-
-<h4>More situations?</h4>
-
-<p>
-There should be more situation variants, but the above shown ones are the most common and basic ones.
-By using channels (and other concurrent programming techniques) cleverly,
-I believe a solution holding the <b>channel closing principle</b> for each situation variant can always be found.
-</p>
-
-<h3>Conclusion</h3>
-
-<p>
-There are no situations which will force you to break the <b>channel closing principle</b>.
-If you encounter such a situation, please rethink your design and rewrite you code.
-</p>
-
-<p>
+<p></p>
+<h3 class="tmd-header-3">
+Conclusion
+</h3>
+<p></p>
+<div class="tmd-usual">
+There are no situations which will force you to break the <span class="tmd-bold">channel closing principle</span>. If you encounter such a situation, please rethink your design and rewrite you code.
+</div>
+<p></p>
+<div class="tmd-usual">
 Programming with Go channels is like making art.
-</p>
+</div>
+<p></p>

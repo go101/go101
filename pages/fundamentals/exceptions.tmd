@@ -1,0 +1,863 @@
+### Syntax/Semantics Exceptions in Go
+
+This article will list all kinds of syntax/semantics exceptions in Go.
+Some of these exceptions are syntactic sugars to make programming convenient,
+some are caused built-in generic privileges,
+some exists for history reasons, and some exists for other reasons in logic.
+
+@@@ #nest-function-calls
+###+++++++++++ Nested function calls
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	If the number of the return results of a function call is not zero,
+	and the return results can be used as the whole arguments of another function call,
+	then the former function call can be nested in the latter function call,
+	the former nested call can't mix up with other arguments of the latter nesting call.
+
+Sugar:
+@@@ .alert;alert-success
+!
+	If a function call returns exactly one result,
+	then the function call can be always be used as a single-value argument in other function calls,
+	the single-result function call can mix up with other arguments of the nesting function calls.
+
+{//
+Exception (before Go Toolchain 1.15):
+@@@ .alert;alert-success
+!
+	For the standard Go compiler (but not for gccgo),
+	the basic rule doesn't apply to nesting calls to built-in `print` and `println` functions.
+	Calls to these functions can't nest multi-result function calls as arguments.
+}
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+)
+
+func f0() float64 {return 1}
+func f1() (float64, float64) {return 1, 2}
+func f2(float64, float64) {}
+func f3(float64, float64, float64) {}
+func f4()(x, y []int) {return}
+func f5()(x map[int]int, y int) {return}
+
+type I interface {m()(float64, float64)}
+type T struct{}
+func (T) m()(float64, float64) {return 1, 2}
+
+func main() {
+	// These lines compile okay.
+	f2(f0(), 123)
+	f2(f1())
+	fmt.Println(f1())
+	_ = complex(f1())
+	_ = complex(T{}.m())
+	f2(I(T{}).m())
+
+	// These lines don't compile.
+	/*
+	f3(123, f1())
+	f3(f1(), 123)
+	*/
+
+	// This line compiles okay only since
+	// Go Toolchain 1.15.
+	println(f1())
+
+	// The following 3 lines compile okay
+	// only since Go Toolchain 1.13.
+	copy(f4())
+	delete(f5())
+	_ = complex(I(T{}).m())
+}
+'''
+
+{//
+###+++++++++++ Unused variables
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Local variables can't be declared but not used.
+
+Exception:
+@@@ .alert;alert-success
+!
+	Function parameter and result variables,
+	which can also be viewed as local variables,
+	are allowed to be not used.
+}
+
+###+++++++++++ Select struct fields
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Pointer values have no fields.
+
+Sugar:
+@@@ .alert;alert-success
+!
+	We can select the fields of a struct value through pointers of the struct value.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+type T struct {
+	x int
+}
+
+func main() {
+	var t T
+	var p = &t
+
+	p.x *= 2
+	// The above line is a sugar of the following line.
+	(*p).x *= 2
+}
+'''
+
+###+++++++++++ Receiver arguments of method calls
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	The methods explicitly declared for type `*T` are not methods of type `T` for sure.
+
+Sugar:
+@@@ .alert;alert-success
+!
+	Although the methods explicitly declared for type `*T` are not methods of type `T`,
+	addressable values of type `T` can be used as the receiver arguments of calls to these methods.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+type T struct {
+	x int
+}
+
+func (pt *T) Double() {
+	pt.x *= 2
+}
+
+func main() {
+	// T{3}.Double() // This line fails to compile.
+
+	var t = T{3}
+
+	t.Double() // t.x == 6 now
+	// The above line is a sugar of the following line.
+	(&t).Double() // t.x == 12 now
+}
+'''
+
+###+++++++++++ Take addresses of composite literal values
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Literal values are unaddressable and unaddressable values can't be taken addresses.
+
+Sugar:
+@@@ .alert;alert-success
+!
+	Although composite literal values are not addressable, they can be taken addresses explicitly.
+
+Please read __structs__ and __containers__ for details.
+
+// __ structs :: struct.html#take-composite-literal-address
+// __ containers :: container.html#take-composite-literal-address
+
+###+++++++++++ Selectors on named one-Level pointers
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Generally, selectors can't be used on values of __named__ pointer types.
+
+Sugar:
+@@@ .alert;alert-info
+!
+	If `x` is a value of a named one-level pointer type,
+	and selector `(*x).f` is a legal selector,
+	then the `x.f` is also a legal selector, it can be viewed as a shorthand of `(*x).f`.
+
+// __ named :: type-system-overview.html#underlying-type
+
+Selectors can never be used on values of **multi-level** pointer types,
+no matter whether the multi-level pointer types are named or not.
+
+Exception of the sugar:
+@@@ .alert;alert-success
+!
+	The sugar is only valid if `f` denotes a struct field,
+	it is not valid if `f` denotes a method.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+type T struct {
+	x int
+}
+
+func (T) y() {
+}
+
+type P *T
+type PP **T // a multi-level pointer type
+
+func main() {
+	var t T
+	var p P = &t
+	var pt = &t   // type of pt is *T
+	var ppt = &pt // type of ppt is **T
+	var pp PP = ppt
+	_ = pp
+
+	_ = (*p).x // legal
+	_ = p.x    // also legal (for x is a field)
+
+	_ = (*p).y // legal
+	// _ = p.y // illegal (for y is a method)
+
+	// Following ones are all illegal.
+	/*
+	_ = ppt.x
+	_ = ppt.y
+	_ = pp.x
+	_ = pp.y
+	*/
+}
+'''
+
+{//
+###+++++++++++ Precedence of unary operators
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	For any operand, its post operator has a higher precedence than its pre operator if the post operator
+	is not a __binary operator__.
+
+Sugar:
+@@@ .alert;alert-success
+!
+	Assume operand `ptr` is a pointer value, in `*ptr++`, operator `*` has
+	a higher precedence than operator `++`, a.k.a., `*ptr++` is equivalent to
+	`(*ptr)++`, for pointer arithmetic is not supported in Go.
+
+// __ binary operator :: https://golang.org/ref/spec#Operators
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+)
+
+type T struct{}
+
+func (t T) M() *int {
+	var v = 123
+	return &v
+}
+
+func main() {
+	var t = &T{}
+	var a = *t.M()
+	var b = *(t.M())
+	// The above two lines are equivalent.
+	var c = (*t).M()
+	fmt.Printf("%T %T %T\n", a, b, c) // int int *int
+
+	var s = [...]int{0, 1, 2}
+	var u = &s[0]
+	var v = &(s[0])
+	// The above two lines are equivalent.
+	var w = (&s)[0]
+	fmt.Printf("%T %T %T\n", u, v, w) // *int *int int
+
+	// sugar
+
+	var x = new(int)
+	*x++ // *x == 1 now
+	// The Above line is a sugar for
+	(*x)++
+}
+'''
+}
+
+###+++++++++++ The addressability of a container and its elements
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	If a container is addressable, then its elements are also addressable.
+
+Exception:
+@@@ .alert;alert-success
+!
+	Elements of a map are always unaddressable, even if the map itself is addressable.
+
+Sugar:
+@@@ .alert;alert-success
+!
+	Elements of a slice are always addressable, even if the slice itself is not addressable.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var m = map[string]int{"abc": 123}
+	_ = &m // okay
+
+	// The exception:
+	// p = &m["abc"] // error: map elements are unaddressable
+
+	// The sugar:
+	f := func() []int { // return results are unaddressable
+		return []int{0, 1, 2}
+	}
+	// _ = &f() // error: f() is unaddressable
+	_ = &f()[2] // okay
+}
+'''
+
+###+++++++++++ Modify unaddressable values
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Unaddressable values can't be modified.
+	In other words, unaddressable values shouldn't appear in assignments as destination values.
+
+Exception:
+@@@ .alert;alert-success
+!
+	Although map element values are unaddressable, they can be modified
+	and appear in assignments as destination values.
+	(But map elements can't be modified partially,
+	they can only be overwritten wholly, a.k.a., replaced.)
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	type T struct {
+		x int
+	}
+
+	var mt = map[string]T{"abc": {123}}
+	// Map elements are unaddressable.
+	// _ = &mt["abc"] // error
+	// Partial modification is not allowed.
+	// mt["abc"].x = 456 // error
+	// It is ok to replace a map element as a whole.
+	mt["abc"] = T{x: 789}
+}
+'''
+
+###+++++++++++ Function Parameters
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Each parameter is a value of some type.
+
+Exception:
+@@@ .alert;alert-success
+!
+	The first parameters of the built-in `make` and `new` functions are types.
+
+
+###+++++++++++ Function names in one package
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Names of declared functions can't be duplicated in one package.
+
+Exception:
+@@@ .alert;alert-success
+!
+	There can be multiple functions declared with names as `init`
+	(and types as `func()`).
+
+
+###+++++++++++ Function calls
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Functions whose names are not the blank identifier can be called in user code.
+
+Exception:
+@@@ .alert;alert-success
+!
+	`init` functions can't be called in user code.
+
+
+###+++++++++++ Functions being used as values
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Declared functions can be used as function values.
+
+{//
+Exception 1:
+@@@ .alert;alert-success
+!
+	None of the built-in functions, which are documented in the `builtin` and `unsafe`
+	standard packages, can be used as function values.
+
+	var _ = panic
+	var _ = unsafe.Sizeof
+}
+
+Exception:
+@@@ .alert;alert-success
+!
+	`init` functions can not be used as function values.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "unsafe"
+
+func init() {}
+
+func main() {
+	// These ones are okay.
+	var _ = main
+	var _ = fmt.Println
+
+	// This one fails to compile.
+	var _ = init
+}
+'''
+
+@@@ #generic-arguments-passing
+###+++++++++++ The manners of type argument passing
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	In a type argument list, all type arguments are enclosed in square brackets
+	and they are separated by commas in the list.
+
+Exception:
+@@@ .alert;alert-success
+!
+	The manners of type argument lists passed to built-in generic type instantiations
+	vary in different forms. Each key type argument of instantiated map types is
+	individually enclosed in square brackets. Other type arguments are not enclosed.
+	The type argument of an instantiation of built-in `new` generic function is enclosed in parentheses.
+	The type argument of an instantiation of the built-in `make` generic function is mixed with value arguments
+	and these type and value arguments are enclosed in parentheses.
+
+
+@@@ #discard-return-results
+###+++++++++++ Discard return values of function calls
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	The return values of a function call can be discarded altogether.
+
+Exception:
+@@@ .alert;alert-success
+!
+	The return values of calls to the built-in functions
+	which are documented in the `builtin` and `unsafe`
+	standard packages, can't be discarded, if the called function has return results.
+
+Exception in exception:
+@@@ .alert;alert-success
+!
+	The return values of a call to the built-in
+	`copy` and `recover` functions
+	can be all discarded, even if the two functions have return results.
+
+###+++++++++++ Declared variables
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Declared variables are always addressable.
+
+Exception:
+@@@ .alert;alert-success
+!
+	The __predeclared `nil`__ variable is not addressable.
+
+So, `nil` is an immutable variable.
+
+// __ predeclared `nil` :: https://golang.org/pkg/builtin/#pkg-variables
+
+###+++++++++++ Argument passing
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	An argument can be passed to the corresponding function parameter
+	only if the argument is assignable to the corresponding function parameter type.
+
+Sugar:
+@@@ .alert;alert-success
+!
+	If the first slice argument of a `copy` and `append` function call
+	is a byte slice, then the second argument can be a string,
+	whereas a string value is not assignable to the second parameter type (also a byte slice).
+	(For an `append` call, assume the second argument is passed with the form `arg...`.)
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var bs = []byte{1, 2, 3}
+	var s = "xyz"
+
+	copy(bs, s)
+	// The above line is a sugar (and an optimization)
+	// for the following line.
+	copy(bs, []byte(s))
+
+	bs = append(bs, s...)
+	// The above line is a sugar (and an optimization)
+	// for the following line.
+	bs = append(bs, []byte(s)...)
+}
+'''
+
+###+++++++++++ Comparisons
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Map, slice and function types don't support comparison.
+
+Exception:
+@@@ .alert;alert-success
+!
+	Map, slice and function values can be compared to the predeclared untyped `nil` identifier.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var s1 = []int{1, 2, 3}
+	var s2 = []int{7, 8, 9}
+	//_ = s1 == s2 // error: slice values can't be compared
+	_ = s1 == nil // ok
+	_ = s2 == nil // ok
+
+	var m1 = map[string]int{}
+	var m2 = m1
+	// _ = m1 == m2 // error: map values can't be compared
+	_ = m1 == nil
+	_ = m2 == nil
+
+	var f1 = func(){}
+	var f2 = f1
+	// _ = f1 == f2 // error: functions can't be compared
+	_ = f1 == nil
+	_ = f2 == nil
+}
+'''
+
+###+++++++++++ Comparisons 2
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	If a value can be implicitly converted to a comparable type, then the value can be compared to the values of the comparable type.
+
+Exception:
+@@@ .alert;alert-success
+!
+	The values of a non-interface incomparable type can't be compared to values of an interface type,
+	even if the non-interface incomparable type implements the interface type
+	(so values of the non-interface incomparable type can be implicitly converted to the interface type).
+
+Please read __comparison rules__ for examples.
+
+// __ comparison rules :: value-conversions-assignments-and-comparisons.html#comparison-rules
+
+{//
+###+++++++++++ Comparing interface values
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Comparing interface values with incomparable dynamic values will panic.
+
+Exception:
+@@@ .alert;alert-success
+!
+	If the dynamic types of two interface values are not the same one,
+	then comparing them will never panic,
+	even if either of the two dynamic values are incomparable.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var s = []int{1, 2, 3}
+	var m = map[string]int{}
+	var x interface{} = s
+	var y interface{} = m
+	var z interface{} = nil
+	// The dynamic values of x and y are both incomparable.
+	//_ = x == x // will panic
+	//_ = y == y // will panic
+	_ = x == z // false, will not panic
+	_ = x == y // false, will not panic
+}
+'''
+}
+
+###+++++++++++ Blank composite literals
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	If the values of a type `T` can be represented with composite literals, then `T{}` is its zero value.
+
+Exception:
+@@@ .alert;alert-success
+!
+	For a map or a slice type `T`, `T{}` isn't its zero value.
+	Its zero value is represented with `nil`.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+
+func main() {
+	// new(T) returns the address of a zero value of type T.
+
+	type T0 struct {
+		x int
+	}
+	fmt.Println( T0{} == *new(T0) ) // true
+	type T1 [5]int
+	fmt.Println( T1{} == *new(T1) ) // true
+
+	type T2 []int
+	fmt.Println( T2{} == nil ) // false
+	type T3 map[int]int
+	fmt.Println( T3{} == nil ) // false
+}
+'''
+
+###+++++++++++ Container element iterations
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Only container values can be ranged, the iterated values are container elements.
+	The element key/index will also be returned alongside of each iterated element.
+
+Exception 1:
+@@@ .alert;alert-success
+!
+	The iterated values are runes if the ranged containers are strings, instead of the byte elements of strings.
+
+Exception 2:
+@@@ .alert;alert-success
+!
+	The element index (order) will not be returned alongside of each iterated element when iterating channels.
+
+Sugar:
+@@@ .alert;alert-success
+!
+	Array pointers can also be ranged to iterate array elements, though pointers are not containers.
+
+
+###+++++++++++ Methods of built-in types
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Generally, built-in types have no methods.
+
+Exception:
+@@@ .alert;alert-success
+!
+	The built-in `error` type has a `Error() string` method.
+
+{//
+###+++++++++++ Identifier visibility
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	The identifiers not starting with Unicode upper case letters can't be exported.
+
+Exception:
+@@@ .alert;alert-success
+!
+	Identifiers starting with Unicode lower case letter in the `builtin` package
+	can be exported.
+}
+
+###+++++++++++ Types of values
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Each value has either a type or a default type.
+
+Exception:
+@@@ .alert;alert-success
+!
+	Untyped `nil` has neither a type nor a default type.
+
+
+###+++++++++++ Constant values
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Constant values never change.
+	Constants can be assigned to variables.
+
+Exception:
+@@@ .alert;alert-success
+!
+	Predeclared `iota` is a built-in constant which is bound with `0`,
+	but its value is not constant. Its value will start from `0`
+	and increase one constant specification by constant specification in a constant declaration,
+	though the increments happen at compile time.
+
+Exception 2:
+@@@ .alert;alert-success
+!
+	`iota` can only be used within constant declarations.
+	It can't be assigned to variables in variable declarations.
+
+@@@ #behaviors-on-missing-optional-result
+###+++++++++++ Behavior change caused by discarding the optional evaluation results of expressions
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	Whether or not the optional evaluation result of an expression presents will not affect program behavior.
+
+Exception:
+@@@ .alert;alert-success
+!
+	Missing the optional result value in a type assertion will make current goroutine panic if the type assertion fails.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+func main() {
+	var ok bool
+
+	var m = map[int]int{}
+	_, ok = m[123] // will not panic
+	_ = m[123]     // will not panic
+
+	var c = make(chan int, 2)
+	c <- 123
+	close(c)
+	_, ok = <-c // will not panic
+	_ = <-c     // will not panic
+
+	var v interface{} = "abc"
+	_, ok = v.(int) // will not panic
+	_ = v.(int)     // will panic!
+}
+'''
+
+@@@ #code-block-following-else
+###+++++++++++ `else` keyword followed by a code block
+
+The basic rule:
+@@@ .alert;alert-info
+!
+	The `else` keyword must be followed by an explicit code block `{...}`.
+
+Sugar:
+@@@ .alert;alert-success
+!
+	The `else` keyword may be followed by a `if` code block (which is implicit).
+
+For example, in the following code, function `foo` compiles okay, but function `bar` doesn't.
+@@@ .line-numbers
+'''go
+func f() []int {
+	return nil
+}
+
+func foo() {
+	if vs := f(); len(vs) == 0 {
+	} else if len(vs) == 1 {
+	}
+
+	if vs := f(); len(vs) == 0 {
+	} else {
+		switch {
+		case len(vs) == 1:
+		default:
+		}
+	}
+	
+	if vs := f(); len(vs) == 0 {
+	} else {
+		for _, _ = range vs {
+		}
+	}
+}
+
+func bar() {
+	if vs := f(); len(vs) == 0 {
+	} else switch { // error
+	case len(vs) == 1:
+	default:
+	}
+	
+	if vs := f(); len(vs) == 0 {
+	} else for _, _ = range vs { // error
+	}
+}
+'''
+
+
+

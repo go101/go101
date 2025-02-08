@@ -1,49 +1,53 @@
-﻿<h1>Common Concurrent Programming Mistakes</h1>
+<h1 class="tmd-header-1">
+Common Concurrent Programming Mistakes
+</h1>
+<p></p>
+<div class="tmd-usual">
+Go is a language supporting built-in concurrent programming. By using the <code class="tmd-code-span">go</code> keyword to create goroutines (light weight threads) and by <a href="channel-use-cases.html">using</a> <a href="channel.html">channels</a> and <a href="concurrent-atomic-operation.html">other concurrency</a> <a href="concurrent-synchronization-more.html">synchronization techniques</a> provided in Go, concurrent programming becomes easy, flexible and enjoyable.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Go is a language supporting built-in concurrent programming.
-By using the <code>go</code> keyword to create goroutines (light weight threads)
-and by <a href="channel-use-cases.html">using</a>
-<a href="channel.html">channels</a> and
-<a href="concurrent-atomic-operation.html">other concurrency</a>
-<a href="concurrent-synchronization-more.html">synchronization techniques</a>
-provided in Go, concurrent programming becomes easy, flexible and enjoyable.
-</p>
-
-<p>
-On the other hand, Go doesn't prevent Go programmers from making some
-concurrent programming mistakes which are caused by either carelessness
-or lacking of experience.
-The remaining of the current article will show some common mistakes
-in Go concurrent programming, to help Go programmers avoid making such mistakes.
-</p>
-
-<h3>No Synchronizations When Synchronizations Are Needed</h3>
-
-<div>
-<p>
+</div>
+<p></p>
+<div class="tmd-usual">
+On the other hand, Go doesn't prevent Go programmers from making some concurrent programming mistakes which are caused by either carelessness or lacking of experience. The remaining of the current article will show some common mistakes in Go concurrent programming, to help Go programmers avoid making such mistakes.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+No Synchronizations When Synchronizations Are Needed
+</h3>
+<p></p>
+<div class="tmd-usual">
 Code lines might be <a href="memory-model.html">not executed by their appearance order</a>.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
 
+</div>
+<p></p>
+<div class="tmd-usual">
 There are two mistakes in the following program.
-<ul>
-<li>
-	First, the read of <code>b</code> in the main goroutine and the write
-	of <code>b</code> in the new goroutine might cause data races.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+First, the read of <code class="tmd-code-span">b</code> in the main goroutine and the write of <code class="tmd-code-span">b</code> in the new goroutine might cause data races.
+</div>
 </li>
-<li>
-	Second, the condition <code>b == true</code> can't ensure
-	that <code>a != nil</code> in the main goroutine.
-	Compilers and CPUs may make optimizations by
-	<a href="memory-model.html">reordering instructions</a>
-	in the new goroutine, so the assignment of <code>b</code> may happen
-	before the assignment of <code>a</code> at run time,
-	which makes that slice <code>a</code> is still <code>nil</code>
-	when the elements of <code>a</code> are modified in the main goroutine.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Second, the condition <code class="tmd-code-span">b == true</code> can't ensure that <code class="tmd-code-span">a != nil</code> in the main goroutine. Compilers and CPUs may make optimizations by <a href="memory-model.html">reordering instructions</a> in the new goroutine, so the assignment of <code class="tmd-code-span">b</code> may happen before the assignment of <code class="tmd-code-span">a</code> at run time, which makes that slice <code class="tmd-code-span">a</code> is still <code class="tmd-code-span">nil</code> when the elements of <code class="tmd-code-span">a</code> are modified in the main goroutine.
+</div>
 </li>
 </ul>
+<p></p>
+<div class="tmd-usual">
 
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"time"
@@ -67,17 +71,17 @@ func main() {
 	a[0], a[1], a[2] = 0, 1, 2 // might panic
 }
 </code></pre>
-
-<p>
-The above program may run well on one computer, but may panic on another one,
-or it runs well when it is compiled by one compiler, but panics when another compiler is used.
-</p>
-
-We should use channels or the synchronization techniques provided in
-the <code>sync</code> standard package to ensure the memory orders.
-For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The above program may run well on one computer, but may panic on another one, or it runs well when it is compiled by one compiler, but panics when another compiler is used.
+</div>
+<p></p>
+<div class="tmd-usual">
+We should use channels or the synchronization techniques provided in the <code class="tmd-code-span">sync</code> standard package to ensure the memory orders. For example,
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 func main() {
 	var a []int = nil
@@ -85,27 +89,25 @@ func main() {
 
 	go func () {
 		a = make([]int, 3)
-		c <- struct{}{}
+		c &lt;- struct{}{}
 	}()
 
-	<-c
+	&lt;-c
 	// The next line will not panic for sure.
 	a[0], a[1], a[2] = 0, 1, 2
 }
 </code></pre>
-
-<p>
-</p>
-</div>
-
-<a class="anchor" id="sleep"></a>
-<h3>Use <code>time.Sleep</code> Calls to Do Synchronizations</h3>
-
-<div>
-
+<p></p>
+<h3 id="sleep" class="tmd-header-3">
+Use <code class="tmd-code-span">time.Sleep</code> Calls to Do Synchronizations
+</h3>
+<p></p>
+<div class="tmd-usual">
 Let's view a simple example.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -123,27 +125,18 @@ func main() {
 	fmt.Println(x) // read x
 }
 </code></pre>
-
-<p>
-We expect this program to print <code>789</code>.
-In fact, it really prints <code>789</code>, almost always, in running.
-But is it a program with good synchronization?
-No! The reason is Go runtime doesn't guarantee the write of <code>x</code>
-happens before the read of <code>x</code> for sure.
-Under certain conditions, such as most CPU resources are consumed by
-some other computation-intensive programs running on the same OS,
-the write of <code>x</code> might happen after the read of <code>x</code>.
-This is why we should never use <code>time.Sleep</code> calls to do
-synchronizations in formal projects.
-</p>
-
-<!--
-https://groups.google.com/forum/#!topic/golang-nuts/J3kXXZivlHA
--->
-
+<p></p>
+<div class="tmd-usual">
+We expect this program to print <code class="tmd-code-span">789</code>. In fact, it really prints <code class="tmd-code-span">789</code>, almost always, in running. But is it a program with good synchronization? No! The reason is Go runtime doesn't guarantee the write of <code class="tmd-code-span">x</code> happens before the read of <code class="tmd-code-span">x</code> for sure. Under certain conditions, such as most CPU resources are consumed by some other computation-intensive programs running on the same OS, the write of <code class="tmd-code-span">x</code> might happen after the read of <code class="tmd-code-span">x</code>. This is why we should never use <code class="tmd-code-span">time.Sleep</code> calls to do synchronizations in formal projects.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
 Let's view another example.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -156,170 +149,150 @@ func main() {
 	c := make(chan int)
 
 	go func() {
-		c <- n + 0
+		c &lt;- n + 0
 	}()
 
 	time.Sleep(time.Second)
 	n = 789
-	fmt.Println(<-c)
+	fmt.Println(&lt;-c)
 }
 </code></pre>
-
-<p>
-What do you expect the program will output? <code>123</code>, or <code>789</code>?
-In fact, the output is compiler dependent.
-For the standard Go compiler 1.23.n,
-it is very possible the program will output <code>123</code>.
-But in theory, it might also output <code>789</code>.
-</p>
-
-<p>
-Now, let's change <code>c &lt;- n + 0</code> to <code>c &lt;- n</code>
-and run the program again, you will find the output becomes to <code>789</code>
-(for the standard Go compiler 1.23.n).
-Again, the output is compiler dependent.
-</p>
-
-<p>
-Yes, there are data races in the above program.
-The expression <code>n</code> might be evaluated before, after, or when
-the assignment statement <code>n = 789</code> is processed.
-The <code>time.Sleep</code> call can't guarantee the evaluation of
-<code>n</code> happens before the assignment is processed.
-</p>
-
-For this specified example,
-we should store the value to be sent in a temporary value
-before creating the new goroutine and send the temporary value instead
-in the new goroutine to remove the data races.
-
-<pre class="line-numbers"><code class="language-go">...
+<p></p>
+<div class="tmd-usual">
+What do you expect the program will output? <code class="tmd-code-span">123</code>, or <code class="tmd-code-span">789</code>? In fact, the output is compiler dependent. For the standard Go compiler 1.23.n, it is very possible the program will output <code class="tmd-code-span">123</code>. But in theory, it might also output <code class="tmd-code-span">789</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+Now, let's change <code class="tmd-code-span">c &lt;- n + 0</code> to <code class="tmd-code-span">c &lt;- n</code> and run the program again, you will find the output becomes to <code class="tmd-code-span">789</code> (for the standard Go compiler 1.23.n). Again, the output is compiler dependent.
+</div>
+<p></p>
+<div class="tmd-usual">
+Yes, there are data races in the above program. The expression <code class="tmd-code-span">n</code> might be evaluated before, after, or when the assignment statement <code class="tmd-code-span">n = 789</code> is processed. The <code class="tmd-code-span">time.Sleep</code> call can't guarantee the evaluation of <code class="tmd-code-span">n</code> happens before the assignment is processed.
+</div>
+<p></p>
+<div class="tmd-usual">
+For this specified example, we should store the value to be sent in a temporary value before creating the new goroutine and send the temporary value instead in the new goroutine to remove the data races.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">...
 	tmp := n
 	go func() {
-		c <- tmp
+		c &lt;- tmp
 	}()
 ...
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h3 class="tmd-header-3">
+Leave Goroutines Hanging
+</h3>
+<p></p>
+<div class="tmd-usual">
+Hanging goroutines are the goroutines staying in blocking state for ever. There are many reasons leading goroutines into hanging. For example,
 </div>
-
-<h3>Leave Goroutines Hanging</h3>
-
-<div>
-Hanging goroutines are the goroutines staying in blocking state for ever.
-There are many reasons leading goroutines into hanging. For example,
-<ul>
-<li>
-	a goroutine tries to receive a value from a channel which no more other goroutines will send values to.
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+a goroutine tries to receive a value from a channel which no more other goroutines will send values to.
+</div>
 </li>
-<li>
-	a goroutine tries to send a value to nil channel or
-	to a channel which no more other goroutines will receive values from.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+a goroutine tries to send a value to nil channel or to a channel which no more other goroutines will receive values from.
+</div>
 </li>
-<li>
-	a goroutine is dead locked by itself.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+a goroutine is dead locked by itself.
+</div>
 </li>
-<li>
-	a group of goroutines are dead locked by each other.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+a group of goroutines are dead locked by each other.
+</div>
 </li>
-<li>
-	a goroutine is blocked when executing a <code>select</code> code block
-	without <code>default</code> branch, and all the channel operations
-	following the <code>case</code> keywords in the <code>select</code>
-	code block keep blocking for ever.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+a goroutine is blocked when executing a <code class="tmd-code-span">select</code> code block without <code class="tmd-code-span">default</code> branch, and all the channel operations following the <code class="tmd-code-span">case</code> keywords in the <code class="tmd-code-span">select</code> code block keep blocking for ever.
+</div>
 </li>
 </ul>
+<p></p>
+<div class="tmd-usual">
+Except sometimes we deliberately let the main goroutine in a program hanging to avoid the program exiting, most other hanging goroutine cases are unexpected. It is hard for Go runtime to judge whether or not a goroutine in blocking state is hanging or stays in blocking state temporarily, so Go runtime will never release the resources consumed by a hanging goroutine.
+</div>
+<p></p>
+<div class="tmd-usual">
+In the <a href="channel-use-cases.html#first-response-wins">first-response-wins</a> channel use case, if the capacity of the channel which is used a future is not large enough, some slower response goroutines will hang when trying to send a result to the future channel. For example, if the following function is called, there will be 4 goroutines stay in blocking state for ever.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Except sometimes we deliberately let the main goroutine in a program hanging
-to avoid the program exiting, most other hanging goroutine cases are unexpected.
-It is hard for Go runtime to judge whether or not a goroutine
-in blocking state is hanging or stays in blocking state temporarily,
-so Go runtime will never release the resources consumed by a hanging goroutine.
-</p>
-
-In the <a href="channel-use-cases.html#first-response-wins">first-response-wins</a>
-channel use case, if the capacity of the channel which is used a future
-is not large enough, some slower response goroutines will hang
-when trying to send a result to the future channel.
-For example, if the following function is called,
-there will be 4 goroutines stay in blocking state for ever.
-
-<pre class="line-numbers"><code class="language-go">func request() int {
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func request() int {
 	c := make(chan int)
-	for i := 0; i < 5; i++ {
+	for i := 0; i &lt; 5; i++ {
 		i := i
 		go func() {
-			c <- i // 4 goroutines will hang here.
+			c &lt;- i // 4 goroutines will hang here.
 		}()
 	}
-	return <-c
+	return &lt;-c
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+To avoid the four goroutines hanging, the capacity of channel <code class="tmd-code-span">c</code> must be at least <code class="tmd-code-span">4</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+In <a href="channel-use-cases.html#first-response-wins-2">the second way to implement the first-response-wins</a> channel use case, if the channel which is used as a future/promise is an unbuffered channel, like the following code shows, it is possible that the channel receiver will miss all responses and hang.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-To avoid the four goroutines hanging, the capacity of channel <code>c</code>
-must be at least <code>4</code>.
-</p>
-
-In <a href="channel-use-cases.html#first-response-wins-2">the second way
-to implement the first-response-wins</a> channel use case,
-if the channel which is used as a future/promise is an unbuffered channel,
-like the following code shows,
-it is possible that the channel receiver will miss all responses and hang.
-
-<pre class="line-numbers"><code class="language-go">func request() int {
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func request() int {
 	c := make(chan int)
-	for i := 0; i < 5; i++ {
+	for i := 0; i &lt; 5; i++ {
 		i := i
 		go func() {
 			select {
-			case c <- i:
+			case c &lt;- i:
 			default:
 			}
 		}()
 	}
-	return <-c // might hang here
+	return &lt;-c // might hang here
 }
 </code></pre>
-
-<p>
-The reason why the receiver goroutine might hang is that if the five try-send operations
-all happen before the receive operation <code>&lt;-c</code> is ready,
-then all the five try-send operations will fail to send values
-so that the caller goroutine will never receive a value.
-</p>
-
-<p>
-Changing the channel <code>c</code> as a buffered channel will guarantee
-at least one of the five try-send operations succeed so that the caller
-goroutine will never hang in the above function.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+The reason why the receiver goroutine might hang is that if the five try-send operations all happen before the receive operation <code class="tmd-code-span">&lt;-c</code> is ready, then all the five try-send operations will fail to send values so that the caller goroutine will never receive a value.
 </div>
-
-<h3>Copy Values of the Types in the <code>sync</code> Standard Package</h3>
-
-<div>
-<p>
-In practice, values of the types (except the <code>Locker</code> interface values)
-in the <code>sync</code> standard package should never be copied.
-We should only copy pointers of such values.
-</p>
-
-The following is bad concurrent programming example.
-In this example, when the <code>Counter.Value</code> method is called,
-a <code>Counter</code> receiver value will be copied.
-As a field of the receiver value, the respective <code>Mutex</code> field
-of the <code>Counter</code> receiver value will also be copied.
-The copy is not synchronized, so the copied  <code>Mutex</code> value might be corrupted.
-Even if it is not corrupted, what it protects is the use of
-the copied field <code>n</code>, which is meaningless generally.
-
-<pre class="line-numbers"><code class="language-go">import "sync"
+<p></p>
+<div class="tmd-usual">
+Changing the channel <code class="tmd-code-span">c</code> as a buffered channel will guarantee at least one of the five try-send operations succeed so that the caller goroutine will never hang in the above function.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Copy Values of the Types in the <code class="tmd-code-span">sync</code> Standard Package
+</h3>
+<p></p>
+<div class="tmd-usual">
+In practice, values of the types (except the <code class="tmd-code-span">Locker</code> interface values) in the <code class="tmd-code-span">sync</code> standard package should never be copied. We should only copy pointers of such values.
+</div>
+<p></p>
+<div class="tmd-usual">
+The following is bad concurrent programming example. In this example, when the <code class="tmd-code-span">Counter.Value</code> method is called, a <code class="tmd-code-span">Counter</code> receiver value will be copied. As a field of the receiver value, the respective <code class="tmd-code-span">Mutex</code> field of the <code class="tmd-code-span">Counter</code> receiver value will also be copied. The copy is not synchronized, so the copied  <code class="tmd-code-span">Mutex</code> value might be corrupted. Even if it is not corrupted, what it protects is the use of the copied field <code class="tmd-code-span">n</code>, which is meaningless generally.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">import "sync"
 
 type Counter struct {
 	sync.Mutex
@@ -344,49 +317,33 @@ func (c Counter) Value() (r int64) {
 	return
 }
 </code></pre>
-
-<p>
-We should change the receiver type of the <code>Value</code> method to
-the pointer type <code>*Counter</code> to avoid copying <code>sync.Mutex</code> values.
-</p>
-
-<p>
-The <code>go vet</code> command provided in Go Toolchain will report
-potential bad value copies.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+We should change the receiver type of the <code class="tmd-code-span">Value</code> method to the pointer type <code class="tmd-code-span">*Counter</code> to avoid copying <code class="tmd-code-span">sync.Mutex</code> values.
 </div>
-
-<h3>Call the <code>sync.WaitGroup.Add</code> Method at Wrong Places</h3>
-
-<div>
-
-<p>
-Each <code>sync.WaitGroup</code> value maintains a counter internally,
-The initial value of the counter is zero.
-If the counter of a <code>WaitGroup</code> value is zero,
-a call to the <code>Wait</code> method of the <code>WaitGroup</code> value
-will not block, otherwise, the call blocks until the counter value becomes zero.
-</p>
-
-<p>
-To make the uses of <code>WaitGroup</code> value meaningful,
-when the counter of a <code>WaitGroup</code> value is zero,
-the next call to the <code>Add</code> method of the <code>WaitGroup</code> value
-must happen before the next call to the <code>Wait</code> method of
-the <code>WaitGroup</code> value.
-</p>
-
-For example, in the following program, the <code>Add</code> method
-is called at an improper place, which makes that the final printed number
-is not always <code>100</code>. In fact, the final printed number of
-the program may be an arbitrary number in the range <code>[0, 100)</code>.
-The reason is none of the <code>Add</code> method calls are guaranteed to
-happen before the <code>Wait</code> method call, which causes none of
-the <code>Done</code> method calls are guaranteed to
-happen before the <code>Wait</code> method call returns.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">go vet</code> command provided in Go Toolchain will report potential bad value copies.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Call the <code class="tmd-code-span">sync.WaitGroup.Add</code> Method at Wrong Places
+</h3>
+<p></p>
+<div class="tmd-usual">
+Each <code class="tmd-code-span">sync.WaitGroup</code> value maintains a counter internally, The initial value of the counter is zero. If the counter of a <code class="tmd-code-span">WaitGroup</code> value is zero, a call to the <code class="tmd-code-span">Wait</code> method of the <code class="tmd-code-span">WaitGroup</code> value will not block, otherwise, the call blocks until the counter value becomes zero.
+</div>
+<p></p>
+<div class="tmd-usual">
+To make the uses of <code class="tmd-code-span">WaitGroup</code> value meaningful, when the counter of a <code class="tmd-code-span">WaitGroup</code> value is zero, the next call to the <code class="tmd-code-span">Add</code> method of the <code class="tmd-code-span">WaitGroup</code> value must happen before the next call to the <code class="tmd-code-span">Wait</code> method of the <code class="tmd-code-span">WaitGroup</code> value.
+</div>
+<p></p>
+<div class="tmd-usual">
+For example, in the following program, the <code class="tmd-code-span">Add</code> method is called at an improper place, which makes that the final printed number is not always <code class="tmd-code-span">100</code>. In fact, the final printed number of the program may be an arbitrary number in the range <code class="tmd-code-span">[0, 100)</code>. The reason is none of the <code class="tmd-code-span">Add</code> method calls are guaranteed to happen before the <code class="tmd-code-span">Wait</code> method call, which causes none of the <code class="tmd-code-span">Done</code> method calls are guaranteed to happen before the <code class="tmd-code-span">Wait</code> method call returns.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -397,174 +354,156 @@ import (
 func main() {
 	var wg sync.WaitGroup
 	var x int32 = 0
-	for i := 0; i < 100; i++ {
+	for i := 0; i &lt; 100; i++ {
 		go func() {
 			wg.Add(1)
-			atomic.AddInt32(&x, 1)
+			atomic.AddInt32(&amp;x, 1)
 			wg.Done()
 		}()
 	}
 
 	fmt.Println("Wait ...")
 	wg.Wait()
-	fmt.Println(atomic.LoadInt32(&x))
+	fmt.Println(atomic.LoadInt32(&amp;x))
 }
 </code></pre>
-
-<p>
-</p>
-
-To make the program behave as expected, we should move the <code>Add</code>
-method calls out of the new goroutines created in the <code>for</code> loop,
-as the following code shown.
-
-<pre class="line-numbers"><code class="language-go">...
-	for i := 0; i < 100; i++ {
+<p></p>
+<div class="tmd-usual">
+To make the program behave as expected, we should move the <code class="tmd-code-span">Add</code> method calls out of the new goroutines created in the <code class="tmd-code-span">for</code> loop, as the following code shown.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">...
+	for i := 0; i &lt; 100; i++ {
 		wg.Add(1)
 		go func() {
-			atomic.AddInt32(&x, 1)
+			atomic.AddInt32(&amp;x, 1)
 			wg.Done()
 		}()
 	}
 ...
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 class="tmd-header-3">
+Use Channels as Futures/Promises Improperly
+</h3>
+<p></p>
+<div class="tmd-usual">
+From the article <a href="channel-use-cases.html">channel use cases</a>, we know that some functions will return <a href="channel-use-cases.html#future-promise">channels as futures</a>. Assume <code class="tmd-code-span">fa</code> and <code class="tmd-code-span">fb</code> are two such functions, then the following call uses future arguments improperly.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h3>Use Channels as Futures/Promises Improperly</h3>
-
-<div>
-
-From the article <a href="channel-use-cases.html">channel use cases</a>,
-we know that some functions will return
-<a href="channel-use-cases.html#future-promise">channels as futures</a>.
-Assume <code>fa</code> and <code>fb</code> are two such functions,
-then the following call uses future arguments improperly.
-
-<pre class="line-numbers"><code class="language-go">doSomethingWithFutureArguments(<-fa(), <-fb())
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">doSomethingWithFutureArguments(&lt;-fa(), &lt;-fb())
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 In the above code line, the generations of the two arguments are processed sequentially, instead of concurrently.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 We should modify it as the following to process them concurrently.
-
-<pre class="line-numbers"><code class="language-go">ca, cb := fa(), fb()
-doSomethingWithFutureArguments(<-ca, <-cb)
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">ca, cb := fa(), fb()
+doSomethingWithFutureArguments(&lt;-ca, &lt;-cb)
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 class="tmd-header-3">
+Close Channels Not From the Last Active Sender Goroutine
+</h3>
+<p></p>
+<div class="tmd-usual">
+A common mistake made by Go programmers is closing a channel when there are still some other goroutines will potentially send values to the channel later. When such a potential send (to the closed channel) really happens, a panic might occur.
+</div>
+<p></p>
+<div class="tmd-usual">
+This mistake was ever made in some famous Go projects, such as <a href="https://github.com/kubernetes/kubernetes/pull/45291/files?diff=split">this bug</a> and <a href="https://github.com/kubernetes/kubernetes/pull/39479/files?diff=split">this bug</a> in the kubernetes project.
+</div>
+<p></p>
+<div class="tmd-usual">
+Please read <a href="channel-closing.html">this article</a> for explanations on how to safely and gracefully close channels.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h3>Close Channels Not From the Last Active Sender Goroutine</h3>
-
-<div>
-
-<p>
-A common mistake made by Go programmers is closing a channel when there are
-still some other goroutines will potentially send values to the channel later.
-When such a potential send (to the closed channel) really happens,
-a panic might occur.
-</p>
-
-<p>
-This mistake was ever made in some famous Go projects, such as
-<a href="https://github.com/kubernetes/kubernetes/pull/45291/files?diff=split">this bug</a>
-and
-<a href="https://github.com/kubernetes/kubernetes/pull/39479/files?diff=split">this bug</a>
-in the kubernetes project.
-</p>
-
-<p>
-Please read <a href="channel-closing.html">this article</a> for explanations
-on how to safely and gracefully close channels.
-</p>
+<p></p>
+<h3 class="tmd-header-3">
+Do 64-bit Atomic Operations on Values Which Are Not Guaranteed to Be 8-byte Aligned
+</h3>
+<p></p>
+<div class="tmd-usual">
+The address of the value involved in a non-method 64-bit atomic operation is required to be 8-byte aligned. Failure to do so may make the current goroutine panic. For the standard Go compiler, such failure can only <a href="https://golang.org/pkg/sync/atomic/#pkg-note-BUG">happen on 32-bit architectures</a>. Since Go 1.19, we can use 64-bit method atomic operations to avoid the drawback. Please read <a href="memory-layout.html">memory layouts</a> to get how to guarantee the addresses of 64-bit word 8-byte aligned on 32-bit OSes.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-
-<h3>Do 64-bit Atomic Operations on Values Which Are Not Guaranteed to Be 8-byte Aligned</h3>
-
-<div>
-<p>
-The address of the value involved in a non-method 64-bit atomic operation is required to be 8-byte aligned.
-Failure to do so may make the current goroutine panic.
-For the standard Go compiler, such failure can only
-<a href="https://golang.org/pkg/sync/atomic/#pkg-note-BUG">happen on 32-bit architectures</a>.
-Since Go 1.19, we can use 64-bit method atomic operations to avoid the drawback.
-Please read <a href="memory-layout.html">memory layouts</a> to get how to
-guarantee the addresses of 64-bit word 8-byte aligned on 32-bit OSes.
-</p>
+<p></p>
+<h3 class="tmd-header-3">
+Not Pay Attention to Too Many Resources Are Consumed by Calls to the <code class="tmd-code-span">time.After</code> Function
+</h3>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">After</code> function in the <code class="tmd-code-span">time</code> standard package returns <a href="channel-use-cases.html#timer">a channel for delay notification</a>. The function is convenient, however each of its calls will create a new value of the <code class="tmd-code-span">time.Timer</code> type. Before Go 1.23, the new created <code class="tmd-code-span">Timer</code> value will keep alive within the duration specified by the passed argument to the <code class="tmd-code-span">After</code> function. If the function is called many times in a certain period, there will be many alive <code class="tmd-code-span">Timer</code> values accumulated so that much memory and computation is consumed.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h3>Not Pay Attention to Too Many Resources Are Consumed by Calls to the <code>time.After</code> Function</h3>
-
-<div>
-<p>
-The <code>After</code> function in the <code>time</code> standard package
-returns <a href="channel-use-cases.html#timer">a channel for delay notification</a>.
-The function is convenient, however each of its calls will
-create a new value of the <code>time.Timer</code> type.
-Before Go 1.23, the new created <code>Timer</code> value will keep alive within the duration
-specified by the passed argument to the <code>After</code> function.
-If the function is called many times in a certain period,
-there will be many alive <code>Timer</code> values accumulated
-so that much memory and computation is consumed.
-</p>
-
-For example, (before Go 1.23), if the following <code>longRunning</code> function is called
-and there are millions of messages coming in one minute, then there will
-be millions of <code>Timer</code> values alive in a certain small period (several seconds),
-even if most of these <code>Timer</code> values have already become useless.
-
-<pre class="line-numbers"><code class="language-go">import (
+<p></p>
+<div class="tmd-usual">
+For example, (before Go 1.23), if the following <code class="tmd-code-span">longRunning</code> function is called and there are millions of messages coming in one minute, then there will be millions of <code class="tmd-code-span">Timer</code> values alive in a certain small period (several seconds), even if most of these <code class="tmd-code-span">Timer</code> values have already become useless.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">import (
 	"fmt"
 	"time"
 )
 
 // The function will return if a message
 // arrival interval is larger than one minute.
-func longRunning(messages <-chan string) {
+func longRunning(messages &lt;-chan string) {
 	for {
 		select {
-		case <-time.After(time.Minute):
+		case &lt;-time.After(time.Minute):
 			return
-		case msg := <-messages:
+		case msg := &lt;-messages:
 			fmt.Println(msg)
 		}
 	}
 }
 </code></pre>
-
-<p>
-Note: since Go 1.23, this problem has gone.
-Because, since Go 1.23, a <code>Timer</code> value can be collected without expiring or being stopped.
-</p>
-
-Before Go 1.23, to avoid too many <code>Timer</code> values being created in the above code,
-we should use (and reuse) a single <code>Timer</code> value to do the same job.
-
-<pre class="line-numbers"><code class="language-go">func longRunning(messages <-chan string) {
+<p></p>
+<div class="tmd-usual">
+Note: since Go 1.23, this problem has gone. Because, since Go 1.23, a <code class="tmd-code-span">Timer</code> value can be collected without expiring or being stopped.
+</div>
+<p></p>
+<div class="tmd-usual">
+Before Go 1.23, to avoid too many <code class="tmd-code-span">Timer</code> values being created in the above code, we should use (and reuse) a single <code class="tmd-code-span">Timer</code> value to do the same job.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func longRunning(messages &lt;-chan string) {
 	timer := time.NewTimer(time.Minute)
 	defer timer.Stop()
 
 	for {
 		select {
-		case <-timer.C: // expires (timeout)
+		case &lt;-timer.C: // expires (timeout)
 			return
-		case msg := <-messages:
+		case msg := &lt;-messages:
 			fmt.Println(msg)
 
 			// This "if" block is important.
 			if !timer.Stop() {
-				<-timer.C
+				&lt;-timer.C
 			}
 		}
 
@@ -573,25 +512,25 @@ we should use (and reuse) a single <code>Timer</code> value to do the same job.
 	}
 }
 </code></pre>
-
-<p>
-Note, the <code>if</code> code block is used to discard/drain the potential timer notification
-which is sent in the small period when executing the second branch code block
-(since Go 1.23, this has become needless).
-</p>
-
-Note: since Go 1.23, the <code>Timer.Reset</code> method will aoutomatically discard/drain the potential stale timer notification.
-So the above code can be simplified as
-
-<pre class="line-numbers"><code class="language-go">func longRunning(messages <-chan string) {
+<p></p>
+<div class="tmd-usual">
+Note, the <code class="tmd-code-span">if</code> code block is used to discard/drain the potential timer notification which is sent in the small period when executing the second branch code block (since Go 1.23, this has become needless).
+</div>
+<p></p>
+<div class="tmd-usual">
+Note: since Go 1.23, the <code class="tmd-code-span">Timer.Reset</code> method will aoutomatically discard/drain the potential stale timer notification. So the above code can be simplified as
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func longRunning(messages &lt;-chan string) {
 	timer := time.NewTimer(time.Minute)
 	// defer timer.Stop() // become needless since Go 1.23
 
 	for {
 		select {
-		case <-timer.C:
+		case &lt;-timer.C:
 			return
-		case msg := <-messages:
+		case msg := &lt;-messages:
 			fmt.Println(msg)
 		}
 
@@ -599,61 +538,50 @@ So the above code can be simplified as
 	}
 }
 </code></pre>
-
+<p></p>
+<h3 class="tmd-header-3">
+Use <code class="tmd-code-span">time.Timer</code> Values Incorrectly
+</h3>
+<p></p>
+<div class="tmd-usual">
+<span class="tmd-italic">(Note: the problems described in the current section only existed before Go 1.23. Since Go 1.23, they have gone.)</span>
 </div>
-
-<h3>Use <code>time.Timer</code> Values Incorrectly</h3>
-
-<div>
-
-<p><i>
-(Note: the problems described in the current section only existed before Go 1.23.
-Since Go 1.23, they have gone.)
-</i></p>
-
-An idiomatic use example of <code>time.Timer</code> values has been shown in the last section.
-Some explanations:
-<ul>
-<li>
-	the <code>Stop</code> method of a <code>*Timer</code> value returns <code>false</code>
-	if the corresponding <code>Timer</code> value has already expired or been stopped.
-	If we know the <code>Timer</code> value has not been stopped yet, and 
-	the <code>Stop</code> method returns <code>false</code>,
-	then the <code>Timer</code> value must have already expired.
+<p></p>
+<div class="tmd-usual">
+An idiomatic use example of <code class="tmd-code-span">time.Timer</code> values has been shown in the last section. Some explanations:
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the <code class="tmd-code-span">Stop</code> method of a <code class="tmd-code-span">*Timer</code> value returns <code class="tmd-code-span">false</code> if the corresponding <code class="tmd-code-span">Timer</code> value has already expired or been stopped. If we know the <code class="tmd-code-span">Timer</code> value has not been stopped yet, and the <code class="tmd-code-span">Stop</code> method returns <code class="tmd-code-span">false</code>, then the <code class="tmd-code-span">Timer</code> value must have already expired.
+</div>
 </li>
-<li>
-	before Go 1.23, after a <code>Timer</code> value is stopped, its <code>C</code> channel field
-	can only contain most one timeout notification.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+before Go 1.23, after a <code class="tmd-code-span">Timer</code> value is stopped, its <code class="tmd-code-span">C</code> channel field can only contain most one timeout notification.
+</div>
 </li>
-<li>
-	before Go 1.23, we should take out the timeout notification, if it hasn't been taken out,
-	from a timeout <code>Timer</code> value after the <code>Timer</code> value is stopped
-	and before resetting and reusing the <code>Timer</code> value.
-	This is the meaningfulness of the <code>if</code> code block in the example in the last section.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+before Go 1.23, we should take out the timeout notification, if it hasn't been taken out, from a timeout <code class="tmd-code-span">Timer</code> value after the <code class="tmd-code-span">Timer</code> value is stopped and before resetting and reusing the <code class="tmd-code-span">Timer</code> value. This is the meaningfulness of the <code class="tmd-code-span">if</code> code block in the example in the last section.
+</div>
 </li>
 </ul>
-
-<p>
-The <code>Reset</code> method of a <code>*Timer</code> value must be called
-when the corresponding <code>Timer</code> value has already expired or been stopped, otherwise,
-a data race may occur between the <code>Reset</code> call and
-a possible notification send to the <code>C</code> channel field of the <code>Timer</code> value
-(before Go 1.23).
-</p>
-
-<p>
-If the first <code>case</code> branch of the <code>select</code> block is selected,
-it means the <code>Timer</code> value has already expired, so we don't need to stop it,
-for the sent notification has already been taken out.
-However, we must stop the timer in the second branch to check whether or not a timeout notification exists.
-If it does exist, we should drain it before reusing the timer,
-otherwise, the notification will be fired immediately in the next loop step.
-</p>
-
-For example, the following program is very possible to exit in about one second,
-instead of ten seconds. And more importantly, the program is not data race free.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">Reset</code> method of a <code class="tmd-code-span">*Timer</code> value must be called when the corresponding <code class="tmd-code-span">Timer</code> value has already expired or been stopped, otherwise, a data race may occur between the <code class="tmd-code-span">Reset</code> call and a possible notification send to the <code class="tmd-code-span">C</code> channel field of the <code class="tmd-code-span">Timer</code> value (before Go 1.23).
+</div>
+<p></p>
+<div class="tmd-usual">
+If the first <code class="tmd-code-span">case</code> branch of the <code class="tmd-code-span">select</code> block is selected, it means the <code class="tmd-code-span">Timer</code> value has already expired, so we don't need to stop it, for the sent notification has already been taken out. However, we must stop the timer in the second branch to check whether or not a timeout notification exists. If it does exist, we should drain it before reusing the timer, otherwise, the notification will be fired immediately in the next loop step.
+</div>
+<p></p>
+<div class="tmd-usual">
+For example, the following program is very possible to exit in about one second, instead of ten seconds. And more importantly, the program is not data race free.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -664,41 +592,28 @@ func main() {
 	start := time.Now()
 	timer := time.NewTimer(time.Second/2)
 	select {
-	case <-timer.C:
+	case &lt;-timer.C:
 	default:
 		// Most likely go here.
 		time.Sleep(time.Second)
 	}
 	// Potential data race in the next line.
 	timer.Reset(time.Second * 10)
-	<-timer.C
+	&lt;-timer.C
 	fmt.Println(time.Since(start)) // about 1s
 }
 </code></pre>
-
-<p>
-A <code>time.Timer</code> value can be leaved in non-stopping status
-when it is not used any more, but it is recommended to stop it in the end.
-</p>
-
-<p>
-It is bug prone and not recommended to use a <code>time.Timer</code> value
-concurrently among multiple goroutines.
-</p>
-
-<p>
-We should not rely on the return value of a <code>Reset</code> method call.
-The return result of the <code>Reset</code> method exists
-just for compatibility purpose.
-</p>
+<p></p>
+<div class="tmd-usual">
+A <code class="tmd-code-span">time.Timer</code> value can be leaved in non-stopping status when it is not used any more, but it is recommended to stop it in the end.
 </div>
-
-<!--
-go concurrency programming mistake: hybrid mutex and atomic
-Don't mix atomic and non-atomic accesses for a given memory word:
-* https://groups.google.com/forum/#!topic/golang-dev/vVkH_9fl1D8
-
-https://github.com/golang/go/issues/34889
-
--->
-
+<p></p>
+<div class="tmd-usual">
+It is bug prone and not recommended to use a <code class="tmd-code-span">time.Timer</code> value concurrently among multiple goroutines.
+</div>
+<p></p>
+<div class="tmd-usual">
+We should not rely on the return value of a <code class="tmd-code-span">Reset</code> method call. The return result of the <code class="tmd-code-span">Reset</code> method exists just for compatibility purpose.
+</div>
+<p></p>
+<p></p>

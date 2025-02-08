@@ -1,60 +1,61 @@
-﻿<h1>Channel Use Cases</h1>
-
-<div>
-<p>
-Before reading this article, please read the article
-<a href="channel.html">channels in Go</a>,
-which explains channel types and values in detail.
-New gophers may need to read that article and the current one several times
-to master Go channel programming.
-</p>
-
-The remaining of this article will show many channel use cases.
-I hope this article will convince you that
-<ul>
-<li>
-	asynchronous and concurrency programming with Go channels is easy and enjoyable.
-</li>
-<li>
-	the channel synchronization technique has a wider range of uses
-	and has more variations than the synchronization solutions used in some other languages,
-	such as <a href="https://en.wikipedia.org/wiki/Actor_model">the actor model</a>
-	and the <a href="https://en.wikipedia.org/wiki/Async/await">async/await pattern</a>.
-</li>
-</ul>
-
-<p>
-Please note that the intention of this article is to show
-as many channel use cases as possible.
-We should know that channel is not the only concurrency synchronization technique supported in Go,
-and for some cases, the channel way may not be the best solution.
-Please read <a href="concurrent-atomic-operation.html">atomic operations</a> and
-<a href="concurrent-synchronization-more.html">some other synchronization techniques</a>
-for more concurrency synchronization techniques in Go.
-</p>
+<h1 class="tmd-header-1">
+Channel Use Cases
+</h1>
+<p></p>
+<div class="tmd-usual">
+Before reading this article, please read the article <a href="channel.html">channels in Go</a>, which explains channel types and values in detail. New gophers may need to read that article and the current one several times to master Go channel programming.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<div class="tmd-usual">
+The remaining of this article will show many channel use cases. I hope this article will convince you that
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+asynchronous and concurrency programming with Go channels is easy and enjoyable.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the channel synchronization technique has a wider range of uses and has more variations than the synchronization solutions used in some other languages, such as <a href="https://en.wikipedia.org/wiki/Actor_model">the actor model</a> and the <a href="https://en.wikipedia.org/wiki/Async/await">async/await pattern</a>.
+</div>
+</li>
+</ul>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="future-promise"></a>
-<h3>Use Channels as Futures/Promises</h3>
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note that the intention of this article is to show as many channel use cases as possible. We should know that channel is not the only concurrency synchronization technique supported in Go, and for some cases, the channel way may not be the best solution. Please read <a href="concurrent-atomic-operation.html">atomic operations</a> and <a href="concurrent-synchronization-more.html">some other synchronization techniques</a> for more concurrency synchronization techniques in Go.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Futures and promises are used in many other popular languages.
-They are often associated with requests and responses.
-</p>
-
-<h4>Return receive-only channels as results</h4>
-
-<div>
-<p>
-In the following example, the values of two arguments of the
-<code>sumSquares</code> function call are requested concurrently.
-Each of the two channel receive operations will block until
-a send operation performs on the corresponding channel.
-It takes about three seconds instead of six seconds to return the final result.
-</p>
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<h3 id="future-promise" class="tmd-header-3">
+Use Channels as Futures/Promises
+</h3>
+<p></p>
+<div class="tmd-usual">
+Futures and promises are used in many other popular languages. They are often associated with requests and responses.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Return receive-only channels as results
+</h4>
+<p></p>
+<div class="tmd-usual">
+In the following example, the values of two arguments of the <code class="tmd-code-span">sumSquares</code> function call are requested concurrently. Each of the two channel receive operations will block until a send operation performs on the corresponding channel. It takes about three seconds instead of six seconds to return the final result.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"time"
@@ -62,13 +63,13 @@ import (
 	"fmt"
 )
 
-func longTimeRequest() <-chan int32 {
+func longTimeRequest() &lt;-chan int32 {
 	r := make(chan int32)
 
 	go func() {
 		// Simulate a workload.
 		time.Sleep(time.Second * 3)
-		r <- rand.Int31n(100)
+		r &lt;- rand.Int31n(100)
 	}()
 
 	return r
@@ -82,28 +83,20 @@ func main() {
 	rand.Seed(time.Now().UnixNano()) // needed before Go 1.20
 
 	a, b := longTimeRequest(), longTimeRequest()
-	fmt.Println(sumSquares(<-a, <-b))
+	fmt.Println(sumSquares(&lt;-a, &lt;-b))
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 class="tmd-header-4">
+Pass send-only channels as arguments
+</h4>
+<p></p>
+<div class="tmd-usual">
+Same as the last example, in the following example, the values of two arguments of the <code class="tmd-code-span">sumSquares</code> function call are requested concurrently. Different to the last example, the <code class="tmd-code-span">longTimeRequest</code> function takes a send-only channel as parameter instead of returning a receive-only channel result.
 </div>
-
-<h4>Pass send-only channels as arguments</h4>
-
-<div>
-<p>
-Same as the last example,
-in the following example, the values of two arguments of the
-<code>sumSquares</code> function call are requested concurrently.
-Different to the last example, the <code>longTimeRequest</code> function
-takes a send-only channel as parameter instead of
-returning a receive-only channel result.
-</p>
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"time"
@@ -111,10 +104,10 @@ import (
 	"fmt"
 )
 
-func longTimeRequest(r chan<- int32)  {
+func longTimeRequest(r chan&lt;- int32)  {
 	// Simulate a workload.
 	time.Sleep(time.Second * 3)
-	r <- rand.Int31n(100)
+	r &lt;- rand.Int31n(100)
 }
 
 func sumSquares(a, b int32) int32 {
@@ -128,59 +121,48 @@ func main() {
 	go longTimeRequest(ra)
 	go longTimeRequest(rb)
 
-	fmt.Println(sumSquares(<-ra, <-rb))
+	fmt.Println(sumSquares(&lt;-ra, &lt;-rb))
 }
 </code></pre>
-
-<p>
-</p>
-
-In fact, for the above specified example,
-we don't need two channels to transfer results.
-Using one channel is okay.
-
-<pre class="line-numbers"><code class="language-go">...
+<p></p>
+<div class="tmd-usual">
+In fact, for the above specified example, we don't need two channels to transfer results. Using one channel is okay.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">...
 
 	// The channel can be buffered or not.
 	results := make(chan int32, 2)
 	go longTimeRequest(results)
 	go longTimeRequest(results)
 
-	fmt.Println(sumSquares(<-results, <-results))
+	fmt.Println(sumSquares(&lt;-results, &lt;-results))
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 This is kind of data aggregation which will be introduced specially below.
-</p>
-
 </div>
-
-<a class="anchor" id="first-response-wins"></a>
-<h4>The first response wins</h4>
-
-<div>
-
-<p>
+<p></p>
+<h4 id="first-response-wins" class="tmd-header-4">
+The first response wins
+</h4>
+<p></p>
+<div class="tmd-usual">
 This is the enhancement of the using-only-one-channel variant in the last example.
-</p>
-
-<p>
-Sometimes, a piece of data can be received from several sources to avoid high latencies.
-For a lot of factors, the response durations of these sources may vary much.
-Even for a specified source, its response durations are also not constant.
-To make the response duration as short as possible,
-we can send a request to every source in a separated goroutine.
-Only the first response will be used, other slower ones will be discarded.
-</p>
-
-<p>
-Note, if there are <i>N</i> sources, the capacity of
-the communication channel must be at least <i>N-1</i>,
-to avoid the goroutines corresponding the discarded responses being blocked for ever.
-</p>
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+Sometimes, a piece of data can be received from several sources to avoid high latencies. For a lot of factors, the response durations of these sources may vary much. Even for a specified source, its response durations are also not constant. To make the response duration as short as possible, we can send a request to every source in a separated goroutine. Only the first response will be used, other slower ones will be discarded.
+</div>
+<p></p>
+<div class="tmd-usual">
+Note, if there are <span class="tmd-italic">N</span> sources, the capacity of the communication channel must be at least <span class="tmd-italic">N-1</span>, to avoid the goroutines corresponding the discarded responses being blocked for ever.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -188,11 +170,11 @@ import (
 	"math/rand"
 )
 
-func source(c chan<- int32) {
+func source(c chan&lt;- int32) {
 	ra, rb := rand.Int31(), rand.Intn(3) + 1
 	// Sleep 1s/2s/3s.
 	time.Sleep(time.Duration(rb) * time.Second)
-	c <- ra
+	c &lt;- ra
 }
 
 func main() {
@@ -201,79 +183,62 @@ func main() {
 	startTime := time.Now()
 	// c must be a buffered channel.
 	c := make(chan int32, 5)
-	for i := 0; i < cap(c); i++ {
+	for i := 0; i &lt; cap(c); i++ {
 		go source(c)
 	}
 	// Only the first response will be used.
-	rnd := <- c
+	rnd := &lt;- c
 	fmt.Println(time.Since(startTime))
 	fmt.Println(rnd)
 }
 </code></pre>
-
-<p>
-There are some other ways to implement the first-response-win use case,
-by using the select mechanism and a buffered channel
-whose capacity is one. Other ways will be introduced below.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+There are some other ways to implement the first-response-win use case, by using the select mechanism and a buffered channel whose capacity is one. Other ways will be introduced below.
 </div>
-
-<h4>More request-response variants</h4>
-
-<p>
-The parameter and result channels can be buffered so that
-the response sides won't need to wait for the request sides
-to take out the transferred values.
-</p>
-
-<p>
-Sometimes, a request is not guaranteed to be responded back a valid value.
-For all kinds of reasons, an error may be returned instead.
-For such cases, we can use a struct type like
-<code>struct{v T; err error}</code> or a blank interface type
-as the channel element type.
-</p>
-
-<p>
-Sometimes, for some reasons, the response may need
-a much longer time than the expected to arrive, or will never arrive.
-We can use the timeout mechanism introduced below
-to handle such circumstances.
-</p>
-
-<p>
-Sometimes, a sequence of values may be returned from the response side,
-this is kind of the data flow mechanism mentioned later below.
-</p>
-
-<a class="anchor" id="notification"></a>
-<h3>Use Channels for Notifications</h3>
-
-<p>
-Notifications can be viewed as special requests/responses
-in which the responded values are not important.
-Generally, we use the blank struct type <code>struct{}</code>
-as the element types of the notification channels,
-for the size of type <code>struct{}</code> is zero,
-hence values of <code>struct{}</code> doesn't consume memory.
-</p>
-
-<h4>1-to-1 notification by sending a value to a channel</h4>
-
-<div>
-<p>
-If there are no values to be received from a channel,
-then the next receive operation on the channel will block
-until another goroutine sends a value to the channel.
-So we can send a value to a channel to notify another goroutine
-which is waiting to receive a value from the same channel.
-</p>
-
-In the following example, the channel <code>done</code>
-is used as a signal channel to do notifications.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<h4 class="tmd-header-4">
+More request-response variants
+</h4>
+<p></p>
+<div class="tmd-usual">
+The parameter and result channels can be buffered so that the response sides won't need to wait for the request sides to take out the transferred values.
+</div>
+<p></p>
+<div class="tmd-usual">
+Sometimes, a request is not guaranteed to be responded back a valid value. For all kinds of reasons, an error may be returned instead. For such cases, we can use a struct type like <code class="tmd-code-span">struct{v T; err error}</code> or a blank interface type as the channel element type.
+</div>
+<p></p>
+<div class="tmd-usual">
+Sometimes, for some reasons, the response may need a much longer time than the expected to arrive, or will never arrive. We can use the timeout mechanism introduced below to handle such circumstances.
+</div>
+<p></p>
+<div class="tmd-usual">
+Sometimes, a sequence of values may be returned from the response side, this is kind of the data flow mechanism mentioned later below.
+</div>
+<p></p>
+<h3 id="notification" class="tmd-header-3">
+Use Channels for Notifications
+</h3>
+<p></p>
+<div class="tmd-usual">
+Notifications can be viewed as special requests/responses in which the responded values are not important. Generally, we use the blank struct type <code class="tmd-code-span">struct{}</code> as the element types of the notification channels, for the size of type <code class="tmd-code-span">struct{}</code> is zero, hence values of <code class="tmd-code-span">struct{}</code> doesn't consume memory.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+1-to-1 notification by sending a value to a channel
+</h4>
+<p></p>
+<div class="tmd-usual">
+If there are no values to be received from a channel, then the next receive operation on the channel will block until another goroutine sends a value to the channel. So we can send a value to a channel to notify another goroutine which is waiting to receive a value from the same channel.
+</div>
+<p></p>
+<div class="tmd-usual">
+In the following example, the channel <code class="tmd-code-span">done</code> is used as a signal channel to do notifications.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"crypto/rand"
@@ -294,42 +259,33 @@ func main() {
 	// The sorting goroutine
 	go func() {
 		sort.Slice(values, func(i, j int) bool {
-			return values[i] < values[j]
+			return values[i] &lt; values[j]
 		})
 		// Notify sorting is done.
-		done <- struct{}{}
+		done &lt;- struct{}{}
 	}()
 
 	// do some other things ...
 
-	<- done // waiting here for notification
+	&lt;- done // waiting here for notification
 	fmt.Println(values[0], values[len(values)-1])
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h4 class="tmd-header-4">
+1-to-1 notification by receiving a value from a channel
+</h4>
+<p></p>
+<div class="tmd-usual">
+If the value buffer queue of a channel is full (the buffer queue of an unbuffered channel is always full), a send operation on the channel will block until another goroutine receives a value from the channel. So we can receive a value from a channel to notify another goroutine which is waiting to send a value to the same channel. Generally, the channel should be an unbuffered channel.
 </div>
-
-<h4>1-to-1 notification by receiving a value from a channel</h4>
-
-<div>
-<p>
-If the value buffer queue of a channel is full
-(the buffer queue of an unbuffered channel is always full),
-a send operation on the channel will block
-until another goroutine receives a value from the channel.
-So we can receive a value from a channel to notify another goroutine
-which is waiting to send a value to the same channel.
-Generally, the channel should be an unbuffered channel.
-</p>
-
-<p>
-This notification way is used much less common than
-the way introduced in the last example.
-</p>
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+This notification way is used much less common than the way introduced in the last example.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -351,47 +307,43 @@ func main() {
 		// Receive a value from the done
 		// channel, to unblock the second
 		// send in main goroutine.
-		<- done
+		&lt;- done
 	}()
 
 	// Blocked here, wait for a notification.
-	done <- struct{}{}
+	done &lt;- struct{}{}
 	fmt.Println(" world!")
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-In fact, there are no fundamental differences between
-receiving or sending values to make notifications.
-They can both be summarized as the fasters are notified by the slowers.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+In fact, there are no fundamental differences between receiving or sending values to make notifications. They can both be summarized as the fasters are notified by the slowers.
 </div>
-
-<h4>N-to-1 and 1-to-N notifications</h4>
-
-<div>
-By extending the above two use cases a little,
-it is easy to do N-to-1 and 1-to-N notifications.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<h4 class="tmd-header-4">
+N-to-1 and 1-to-N notifications
+</h4>
+<p></p>
+<div class="tmd-usual">
+By extending the above two use cases a little, it is easy to do N-to-1 and 1-to-N notifications.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "log"
 import "time"
 
 type T = struct{}
 
-func worker(id int, ready <-chan T, done chan<- T) {
-	<-ready // block here and wait a notification
+func worker(id int, ready &lt;-chan T, done chan&lt;- T) {
+	&lt;-ready // block here and wait a notification
 	log.Print("Worker#", id, " starts.")
 	// Simulate a workload.
 	time.Sleep(time.Second * time.Duration(id+1))
 	log.Print("Worker#", id, " job done.")
 	// Notify the main goroutine (N-to-1),
-	done <- T{}
+	done &lt;- T{}
 }
 
 func main() {
@@ -405,138 +357,126 @@ func main() {
 	// Simulate an initialization phase.
 	time.Sleep(time.Second * 3 / 2)
 	// 1-to-N notifications.
-	ready <- T{}; ready <- T{}; ready <- T{}
+	ready &lt;- T{}; ready &lt;- T{}; ready &lt;- T{}
 	// Being N-to-1 notified.
-	<-done; <-done; <-done
+	&lt;-done; &lt;-done; &lt;-done
 }
 </code></pre>
-
-<p>
-In fact, the ways to do 1-to-N and N-to-1 notifications introduced
-in this sub-section are not used commonly in practice.
-In practice, we often use <code>sync.WaitGroup</code> to do N-to-1 notifications,
-and we do 1-to-N notifications by close channels.
-Please read the next sub-section for details.
-</p>
+<p></p>
+<div class="tmd-usual">
+In fact, the ways to do 1-to-N and N-to-1 notifications introduced in this sub-section are not used commonly in practice. In practice, we often use <code class="tmd-code-span">sync.WaitGroup</code> to do N-to-1 notifications, and we do 1-to-N notifications by close channels. Please read the next sub-section for details.
 </div>
-
-<h4>Broadcast (1-to-N) notifications by closing a channel</h4>
-
-<div>
-
-<p>
-The way to do 1-to-N notifications shown in the last sub-section
-is seldom used in practice, for there is a better way.
-By making using of the feature that infinite values can be received from
-a closed channel, we can close a channel to broadcast notifications.
-</p>
-
-By the example in the last sub-section,
-we can replace the three channel send operations
-<code>ready &lt;- struct{}{}</code> in the last example
-with one channel close operation <code>close(ready)</code>
-to do an 1-to-N notifications.
-
-<pre class="line-numbers"><code class="language-go">...
+<p></p>
+<h4 class="tmd-header-4">
+Broadcast (1-to-N) notifications by closing a channel
+</h4>
+<p></p>
+<div class="tmd-usual">
+The way to do 1-to-N notifications shown in the last sub-section is seldom used in practice, for there is a better way. By making using of the feature that infinite values can be received from a closed channel, we can close a channel to broadcast notifications.
+</div>
+<p></p>
+<div class="tmd-usual">
+By the example in the last sub-section, we can replace the three channel send operations <code class="tmd-code-span">ready &lt;- struct{}{}</code> in the last example with one channel close operation <code class="tmd-code-span">close(ready)</code> to do an 1-to-N notifications.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">...
 	close(ready) // broadcast notifications
 ...
 </code></pre>
-
-<p>
-Surely, we can also close a channel to do a 1-to-1 notification.
-In fact, this is the most used notification way in Go.
-</p>
-
-<p>
-The feature that infinite values can be received from a closed channel
-will be utilized in many other use cases introduced below.
-In fact, the feature is used popularly in the standard packages.
-For example, the <code>context</code> package uses this feature to confirm cancellations.
-</p>
+<p></p>
+<div class="tmd-usual">
+Surely, we can also close a channel to do a 1-to-1 notification. In fact, this is the most used notification way in Go.
 </div>
-
-<a class="anchor" id="timer"></a>
-<h4>Timer: scheduled notification</h4>
-
-<div>
-<p>
+<p></p>
+<div class="tmd-usual">
+The feature that infinite values can be received from a closed channel will be utilized in many other use cases introduced below. In fact, the feature is used popularly in the standard packages. For example, the <code class="tmd-code-span">context</code> package uses this feature to confirm cancellations.
+</div>
+<p></p>
+<h4 id="timer" class="tmd-header-4">
+Timer: scheduled notification
+</h4>
+<p></p>
+<div class="tmd-usual">
 It is easy to use channels to implement one-time timers.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 A custom one-time timer implementation:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
 	"time"
 )
 
-func AfterDuration(d time.Duration) <- chan struct{} {
+func AfterDuration(d time.Duration) &lt;- chan struct{} {
 	c := make(chan struct{}, 1)
 	go func() {
 		time.Sleep(d)
-		c <- struct{}{}
+		c &lt;- struct{}{}
 	}()
 	return c
 }
 
 func main() {
 	fmt.Println("Hi!")
-	<- AfterDuration(time.Second)
+	&lt;- AfterDuration(time.Second)
 	fmt.Println("Hello!")
-	<- AfterDuration(time.Second)
+	&lt;- AfterDuration(time.Second)
 	fmt.Println("Bye!")
 }
 </code></pre>
-
-<p>
-In fact, the <code>After</code> function in the <code>time</code> standard
-package provides the same functionality, with a much more efficient implementation.
-We should use that function instead to make the code look clean.
-</p>
-
-<p>
-Please note, <code>&lt;-time.After(aDuration)</code> will make the current goroutine
-enter blocking state, but a <code>time.Sleep(aDuration)</code> function call will not.
-</p>
-
-<p>
-The use of <code>&lt;-time.After(aDuration)</code> is often used
-in the timeout mechanism which will be introduced below.
-</p>
+<p></p>
+<div class="tmd-usual">
+In fact, the <code class="tmd-code-span">After</code> function in the <code class="tmd-code-span">time</code> standard package provides the same functionality, with a much more efficient implementation. We should use that function instead to make the code look clean.
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note, <code class="tmd-code-span">&lt;-time.After(aDuration)</code> will make the current goroutine enter blocking state, but a <code class="tmd-code-span">time.Sleep(aDuration)</code> function call will not.
+</div>
+<p></p>
+<div class="tmd-usual">
+The use of <code class="tmd-code-span">&lt;-time.After(aDuration)</code> is often used in the timeout mechanism which will be introduced below.
+</div>
+<p></p>
+<h3 id="mutex" class="tmd-header-3">
+Use Channels as Mutex Locks
+</h3>
+<p></p>
+<div class="tmd-usual">
+One of the above examples has mentioned that one-capacity buffered channels can be used as one-time <a href="https://en.wikipedia.org/wiki/Semaphore_(programming)">binary semaphore</a>. In fact, such channels can also be used as multi-time binary semaphores, a.k.a., mutex locks, though such mutex locks are not efficient as the mutexes provided in the <code class="tmd-code-span">sync</code> standard package.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="mutex"></a>
-<h3>Use Channels as Mutex Locks</h3>
-
-<div>
-<p>
-One of the above examples has mentioned that one-capacity buffered channels
-can be used as one-time
-<a href="https://en.wikipedia.org/wiki/Semaphore_(programming)">binary semaphore</a>.
-In fact, such channels can also be used as multi-time binary semaphores,
-a.k.a., mutex locks, though such mutex locks are not efficient as
-the mutexes provided in the <code>sync</code> standard package.
-</p>
-
+<p></p>
+<div class="tmd-usual">
 There are two manners to use one-capacity buffered channels as mutex locks.
-<ol>
-<li>
-	Lock through a send, unlock through a receive.
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Lock through a send, unlock through a receive.
+</div>
 </li>
-<li>
-	Lock through a receive, unlock through a send.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Lock through a receive, unlock through a send.
+</div>
 </li>
 </ol>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 The following is a lock-through-send example.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -546,82 +486,83 @@ func main() {
 
 	counter := 0
 	increase := func() {
-		mutex <- struct{}{} // lock
+		mutex &lt;- struct{}{} // lock
 		counter++
-		<-mutex // unlock
+		&lt;-mutex // unlock
 	}
 
-	increase1000 := func(done chan<- struct{}) {
-		for i := 0; i < 1000; i++ {
+	increase1000 := func(done chan&lt;- struct{}) {
+		for i := 0; i &lt; 1000; i++ {
 			increase()
 		}
-		done <- struct{}{}
+		done &lt;- struct{}{}
 	}
 
 	done := make(chan struct{})
 	go increase1000(done)
 	go increase1000(done)
-	<-done; <-done
+	&lt;-done; &lt;-done
 	fmt.Println(counter) // 2000
 }
 </code></pre>
-
-<p>
-</p>
-
-The following is a lock-through-receive example.
-It just shows the modified part based on the above lock-through-send example.
-
-<pre class="line-numbers"><code class="language-go">...
+<p></p>
+<div class="tmd-usual">
+The following is a lock-through-receive example. It just shows the modified part based on the above lock-through-send example.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">...
 func main() {
 	mutex := make(chan struct{}, 1)
-	mutex <- struct{}{} // this line is needed.
+	mutex &lt;- struct{}{} // this line is needed.
 
 	counter := 0
 	increase := func() {
-		<-mutex // lock
+		&lt;-mutex // lock
 		counter++
-		mutex <- struct{}{} // unlock
+		mutex &lt;- struct{}{} // unlock
 	}
 ...
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 id="semaphore" class="tmd-header-3">
+Use Channels as Counting Semaphores
+</h3>
+<p></p>
+<div class="tmd-usual">
+Buffered channels can be used as <a href="https://en.wikipedia.org/wiki/Semaphore_(programming)">counting semaphores</a>. Counting semaphores can be viewed as multi-owner locks. If the capacity of a channel is <code class="tmd-code-span">N</code>, then it can be viewed as a lock which can have most <code class="tmd-code-span">N</code> owners at any time. Binary semaphores (mutexes) are special counting semaphores, each of binary semaphores can have at most one owner at any time.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="semaphore"></a>
-<h3>Use Channels as Counting Semaphores</h3>
-
-<div>
-<p>
-Buffered channels can be used as
-<a href="https://en.wikipedia.org/wiki/Semaphore_(programming)">counting semaphores</a>.
-Counting semaphores can be viewed as multi-owner locks.
-If the capacity of a channel is <code>N</code>, then it can be viewed as
-a lock which can have most <code>N</code> owners at any time.
-Binary semaphores (mutexes) are special counting semaphores,
-each of binary semaphores can have at most one owner at any time.
-</p>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Counting semaphores are often used to enforce a maximum number of concurrent requests.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 Like using channels as mutexes, there are also two manners to acquire one piece of ownership of a channel semaphore.
-<ol>
-<li>
-	Acquire ownership through a send, release through a receive.
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Acquire ownership through a send, release through a receive.
+</div>
 </li>
-<li>
-	Acquire ownership through a receive, release through a send.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+Acquire ownership through a receive, release through a send.
+</div>
 </li>
 </ol>
-
+<p></p>
+<div class="tmd-usual">
 An example of acquiring ownership through receiving values from a channel.
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import (
 	"log"
@@ -634,11 +575,11 @@ type Bar chan Seat
 
 func (bar Bar) ServeCustomer(c int) {
 	log.Print("customer#", c, " enters the bar")
-	seat := <- bar // need a seat to drink
+	seat := &lt;- bar // need a seat to drink
 	log.Print("++ customer#", c, " drinks at seat#", seat)
 	time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
 	log.Print("-- customer#", c, " frees seat#", seat)
-	bar <- seat // free seat and leave the bar
+	bar &lt;- seat // free seat and leave the bar
 }
 
 func main() {
@@ -647,9 +588,9 @@ func main() {
 	// the bar has 10 seats.
 	bar24x7 := make(Bar, 10)
 	// Place seats in an bar.
-	for seatId := 0; seatId < cap(bar24x7); seatId++ {
+	for seatId := 0; seatId &lt; cap(bar24x7); seatId++ {
 		// None of the sends will block.
-		bar24x7 <- Seat(seatId)
+		bar24x7 &lt;- Seat(seatId)
 	}
 
 	for customerId := 0; ; customerId++ {
@@ -661,71 +602,65 @@ func main() {
 	for {time.Sleep(time.Second)}
 }
 </code></pre>
-
-<p>
-In the above example, only the customers each of whom get a seat can drink.
-So there will be most ten customers are drinking at any given time.
-</p>
-
-<p>
-The last <code>for</code> loop in the <code>main</code> function
-is to avoid the program exiting.
-There is a better way, which will be introduced below, to do the job.
-</p>
-
-In the above example,
-although there will be most ten customers are drinking at any given time,
-there may be more than ten customers are served at the bar at the same time.
-Some customers are waiting for free seats.
-Although each customer goroutine consumes much fewer resources than a system thread,
-the total resources consumed by a large number of goroutines are not negligible.
-So it is best to create a customer goroutine only if there is an available seat.
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">... // same code as the above example
+<p></p>
+<div class="tmd-usual">
+In the above example, only the customers each of whom get a seat can drink. So there will be most ten customers are drinking at any given time.
+</div>
+<p></p>
+<div class="tmd-usual">
+The last <code class="tmd-code-span">for</code> loop in the <code class="tmd-code-span">main</code> function is to avoid the program exiting. There is a better way, which will be introduced below, to do the job.
+</div>
+<p></p>
+<div class="tmd-usual">
+In the above example, although there will be most ten customers are drinking at any given time, there may be more than ten customers are served at the bar at the same time. Some customers are waiting for free seats. Although each customer goroutine consumes much fewer resources than a system thread, the total resources consumed by a large number of goroutines are not negligible. So it is best to create a customer goroutine only if there is an available seat.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">... // same code as the above example
 
 func (bar Bar) ServeCustomerAtSeat(c int, seat Seat) {
 	log.Print("++ customer#", c, " drinks at seat#", seat)
 	time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
 	log.Print("-- customer#", c, " frees seat#", seat)
-	bar <- seat // free seat and leave the bar
+	bar &lt;- seat // free seat and leave the bar
 }
 
 func main() {
 	rand.Seed(time.Now().UnixNano()) // needed before Go 1.20
 
 	bar24x7 := make(Bar, 10)
-	for seatId := 0; seatId < cap(bar24x7); seatId++ {
-		bar24x7 <- Seat(seatId)
+	for seatId := 0; seatId &lt; cap(bar24x7); seatId++ {
+		bar24x7 &lt;- Seat(seatId)
 	}
 
 	for customerId := 0; ; customerId++ {
 		time.Sleep(time.Second)
 		// Need a seat to serve next customer.
-		seat := <- bar24x7
+		seat := &lt;- bar24x7
 		go bar24x7.ServeCustomerAtSeat(customerId, seat)
 	}
 	for {time.Sleep(time.Second)}
 }
 </code></pre>
-
-<p>
-There will be at most about ten live customer goroutines
-coexisting in the above optimized version (but there will still be
-a lots of customer goroutines to be created in the program lifetime).
-</p>
-
-In a more efficient implementation shown below, at most
-ten customer serving goroutines will be created in the program lifetime.
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">... // same code as the above example
+<p></p>
+<div class="tmd-usual">
+There will be at most about ten live customer goroutines coexisting in the above optimized version (but there will still be a lots of customer goroutines to be created in the program lifetime).
+</div>
+<p></p>
+<div class="tmd-usual">
+In a more efficient implementation shown below, at most ten customer serving goroutines will be created in the program lifetime.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">... // same code as the above example
 
 func (bar Bar) ServeCustomerAtSeat(consumers chan int) {
 	for c := range consumers {
-		seatId := <- bar
+		seatId := &lt;- bar
 		log.Print("++ customer#", c, " drinks at seat#", seatId)
 		time.Sleep(time.Second * time.Duration(2 + rand.Intn(6)))
 		log.Print("-- customer#", c, " frees seat#", seatId)
-		bar <- seatId // free seat and leave the bar
+		bar &lt;- seatId // free seat and leave the bar
 	}
 }
 
@@ -733,25 +668,28 @@ func main() {
 	rand.Seed(time.Now().UnixNano()) // needed before Go 1.20
 
 	bar24x7 := make(Bar, 10)
-	for seatId := 0; seatId < cap(bar24x7); seatId++ {
-		bar24x7 <- Seat(seatId)
+	for seatId := 0; seatId &lt; cap(bar24x7); seatId++ {
+		bar24x7 &lt;- Seat(seatId)
 	}
 
 	consumers := make(chan int)
-	for i := 0; i < cap(bar24x7); i++ {
+	for i := 0; i &lt; cap(bar24x7); i++ {
 		go bar24x7.ServeCustomerAtSeat(consumers)
 	}
 	
 	for customerId := 0; ; customerId++ {
 		time.Sleep(time.Second)
-		consumers <- customerId
+		consumers &lt;- customerId
 	}
 }
 </code></pre>
-
-Off-topic: surely, if we don't care about seat IDs (which is common in practice), then the <code>bar24x7</code> semaphore is not essential at all:
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">... // same code as the above example
+<p></p>
+<div class="tmd-usual">
+Off-topic: surely, if we don't care about seat IDs (which is common in practice), then the <code class="tmd-code-span">bar24x7</code> semaphore is not essential at all:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">... // same code as the above example
 
 func ServeCustomer(consumers chan int) {
 	for c := range consumers {
@@ -766,24 +704,23 @@ func main() {
 
 	const BarSeatCount = 10
 	consumers := make(chan int)
-	for i := 0; i < BarSeatCount; i++ {
+	for i := 0; i &lt; BarSeatCount; i++ {
 		go ServeCustomer(consumers)
 	}
 	
 	for customerId := 0; ; customerId++ {
 		time.Sleep(time.Second)
-		consumers <- customerId
+		consumers &lt;- customerId
 	}
 }
 </code></pre>
-
-<p>
-</p>
-
-The manner of acquiring semaphore ownership through sending is simpler comparatively.
-The step of placing seats is not needed.
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The manner of acquiring semaphore ownership through sending is simpler comparatively. The step of placing seats is not needed.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import (
 	"log"
@@ -798,7 +735,7 @@ func (bar Bar) ServeCustomer(c Customer) {
 	log.Print("++ customer#", c.id, " starts drinking")
 	time.Sleep(time.Second * time.Duration(3 + rand.Intn(16)))
 	log.Print("-- customer#", c.id, " leaves the bar")
-	<- bar // leaves the bar and save a space
+	&lt;- bar // leaves the bar and save a space
 }
 
 func main() {
@@ -811,35 +748,24 @@ func main() {
 		time.Sleep(time.Second * 2)
 		customer := Customer{customerId}
 		// Wait to enter the bar.
-		bar24x7 <- customer
+		bar24x7 &lt;- customer
 		go bar24x7.ServeCustomer(customer)
 	}
 	for {time.Sleep(time.Second)}
 }
 </code></pre>
-
-<p>
-</p>
-
-<!--
-<p>
-There is a variant of the channel semaphore use case.
-In the above two examples, although the throughput is limited,
-but there may be many requests (customers) are queuing.
-This is not always a good idea, sometimes it would be better to
-suggest queuing customers go to other bars,
-by using the try-receive or try-send mechanisms introduced below.
-</p>
--->
+<p></p>
+<p></p>
+<h3 class="tmd-header-3">
+Dialogue (Ping-Pong)
+</h3>
+<p></p>
+<div class="tmd-usual">
+Two goroutines can dialogue through a channel. The following is an example which will print a series of Fibonacci numbers.
 </div>
-
-<h3>Dialogue (Ping-Pong)</h3>
-
-<div>
-Two goroutines can dialogue through a channel.
-The following is an example which will print a series of Fibonacci numbers.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "time"
@@ -850,14 +776,14 @@ type Ball uint64
 func Play(playerName string, table chan Ball) {
 	var lastValue Ball = 1
 	for {
-		ball := <- table // get the ball
+		ball := &lt;- table // get the ball
 		fmt.Println(playerName, ball)
 		ball += lastValue
-		if ball < lastValue { // overflow
+		if ball &lt; lastValue { // overflow
 			os.Exit(0)
 		}
 		lastValue = ball
-		table <- ball // bat back the ball
+		table &lt;- ball // bat back the ball
 		time.Sleep(time.Second)
 	}
 }
@@ -865,145 +791,130 @@ func Play(playerName string, table chan Ball) {
 func main() {
 	table := make(chan Ball)
 	go func() {
-		table <- 1 // throw ball on table
+		table &lt;- 1 // throw ball on table
 	}()
 	go Play("A:", table)
 	Play("B:", table)
 }
 </code></pre>
-
-<p>
-</p>
+<p></p>
+<h3 class="tmd-header-3">
+Channel Encapsulated in Channel
+</h3>
+<p></p>
+<div class="tmd-usual">
+Sometimes, we can use a channel type as the element type of another channel type. In the following example, <code class="tmd-code-span">chan chan&lt;- int</code> is a channel type which element type is a send-only channel type <code class="tmd-code-span">chan&lt;- int</code>.
 </div>
-
-<h3>Channel Encapsulated in Channel</h3>
-
-<div>
-Sometimes, we can use a channel type as the element type of another channel type.
-In the following example, <code>chan chan&lt;- int</code> is a channel type
-which element type is a send-only channel type <code>chan&lt;- int</code>.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
-var counter = func (n int) chan<- chan<- int {
-	requests := make(chan chan<- int)
+var counter = func (n int) chan&lt;- chan&lt;- int {
+	requests := make(chan chan&lt;- int)
 	go func() {
 		for request := range requests {
 			if request == nil {
 				n++ // increase
 			} else {
-				request <- n // take out
+				request &lt;- n // take out
 			}
 		}
 	}()
 
-	// Implicitly converted to chan<- (chan<- int)
+	// Implicitly converted to chan&lt;- (chan&lt;- int)
 	return requests
 }(0)
 
 func main() {
-	increase1000 := func(done chan<- struct{}) {
-		for i := 0; i < 1000; i++ {
-			counter <- nil
+	increase1000 := func(done chan&lt;- struct{}) {
+		for i := 0; i &lt; 1000; i++ {
+			counter &lt;- nil
 		}
-		done <- struct{}{}
+		done &lt;- struct{}{}
 	}
 
 	done := make(chan struct{})
 	go increase1000(done)
 	go increase1000(done)
-	<-done; <-done
+	&lt;-done; &lt;-done
 
 	request := make(chan int, 1)
-	counter <- request
-	fmt.Println(<-request) // 2000
+	counter &lt;- request
+	fmt.Println(&lt;-request) // 2000
 }
 </code></pre>
-
-<p>
-Although here the encapsulation implementation may be not
-the most efficient way for the above-specified example,
-the use case may be useful for some other scenarios.
-</p>
+<p></p>
+<div class="tmd-usual">
+Although here the encapsulation implementation may be not the most efficient way for the above-specified example, the use case may be useful for some other scenarios.
 </div>
-
-<h3>Check Lengths and Capacities of Channels</h3>
-
-<div>
-<p>
-We can use the built-in functions <code>len</code> and <code>cap</code>
-to check the length and capacity of a channel.
-However, we seldom do this in practice.
-The reason for we seldom use the <code>len</code> function to check the length
-of a channel is the length of the channel may have changed after the
-<code>len</code> function call returns.
-The reason for we seldom use the <code>cap</code> function to check the capacity
-of a channel is the capacity of the channel is often known or not important.
-</p>
-
-However, there do have some scenarios we need to use the two functions.
-For example, sometimes, we want to receive all the values buffered in
-a non-closed channel <code>c</code> which no ones will send values to any more,
-then we can use the following code to receive remaining values.
-
-<pre class="line-numbers"><code class="language-go">// Assume the current goroutine is the only
+<p></p>
+<h3 class="tmd-header-3">
+Check Lengths and Capacities of Channels
+</h3>
+<p></p>
+<div class="tmd-usual">
+We can use the built-in functions <code class="tmd-code-span">len</code> and <code class="tmd-code-span">cap</code> to check the length and capacity of a channel. However, we seldom do this in practice. The reason for we seldom use the <code class="tmd-code-span">len</code> function to check the length of a channel is the length of the channel may have changed after the <code class="tmd-code-span">len</code> function call returns. The reason for we seldom use the <code class="tmd-code-span">cap</code> function to check the capacity of a channel is the capacity of the channel is often known or not important.
+</div>
+<p></p>
+<div class="tmd-usual">
+However, there do have some scenarios we need to use the two functions. For example, sometimes, we want to receive all the values buffered in a non-closed channel <code class="tmd-code-span">c</code> which no ones will send values to any more, then we can use the following code to receive remaining values.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// Assume the current goroutine is the only
 // goroutine tries to receive values from
 // the channel c at present.
-for len(c) > 0 {
-	value := <-c
+for len(c) &gt; 0 {
+	value := &lt;-c
 	// use value ...
 }
 </code></pre>
-
-<p>
-We can also use the try-receive mechanism introduced below to do the same job.
-The efficiencies of the two ways are almost the same.
-The advantage of the try-receive mechanism is the current goroutine is not required to be the only receiving goroutine.
-</p>
-
-Sometimes, a goroutine may want to write some values to a buffered channel
-<code>c</code> until it is full without entering blocking state at the end,
-and the goroutine is the only sender of the channel,
-then we can use the following code to do this job.
-
-<pre class="line-numbers"><code class="language-go">for len(c) < cap(c) {
-	c <- aValue
+<p></p>
+<div class="tmd-usual">
+We can also use the try-receive mechanism introduced below to do the same job. The efficiencies of the two ways are almost the same. The advantage of the try-receive mechanism is the current goroutine is not required to be the only receiving goroutine.
+</div>
+<p></p>
+<div class="tmd-usual">
+Sometimes, a goroutine may want to write some values to a buffered channel <code class="tmd-code-span">c</code> until it is full without entering blocking state at the end, and the goroutine is the only sender of the channel, then we can use the following code to do this job.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">for len(c) &lt; cap(c) {
+	c &lt;- aValue
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Surely, we can also use the try-send mechanism introduced below to do the same job.
-</p>
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Block the Current Goroutine Forever
+</h3>
+<p></p>
+<div class="tmd-usual">
+The select mechanism is a unique feature in Go. It brings many patterns and tricks for concurrent programming. About the code execution rules of the select mechanism, please read the article <a href="channel.html#select">channels in Go</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h3>Block the Current Goroutine Forever</h3>
-
-<p>
-The select mechanism is a unique feature in Go.
-It brings many patterns and tricks for concurrent programming.
-About the code execution rules of the select mechanism,
-please read the article <a href="channel.html#select">channels in Go</a>.
-</p>
-
-<div>
-<p>
-We can use a blank select block <code>select{}</code>
-to block the current goroutine for ever.
-This is the simplest use case of the select mechanism.
-In fact, some uses of <code>for {time.Sleep(time.Second)}</code>
-in some above examples can be replaced with <code>select{}</code>.
-</p>
-
-<p>
-Generally, <code>select{}</code> is used to prevent the main goroutine from
-exiting, for if the main goroutine exits, the whole program will also exit.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+We can use a blank select block <code class="tmd-code-span">select{}</code> to block the current goroutine for ever. This is the simplest use case of the select mechanism. In fact, some uses of <code class="tmd-code-span">for {time.Sleep(time.Second)}</code> in some above examples can be replaced with <code class="tmd-code-span">select{}</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+Generally, <code class="tmd-code-span">select{}</code> is used to prevent the main goroutine from exiting, for if the main goroutine exits, the whole program will also exit.
+</div>
+<p></p>
+<div class="tmd-usual">
 An example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "runtime"
 
@@ -1021,59 +932,50 @@ func main() {
 	select{}
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-By the way, there are <a href="summaries.html#block-forever">some other ways</a>
-to make a goroutine stay in blocking state for ever.
-But the <code>select{}</code> way is the simplest one.
-</p>
+<p></p>
+<div class="tmd-usual">
+By the way, there are <a href="summaries.html#block-forever">some other ways</a> to make a goroutine stay in blocking state for ever. But the <code class="tmd-code-span">select{}</code> way is the simplest one.
 </div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="try-operation"></a>
-<h3>Try-Send and Try-Receive</h3>
-
-<div>
-A <code>select</code> block with one <code>default</code> branch
-and only one <code>case</code> branch
-is called a try-send or try-receive channel operation,
-depending on whether the channel operation following the <code>case</code>
-keyword is a channel send or receive operation.
-
-<ul>
-<li>
-	If the operation following the <code>case</code> keyword is a send operation,
-	then the <code>select</code> block is called as try-send operation.
-	If the send operation would block,
-	then the <code>default</code> branch will get executed (fail to send),
-	otherwise, the send succeeds and
-	the only <code>case</code> branch will get executed.
+</div>
+<p></p>
+<h3 id="try-operation" class="tmd-header-3">
+Try-Send and Try-Receive
+</h3>
+<p></p>
+<div class="tmd-usual">
+A <code class="tmd-code-span">select</code> block with one <code class="tmd-code-span">default</code> branch and only one <code class="tmd-code-span">case</code> branch is called a try-send or try-receive channel operation, depending on whether the channel operation following the <code class="tmd-code-span">case</code> keyword is a channel send or receive operation.
+</div>
+<p></p>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+If the operation following the <code class="tmd-code-span">case</code> keyword is a send operation, then the <code class="tmd-code-span">select</code> block is called as try-send operation. If the send operation would block, then the <code class="tmd-code-span">default</code> branch will get executed (fail to send), otherwise, the send succeeds and the only <code class="tmd-code-span">case</code> branch will get executed.
+</div>
 </li>
-<li>
-	If the operation following the <code>case</code> keyword is a receive operation,
-	then the <code>select</code> block is called as try-receive operation.
-	If the receive operation would block,
-	then the <code>default</code> branch will get executed (fail to receive),
-	otherwise, the receive succeeds and
-	the only <code>case</code> branch will get executed.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+If the operation following the <code class="tmd-code-span">case</code> keyword is a receive operation, then the <code class="tmd-code-span">select</code> block is called as try-receive operation. If the receive operation would block, then the <code class="tmd-code-span">default</code> branch will get executed (fail to receive), otherwise, the receive succeeds and the only <code class="tmd-code-span">case</code> branch will get executed.
+</div>
 </li>
 </ul>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Try-send and try-receive operations never block.
-</p>
-
-<p>
-The standard Go compiler makes special optimizations for try-send
-and try-receive select blocks, their execution efficiencies are
-much higher than multi-case select blocks.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
+The standard Go compiler makes special optimizations for try-send and try-receive select blocks, their execution efficiencies are much higher than multi-case select blocks.
+</div>
+<p></p>
+<div class="tmd-usual">
 The following is an example which shows how try-send and try-receive work.
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1081,18 +983,18 @@ func main() {
 	type Book struct{id int}
 	bookshelf := make(chan Book, 3)
 
-	for i := 0; i < cap(bookshelf) * 2; i++ {
+	for i := 0; i &lt; cap(bookshelf) * 2; i++ {
 		select {
-		case bookshelf <- Book{id: i}:
+		case bookshelf &lt;- Book{id: i}:
 			fmt.Println("succeeded to put book", i)
 		default:
 			fmt.Println("failed to put book")
 		}
 	}
 
-	for i := 0; i < cap(bookshelf) * 2; i++ {
+	for i := 0; i &lt; cap(bookshelf) * 2; i++ {
 		select {
-		case book := <-bookshelf:
+		case book := &lt;-bookshelf:
 			fmt.Println("succeeded to get book", book.id)
 		default:
 			fmt.Println("failed to get book")
@@ -1100,10 +1002,13 @@ func main() {
 	}
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The output of the above program:
-
-<pre class="output"><code>succeed to put book 0
+</div>
+<p></p>
+<pre class="tmd-code output">
+succeed to put book 0
 succeed to put book 1
 succeed to put book 2
 failed to put book
@@ -1115,63 +1020,60 @@ succeed to get book 2
 failed to get book
 failed to get book
 failed to get book
-</code></pre>
-
-<p>
-</p>
-
-<p>
+</pre>
+<p></p>
+<div class="tmd-usual">
 The following sub-sections will show more try-send and try-receive use cases.
-</p>
 </div>
-
-<a class="anchor" id="check-closed-status"></a>
-<h4>Check if a channel is closed without blocking the current goroutine</h4>
-
-<div>
-Assume it is guaranteed that no values were ever (and will be) sent to a channel,
-we can use the following code to (concurrently and safely) check whether or not
-the channel is already closed without blocking the current goroutine,
-where <code>T</code> the element type of the corresponding channel type.
-
-<pre class="line-numbers"><code class="language-go">func IsClosed(c chan T) bool {
+<p></p>
+<h4 id="check-closed-status" class="tmd-header-4">
+Check if a channel is closed without blocking the current goroutine
+</h4>
+<p></p>
+<div class="tmd-usual">
+Assume it is guaranteed that no values were ever (and will be) sent to a channel, we can use the following code to (concurrently and safely) check whether or not the channel is already closed without blocking the current goroutine, where <code class="tmd-code-span">T</code> the element type of the corresponding channel type.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func IsClosed(c chan T) bool {
 	select {
-	case <-c:
+	case &lt;-c:
 		return true
 	default:
 	}
 	return false
 }
 </code></pre>
-
-<p>
-The way to check if a channel is closed is used popularly
-in Go concurrent programming to check whether or not a notification has arrived.
-The notification will be sent by closing the channel in another goroutine.
-</p>
+<p></p>
+<div class="tmd-usual">
+The way to check if a channel is closed is used popularly in Go concurrent programming to check whether or not a notification has arrived. The notification will be sent by closing the channel in another goroutine.
 </div>
+<p></p>
+<h4 id="peak-limiting" class="tmd-header-4">
+Peak/burst limiting
+</h4>
+<p></p>
+<div class="tmd-usual">
+We can implement peak limiting by combining <a href="#semaphore">use channels as counting semaphores</a> and try-send/try-receive. Peak-limit (or burst-limit) is often used to limit the number of concurrent requests without blocking any requests.
+</div>
+<p></p>
+<div class="tmd-usual">
+The following is a modified version of the last example in the <a href="#semaphore">use channels as counting semaphores</a> section.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="peak-limiting"></a>
-<h4>Peak/burst limiting</h4>
-
-<div>
-
-<p>
-We can implement peak limiting by combining <a href="#semaphore">use channels as counting semaphores</a> and try-send/try-receive.
-Peak-limit (or burst-limit) is often used to limit the number of concurrent requests without blocking any requests.
-</p>
-
-The following is a modified version of the last example in the
-<a href="#semaphore">use channels as counting semaphores</a> section.
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">...
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">...
 	// Can serve most 10 customers at the same time
 	bar24x7 := make(Bar, 10)
 	for customerId := 0; ; customerId++ {
 		time.Sleep(time.Second)
 		customer := Consumer{customerId}
 		select {
-		case bar24x7 <- customer: // try to enter the bar
+		case bar24x7 &lt;- customer: // try to enter the bar
 			go bar24x7.ServeConsumer(customer)
 		default:
 			log.Print("customer#", customerId, " goes elsewhere")
@@ -1179,22 +1081,17 @@ The following is a modified version of the last example in the
 	}
 ...
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 id="first-response-wins-2" class="tmd-header-4">
+Another way to implement the first-response-wins use case
+</h4>
+<p></p>
+<div class="tmd-usual">
+As mentioned above, we can use the select mechanism (try-send) with a buffered channel which capacity is one (at least) to implement the first-response-wins use case. For example,
 </div>
-
-<a class="anchor" id="first-response-wins-2"></a>
-<h4>Another way to implement the first-response-wins use case</h4>
-
-<div>
-
-As mentioned above, we can use the select mechanism (try-send)
-with a buffered channel which capacity is one (at least) to implement
-the first-response-wins use case. For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -1202,12 +1099,12 @@ import (
 	"time"
 )
 
-func source(c chan<- int32) {
+func source(c chan&lt;- int32) {
 	ra, rb := rand.Int31(), rand.Intn(3)+1
 	// Sleep 1s, 2s or 3s.
 	time.Sleep(time.Duration(rb) * time.Second)
 	select {
-	case c <- ra:
+	case c &lt;- ra:
 	default:
 	}
 }
@@ -1217,30 +1114,28 @@ func main() {
 
 	// The capacity should be at least 1.
 	c := make(chan int32, 1)
-	for i := 0; i < 5; i++ {
+	for i := 0; i &lt; 5; i++ {
 		go source(c)
 	}
-	rnd := <-c // only the first response is used
+	rnd := &lt;-c // only the first response is used
 	fmt.Println(rnd)
 }
 </code></pre>
-
-<p>
-Please note, the capacity of the channel used in the above example
-must be at least one, so that the first send won't be missed
-if the receiver/request side has not gotten ready in time.
-</p>
+<p></p>
+<div class="tmd-usual">
+Please note, the capacity of the channel used in the above example must be at least one, so that the first send won't be missed if the receiver/request side has not gotten ready in time.
 </div>
-
-<a class="anchor" id="first-response-wins-3"></a>
-<h4>The third way to implement the first-response-wins use case</h4>
-
-<div>
-For a first-response-wins use case, if the number of sources is small,
-for example, two or three, we can use a <code>select</code> code block
-to receive the source responses at the same time. For example,
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<h4 id="first-response-wins-3" class="tmd-header-4">
+The third way to implement the first-response-wins use case
+</h4>
+<p></p>
+<div class="tmd-usual">
+For a first-response-wins use case, if the number of sources is small, for example, two or three, we can use a <code class="tmd-code-span">select</code> code block to receive the source responses at the same time. For example,
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -1248,13 +1143,13 @@ import (
 	"time"
 )
 
-func source() <-chan int32 {
+func source() &lt;-chan int32 {
 	// c must be a buffered channel.
 	c := make(chan int32, 1)
 	go func() {
 		ra, rb := rand.Int31(), rand.Intn(3)+1
 		time.Sleep(time.Duration(rb) * time.Second)
-		c <- ra
+		c &lt;- ra
 	}()
 	return c
 }
@@ -1265,80 +1160,75 @@ func main() {
 	var rnd int32
 	// Blocking here until one source responses.
 	select{
-	case rnd = <-source():
-	case rnd = <-source():
-	case rnd = <-source():
+	case rnd = &lt;-source():
+	case rnd = &lt;-source():
+	case rnd = &lt;-source():
 	}
 	fmt.Println(rnd)
 }
 </code></pre>
-
-<p>
-Note: if the channel used in the above example is an unbuffered channel,
-then there will two goroutines hanging for ever after the <code>select</code>
-code block is executed.
-This is <a href="memory-leaking.html#hanging-goroutine">a memory leak case</a>.
-</p>
-
-<p>
-The two ways introduced in the current and the last sub-sections
-can also be used to do N-to-1 notifications.
-</p>
+<p></p>
+<div class="tmd-usual">
+Note: if the channel used in the above example is an unbuffered channel, then there will two goroutines hanging for ever after the <code class="tmd-code-span">select</code> code block is executed. This is <a href="memory-leaking.html#hanging-goroutine">a memory leak case</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h4>Timeout</h4>
-
-<div>
-<p>
-In some request-response scenarios,
-for all kinds of reasons, a request may need a long time to response,
-sometimes even will never response.
-For such cases, we should return an error message to the client side
-by using a timeout solution.
-Such a timeout solution can be implemented with the select mechanism.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+The two ways introduced in the current and the last sub-sections can also be used to do N-to-1 notifications.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Timeout
+</h4>
+<p></p>
+<div class="tmd-usual">
+In some request-response scenarios, for all kinds of reasons, a request may need a long time to response, sometimes even will never response. For such cases, we should return an error message to the client side by using a timeout solution. Such a timeout solution can be implemented with the select mechanism.
+</div>
+<p></p>
+<div class="tmd-usual">
 The following code shows how to make a request with a timeout.
-
-<pre class="line-numbers"><code class="language-go">func requestWithTimeout(timeout time.Duration) (int, error) {
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func requestWithTimeout(timeout time.Duration) (int, error) {
 	c := make(chan int)
 	// May need a long time to get the response.
 	go doRequest(c)
 
 	select {
-	case data := <-c:
+	case data := &lt;-c:
 		return data, nil
-	case <-time.After(timeout):
+	case &lt;-time.After(timeout):
 		return 0, errors.New("timeout")
 	}
 }
 </code></pre>
-
-<p>
-</p>
-
-</div>
-
-<h4>Ticker</h4>
-
-<div>
-
+<p></p>
+<h4 class="tmd-header-4">
+Ticker
+</h4>
+<p></p>
+<div class="tmd-usual">
 We can use the try-send mechanism to implement a ticker.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "time"
 
-func Tick(d time.Duration) <-chan struct{} {
+func Tick(d time.Duration) &lt;-chan struct{} {
 	// The capacity of c is best set as one.
 	c := make(chan struct{}, 1)
 	go func() {
 		for {
 			time.Sleep(d)
 			select {
-			case c <- struct{}{}:
+			case c &lt;- struct{}{}:
 			default:
 			}
 		}
@@ -1353,32 +1243,29 @@ func main() {
 	}
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-In fact, there is a <code>Tick</code> function in the <code>time</code>
-standard package provides the same functionality, with a much more efficient implementation.
-We should use that function instead to make code look clean and run efficiently.
-</p>
+<p></p>
+<div class="tmd-usual">
+In fact, there is a <code class="tmd-code-span">Tick</code> function in the <code class="tmd-code-span">time</code> standard package provides the same functionality, with a much more efficient implementation. We should use that function instead to make code look clean and run efficiently.
 </div>
+<p></p>
+<h4 id="rate-limiting" class="tmd-header-4">
+Rate Limiting
+</h4>
+<p></p>
+<div class="tmd-usual">
+One of above section has shown how to use try-send to do <a href="#peak-limiting">peak limiting</a>. We can also use try-send to do rate limiting (with the help of a ticker). In practice, rate-limit is often to avoid quota exceeding and resource exhaustion.
+</div>
+<p></p>
+<div class="tmd-usual">
+The following shows such an example borrowed from jh oh <a href="https://github.com/golang/go/wiki/RateLimiting">the official Go wiki</a>. In this example, the number of handled requests in any one-minute duration will not exceed 200.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="rate-limiting"></a>
-<h4>Rate Limiting</h4>
-
-<div>
-<p>
-One of above section has shown how to use try-send to do <a href="#peak-limiting">peak limiting</a>.
-We can also use try-send to do rate limiting (with the help of a ticker).
-In practice, rate-limit is often to avoid quota exceeding and resource exhaustion.
-</p>
-
-The following shows such an example borrowed from
-<a href="https://github.com/golang/go/wiki/RateLimiting">the official Go wiki</a>.
-In this example, the number of handled requests in any one-minute duration will not exceed 200.
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "time"
@@ -1389,7 +1276,7 @@ func handle(r Request) {fmt.Println(r.(int))}
 const RateLimitPeriod = time.Minute
 const RateLimit = 200 // most 200 requests in one minute
 
-func handleRequests(requests <-chan Request) {
+func handleRequests(requests &lt;-chan Request) {
 	quotas := make(chan time.Time, RateLimit)
 
 	go func() {
@@ -1397,14 +1284,14 @@ func handleRequests(requests <-chan Request) {
 		defer tick.Stop()
 		for t := range tick.C {
 			select {
-			case quotas <- t:
+			case quotas &lt;- t:
 			default:
 			}
 		}
 	}()
 
 	for r := range requests {
-		<-quotas
+		&lt;-quotas
 		go handle(r)
 	}
 }
@@ -1413,38 +1300,32 @@ func main() {
 	requests := make(chan Request)
 	go handleRequests(requests)
 	// time.Sleep(time.Minute)
-	for i := 0; ; i++ {requests <- i}
+	for i := 0; ; i++ {requests &lt;- i}
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 In practice, we often use rate-limit and peak/burst-limit together.
-</p>
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Switches
+</h4>
+<p></p>
+<div class="tmd-usual">
+From the article <a href="channel.html">channels in Go</a>, we have learned that sending a value to or receiving a value from a nil channel are both blocking operations. By making use of this fact, we can change the involved channels in the <code class="tmd-code-span">case</code> operations of a <code class="tmd-code-span">select</code> code block to affect the branch selection in the <code class="tmd-code-span">select</code> code block.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h4>Switches</h4>
-
-<div>
-<p>
-From the article <a href="channel.html">channels in Go</a>,
-we have learned that sending a value to or receiving a value
-from a nil channel are both blocking operations.
-By making use of this fact, we can change the involved channels in
-the <code>case</code> operations of a <code>select</code> code block
-to affect the branch selection in the <code>select</code> code block.
-</p>
-
-The following is another ping-pong example which is implemented
-by using the select mechanism.
-In this example, one of the two channel variables involved
-in the select block is <code>nil</code>.
-The <code>case</code> branch corresponding the nil channel will not get selected for sure.
-We can think such <code>case</code> branches are in off status.
-At the end of each loop step,
-the on/off statuses of the two <code>case</code> branches are switched.
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The following is another ping-pong example which is implemented by using the select mechanism. In this example, one of the two channel variables involved in the select block is <code class="tmd-code-span">nil</code>. The <code class="tmd-code-span">case</code> branch corresponding the nil channel will not get selected for sure. We can think such <code class="tmd-code-span">case</code> branches are in off status. At the end of each loop step, the on/off statuses of the two <code class="tmd-code-span">case</code> branches are switched.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "time"
@@ -1461,11 +1342,11 @@ func Play(playerName string, table chan Ball, serve bool) {
 	var lastValue Ball = 1
 	for {
 		select {
-		case send <- lastValue:
-		case value := <- receive:
+		case send &lt;- lastValue:
+		case value := &lt;- receive:
 			fmt.Println(playerName, value)
 			value += lastValue
-			if value < lastValue { // overflow
+			if value &lt; lastValue { // overflow
 				os.Exit(0)
 			}
 			lastValue = value
@@ -1482,16 +1363,13 @@ func main() {
 	Play("B:", table, true)
 }
 </code></pre>
-
-<p>
-</p>
-
-The following is another (non-concurrent) example which is much simpler and also demos the switch effect.
-This example will print <code>1212...</code> when running.
-It has not much usefulness in practice.
-It is shown here just for learning purpose.
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The following is another (non-concurrent) example which is much simpler and also demos the switch effect. This example will print <code class="tmd-code-span">1212...</code> when running. It has not much usefulness in practice. It is shown here just for learning purpose.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "time"
@@ -1499,31 +1377,29 @@ import "time"
 func main() {
 	for c := make(chan struct{}, 1); true; {
 		select {
-		case c <- struct{}{}:
+		case c &lt;- struct{}{}:
 			fmt.Print("1")
-		case <-c:
+		case &lt;-c:
 			fmt.Print("2")
 		}
 		time.Sleep(time.Second)
 	}
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 class="tmd-header-4">
+Control code execution possibility weights
+</h4>
+<p></p>
+<div class="tmd-usual">
+We can duplicate a <code class="tmd-code-span">case</code> branch in a <code class="tmd-code-span">select</code> code block to increase the execution possibility weigh of the corresponding code.
 </div>
-
-<h4>Control code execution possibility weights</h4>
-
-<div>
-<p>
-We can duplicate a <code>case</code> branch in a <code>select</code> code block
-to increase the execution possibility weigh of the corresponding code.
-</p>
-
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 
@@ -1533,132 +1409,135 @@ func main() {
 	x, y := 0.0, 0.0
 	f := func(){x++}
 	g := func(){y++}
-	for i := 0; i < 100000; i++ {
+	for i := 0; i &lt; 100000; i++ {
 		select {
-		case <-foo: f()
-		case <-foo: f()
-		case <-bar: g()
+		case &lt;-foo: f()
+		case &lt;-foo: f()
+		case &lt;-bar: g()
 		}
 	}
 	fmt.Println(x/y) // about 2
 }
 </code></pre>
-
-<p>
-The possibility of the <code>f</code> function being called
-is about the double of the <code>g</code> function being called.
-</p>
+<p></p>
+<div class="tmd-usual">
+The possibility of the <code class="tmd-code-span">f</code> function being called is about the double of the <code class="tmd-code-span">g</code> function being called.
 </div>
-
-<h4>Select from dynamic number of cases</h4>
-
-<p>
-Although the number of branches in a <code>select</code> block is fixed,
-we can use the functionalities provided in the <code>reflect</code>
-standard package to construct a select block at run time.
-The dynamically created select block can have an arbitrary number of case branches.
-But please note, the reflection way is less efficient than the fixed way.
-</p>
-
-<p>
-The <code>reflect</code> standard package also provides
-<code>TrySend</code> and <code>TryRecv</code> functions to
-implement one-case-plus-default select blocks.
-</p>
-
-<a class="anchor" id="data-flow"></a>
-<h3>Data Flow Manipulations</h3>
-
-<div>
-<p>
+<p></p>
+<h4 class="tmd-header-4">
+Select from dynamic number of cases
+</h4>
+<p></p>
+<div class="tmd-usual">
+Although the number of branches in a <code class="tmd-code-span">select</code> block is fixed, we can use the functionalities provided in the <code class="tmd-code-span">reflect</code> standard package to construct a select block at run time. The dynamically created select block can have an arbitrary number of case branches. But please note, the reflection way is less efficient than the fixed way.
+</div>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">reflect</code> standard package also provides <code class="tmd-code-span">TrySend</code> and <code class="tmd-code-span">TryRecv</code> functions to implement one-case-plus-default select blocks.
+</div>
+<p></p>
+<h3 id="data-flow" class="tmd-header-3">
+Data Flow Manipulations
+</h3>
+<p></p>
+<div class="tmd-usual">
 This section will introduce some data flow manipulation use cases by using channels.
-</p>
-
-Generally, a data flow application consists of many modules.
-Different modules do different jobs.
-Each module may own one or several workers (goroutines),
-which concurrently do the same job specified for that module.
-Here is a list of some module job examples in practice:
-<ul>
-<li>
-	data generation/collecting/loading.
-</li>
-<li>
-	data serving/saving.
-</li>
-<li>
-	data calculation/analysis.
-</li>
-<li>
-	data validation/filtering.
-</li>
-<!-- // general duty of modules
-<li>
-	data fan-in/fan-out.
-</li>
--->
-<li>
-	data aggregation/division
-</li>
-<li>
-	data composition/decomposition.
-</li>
-<li>
-	data duplication/proliferation.
-</li>
-</ul>
-
-<p>
-A worker in a module may receive data from several other modules
-as inputs and send data to serve other modules as outputs.
-In other words, a module can be both a data consumer and a data producer.
-A module which only sends data to some other modules but never
-receives data from other modules is called a producer-only module.
-A module which only receives data from some other modules but never
-sends data to other modules is called a consumer-only module.
-</p>
-
-<p>
-Many modules together form a data flow system.
-</p>
-
-<p>
-The following will show some data flow module worker implementations.
-These implementations are for explanation purpose,
-so they are very simple and they may be not efficient.
-</p>
-
 </div>
-
-<h4>Data generation/collecting/loading</h4>
-
-<div>
-There are all kinds of producer-only modules.
-A producer-only module worker may produce a data stream
-<ul>
-<li>
-	by loading a file, reading a database, or crawling the web.
+<p></p>
+<div class="tmd-usual">
+Generally, a data flow application consists of many modules. Different modules do different jobs. Each module may own one or several workers (goroutines), which concurrently do the same job specified for that module. Here is a list of some module job examples in practice:
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+data generation/collecting/loading.
+</div>
 </li>
-<li>
-	by collecting all kinds of metrics from a software system or all kinds of hardware.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+data serving/saving.
+</div>
 </li>
-<li>
-	by generating random numbers.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+data calculation/analysis.
+</div>
 </li>
-<li>
-	etc.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+data validation/filtering.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+data aggregation/division
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+data composition/decomposition.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+data duplication/proliferation.
+</div>
 </li>
 </ul>
-
-Here, we use a random number generator as an example.
-The generator function returns one result but takes no parameters.
-
-<pre class="line-numbers"><code class="language-go">import (
+<p></p>
+<div class="tmd-usual">
+A worker in a module may receive data from several other modules as inputs and send data to serve other modules as outputs. In other words, a module can be both a data consumer and a data producer. A module which only sends data to some other modules but never receives data from other modules is called a producer-only module. A module which only receives data from some other modules but never sends data to other modules is called a consumer-only module.
+</div>
+<p></p>
+<div class="tmd-usual">
+Many modules together form a data flow system.
+</div>
+<p></p>
+<div class="tmd-usual">
+The following will show some data flow module worker implementations. These implementations are for explanation purpose, so they are very simple and they may be not efficient.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Data generation/collecting/loading
+</h4>
+<p></p>
+<div class="tmd-usual">
+There are all kinds of producer-only modules. A producer-only module worker may produce a data stream
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+by loading a file, reading a database, or crawling the web.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+by collecting all kinds of metrics from a software system or all kinds of hardware.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+by generating random numbers.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+etc.
+</div>
+</li>
+</ul>
+<p></p>
+<div class="tmd-usual">
+Here, we use a random number generator as an example. The generator function returns one result but takes no parameters.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">import (
 	"crypto/rand"
 	"encoding/binary"
 )
 
-func RandomGenerator() <-chan uint64 {
+func RandomGenerator() &lt;-chan uint64 {
 	c := make(chan uint64)
 	go func() {
 		rnds := make([]byte, 8)
@@ -1668,67 +1547,61 @@ func RandomGenerator() <-chan uint64 {
 				close(c)
 				break
 			}
-			c <- binary.BigEndian.Uint64(rnds)
+			c &lt;- binary.BigEndian.Uint64(rnds)
 		}
 	}()
 	return c
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 In fact, the random number generator is a multi-return future/promise.
-</p>
-
-<p>
-A data producer may close the output stream channel at any time
-to end data generating.
-</p>
-
 </div>
-
-<h4>Data aggregation</h4>
-
-<div>
-
-A data aggregation module worker aggregates several data streams
-of the same data type into one stream.
-Assume the data type is <code>int64</code>,
-then the following function will aggregate an arbitrary
-number of data streams into one.
-
-<pre class="line-numbers"><code class="language-go">func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
+<p></p>
+<div class="tmd-usual">
+A data producer may close the output stream channel at any time to end data generating.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Data aggregation
+</h4>
+<p></p>
+<div class="tmd-usual">
+A data aggregation module worker aggregates several data streams of the same data type into one stream. Assume the data type is <code class="tmd-code-span">int64</code>, then the following function will aggregate an arbitrary number of data streams into one.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func Aggregator(inputs ...&lt;-chan uint64) &lt;-chan uint64 {
 	out := make(chan uint64)
 	for _, in := range inputs {
-		go func(in <-chan uint64) {
+		go func(in &lt;-chan uint64) {
 			for {
-				out <- <-in // <=> out <- (<-in)
+				out &lt;- &lt;-in // &lt;=&gt; out &lt;- (&lt;-in)
 			}
 		}(in)
 	}
 	return out
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+A better implementation should consider whether or not an input stream has been closed. (Also valid for the following other module worker implementations.)
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">import "sync"
 
-<p>
-</p>
-
-A better implementation should consider whether or not
-an input stream has been closed.
-(Also valid for the following other module worker implementations.)
-
-<pre class="line-numbers"><code class="language-go">import "sync"
-
-func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
+func Aggregator(inputs ...&lt;-chan uint64) &lt;-chan uint64 {
 	output := make(chan uint64)
 	var wg sync.WaitGroup
 	for _, in := range inputs {
 		wg.Add(1)
-		go func(int <-chan uint64) {
+		go func(int &lt;-chan uint64) {
 			defer wg.Done()
 			// If in is closed, then the
 			// loop will ends eventually.
 			for x := range in {
-				output <- x
+				output &lt;- x
 			}
 		}(in)
 	}
@@ -1739,167 +1612,142 @@ func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
 	return output
 }
 </code></pre>
-
-<p>
-</p>
-
-If the number of aggregated data streams is very small (two or three),
-we can use <code>select</code> block to aggregate these data streams.
-
-<pre class="line-numbers"><code class="language-go">// Assume the number of input stream is two.
+<p></p>
+<div class="tmd-usual">
+If the number of aggregated data streams is very small (two or three), we can use <code class="tmd-code-span">select</code> block to aggregate these data streams.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// Assume the number of input stream is two.
 ...
 	output := make(chan uint64)
 	go func() {
 		inA, inB := inputs[0], inputs[1]
 		for {
 			select {
-			case v := <- inA: output <- v
-			case v := <- inB: output <- v
+			case v := &lt;- inA: output &lt;- v
+			case v := &lt;- inB: output &lt;- v
 			}
 		}
 	}
 ...
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 class="tmd-header-4">
+Data division
+</h4>
+<p></p>
+<div class="tmd-usual">
+A data division module worker does the opposite of a data aggregation module worker. It is easy to implement a division worker, but in practice, division workers are not very useful and seldom used.
 </div>
-
-<h4>Data division</h4>
-
-<div>
-
-A data division module worker does the opposite of
-a data aggregation module worker.
-It is easy to implement a division worker,
-but in practice, division workers are not very useful and seldom used.
-
-<pre class="line-numbers"><code class="language-go">func Divisor(input <-chan uint64, outputs ...chan<- uint64) {
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func Divisor(input &lt;-chan uint64, outputs ...chan&lt;- uint64) {
 	for _, out := range outputs {
-		go func(o chan<- uint64) {
+		go func(o chan&lt;- uint64) {
 			for {
-				o <- <-input // <=> o <- (<-input)
+				o &lt;- &lt;-input // &lt;=&gt; o &lt;- (&lt;-input)
 			}
 		}(out)
 	}
 }
 </code></pre>
-
-<p>
-</p>
-
-</div>
-
-<h4>Data composition</h4>
-
-<div>
-<p>
+<p></p>
+<h4 class="tmd-header-4">
+Data composition
+</h4>
+<p></p>
+<div class="tmd-usual">
 A data composition worker merges several pieces of data from different input data streams into one piece of data.
-</p>
-
-The following is a composition worker example, in which two <code>uint64</code>
-values from one stream and one <code>uint64</code> value from another stream
-compose one new <code>uint64</code> value.
-Surely, these stream channel element types are different generally in practice.
-
-<pre class="line-numbers"><code class="language-go">func Composer(inA, inB <-chan uint64) <-chan uint64 {
+</div>
+<p></p>
+<div class="tmd-usual">
+The following is a composition worker example, in which two <code class="tmd-code-span">uint64</code> values from one stream and one <code class="tmd-code-span">uint64</code> value from another stream compose one new <code class="tmd-code-span">uint64</code> value. Surely, these stream channel element types are different generally in practice.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func Composer(inA, inB &lt;-chan uint64) &lt;-chan uint64 {
 	output := make(chan uint64)
 	go func() {
 		for {
-			a1, b, a2 := <-inA, <-inB, <-inA
-			output <- a1 ^ b & a2
+			a1, b, a2 := &lt;-inA, &lt;-inB, &lt;-inA
+			output &lt;- a1 ^ b &amp; a2
 		}
 	}()
 	return output
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 class="tmd-header-4">
+Data decomposition
+</h4>
+<p></p>
+<div class="tmd-usual">
+Data decomposition is the inverse process of data composition. A decomposition worker function implementation takes one input data stream parameter and returns several data stream results. No examples will be shown for data decomposition here.
 </div>
-
-<h4>Data decomposition</h4>
-
-<div>
-
-Data decomposition is the inverse process of data composition.
-A decomposition worker function implementation takes one
-input data stream parameter and returns several data stream results.
-No examples will be shown for data decomposition here.
-
+<p></p>
+<h4 class="tmd-header-4">
+Data duplication/proliferation
+</h4>
+<p></p>
+<div class="tmd-usual">
+Data duplication (proliferation) can be viewed as special data decompositions. One piece of data will be duplicated and each of the duplicated data will be sent to different output data streams.
 </div>
-
-<h4>Data duplication/proliferation</h4>
-
-<div>
-
-<p>
-Data duplication (proliferation) can be viewed as special data decompositions.
-One piece of data will be duplicated and each of the duplicated data will
-be sent to different output data streams.
-</p>
-
+<p></p>
+<div class="tmd-usual">
 An example:
-<pre class="line-numbers"><code class="language-go">func Duplicator(in <-chan uint64) (<-chan uint64, <-chan uint64) {
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func Duplicator(in &lt;-chan uint64) (&lt;-chan uint64, &lt;-chan uint64) {
 	outA, outB := make(chan uint64), make(chan uint64)
 	go func() {
 		for x := range in {
-			outA <- x
-			outB <- x
+			outA &lt;- x
+			outB &lt;- x
 		}
 	}()
 	return outA, outB
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 class="tmd-header-4">
+Data calculation/analysis
+</h4>
+<p></p>
+<div class="tmd-usual">
+The functionalities of data calculation and analysis modules vary and each is very specific. Generally, a worker function of such modules transforms each piece of input data into another piece of output data.
 </div>
-
-<h4>Data calculation/analysis</h4>
-
-<div>
-<p>
-The functionalities of data calculation and analysis modules vary and each is very specific.
-Generally, a worker function of such modules transforms each piece of input data
-into another piece of output data.
-</p>
-
-For simple demo purpose, here shows a worker example
-which inverts every bit of each transferred <code>uint64</code> value.
-
-<pre class="line-numbers"><code class="language-go">func Calculator(in <-chan uint64, out chan uint64) (<-chan uint64) {
+<p></p>
+<div class="tmd-usual">
+For simple demo purpose, here shows a worker example which inverts every bit of each transferred <code class="tmd-code-span">uint64</code> value.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func Calculator(in &lt;-chan uint64, out chan uint64) (&lt;-chan uint64) {
 	if out == nil {
 		out = make(chan uint64)
 	}
 	go func() {
 		for x := range in {
-			out <- ^x
+			out &lt;- ^x
 		}
 	}()
 	return out
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 class="tmd-header-4">
+Data validation/filtering
+</h4>
+<p></p>
+<div class="tmd-usual">
+A data validation or filtering module discards some transferred data in a stream. For example, the following worker function discards all non-prime numbers.
 </div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">import "math/big"
 
-<h4>Data validation/filtering</h4>
-
-<div>
-
-A data validation or filtering module discards
-some transferred data in a stream.
-For example, the following worker function discards all non-prime numbers.
-
-<pre class="line-numbers"><code class="language-go">import "math/big"
-
-func Filter0(input <-chan uint64, output chan uint64) <-chan uint64 {
+func Filter0(input &lt;-chan uint64, output chan uint64) &lt;-chan uint64 {
 	if output == nil {
 		output = make(chan uint64)
 	}
@@ -1908,59 +1756,53 @@ func Filter0(input <-chan uint64, output chan uint64) <-chan uint64 {
 		for x := range input {
 			bigInt.SetUint64(x)
 			if bigInt.ProbablyPrime(1) {
-				output <- x
+				output &lt;- x
 			}
 		}
 	}()
 	return output
 }
 
-func Filter(input <-chan uint64) <-chan uint64 {
+func Filter(input &lt;-chan uint64) &lt;-chan uint64 {
 	return Filter0(input, nil)
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Please note that each of the two implementations is used by one of the final two examples shown below.
-</p>
-
 </div>
+<p></p>
+<h4 class="tmd-header-4">
+Data serving/saving
+</h4>
+<p></p>
+<div class="tmd-usual">
+Generally, a data serving or saving module is the last or final output module in a data flow system. Here just provides a simple worker which prints each piece of data received from the input stream.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">import "fmt"
 
-<h4>Data serving/saving</h4>
-
-<div>
-
-Generally, a data serving or saving module is the last or final output module
-in a data flow system.
-Here just provides a simple worker which prints each piece of data
-received from the input stream.
-
-<pre class="line-numbers"><code class="language-go">import "fmt"
-
-func Printer(input <-chan uint64) {
+func Printer(input &lt;-chan uint64) {
 	for x := range input {
 		fmt.Println(x)
 	}
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 class="tmd-header-4">
+Data flow system assembling
+</h4>
+<p></p>
+<div class="tmd-usual">
+Now, let's use the above module worker functions to assemble several data flow systems. Assembling a data flow system is just to create some workers of different modules, and specify the input streams for every worker.
 </div>
-
-<h4>Data flow system assembling</h4>
-
-<div>
-<p>
-Now, let's use the above module worker functions
-to assemble several data flow systems.
-Assembling a data flow system is just to create some workers
-of different modules, and specify the input streams for every worker.
-</p>
-
+<p></p>
+<div class="tmd-usual">
 Data flow system example 1 (a linear pipeline):
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 ... // the worker functions declared above.
 
@@ -1974,18 +1816,22 @@ func main() {
 	)
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 The above data flow system is depicted in the following diagram.
-
-<div class="text-center">
-<img src="res/data-flow-linear.png" alt="linear data flow"></img>
 </div>
-
+<p></p>
+<div class="tmd-base tmd-align-center">
+<div class="tmd-usual">
+<img src="res/data-flow-linear.png" class="tmd-media"/>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
 Data flow system example 2 (a directed acyclic graph pipeline):
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 ... // the worker functions declared above.
 
@@ -2000,36 +1846,35 @@ func main() {
 	Printer(calculator)
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 The above data flow system is depicted in the following diagram.
-
-<div class="text-center">
-<img src="res/data-flow-dag.png" alt="DAG data flow"></img>
 </div>
-
-<p>
-More complex data flow topology may be arbitrary graphs.
-For example, a data flow system may have multiple final outputs.
-But data flow systems with cyclic-graph topology are seldom used in reality.
-</p>
-
-<p>
-From the above two examples, we can find that it is very easy
-and intuitive to build data flow systems with channels.
-</p>
-
-<p>
-From the last example, we can find that, with the help of aggregators,
-it is easy to implement fan-in and fan-out for the number of workers for a specified module.
-</p>
-
-In fact, we can use a simple channel to replace the role of an aggregator.
-For example, the following example replaces the two aggregators with two channels.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-base tmd-align-center">
+<div class="tmd-usual">
+<img src="res/data-flow-dag.png" class="tmd-media"/>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
+More complex data flow topology may be arbitrary graphs. For example, a data flow system may have multiple final outputs. But data flow systems with cyclic-graph topology are seldom used in reality.
+</div>
+<p></p>
+<div class="tmd-usual">
+From the above two examples, we can find that it is very easy and intuitive to build data flow systems with channels.
+</div>
+<p></p>
+<div class="tmd-usual">
+From the last example, we can find that, with the help of aggregators, it is easy to implement fan-in and fan-out for the number of workers for a specified module.
+</div>
+<p></p>
+<div class="tmd-usual">
+In fact, we can use a simple channel to replace the role of an aggregator. For example, the following example replaces the two aggregators with two channels.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 ... // the worker functions declared above.
 
@@ -2044,37 +1889,23 @@ func main() {
 	Printer(c2)
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 The modified data flow system is depicted in the following diagram.
-
-<div class="text-center">
-<img src="res/data-flow-dag-b.png" alt="DAG data flow"></img>
 </div>
-
-<p>
-The above explanations for data flow systems don't consider much on
-how to close data streams. Please read <a href="channel-closing.html">this
-article</a> for explanations on how to gracefully close channels.
-</p>
+<p></p>
+<div class="tmd-base tmd-align-center">
+<div class="tmd-usual">
+<img src="res/data-flow-dag-b.png" class="tmd-media"/>
+</div>
+</div>
+<p></p>
+<div class="tmd-usual">
+The above explanations for data flow systems don't consider much on how to close data streams. Please read <a href="channel-closing.html">this article</a> for explanations on how to gracefully close channels.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<!--
-
-// channel pattern: use buffered channels and try-send to capture at least notifications.
-
--->
-
-
-
-
-
-
-
-
-
-
-
+<p></p>
+<p></p>

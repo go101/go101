@@ -1,132 +1,116 @@
-﻿<h1>Type-Unsafe Pointers</h1>
+<h1 class="tmd-header-1">
+Type-Unsafe Pointers
+</h1>
+<p></p>
+<div class="tmd-usual">
+We have learned Go pointers from the article <a href="pointer.html">pointers in Go</a>. From that article, we know that, comparing to C pointers, there are many restrictions made for Go pointers. For example, Go pointers can't participate arithmetic operations, and for two arbitrary pointer types, it is very possible that their values can't be converted to each other.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-We have learned Go pointers from the article
-<a href="pointer.html">pointers in Go</a>.
-From that article, we know that, comparing to C pointers,
-there are many restrictions made for Go pointers.
-For example, Go pointers can't participate arithmetic operations,
-and for two arbitrary pointer types, it is very possible that
-their values can't be converted to each other.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+The pointers explained in that article are called type-safe pointers actually. Although the restrictions on type-safe pointers really make us be able to write safe Go code with ease, they also make some obstacles to write efficient code for some scenarios.
+</div>
+<p></p>
+<div class="tmd-usual">
+In fact, Go also supports type-unsafe pointers, which are pointers without the restrictions made for safe pointers. Type-unsafe pointers are also called unsafe pointers in Go. Go unsafe pointers are much like C pointers, they are powerful, and also dangerous. For some cases, we can write more efficient code with the help of unsafe pointers. On the other hand, by using unsafe pointers, it is easy to write bad code which is too subtle to detect in time.
+</div>
+<p></p>
+<div class="tmd-usual">
+Another big risk of using unsafe pointers comes from the fact that the unsafe mechanism is not protected by <a href="https://golang.org/doc/go1compat">the Go 1 compatibility guidelines</a>. Code depending on unsafe pointers works today could break since a later Go version.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The pointers explained in that article are called type-safe pointers actually.
-Although the restrictions on type-safe pointers really make
-us be able to write safe Go code with ease,
-they also make some obstacles to write efficient code for some scenarios.
-</p>
-
-<p>
-In fact, Go also supports type-unsafe pointers,
-which are pointers without the restrictions made for safe pointers.
-Type-unsafe pointers are also called unsafe pointers in Go.
-Go unsafe pointers are much like C pointers,
-they are powerful, and also dangerous.
-For some cases, we can write more efficient code with the help of unsafe pointers.
-On the other hand, by using unsafe pointers,
-it is easy to write bad code which is too subtle to detect in time.
-</p>
-
-<p>
-Another big risk of using unsafe pointers comes from the fact that
-the unsafe mechanism is not protected by
-<a href="https://golang.org/doc/go1compat">the Go 1 compatibility guidelines</a>.
-Code depending on unsafe pointers works today could break
-since a later Go version.
-</p>
-
-<p>
-If you really desire the code efficient improvements by using unsafe
-pointers for any reason, you should not only know the above mentioned risks,
-but also follow the instructions written in the official Go
-documentation and clearly understand the effect of each unsafe pointer use,
-so that you can write safe Go code with unsafe pointers.
-</p>
-
-<h3>About the <code>unsafe</code> Standard Package</h3>
-
-<div>
-Go provides a special <a href="type-system-overview.html#type-kinds">kind of types</a> for unsafe pointers.
-We must import
-<a href="https://golang.org/pkg/unsafe/">the <code>unsafe</code> standard package</a>
-to use unsafe pointers.
-The <code>unsafe.Pointer</code> type is defined as
-
-<pre class="disable-line-numbers111"><code class="language-go">type Pointer *ArbitraryType
+</div>
+<p></p>
+<div class="tmd-usual">
+If you really desire the code efficient improvements by using unsafe pointers for any reason, you should not only know the above mentioned risks, but also follow the instructions written in the official Go documentation and clearly understand the effect of each unsafe pointer use, so that you can write safe Go code with unsafe pointers.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+About the <code class="tmd-code-span">unsafe</code> Standard Package
+</h3>
+<p></p>
+<div class="tmd-usual">
+Go provides a special <a href="type-system-overview.html#type-kinds">kind of types</a> for unsafe pointers. We must import <a href="https://golang.org/pkg/unsafe/">the <code class="tmd-code-span">unsafe</code> standard package</a> to use unsafe pointers. The <code class="tmd-code-span">unsafe.Pointer</code> type is defined as
+</div>
+<p></p>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">type Pointer *ArbitraryType
 </code></pre>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Surely, it is not a usual type definition.
-Here the <code>ArbitraryType</code>
-just hints that a <code>unsafe.Pointer</code> value can be converted
-to any safe pointer values in Go (and vice versa).
-In other words, <code>unsafe.Pointer</code> is like the <code>void*</code> in C language.
-</p>
-
-<p>
-Go unsafe pointers mean the types
-whose underlying types are <code>unsafe.Pointer</code>.
-</p>
-
-<p>
-The zero values of unsafe pointers are also represented with
-the predeclared identifier <code>nil</code>.
-</p>
-
-Before Go 1.17, the <code>unsafe</code> standard package has already provided three functions.
-<ul>
-<li>
-	<code>func Alignof(variable ArbitraryType) uintptr</code>,
-	which is used to get the address alignment of a value.
-	Please notes, the aligns for struct-field values and non-field values
-	of the same type may be different, though for the standard
-	Go compiler, they are always the same. For the gccgo compiler, they may be different.
-
+</div>
+<p></p>
+<div class="tmd-usual">
+Surely, it is not a usual type definition. Here the <code class="tmd-code-span">ArbitraryType</code> just hints that a <code class="tmd-code-span">unsafe.Pointer</code> value can be converted to any safe pointer values in Go (and vice versa). In other words, <code class="tmd-code-span">unsafe.Pointer</code> is like the <code class="tmd-code-span">void*</code> in C language.
+</div>
+<p></p>
+<div class="tmd-usual">
+Go unsafe pointers mean the types whose underlying types are <code class="tmd-code-span">unsafe.Pointer</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+The zero values of unsafe pointers are also represented with the predeclared identifier <code class="tmd-code-span">nil</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+Before Go 1.17, the <code class="tmd-code-span">unsafe</code> standard package has already provided three functions.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">func Alignof(variable ArbitraryType) uintptr</code>, which is used to get the address alignment of a value. Please notes, the aligns for struct-field values and non-field values of the same type may be different, though for the standard Go compiler, they are always the same. For the gccgo compiler, they may be different.
+</div>
+<p></p>
 </li>
-<li>
-	<code>func Offsetof(selector ArbitraryType) uintptr</code>,
-	which is used to get the address offset of a field in a struct value.
-	The offset is relative to the address of the struct value.
-	The return results should be always the same for the same corresponding
-	field of values of the same struct type in the same program.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">func Offsetof(selector ArbitraryType) uintptr</code>, which is used to get the address offset of a field in a struct value. The offset is relative to the address of the struct value. The return results should be always the same for the same corresponding field of values of the same struct type in the same program.
+</div>
 </li>
-<li>
-	<code>func Sizeof(variable ArbitraryType) uintptr</code>,
-	which is used to get the size of a value
-	(a.k.a., the size of the type of the value).
-	The return results should be always the same
-	for all values of the same type in the same program.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">func Sizeof(variable ArbitraryType) uintptr</code>, which is used to get the size of a value (a.k.a., the size of the type of the value). The return results should be always the same for all values of the same type in the same program.
+</div>
 </li>
 </ul>
-
+<p></p>
+<div class="tmd-usual">
 Note,
-<ul>
-<li>
-	the types of the return results of the three functions are all
-	<code>uintptr</code>. Below we will learn that uintptr values
-	can be converted to unsafe pointers (and vice versa).
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the types of the return results of the three functions are all <code class="tmd-code-span">uintptr</code>. Below we will learn that uintptr values can be converted to unsafe pointers (and vice versa).
+</div>
 </li>
-<li>
-	although the return results of calls of any of the three functions
-	are consistent in the same program,
-	they might be different crossing operating systems, crossing architectures,
-	crossing compilers, and crossing compiler versions.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+although the return results of calls of any of the three functions are consistent in the same program, they might be different crossing operating systems, crossing architectures, crossing compilers, and crossing compiler versions.
+</div>
 </li>
-<li>
-	calls to the three functions are always evaluated at compile time.
-	The evaluation results are typed constants with type <code>uintptr</code>.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+calls to the three functions are always evaluated at compile time. The evaluation results are typed constants with type <code class="tmd-code-span">uintptr</code>.
+</div>
 </li>
-<li>
-	the argument passed to a call to the <code>unsafe.Offsetof</code> function
-	must the struct field selector form <code>value.field</code>.
-	The selector may denote an embedded field, but the field must be reachable
-	without implicit pointer indirections.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+the argument passed to a call to the <code class="tmd-code-span">unsafe.Offsetof</code> function must the struct field selector form <code class="tmd-code-span">value.field</code>. The selector may denote an embedded field, but the field must be reachable without implicit pointer indirections.
+</div>
 </li>
 </ul>
-
+<p></p>
+<div class="tmd-usual">
 An example of using the three functions.
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "unsafe"
@@ -149,13 +133,13 @@ func main() {
 	fmt.Println(unsafe.Offsetof(x.c)) // 16
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<div class="tmd-usual">
 An example which demonstrates the last note mentioned above.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "unsafe"
@@ -191,66 +175,69 @@ func main() {
 	fmt.Println(unsafe.Offsetof(x.S.b)) // 0
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+Please note, the print results shown in the comments are for the standard Go compiler version 1.23.n on Linux AMD64 architecture.
+</div>
+<p></p>
+<div class="tmd-usual">
+The three functions provided in the <code class="tmd-code-span">unsafe</code> package don't look much dangerous. The signatures of these functions are very <a href="https://groups.google.com/g/golang-nuts/c/Pi7VveWDUPc">impossible to be changed in future Go 1 versions</a>. Rob Pike even ever <a href="https://github.com/golang/go/issues/5602">made a proposal to move the three functions to elsewhere</a>. Most of the unsafety of the <code class="tmd-code-span">unsafe</code> package comes from unsafe pointers. They are as dangerous as C pointers, what is Go safe pointers always try to avoid.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Please note, the print results shown in the comments are for the standard
-Go compiler version 1.23.n on Linux AMD64 architecture.
-</p>
-
-<p>
-The three functions provided in the <code>unsafe</code> package don't look much dangerous.
-The signatures of these functions are very
-<a href="https://groups.google.com/g/golang-nuts/c/Pi7VveWDUPc">impossible to be changed in future Go 1 versions</a>.
-Rob Pike even ever <a href="https://github.com/golang/go/issues/5602">made a proposal to move the three functions to elsewhere</a>.
-Most of the unsafety of the <code>unsafe</code> package comes from unsafe pointers.
-They are as dangerous as C pointers, what is Go safe pointers always try to avoid.
-</p>
-
-Go 1.17 introduces one new type and two new functions into the <code>unsafe</code> package.
-The new type is <code>IntegerType</code>, The following is its definition.
-This type doesn't denote a specified type. It just represents any arbitrary integer type.
-We can view it as a generic type.
-<pre class="disable-line-numbers111"><code class="language-go">type IntegerType int
+</div>
+<p></p>
+<div class="tmd-usual">
+Go 1.17 introduces one new type and two new functions into the <code class="tmd-code-span">unsafe</code> package. The new type is <code class="tmd-code-span">IntegerType</code>, The following is its definition. This type doesn't denote a specified type. It just represents any arbitrary integer type. We can view it as a generic type.
+</div>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">type IntegerType int
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The two functions introduced in Go 1.17 are:
-<ul>
-<li>
-	<code>func Add(ptr Pointer, len IntegerType) Pointer</code>.
-	This function adds an offset to the address represented by an unsafe pointer
-	and return a new unsafe pointer which represents the new address.
-	This function partially covers the usages of the below introduced
-	unsafe pointer use pattern 3.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">func Add(ptr Pointer, len IntegerType) Pointer</code>. This function adds an offset to the address represented by an unsafe pointer and return a new unsafe pointer which represents the new address. This function partially covers the usages of the below introduced unsafe pointer use pattern 3.
+</div>
 </li>
-<li>
-	<code>func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType</code>.
-	This function is used to derive a slice with the specified length from a safe pointer,
-	where <code>ArbitraryType</code> is the element type of the result slice.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType</code>. This function is used to derive a slice with the specified length from a safe pointer, where <code class="tmd-code-span">ArbitraryType</code> is the element type of the result slice.
+</div>
 </li>
 </ul>
-
+<p></p>
+<div class="tmd-usual">
 Go 1.20 further introduced three more functions:
-<ul>
-<li>
-	<code>func String(ptr *byte, len IntegerType) string</code>.
-	This function is used to derive a string with the specified length from a safe <code>byte</code> pointer.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">func String(ptr *byte, len IntegerType) string</code>. This function is used to derive a string with the specified length from a safe <code class="tmd-code-span">byte</code> pointer.
+</div>
 </li>
-<li>
-	<code>func StringData(str string) *byte</code>.
-	This function is used to get the pointer to the underlying byte sequence of a string.
-	Please note, don't pass empty strings as arguments to this function.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">func StringData(str string) *byte</code>. This function is used to get the pointer to the underlying byte sequence of a string. Please note, don't pass empty strings as arguments to this function.
+</div>
 </li>
-<li>
-	<code>func SliceData(slice []ArbitraryType) *ArbitraryType</code>.
-	This function is used to get the pointer to the underlying element sequence of a slice.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+<code class="tmd-code-span">func SliceData(slice []ArbitraryType) *ArbitraryType</code>. This function is used to get the pointer to the underlying element sequence of a slice.
+</div>
 </li>
 </ul>
-
-These functions introduced since Go 1.17 have certain dangerousness.
-They need to be used with caution.
-This following is an example using the two functions introduced in Go 1.17.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+These functions introduced since Go 1.17 have certain dangerousness. They need to be used with caution. This following is an example using the two functions introduced in Go 1.17.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -261,7 +248,7 @@ func main() {
 	a := [16]int{3: 3, 9: 9, 11: 11}
 	fmt.Println(a)
 	eleSize := int(unsafe.Sizeof(a[0]))
-	p9 := &a[9]
+	p9 := &amp;a[9]
 	up9 := unsafe.Pointer(p9)
 	p3 := (*int)(unsafe.Add(up9, -6 * eleSize))
 	fmt.Println(*p3) // 3
@@ -279,19 +266,14 @@ func main() {
 	_ = unsafe.Slice(p9, 8)
 }
 </code></pre>
-
-<!--
-https://github.com/golang/go/issues/46742
--->
-
-<p>
-</p>
-
-The following two functions may be used to do conversions between strings and byte slices, in type unsafe manners.
-Comparing with type safe manners, the type unsafe manners don't duplicate underlying byte sequences of strings and byte slices,
-so they are more performant.
-
-<pre class="line-numbers"><code class="language-go">import "unsafe"
+<p></p>
+<p></p>
+<div class="tmd-usual">
+The following two functions may be used to do conversions between strings and byte slices, in type unsafe manners. Comparing with type safe manners, the type unsafe manners don't duplicate underlying byte sequences of strings and byte slices, so they are more performant.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">import "unsafe"
 
 func String2ByteSlice(str string) []byte {
 	if str == "" {
@@ -307,88 +289,85 @@ func ByteSlice2String(bs []byte) string {
 	return unsafe.String(unsafe.SliceData(bs), len(bs))
 }
 </code></pre>
-
-</div>
-
-<h3>Unsafe Pointers Related Conversion Rules</h3>
-
-<div>
+<p></p>
+<h3 class="tmd-header-3">
+Unsafe Pointers Related Conversion Rules
+</h3>
+<p></p>
+<div class="tmd-usual">
 Currently (Go 1.23), Go compilers allow the following explicit conversions.
-<ul>
-<li>
-	A safe pointer can be explicitly converted to an unsafe pointer,
-	and vice versa.
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+A safe pointer can be explicitly converted to an unsafe pointer, and vice versa.
+</div>
 </li>
-<li>
-	An uintptr value can be explicitly converted to an unsafe pointer,
-	and vice versa.
-	But please note, a nil unsafe.Pointer shouldn't be converted to uintptr and back with arithmetic.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+An uintptr value can be explicitly converted to an unsafe pointer, and vice versa. But please note, a nil unsafe.Pointer shouldn't be converted to uintptr and back with arithmetic.
+</div>
 </li>
 </ul>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 By using these conversions, we can convert a safe pointer value to an arbitrary safe pointer type.
-</p>
-
-<p>
-However, although these conversions are all legal at compile time,
-not all of them are valid (safe) at run time.
-These conversions defeat the memory safety the whole Go type system
-(except the unsafe part) tries to maintain.
-We must follow the instructions listed in a later section below
-to write valid Go code with unsafe pointers.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+However, although these conversions are all legal at compile time, not all of them are valid (safe) at run time. These conversions defeat the memory safety the whole Go type system (except the unsafe part) tries to maintain. We must follow the instructions listed in a later section below to write valid Go code with unsafe pointers.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Some Facts in Go We Should Know
+</h3>
+<p></p>
+<div class="tmd-usual">
+Before introducing the valid unsafe pointer use patterns, we need to know some facts in Go.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Fact 1: unsafe pointers are pointers and uintptr values are integers
+</h4>
+<p></p>
+<div class="tmd-usual">
+Each of non-nil safe and unsafe pointers references another value. However uintptr values don't reference any values, they are just plain integers, though often each of them stores an integer which can be used to represent a memory address.
+</div>
+<p></p>
+<div class="tmd-usual">
+Go is a language supporting automatic garbage collection. When a Go program is running, Go runtime will <a href="memory-block.html#when-to-collect">check which memory blocks are not used by any value any more and collect the memory</a> allocated for these unused blocks, from time to time. Pointers play an important role in the check process. If a memory block is unreachable from (referenced by) any values still in use, then Go runtime thinks it is an unused value and it can be safely garbage collected.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h3>Some Facts in Go We Should Know</h3>
-
-<p>
-Before introducing the valid unsafe pointer use patterns,
-we need to know some facts in Go.
-</p>
-
-<h4>Fact 1: unsafe pointers are pointers and uintptr values are integers</h4>
-
-<p>
-Each of non-nil safe and unsafe pointers references another value.
-However uintptr values don't reference any values, they are just plain integers,
-though often each of them stores an integer which can be used to represent a memory address.
-</p>
-
-<p>
-Go is a language supporting automatic garbage collection.
-When a Go program is running, Go runtime will
-<a href="memory-block.html#when-to-collect">check which memory blocks are not used
-by any value any more and collect the memory</a> allocated for these unused blocks,
-from time to time.
-Pointers play an important role in the check process.
-If a memory block is unreachable from (referenced by) any values still in use,
-then Go runtime thinks it is an unused value and it can be safely garbage collected.
-</p>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 As uintptr values are integers, they can participate arithmetic operations.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+The example in the next subsection shows the differences between pointers and uintptr values.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Fact 2: unused memory blocks may be collected at any time
+</h4>
+<p></p>
+<div class="tmd-usual">
+At run time, the garbage collector may run at an uncertain time, and each garbage collection process may last an uncertain duration. So when a memory block becomes unused, it may be <a href="memory-block.html#when-can-collect">collected at an uncertain time</a>.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-The example in the next subsection shows the differences between
-pointers and uintptr values.
-</p>
-
-<h4>Fact 2: unused memory blocks may be collected at any time</h4>
-
-<div>
-<p>
-At run time, the garbage collector may run at an uncertain time,
-and each garbage collection process may last an uncertain duration.
-So when a memory block becomes unused, it may be
-<a href="memory-block.html#when-can-collect">collected at an uncertain time</a>.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
 For example:
-
-<pre class="line-numbers"><code class="language-go">import "unsafe"
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">import "unsafe"
 
 // Assume createInt will not be inlined.
 //go:noinline
@@ -417,87 +396,41 @@ func foo() {
 	*(*int)(unsafe.Pointer(p2)) = 3 // dangerous!
 }
 </code></pre>
-
-<p>
-In the above example, the fact that value <code>p2</code> is still in use can't guarantee
-that the memory block ever hosting the <code>int</code> value referenced by <code>z</code> has not been garbage collected yet.
-In other words, when <code>*(*int)(unsafe.Pointer(p2)) = 3</code> is executed, the memory block may be collected, or not.
-It is dangerous to dereference the address stored in value <code>p2</code> to an <code>int</code> value,
-for it is possible that the memory block has been already reallocated for another value (even for another program).
-</p>
+<p></p>
+<div class="tmd-usual">
+In the above example, the fact that value <code class="tmd-code-span">p2</code> is still in use can't guarantee that the memory block ever hosting the <code class="tmd-code-span">int</code> value referenced by <code class="tmd-code-span">z</code> has not been garbage collected yet. In other words, when <code class="tmd-code-span">*(*int)(unsafe.Pointer(p2)) = 3</code> is executed, the memory block may be collected, or not. It is dangerous to dereference the address stored in value <code class="tmd-code-span">p2</code> to an <code class="tmd-code-span">int</code> value, for it is possible that the memory block has been already reallocated for another value (even for another program).
+</div>
+<p></p>
+<p></p>
+<h4 id="fact-value-address-might-change" class="tmd-header-4">
+Fact 3: the addresses of some values might change at run time
+</h4>
+<p></p>
+<div class="tmd-usual">
+Please read the article <a href="memory-block.html#where-to-allocate">memory blocks</a> for details (see the end of the hyperlinked section). Here, we should just know that when the size of the stack of a goroutine changes, the memory blocks allocated on the stack will be moved. In other words, the addresses of the values hosted on these memory blocks will change.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<!--
-https://github.com/golang/go/issues/32115
--->
-<!--
-<h4>Fact 3: we can use a <code>runtime.KeepAlive</code> function call to mark a value as still in use (reachable) before the call</h4>
-
-<i>(I decided to remove this fact from this article. This doesn't means the fact is not existing.
-It just means that the fact is not very relevant to this article.
-And it is helpless to fix the problem shown in the last sub-section.
-Please read the next fact for the reason.)</i>
-
-<div>
-<p>
-To mark a value and the value parts referenced by it still reachable, we should pass a value which references
-the value as the argument of a <code>runtime.KeepAlive</code> function call.
-A pointer to the value is often used as such an argument.
-</p>
-
-For example, by appending a <code>runtime.KeepAlive(&amp;z)</code>
-call to the example in the last subsection,
-<code>*(*int)(unsafe.Pointer(p2)) = 3</code> can be executed safely now.
-
-<pre class="line-numbers"><code class="language-go">func foo() {
-	p0, y, z := createInt(), createInt(), createInt()
-	var p1 = unsafe.Pointer(y)
-	var p2 = uintptr(unsafe.Pointer(z))
-
-	p2 += 2; p2 - -; p2 - -
-
-	*p0 = 1
-	*(*int)(p1) = 2
-	*(*int)(unsafe.Pointer(p2)) = 3 // safe now!
-
-	runtime.KeepAlive(&z) // This line k
-}
-</code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 class="tmd-header-4">
+Fact 4: the life range of a value at run time may be not as large as it looks in code
+</h4>
+<p></p>
+<div class="tmd-usual">
+In the following example, the fact value <code class="tmd-code-span">t</code> is still in use can't guarantee that the values referenced by value <code class="tmd-code-span">t.y</code> are still in use.
 </div>
--->
-
-<a class="anchor" id="fact-value-address-might-change"></a>
-<h4>Fact 3: the addresses of some values might change at run time</h4>
-
-<p>
-Please read the article <a href="memory-block.html#where-to-allocate">memory blocks</a> for details (see the end of the hyperlinked section).
-Here, we should just know that when the size of the stack of a goroutine changes,
-the memory blocks allocated on the stack will be moved.
-In other words, the addresses of the values hosted on these memory blocks will change.
-</p>
-
-<h4>Fact 4: the life range of a value at run time may be not as large as it looks in code</h4>
-
-
-<div>
-<p>
-In the following example, the fact value <code>t</code> is still in use
-can't guarantee that the values referenced by value <code>t.y</code> are still in use.
-</p>
-
-<pre class="line-numbers"><code class="language-go">type T struct {
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type T struct {
 	x int
-	y *[1<<23]byte
+	y *[1&lt;&lt;23]byte
 }
 
 func bar() {
-	t := T{y: new([1<<23]byte)}
-	p := uintptr(unsafe.Pointer(&t.y[0]))
+	t := T{y: new([1&lt;&lt;23]byte)}
+	p := uintptr(unsafe.Pointer(&amp;t.y[0]))
 
 	... // use T.x and T.y
 
@@ -512,90 +445,81 @@ func bar() {
 	println(t.x)
 }
 </code></pre>
-
-<p>
-</p>
-
+<p></p>
+<h4 class="tmd-header-4">
+Fact 5: <code class="tmd-code-span">*unsafe.Pointer</code> is a general safe pointer type
+</h4>
+<p></p>
+<div class="tmd-usual">
+Yes, <code class="tmd-code-span">*unsafe.Pointer</code> is a safe pointer type. Its base type is <code class="tmd-code-span">unsafe.Pointer</code>. As it is a safe pointer, according the conversion rules listed above, it can be converted to <code class="tmd-code-span">unsafe.Pointer</code> type, and vice versa.
 </div>
-
-<h4>Fact 5: <code>*unsafe.Pointer</code> is a general safe pointer type</h4>
-
-<div>
-<p>
-Yes, <code>*unsafe.Pointer</code> is a safe pointer type.
-Its base type is <code>unsafe.Pointer</code>.
-As it is a safe pointer, according the conversion rules listed above,
-it can be converted to <code>unsafe.Pointer</code> type, and vice versa.
-</p>
-
+<p></p>
+<div class="tmd-usual">
 For example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "unsafe"
 
 func main() {
 	x := 123                // of type int
-	p := unsafe.Pointer(&x) // of type unsafe.Pointer
-	pp := &p                // of type *unsafe.Pointer
+	p := unsafe.Pointer(&amp;x) // of type unsafe.Pointer
+	pp := &amp;p                // of type *unsafe.Pointer
 	p = unsafe.Pointer(pp)
 	pp = (*unsafe.Pointer)(p)
 }
 </code></pre>
+<p></p>
+<h3 class="tmd-header-3">
+How to Use Unsafe Pointers Correctly?
+</h3>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">unsafe</code> standard package documentation lists <a href="https://golang.org/pkg/unsafe/#Pointer">six unsafe pointer use patterns</a>. Following will introduce and explain them one by one.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h3>How to Use Unsafe Pointers Correctly?</h3>
-
-<p>
-The <code>unsafe</code> standard package documentation lists
-<a href="https://golang.org/pkg/unsafe/#Pointer">six unsafe pointer use patterns</a>.
-Following will introduce and explain them one by one.
-</p>
-
-<h4>Pattern 1: convert a <code>*T1</code> value to unsafe Pointer, then convert the unsafe pointer value to <code>*T2</code>.</h4>
-
-<div>
-
-<p>
-As mentioned above, by using the unsafe pointer conversion rules above,
-we can convert a value of <code>*T1</code> to type <code>*T2</code>,
-where <code>T1</code> and <code>T2</code> are two arbitrary types.
-However, we should only do such conversions if the size of <code>T1</code>
-is no smaller than <code>T2</code>, and only if the conversions are meaningful.
-</p>
-
-<p>
-As a result, we can also achieve the conversions between
-type <code>T1</code> and <code>T2</code> by using this pattern.
-</p>
-
-One example is the <code>math.Float64bits</code> function,
-which converts a <code>float64</code> value to an <code>uint64</code> value,
-without changing any bit in the <code>float64</code> value.
-The <code>math.Float64frombits</code> function does reverse conversions.
-
-<pre class="line-numbers"><code class="language-go">func Float64bits(f float64) uint64 {
-	return *(*uint64)(unsafe.Pointer(&f))
+<p></p>
+<h4 class="tmd-header-4">
+Pattern 1: convert a <code class="tmd-code-span">*T1</code> value to unsafe Pointer, then convert the unsafe pointer value to <code class="tmd-code-span">*T2</code>.
+</h4>
+<p></p>
+<div class="tmd-usual">
+As mentioned above, by using the unsafe pointer conversion rules above, we can convert a value of <code class="tmd-code-span">*T1</code> to type <code class="tmd-code-span">*T2</code>, where <code class="tmd-code-span">T1</code> and <code class="tmd-code-span">T2</code> are two arbitrary types. However, we should only do such conversions if the size of <code class="tmd-code-span">T1</code> is no smaller than <code class="tmd-code-span">T2</code>, and only if the conversions are meaningful.
+</div>
+<p></p>
+<div class="tmd-usual">
+As a result, we can also achieve the conversions between type <code class="tmd-code-span">T1</code> and <code class="tmd-code-span">T2</code> by using this pattern.
+</div>
+<p></p>
+<div class="tmd-usual">
+One example is the <code class="tmd-code-span">math.Float64bits</code> function, which converts a <code class="tmd-code-span">float64</code> value to an <code class="tmd-code-span">uint64</code> value, without changing any bit in the <code class="tmd-code-span">float64</code> value. The <code class="tmd-code-span">math.Float64frombits</code> function does reverse conversions.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func Float64bits(f float64) uint64 {
+	return *(*uint64)(unsafe.Pointer(&amp;f))
 }
 
 func Float64frombits(b uint64) float64 {
-	return *(*float64)(unsafe.Pointer(&b))
+	return *(*float64)(unsafe.Pointer(&amp;b))
 }
 </code></pre>
-
-<p>
-Please note, the return result of the <code>math.Float64bits(aFloat64)</code>
-function call is different from the result of the explicit conversion
-<code>uint64(aFloat64)</code>.
-</p>
-
-In the following example, we use this pattern to convert a <code>[]MyString</code>
-slice to type <code>[]string</code>, and vice versa.
-The result slice and the original slice share the underlying elements.
-Such conversions are impossible through safe ways,
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+Please note, the return result of the <code class="tmd-code-span">math.Float64bits(aFloat64)</code> function call is different from the result of the explicit conversion <code class="tmd-code-span">uint64(aFloat64)</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+In the following example, we use this pattern to convert a <code class="tmd-code-span">[]MyString</code> slice to type <code class="tmd-code-span">[]string</code>, and vice versa. The result slice and the original slice share the underlying elements. Such conversions are impossible through safe ways,
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -607,83 +531,81 @@ func main() {
 	ms := []MyString{"C", "C++", "Go"}
 	fmt.Printf("%s\n", ms)  // [C C++ Go]
 	// ss := ([]string)(ms) // compiling error
-	ss := *(*[]string)(unsafe.Pointer(&ms))
+	ss := *(*[]string)(unsafe.Pointer(&amp;ms))
 	ss[1] = "Zig"
 	fmt.Printf("%s\n", ms) // [C Zig Go]
 	// ms = []MyString(ss) // compiling error
-	ms = *(*[]MyString)(unsafe.Pointer(&ss))
+	ms = *(*[]MyString)(unsafe.Pointer(&amp;ss))
 	
 	// Since Go 1.17, we may also use the
 	// unsafe.Slice function to do the conversions.
-	ss = unsafe.Slice((*string)(&ms[0]), len(ms))
-	ms = unsafe.Slice((*MyString)(&ss[0]), len(ms))
+	ss = unsafe.Slice((*string)(&amp;ms[0]), len(ms))
+	ms = unsafe.Slice((*MyString)(&amp;ss[0]), len(ms))
 }
 </code></pre>
-
-By the way, since Go 1.17, we may also use the <code>unsafe.Slice</code> function to do the conversions:
-
-<pre class="line-numbers"><code class="language-go">func main() {
+<p></p>
+<div class="tmd-usual">
+By the way, since Go 1.17, we may also use the <code class="tmd-code-span">unsafe.Slice</code> function to do the conversions:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func main() {
 	...
 	
-	ss = unsafe.Slice((*string)(&ms[0]), len(ms))
-	ms = unsafe.Slice((*MyString)(&ss[0]), len(ss))
+	ss = unsafe.Slice((*string)(&amp;ms[0]), len(ms))
+	ms = unsafe.Slice((*MyString)(&amp;ss[0]), len(ss))
 }
 </code></pre>
-
-<p>
-</p>
-
-A practice by using the pattern is to convert a byte slice, which will not be used after the conversion, to a string,
-as the following code shows. In this conversion, a duplication of the underlying byte sequence is avoided.
-
-<pre class="line-numbers"><code class="language-go">func ByteSlice2String(bs []byte) string {
-	return *(*string)(unsafe.Pointer(&bs))
-}
-</code></pre>
-
-<p>
-This is the implementation adopted by the <code>String</code> method
-of the <code>Builder</code> type supported since Go 1.10 in the
-<code>strings</code> standard package.
-The size of a byte slice is larger than a string,
-and <a href="value-part.html#internal-definitions">their internal structures</a> are similar,
-so the conversion is valid (for main stream Go compilers).
-However, despite the implementation may be safely used in standard packages now,
-it is not recommended to be used in general user code.
-Since Go 1.20, in general user code, we should try to use the implementation
-which uses the <code>unsafe.String</code> function, mentioned above in this article.
-</p>
-
-The converse, converting a string to a byte slice in the similar way, is invalid,
-for the size of a string is smaller than a byte slice.
-
-<pre class="line-numbers"><code class="language-go">func String2ByteSlice(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&s)) // dangerous!
-}
-</code></pre>
-
-<p>
-In the pattern 6 section below, a valid implementation to do the same job is introduced.
-</p>
-
-<p>
-Note: when using the just introduced unsafe way to convert a byte slice to a string,
-please make sure not to modify the bytes in the byte slice if the result string still survives.
-</p>
+<p></p>
+<div class="tmd-usual">
+A practice by using the pattern is to convert a byte slice, which will not be used after the conversion, to a string, as the following code shows. In this conversion, a duplication of the underlying byte sequence is avoided.
 </div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func ByteSlice2String(bs []byte) string {
+	return *(*string)(unsafe.Pointer(&amp;bs))
+}
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+This is the implementation adopted by the <code class="tmd-code-span">String</code> method of the <code class="tmd-code-span">Builder</code> type supported since Go 1.10 in the <code class="tmd-code-span">strings</code> standard package. The size of a byte slice is larger than a string, and <a href="value-part.html#internal-definitions">their internal structures</a> are similar, so the conversion is valid (for main stream Go compilers). However, despite the implementation may be safely used in standard packages now, it is not recommended to be used in general user code. Since Go 1.20, in general user code, we should try to use the implementation which uses the <code class="tmd-code-span">unsafe.String</code> function, mentioned above in this article.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h4>Pattern 2: convert unsafe pointer to uintptr, then use the uintptr value.</h4>
-
-<div>
-<p>
-This pattern is not very useful.
-Usually, we print the result uintptr values to check the memory addresses
-stored in them. However, there are other both safe and less verbose ways to this job.
-So this pattern is not much useful.
-</p>
-
+</div>
+<p></p>
+<div class="tmd-usual">
+The converse, converting a string to a byte slice in the similar way, is invalid, for the size of a string is smaller than a byte slice.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func String2ByteSlice(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&amp;s)) // dangerous!
+}
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+In the pattern 6 section below, a valid implementation to do the same job is introduced.
+</div>
+<p></p>
+<div class="tmd-usual">
+Note: when using the just introduced unsafe way to convert a byte slice to a string, please make sure not to modify the bytes in the byte slice if the result string still survives.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Pattern 2: convert unsafe pointer to uintptr, then use the uintptr value.
+</h4>
+<p></p>
+<div class="tmd-usual">
+This pattern is not very useful. Usually, we print the result uintptr values to check the memory addresses stored in them. However, there are other both safe and less verbose ways to this job. So this pattern is not much useful.
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "unsafe"
@@ -691,25 +613,25 @@ import "unsafe"
 func main() {
 	type T struct{a int}
 	var t T
-	fmt.Printf("%p\n", &t)                          // 0xc6233120a8
-	println(&t)                                     // 0xc6233120a8
-	fmt.Printf("%x\n", uintptr(unsafe.Pointer(&t))) // c6233120a8
+	fmt.Printf("%p\n", &amp;t)                          // 0xc6233120a8
+	println(&amp;t)                                     // 0xc6233120a8
+	fmt.Printf("%x\n", uintptr(unsafe.Pointer(&amp;t))) // c6233120a8
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 The outputted addresses might be different for each run.
-</p>
 </div>
-
-<a class="anchor" id="pattern-convert-to-uintptr-and-back"></a>
-<h4>Pattern 3: convert unsafe pointer to uintptr, do arithmetic operations with the uintptr value, then convert it back</h4>
-
-<div>
-
-In this pattern, the result unsafe pointer must continue to point into the original allocated memory block.
-For example:
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<h4 id="pattern-convert-to-uintptr-and-back" class="tmd-header-4">
+Pattern 3: convert unsafe pointer to uintptr, do arithmetic operations with the uintptr value, then convert it back
+</h4>
+<p></p>
+<div class="tmd-usual">
+In this pattern, the result unsafe pointer must continue to point into the original allocated memory block. For example:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "unsafe"
@@ -724,26 +646,25 @@ const M = unsafe.Sizeof(T{}.y[0])
 
 func main() {
 	t := T{y: [3]int16{123, 456, 789}}
-	p := unsafe.Pointer(&t)
+	p := unsafe.Pointer(&amp;t)
 	// "uintptr(p)+N+M+M" is the address of t.y[2].
 	ty2 := (*int16)(unsafe.Pointer(uintptr(p)+N+M+M))
 	fmt.Println(*ty2) // 789
 }
 </code></pre>
-
-<p>
-In fact, since Go 1.17, it is more recommended to use the above introduced
-<code>unsafe.Add</code> function to do such address offset operations.
-</p>
-
-Please note, in this specified example,
-the conversion <code>unsafe.Pointer(uintptr(p) + N + M + M)</code>
-shouldn't be split into two lines, like the following code shows.
-Please read the comments in the code for the reason.
-
-<pre class="line-numbers"><code class="language-go">func main() {
+<p></p>
+<div class="tmd-usual">
+In fact, since Go 1.17, it is more recommended to use the above introduced <code class="tmd-code-span">unsafe.Add</code> function to do such address offset operations.
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note, in this specified example, the conversion <code class="tmd-code-span">unsafe.Pointer(uintptr(p) + N + M + M)</code> shouldn't be split into two lines, like the following code shows. Please read the comments in the code for the reason.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func main() {
 	t := T{y: [3]int16{123, 456, 789}}
-	p := unsafe.Pointer(&t)
+	p := unsafe.Pointer(&amp;t)
 	// ty2 := (*int16)(unsafe.Pointer(uintptr(p)+N+M+M))
 	addr := uintptr(p) + N + M + M
 	
@@ -761,129 +682,76 @@ Please read the comments in the code for the reason.
 	fmt.Println(*ty2)
 }
 </code></pre>
-
-<p>
-Such bugs are very subtle and hard to detect,
-which is why the uses of unsafe pointers are dangerous.
-</p>
-
-<!--
-If we do want to split that conversion line into two lines,
-we should call the <code>runtime.KeepAlive</code> function and pass the unsafe pointer <code>p</code>
-(or any other value which is also referencing value <code>t.y[2]</code>) as the argument,
-after the split two lines. Like this
-
-<pre class="line-numbers"><code class="language-go">func main() {
-	t := T{y: [3]int16{123, 456, 789}}
-	p := unsafe.Pointer(&t)
-	addr := uintptr(p) + N + M + M
-	ty2 := (*int16)(unsafe.Pointer(addr))
-	// This following line ensures the memory of
-	// the value t will not get garbage collected
-	// for sure at this time if the code compiles
-	// with the official compilers.
-	runtime.KeepAlive(p)
-	fmt.Println(*ty2)
-}
-</code></pre>
-
-https://github.com/golang/go/issues/34684#issuecomment-584461646
-
-
-<p>
-However, I don't recommend to use the <code>runtime.KeepAlive</code> trick for this use pattern,
-for the potential another danger mentioned above.
-It is possible that the stack grows when the runtime allocates memory for the variable <code>ty2</code>,
-so that the address of <code>t</code> changes and the value stored in <code>addr</code> becomes invalid,
-which directly leads to the value of <code>ty2</code> is also invalid.
-But honestly speaking, this potential danger doesn't exist here if the code compiles with
-the standard Go compiler. In the implementation of the standard Go compiler,
-a <code>runtime.KeepAlive</code> call will make the values referenced by
-its argument be allocated on heap, and memory blocks allocated on heap will be never moved.
-</p>
-
-<p>
-<i>(The above explanations are removed. The reason is it is not guaranteed that
-a <code>runtime.KeepAlive</code> call will make the values referenced by
-its argument be allocated on heap.)</i>
-</p>
--->
-
-<p>
-The intermediate uintptr value may also participate in <code>&amp;^</code> bitwise clear operations to do address alignment,
-as long as the result unsafe pointer and the original one point into the same allocated memory block.
-</p>
-
-<p>
-Another detail which should be also noted is that,
-it is not recommended to store the end boundary of a memory block
-in a pointer (either safe or unsafe one).
-Doing this will prevent another memory block which closely follows
-the former memory block from being garbage collected,
-or crash program if that boundary address is not valid for any allocated memory blocks
-(depending on compiler implementations).
-Please read <a href="unofficial-faq.html#final-zero-size-field">this FAQ item</a> to get more explanations.
-</p>
+<p></p>
+<div class="tmd-usual">
+Such bugs are very subtle and hard to detect, which is why the uses of unsafe pointers are dangerous.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+The intermediate uintptr value may also participate in <code class="tmd-code-span">&amp;^</code> bitwise clear operations to do address alignment, as long as the result unsafe pointer and the original one point into the same allocated memory block.
+</div>
+<p></p>
+<div class="tmd-usual">
+Another detail which should be also noted is that, it is not recommended to store the end boundary of a memory block in a pointer (either safe or unsafe one). Doing this will prevent another memory block which closely follows the former memory block from being garbage collected, or crash program if that boundary address is not valid for any allocated memory blocks (depending on compiler implementations). Please read <a href="unofficial-faq.html#final-zero-size-field">this FAQ item</a> to get more explanations.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h4>Pattern 4: convert unsafe pointers to <code>uintptr</code> values as arguments of <code>syscall.Syscall</code> calls.</h4>
-
-<div>
-
-From the explanations for the last pattern,
-we know that the following function is dangerous.
-
-<pre class="line-numbers"><code class="language-go">// Assume this function will not inlined.
+<p></p>
+<h4 class="tmd-header-4">
+Pattern 4: convert unsafe pointers to <code class="tmd-code-span">uintptr</code> values as arguments of <code class="tmd-code-span">syscall.Syscall</code> calls.
+</h4>
+<p></p>
+<div class="tmd-usual">
+From the explanations for the last pattern, we know that the following function is dangerous.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">// Assume this function will not inlined.
 func DoSomething(addr uintptr) {
 	// read or write values at the passed address ...
 }
 </code></pre>
-
-<p>
-The reason why the above function is dangerous is that the function
-itself can't guarantee the memory block at the passed argument address
-is not garbage collected yet.
-If the memory block is collected or is reallocated for other values,
-then the operations made in the function body are dangerous.
-</p>
-
-However, the prototype of the <code>Syscall</code> function in
-the <code>syscall</code> standard package is as
-<pre class="disable-line-numbers111"><code class="language-go">func Syscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
+<p></p>
+<div class="tmd-usual">
+The reason why the above function is dangerous is that the function itself can't guarantee the memory block at the passed argument address is not garbage collected yet. If the memory block is collected or is reallocated for other values, then the operations made in the function body are dangerous.
+</div>
+<p></p>
+<div class="tmd-usual">
+However, the prototype of the <code class="tmd-code-span">Syscall</code> function in the <code class="tmd-code-span">syscall</code> standard package is as
+</div>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">func Syscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
 </code></pre>
-
-<p>
-How does this function guarantee that the memory blocks at the passed addresses
-<code>a1</code>, <code>a2</code> and <code>a3</code> are still not garbage
-collected yet within the function internal?
-The function can't guarantee this.
-In fact, compilers will make the guarantee.
-It is the privilege of calls to <code>syscall.Syscall</code> alike functions.
-</p>
-
-<p>
-We can think that, compilers will automatically insert some instructions
-for each of the unsafe pointer arguments who are converted to <code>uintptr</code>,
-like the third argument in the following <code>syscall.Syscall</code> call,
-to prevent the memory block referenced by that argument from being garbage collected or moved.
-</p>
-
-<p>
-Please note that, before Go 1.15, it was okay the conversion expressions <code>uintptr(anUnsafePointer)</code>
-act as sub-expressions of the talked arguments.
-Since Go 1.15, the requirement becomes a bit stricter:
-the talked arguments must present exactly as the <code>uintptr(anUnsafePointer)</code> form.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+How does this function guarantee that the memory blocks at the passed addresses <code class="tmd-code-span">a1</code>, <code class="tmd-code-span">a2</code> and <code class="tmd-code-span">a3</code> are still not garbage collected yet within the function internal? The function can't guarantee this. In fact, compilers will make the guarantee. It is the privilege of calls to <code class="tmd-code-span">syscall.Syscall</code> alike functions.
+</div>
+<p></p>
+<div class="tmd-usual">
+We can think that, compilers will automatically insert some instructions for each of the unsafe pointer arguments who are converted to <code class="tmd-code-span">uintptr</code>, like the third argument in the following <code class="tmd-code-span">syscall.Syscall</code> call, to prevent the memory block referenced by that argument from being garbage collected or moved.
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note that, before Go 1.15, it was okay the conversion expressions <code class="tmd-code-span">uintptr(anUnsafePointer)</code> act as sub-expressions of the talked arguments. Since Go 1.15, the requirement becomes a bit stricter: the talked arguments must present exactly as the <code class="tmd-code-span">uintptr(anUnsafePointer)</code> form.
+</div>
+<p></p>
+<div class="tmd-usual">
 The following call is safe:
-<pre class="line-numbers"><code class="language-go">syscall.Syscall(SYS_READ, uintptr(fd),
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">syscall.Syscall(SYS_READ, uintptr(fd),
 			uintptr(unsafe.Pointer(p)), uintptr(n))
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 But the following calls are dangerous:
-
-<pre class="line-numbers"><code class="language-go">u := uintptr(unsafe.Pointer(p))
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">u := uintptr(unsafe.Pointer(p))
 // At this time, the value referenced by p might
 // have become unused and been collected already,
 // or the address of the value has changed.
@@ -895,89 +763,72 @@ syscall.Syscall(SYS_READ, uintptr(fd), u, uintptr(n))
 syscall.Syscall(SYS_XXX, uintptr(uintptr(fd)),
 			uint(uintptr(unsafe.Pointer(p))), uintptr(n))
 </code></pre>
-
-<p>
-</p>
-
-<!--
-https://github.com/golang/go/issues/34684#issuecomment-540103545
--->
-<p>
-Note: this pattern also applies to the <a href="https://golang.org/pkg/syscall/?GOOS=windows#Proc.Call">syscall.Proc.Call</a>
-and <a href="https://golang.org/pkg/syscall/?GOOS=windows#LazyProc.Call">syscall.LazyProc.Call</a> methods on Windows.
-</p>
-
-<p>
-Again, never use this pattern when calling other functions.
-</p>
+<p></p>
+<div class="tmd-usual">
+Note: this pattern also applies to the <a href="https://golang.org/pkg/syscall/?GOOS=windows#Proc.Call">syscall.Proc.Call</a> and <a href="https://golang.org/pkg/syscall/?GOOS=windows#LazyProc.Call">syscall.LazyProc.Call</a> methods on Windows.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h4>Pattern 5: convert the <code>uintptr</code> result of <code>reflect.Value.Pointer</code> or <code>reflect.Value.UnsafeAddr</code> method call to unsafe pointer</h4>
-
-<div>
-
-<p>
-The methods <code>Pointer</code> and <code>UnsafeAddr</code> of the
-<code>Value</code> type in the <code>reflect</code> standard package
-both return a result of type <code>uintptr</code> instead of
-<code>unsafe.Pointer</code>.
-This is a deliberate design, which is to avoid converting the results of calls
-(to the two methods) to any safe pointer types
-without importing the <code>unsafe</code> standard package.
-</p>
-
-<p>
-The design requires the return result of a call to either of the two methods
-must be converted to an unsafe pointer immediately after making the call.
-Otherwise, there will be small time window in which the memory block allocated at the
-address stored in the result might lose all references and be garbage collected.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Again, never use this pattern when calling other functions.
+</div>
+<p></p>
+<h4 class="tmd-header-4">
+Pattern 5: convert the <code class="tmd-code-span">uintptr</code> result of <code class="tmd-code-span">reflect.Value.Pointer</code> or <code class="tmd-code-span">reflect.Value.UnsafeAddr</code> method call to unsafe pointer
+</h4>
+<p></p>
+<div class="tmd-usual">
+The methods <code class="tmd-code-span">Pointer</code> and <code class="tmd-code-span">UnsafeAddr</code> of the <code class="tmd-code-span">Value</code> type in the <code class="tmd-code-span">reflect</code> standard package both return a result of type <code class="tmd-code-span">uintptr</code> instead of <code class="tmd-code-span">unsafe.Pointer</code>. This is a deliberate design, which is to avoid converting the results of calls (to the two methods) to any safe pointer types without importing the <code class="tmd-code-span">unsafe</code> standard package.
+</div>
+<p></p>
+<div class="tmd-usual">
+The design requires the return result of a call to either of the two methods must be converted to an unsafe pointer immediately after making the call. Otherwise, there will be small time window in which the memory block allocated at the address stored in the result might lose all references and be garbage collected.
+</div>
+<p></p>
+<div class="tmd-usual">
 For example, the following call is safe.
-
-<pre class="disable-line-numbers111"><code class="language-go">p := (*int)(unsafe.Pointer(reflect.ValueOf(new(int)).Pointer()))
+</div>
+<p></p>
+<pre class="tmd-code disable-line-numbers111">
+<code class="language-go">p := (*int)(unsafe.Pointer(reflect.ValueOf(new(int)).Pointer()))
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 On the other hand, the following call is dangerous.
-
-<pre class="line-numbers"><code class="language-go">u := reflect.ValueOf(new(int)).Pointer()
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">u := reflect.ValueOf(new(int)).Pointer()
 // At this moment, the memory block at the address
 // stored in u might have been collected already.
 p := (*int)(unsafe.Pointer(u))
 </code></pre>
-
-<p>
-</p>
-
-<p>
-Please note that, Go 1.19 introduces a new method, <code>reflect.Value.UnsafePointer()</code>,
-which returns a <code>unsafe.Pointer</code> value and is preferred over the two just mentioned functions.
-That means, the old deliberate design is thought as not good now.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Please note that, Go 1.19 introduces a new method, <code class="tmd-code-span">reflect.Value.UnsafePointer()</code>, which returns a <code class="tmd-code-span">unsafe.Pointer</code> value and is preferred over the two just mentioned functions. That means, the old deliberate design is thought as not good now.
 </div>
-
-<h4>Pattern 6: convert a <code>reflect.SliceHeader.Data</code> or <code>reflect.StringHeader.Data</code> field to unsafe pointer, and the inverse.</h4>
-
-<div>
-<p>
-For the same reason mentioned for the last subsection, the <code>Data</code> fields
-of the struct type <code>SliceHeader</code> and <code>StringHeader</code> in
-the <code>reflect</code> standard package are declared with type
-<code>uintptr</code> instead of <code>unsafe.Pointer</code>.
-</p>
-
-<p>
-We can convert a string pointer to a <code>*reflect.StringHeader</code> pointer value,
-so that we can manipulate the internal of the string.
-The same, we can convert a slice pointer to a <code>*reflect.SliceHeader</code> pointer value,
-so that we can manipulate the internal of the slice.
-</p>
-
-An example of using <code>reflect.StringHeader</code>:
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<h4 class="tmd-header-4">
+Pattern 6: convert a <code class="tmd-code-span">reflect.SliceHeader.Data</code> or <code class="tmd-code-span">reflect.StringHeader.Data</code> field to unsafe pointer, and the inverse.
+</h4>
+<p></p>
+<div class="tmd-usual">
+For the same reason mentioned for the last subsection, the <code class="tmd-code-span">Data</code> fields of the struct type <code class="tmd-code-span">SliceHeader</code> and <code class="tmd-code-span">StringHeader</code> in the <code class="tmd-code-span">reflect</code> standard package are declared with type <code class="tmd-code-span">uintptr</code> instead of <code class="tmd-code-span">unsafe.Pointer</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+We can convert a string pointer to a <code class="tmd-code-span">*reflect.StringHeader</code> pointer value, so that we can manipulate the internal of the string. The same, we can convert a slice pointer to a <code class="tmd-code-span">*reflect.SliceHeader</code> pointer value, so that we can manipulate the internal of the slice.
+</div>
+<p></p>
+<div class="tmd-usual">
+An example of using <code class="tmd-code-span">reflect.StringHeader</code>:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import "fmt"
 import "unsafe"
@@ -986,8 +837,8 @@ import "reflect"
 func main() {
 	a := [...]byte{'G', 'o', 'l', 'a', 'n', 'g'}
 	s := "Java"
-	hdr := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	hdr.Data = uintptr(unsafe.Pointer(&a))
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&amp;s))
+	hdr.Data = uintptr(unsafe.Pointer(&amp;a))
 	hdr.Len = len(a)
 	fmt.Println(s) // Golang
 	// Now s and a share the same byte sequence, which
@@ -996,13 +847,13 @@ func main() {
 	fmt.Println(s) // Google
 }
 </code></pre>
-
-<p>
-</p>
-
-An example of using <code>reflect.SliceHeader</code>:
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+An example of using <code class="tmd-code-span">reflect.SliceHeader</code>:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -1013,8 +864,8 @@ import (
 func main() {
 	a := [6]byte{'G', 'o', '1', '0', '1'}
 	bs := []byte("Golang")
-	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
-	hdr.Data = uintptr(unsafe.Pointer(&a))
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&amp;bs))
+	hdr.Data = uintptr(unsafe.Pointer(&amp;a))
 
 	hdr.Len = 2
 	hdr.Cap = len(a)
@@ -1023,44 +874,27 @@ func main() {
 	fmt.Printf("%s\n", bs) // Go101
 }
 </code></pre>
-
-<!-- not correct
-<p>
-Note, a <code>runtime.KeepAlive</code> call is needed in this example,
-otherwise, the slice might reference an invalid underlying byte sequence.
-
-<i>(The <code>runtime.KeepAlive</code> call is not essential here.)</i>
-</p>
-https://groups.google.com/forum/#!topic/golang-nuts/MgIP2KvEAaU
--->
-<p>
-</p>
-
-In general,
-we should only get a <code>*reflect.StringHeader</code> pointer value from an actual (already existed) string,
-or get a <code>*reflect.SliceHeader</code> pointer value from an actual (already existed) slice.
-We shouldn't do the contrary, such as creating a string from a new allocated <code>StringHeader</code>,
-or creating a slice from a new allocated <code>SliceHeader</code>.
-For example, the following code is dangerous.
-
-<pre class="line-numbers"><code class="language-go">var hdr reflect.StringHeader
+<p></p>
+<p></p>
+<div class="tmd-usual">
+In general, we should only get a <code class="tmd-code-span">*reflect.StringHeader</code> pointer value from an actual (already existed) string, or get a <code class="tmd-code-span">*reflect.SliceHeader</code> pointer value from an actual (already existed) slice. We shouldn't do the contrary, such as creating a string from a new allocated <code class="tmd-code-span">StringHeader</code>, or creating a slice from a new allocated <code class="tmd-code-span">SliceHeader</code>. For example, the following code is dangerous.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">var hdr reflect.StringHeader
 hdr.Data = uintptr(unsafe.Pointer(new([5]byte)))
 // Now the just allocated byte array has lose all
 // references and it can be garbage collected now.
 hdr.Len = 5
-s := *(*string)(unsafe.Pointer(&hdr)) // dangerous!
+s := *(*string)(unsafe.Pointer(&amp;hdr)) // dangerous!
 </code></pre>
-
-<p>
-</p>
-
-The following is an example which shows how to convert a string to a byte slice,
-by using the unsafe way.
-Different from the safe conversion from a string to a byte slice,
-the unsafe way doesn't allocate a new underlying byte sequence
-for the result slice in each conversion.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+The following is an example which shows how to convert a string to a byte slice, by using the unsafe way. Different from the safe conversion from a string to a byte slice, the unsafe way doesn't allocate a new underlying byte sequence for the result slice in each conversion.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -1070,8 +904,8 @@ import (
 )
 
 func String2ByteSlice(str string) (bs []byte) {
-	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
-	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&amp;str))
+	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&amp;bs))
 	sliceHdr.Data = strHdr.Data
 	sliceHdr.Cap = strHdr.Len
 	sliceHdr.Len = strHdr.Len
@@ -1091,41 +925,36 @@ func main() {
 	fmt.Println(str) // Golang
 }
 </code></pre>
-
-<p>
-<!--
-<i>(The current article ever stated that the <code>runtime.KeepAlive</code> call in the above example is essential.
-I'm very sorry for that I spread the wrong information. In fact, this call is not essential here,
-at least for the official standard compiler.)</i>
--->
-</p>
-
-<p>
-Note, when using the just introduced unsafe way to convert a string to a byte slice,
-please make sure not to modify the bytes in the result byte slice if the string still survives
-(for demonstration purpose, the above example violates this principle).
-</p>
-
-It is also possible to convert a byte slice to a string in a similar way,
-which is a bit safer (but a bit slower) than the way shown in pattern 1.
-
-<pre class="line-numbers"><code class="language-go">func ByteSlice2String(bs []byte) (str string) {
-	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
-	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+<p></p>
+<p></p>
+<div class="tmd-usual">
+Note, when using the just introduced unsafe way to convert a string to a byte slice, please make sure not to modify the bytes in the result byte slice if the string still survives (for demonstration purpose, the above example violates this principle).
+</div>
+<p></p>
+<div class="tmd-usual">
+It is also possible to convert a byte slice to a string in a similar way, which is a bit safer (but a bit slower) than the way shown in pattern 1.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func ByteSlice2String(bs []byte) (str string) {
+	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&amp;bs))
+	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&amp;str))
 	strHdr.Data = sliceHdr.Data
 	strHdr.Len = sliceHdr.Len
 	return
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Similarly, please make sure not to modify the bytes in the argument byte slice if the result string still survives.
-</p>
-
-BTW, let's view a bad example which violates the principle of pattern 3
-(the example is borrowed from one slack comment posted by Bryan C. Mills):
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+BTW, let's view a bad example which violates the principle of pattern 3 (the example is borrowed from one slack comment posted by Bryan C. Mills):
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -1135,7 +964,7 @@ import (
 
 func Example_Bad() *byte {
 	var str = "godoc"
-	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&amp;str))
 	pbyte := (*byte)(unsafe.Pointer(hdr.Data + 2))
 	return pbyte // *pbyte == 'd'
 }
@@ -1144,12 +973,15 @@ func main() {
 	fmt.Println(string(*Example_Bad()))
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 Two correct implementations:
-
-<pre class="line-numbers"><code class="language-go">func Example_Good1() *byte {
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func Example_Good1() *byte {
 	var str = "godoc"
-	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&amp;str))
 	pbyte := (*byte)(unsafe.Pointer(
 		uintptr(unsafe.Pointer(hdr.Data)) + 2))
 	return pbyte
@@ -1158,70 +990,49 @@ Two correct implementations:
 // Works since Go 1.17.
 func Example_Good2() *byte {
 	var str = "godoc"
-	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&amp;str))
 	pbyte := (*byte)(unsafe.Add(unsafe.Pointer(hdr.Data), 2))
 	return pbyte
 }
 </code></pre>
-
-<p>
+<p></p>
+<div class="tmd-usual">
 Tricky? Yes.
-</p>
-
-
-<p>
-<a href="https://golang.org/pkg/reflect/#SliceHeader">The docs</a>
-of the <code>SliceHeader</code> and <code>StringHeader</code> types in the
-<code>reflect</code> standard package are similar in that
-they say the representations of the two struct types may change in a later release.
-So the above valid examples using the two types may become invalid even if the unsafe rules keep unchanged.
-Fortunately, at present (Go 1.23), the two available mainstream Go compilers (the standard Go compiler and the gccgo compiler)
-both recognize the representations of the two types declared in the <code>reflect</code> standard package.
-</p>
-
-<p>
-The Go core development team also realized that the two types are inconvenient and error-prone,
-so the two types have been not recommended any more since Go 1.20 and they have been deprecated since Go 1.21. 
-Instead, we should try to use the <code>unsafe.String</code>, <code>unsafe.StringData</code>,
-<code>unsafe.Slice</code> and <code>unsafe.SliceData</code> functions described earlier in this article.
-</p>
+</div>
+<p></p>
+<div class="tmd-usual">
+<a href="https://golang.org/pkg/reflect/#SliceHeader">The docs</a> of the <code class="tmd-code-span">SliceHeader</code> and <code class="tmd-code-span">StringHeader</code> types in the <code class="tmd-code-span">reflect</code> standard package are similar in that they say the representations of the two struct types may change in a later release. So the above valid examples using the two types may become invalid even if the unsafe rules keep unchanged. Fortunately, at present (Go 1.23), the two available mainstream Go compilers (the standard Go compiler and the gccgo compiler) both recognize the representations of the two types declared in the <code class="tmd-code-span">reflect</code> standard package.
+</div>
+<p></p>
+<div class="tmd-usual">
+The Go core development team also realized that the two types are inconvenient and error-prone, so the two types have been not recommended any more since Go 1.20 and they have been deprecated since Go 1.21. Instead, we should try to use the <code class="tmd-code-span">unsafe.String</code>, <code class="tmd-code-span">unsafe.StringData</code>, <code class="tmd-code-span">unsafe.Slice</code> and <code class="tmd-code-span">unsafe.SliceData</code> functions described earlier in this article.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<h3 class="tmd-header-3">
+Final Words
+</h3>
+<p></p>
+<div class="tmd-usual">
+From the above contents, we know that, for some cases, the unsafe mechanism can help us write more efficient Go code. However, it is very easy to introduce some subtle bugs which have very low possibilities to produce when using the unsafe mechanism. A program with these bugs may run well for a long time, but suddenly behave abnormally and even crash at a later time. Such bugs are very hard to detect and debug.
+</div>
+<p></p>
+<div class="tmd-usual">
+We should only use the unsafe mechanism when we have to, and we must use it with extreme care. In particular, we should follow the instructions described above.
+</div>
+<p></p>
+<div class="tmd-usual">
+And again, we should aware that the unsafe mechanism introduced above may change and even become invalid totally in later Go versions, though no evidences this will happen soon. If the unsafe mechanism rules change, the above introduced valid unsafe pointer use patterns may become invalid. So please keep it easy to switch back to the safe implementations for you code depending on the unsafe mechanism.
+</div>
+<p></p>
+<div class="tmd-usual">
+In the end, it is worth mentioning that a dynamic analysis compiler option <code class="tmd-code-span">-gcflags=all=-d=checkptr</code> is supported since Go Toolchain 1.14 (it is recommended to use this option on Windows with Go Toolchain 1.15+). When this option is used, some (but not all) incorrect unsafe pointer uses will be detected at run time. Once such an incorrect use is detected, a panic will occur. Thanks to Matthew Dempsky for implementing this <a href="https://github.com/golang/go/issues/22218">great feature</a>!
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<h3>Final Words</h3>
-
-<p>
-From the above contents, we know that, for some cases,
-the unsafe mechanism can help us write more efficient Go code.
-However, it is very easy to introduce some subtle bugs which have
-very low possibilities to produce when using the unsafe mechanism.
-A program with these bugs may run well for a long time,
-but suddenly behave abnormally and even crash at a later time.
-Such bugs are very hard to detect and debug.
-</p>
-
-<p>
-We should only use the unsafe mechanism when we have to,
-and we must use it with extreme care.
-In particular, we should follow the instructions described above.
-</p>
-
-<p>
-And again, we should aware that the unsafe mechanism introduced above
-may change and even become invalid totally in later Go versions,
-though no evidences this will happen soon.
-If the unsafe mechanism rules change,
-the above introduced valid unsafe pointer use patterns may become invalid.
-So please keep it easy to switch back to the safe implementations
-for you code depending on the unsafe mechanism.
-</p>
-
-<p>
-In the end, it is worth mentioning that a dynamic analysis compiler option
-<code>-gcflags=all=-d=checkptr</code> is supported since Go Toolchain 1.14
-(it is recommended to use this option on Windows with Go Toolchain 1.15+).
-When this option is used, some (but not all) incorrect unsafe pointer uses will be detected at run time.
-Once such an incorrect use is detected, a panic will occur.
-Thanks to Matthew Dempsky for implementing this <a href="https://github.com/golang/go/issues/22218">great feature</a>!
-</p>
-
+</div>
+<p></p>

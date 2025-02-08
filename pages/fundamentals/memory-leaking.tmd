@@ -1,0 +1,261 @@
+### Memory Leaking Scenarios
+
+When programming in a language supporting auto garbage collection,
+generally we don't need care about memory leaking problems,
+for the runtime will collect unused memory regularly.
+However, we do need to be aware of some special scenarios
+which may cause kind-of or real memory leaking.
+The remaining of the current article will list several such scenarios.
+
+@@@ #substring
+###+++++++++++ Kind-of Memory Leaking Caused by Substrings
+
+Go specification doesn't specify whether or not the result string
+and base string involved in a substring expression should share
+the same underlying __memory block__ to host
+__the underlying byte sequences__ of the two strings.
+The standard Go compiler/runtime does let them share the same underlying memory block.
+This is a good design, which is both memory and CPU consuming wise.
+But it may cause kind-of memory leaking sometimes.
+
+// __ memory block :: memory-block.html
+// __ the underlying byte sequences :: string.html
+
+For example, after the `demo` function in the following example is called,
+there will be about 1M bytes memory leaking (kind of),
+until the package-level variable `s0` is modified again elsewhere.
+
+@@@ .line-numbers
+'''go
+var s0 string // a package-level variable
+
+// A demo purpose function.
+func f(s1 string) {
+	s0 = s1[:50]
+	// Now, s0 shares the same underlying memory block
+	// with s1. Although s1 is not alive now, but s0
+	// is still alive, so the memory block they share
+	// couldn't be collected, though there are only 50
+	// bytes used in the block and all other bytes in
+	// the block become unavailable.
+}
+
+func demo() {
+	s := createStringWithLengthOnHeap(1 << 20) // 1M bytes
+	f(s)
+}
+'''
+
+To avoid this kind-of memory leaking, we can convert the substring to a
+`[]byte` value then convert the `[]byte` value back
+to `string`.
+
+@@@ .line-numbers
+'''go
+func f(s1 string) {
+	s0 = string([]byte(s1[:50]))
+}
+'''
+
+The drawback of the above way to avoid the kind-of memory leaking
+is there are two 50-byte duplicates which happen in the conversion process,
+one of them is unnecessary.
+
+We can make use of one of __the optimizations__ made by
+the standard Go compiler to avoid the unnecessary duplicate,
+with a small extra cost of one byte memory wasting.
+
+// __ the optimizations :: string.html#conversion-optimizations
+
+@@@ .line-numbers
+'''go
+func f(s1 string) {
+	s0 = (" " + s1[:50])[1:]
+}
+'''
+
+The disadvantage of the above way is the compiler optimization may become
+invalid later, and the optimization may be not available from other compilers.
+
+The third way to avoid the kind-of memory leaking is to utilize
+the `strings.Builder` supported since Go 1.10.
+
+@@@ .line-numbers
+'''go
+import "strings"
+
+func f(s1 string) {
+	var b strings.Builder
+	b.Grow(50)
+	b.WriteString(s1[:50])
+	s0 = b.String()
+}
+'''
+
+The disadvantage of the third way is it is a little verbose (by comparing to the first two ways).
+A good news is, since Go 1.12,
+we can call the `Repeat` function with the `count` argument as `1`
+in the `strings` standard package to clone a string.
+Since Go 1.12, the underlying implementation of `strings.Repeat` will make use of `strings.Builder`,
+to avoid one unnecessary duplicate.
+
+Since Go 1.18, a `Clone` function has been added to the `strings` standard package.
+It becomes the best way to do this job.
+
+@@@ #subslice
+###+++++++++++ Kind-of Memory Leaking Caused by Subslices
+
+Similarly to substrings, subslices may also cause kind-of memory leaking.
+In the following code, after the `g` function is called,
+most memory occupied by the memory block hosting the elements of `s1`
+will be lost (if no more values reference the memory block).
+
+@@@ .line-numbers
+'''go
+var s0 []int
+
+func g(s1 []int) {
+	// Assume the length of s1 is much larger than 30.
+	s0 = s1[len(s1)-30:]
+}
+'''
+
+If we want to avoid the kind-of memory leaking, we must duplicate the
+30 elements for `s0`, so that the aliveness of `s0`
+will not prevent the memory block hosting the elements of `s1`
+from being collected.
+
+@@@ .line-numbers
+'''go
+func g(s1 []int) {
+	s0 = make([]int, 30)
+	copy(s0, s1[len(s1)-30:])
+	// Now, the memory block hosting the elements
+	// of s1 can be collected if no other values
+	// are referencing the memory block.
+}
+'''
+
+@@@ #dead-slice-elements
+###+++++++++++ Kind-of Memory Leaking Caused by Not Resetting Pointers in Lost Slice Elements
+
+In the following code, after the `h` function is called,
+the memory block allocated for the first and the last elements of slice
+`s` will get lost.
+
+@@@ .line-numbers
+'''go
+func h() []*int {
+	s := []*int{new(int), new(int), new(int), new(int)}
+	// do something with s ...
+
+	return s[1:3:3]
+}
+'''
+
+As long as the returned slice is still alive, it will prevent any elements
+of `s` from being collected, which in consequence prevents
+the two memory blocks allocated for the two `int` values
+referenced by the first and the last elements of `s` from being collected.
+
+If we want to avoid such kind-of memory leaking,
+we must reset the pointers stored in the lost elements.
+
+@@@ .line-numbers
+'''go
+func h() []*int {
+	s := []*int{new(int), new(int), new(int), new(int)}
+	// do something with s ...
+
+	// Reset pointer values.
+	s[0], s[len(s)-1] = nil, nil
+	return s[1:3:3]
+}
+'''
+
+We often need to reset the pointers for some old slice elements in
+__slice element deletion operations__.
+
+// __ slice element deletion operations :: container.html#slice-manipulations
+
+@@@ #hanging-goroutine
+###+++++++++++ Real Memory Leaking Caused by Hanging Goroutines
+
+Sometimes, some goroutines in a Go program may stay in blocking state for ever.
+Such goroutines are called hanging goroutines.
+Go runtime will not kill hanging goroutines, so the resources allocated for
+(and the memory blocks referenced by) the hanging goroutines will never get garbage collected.
+
+There are two reasons why Go runtime will not kill hanging goroutines.
+One is that sometimes it is hard for Go runtime to judge whether or not a blocking goroutine will be blocked for ever.
+The other is sometimes we deliberately make a goroutine hanging.
+For example, sometimes we may let the main goroutine of a Go program hang to avoid the program exiting.
+
+We should avoid hanging goroutines which are caused by some logic mistakes in code design.
+
+###+++++++++++ Real Memory Leaking Caused by Not Stopping `time.Ticker` Values Which Are Not Used Any More
+
+When a `time.Timer` value is not used any more,
+it will be garbage collected after some time.
+But this is not true for a `time.Ticker` value.
+We should stop a `time.Ticker` value when it is not used any more.
+
+###+++++++++++ Real Memory Leaking Caused by Using Finalizers Improperly
+
+Setting a finalizer for a value which is a member of a cyclic reference group may
+__prevent all memory blocks allocated
+for the cyclic reference group from being collected__.
+This is real memory leaking, not kind of.
+
+// __ prevent ... :: https://golang.org/pkg/runtime/#SetFinalizer
+
+For example, after the following function is called and exits,
+the memory blocks allocated for `x` and `y` are not
+guaranteed to be garbage collected in future garbage collecting.
+
+@@@ .line-numbers
+'''go
+func memoryLeaking() {
+	type T struct {
+		v [1<<20]int
+		t *T
+	}
+
+	var finalizer = func(t *T) {
+		 fmt.Println("finalizer called")
+	}
+
+	var x, y T
+
+	// The SetFinalizer call makes x escape to heap.
+	runtime.SetFinalizer(&x, finalizer)
+
+	// The following line forms a cyclic reference
+	// group with two members, x and y.
+	// This causes x and y are not collectable.
+	x.t, y.t = &y, &x // y also escapes to heap.
+}
+'''
+
+So, please avoid setting finalizers for values in a cyclic reference group.
+
+By the way, we __shouldn't use finalizers as object destructors__.
+
+// __ shouldn't ... :: unofficial-faq.html#finalizers
+
+###+++++++++++ Kind-of Resource Leaking by Deferring Function Calls
+
+
+Please read __this article__ for details.
+
+// __ this article :: defer-more.html#kind-of-resource-leaking
+
+
+{//
+forgot closing streams
+
+the capacity of the underlying array of a map will never shrink.
+
+defer in infinite/long-period loop
+}
+

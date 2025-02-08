@@ -1,136 +1,123 @@
-﻿<h1>Atomic Operations Provided in The <code>sync/atomic</code> Standard Package</h1>
-
-<p>
-Atomic operations are more primitive than other synchronization techniques.
-They are lockless and generally implemented directly at hardware level.
-In fact, they are often used in implementing other synchronization techniques.
-</p>
-
-<p>
-Please note, many examples below are not concurrent programs.
-They are just for demonstration and explanation purposes, to show how to use the
-atomic functions provided in the <code>sync/atomic</code> standard package.
-</p>
-
-<a class="anchor" id="overview"></a>
-<h3>Overview of Atomic Operations Provided Before Go 1.19-</h3>
-
-<div>
-
-The <code>sync/atomic</code> standard package provides the following five atomic functions
-for an integer type <code>T</code>, where <code>T</code> must be any of <code>int32</code>,
-<code>int64</code>, <code>uint32</code>, <code>uint64</code> and <code>uintptr</code>.
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">func AddT(addr *T, delta T)(new T)
+<h1 class="tmd-header-1">
+Atomic Operations Provided in The <code class="tmd-code-span">sync/atomic</code> Standard Package
+</h1>
+<p></p>
+<div class="tmd-usual">
+Atomic operations are more primitive than other synchronization techniques. They are lockless and generally implemented directly at hardware level. In fact, they are often used in implementing other synchronization techniques.
+</div>
+<p></p>
+<div class="tmd-usual">
+Please note, many examples below are not concurrent programs. They are just for demonstration and explanation purposes, to show how to use the atomic functions provided in the <code class="tmd-code-span">sync/atomic</code> standard package.
+</div>
+<p></p>
+<h3 id="overview" class="tmd-header-3">
+Overview of Atomic Operations Provided Before Go 1.19-
+</h3>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">sync/atomic</code> standard package provides the following five atomic functions for an integer type <code class="tmd-code-span">T</code>, where <code class="tmd-code-span">T</code> must be any of <code class="tmd-code-span">int32</code>, <code class="tmd-code-span">int64</code>, <code class="tmd-code-span">uint32</code>, <code class="tmd-code-span">uint64</code> and <code class="tmd-code-span">uintptr</code>.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">func AddT(addr *T, delta T)(new T)
 func LoadT(addr *T) (val T)
 func StoreT(addr *T, val T)
 func SwapT(addr *T, new T) (old T)
 func CompareAndSwapT(addr *T, old, new T) (swapped bool)
 </code></pre>
-
-For example, the following five functions are provided for type <code>int32</code>.
-<pre class="line-numbers must-line-numbers"><code class="language-go">func AddInt32(addr *int32, delta int32)(new int32)
+<p></p>
+<div class="tmd-usual">
+For example, the following five functions are provided for type <code class="tmd-code-span">int32</code>.
+</div>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">func AddInt32(addr *int32, delta int32)(new int32)
 func LoadInt32(addr *int32) (val int32)
 func StoreInt32(addr *int32, val int32)
 func SwapInt32(addr *int32, new int32) (old int32)
 func CompareAndSwapInt32(addr *int32,
 				old, new int32) (swapped bool)
 </code></pre>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-</p>
-
-The following four atomic functions are provided for (safe) pointer types.
-When these functions were introduced into the standard library,
-Go didn't support custom generics, so these functions are implemented
-through the <a href="unsafe.html">unsafe pointer type</a> <code>unsafe.Pointer</code>
-(the Go counterpart of C <code>void*</code>).
-<pre class="line-numbers must-line-numbers"><code class="language-go">func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
+</div>
+<p></p>
+<div class="tmd-usual">
+The following four atomic functions are provided for (safe) pointer types. When these functions were introduced into the standard library, Go didn't support custom generics, so these functions are implemented through the <a href="unsafe.html">unsafe pointer type</a> <code class="tmd-code-span">unsafe.Pointer</code> (the Go counterpart of C <code class="tmd-code-span">void*</code>).
+</div>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
 func StorePointer(addr *unsafe.Pointer, val unsafe.Pointer)
 func SwapPointer(addr *unsafe.Pointer, new unsafe.Pointer,
 				) (old unsafe.Pointer)
 func CompareAndSwapPointer(addr *unsafe.Pointer,
 				old, new unsafe.Pointer) (swapped bool)
 </code></pre>
-
-<p>
-There is not an <code>AddPointer</code> function for pointers,
-as Go (safe) pointers don't support arithmetic operations.
-</p>
-
-The <code>sync/atomic</code> standard package also provides a type <code>Value</code>,
-which corresponding pointer type <code>*Value</code> has four methods
-(listed below, the later two were introduced by Go 1.17).
-We may use these methods to do atomic operations for values of any type.
-
-<pre class="line-numbers"><code class="language-go">func (*Value) Load() (x interface{})
+<p></p>
+<div class="tmd-usual">
+There is not an <code class="tmd-code-span">AddPointer</code> function for pointers, as Go (safe) pointers don't support arithmetic operations.
+</div>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">sync/atomic</code> standard package also provides a type <code class="tmd-code-span">Value</code>, which corresponding pointer type <code class="tmd-code-span">*Value</code> has four methods (listed below, the later two were introduced by Go 1.17). We may use these methods to do atomic operations for values of any type.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func (*Value) Load() (x interface{})
 func (*Value) Store(x interface{})
 func (*Value) Swap(new interface{}) (old interface{})
 func (*Value) CompareAndSwap(old, new interface{}) (swapped bool)
 </code></pre>
-
+<p></p>
+<h3 id="overview-1.19" class="tmd-header-3">
+Overview of New Atomic Operations Provided Since Go 1.19
+</h3>
+<p></p>
+<div class="tmd-usual">
+Go 1.19 introduced several types, each of which owns a set of atomic operation methods, to achieve the same effects made by the package-level functions listed in the last section.
 </div>
-
-<a class="anchor" id="overview-1.19"></a>
-<h3>Overview of New Atomic Operations Provided Since Go 1.19</h3>
-
-<div>
-
-<p>
-Go 1.19 introduced several types, each of which owns a set of atomic operation methods,
-to achieve the same effects made by the package-level functions listed in the last section.
-</p>
-
-<p>
-Among these types, <code>Int32</code>, <code>Int64</code>, <code>Uint32</code>,
-<code>Uint64</code> and <code>Uintptr</code> are for integer atomic operations.
-The methods of the <code>atomic.Int32</code> type are listed below.
-The methods of the other four types present in the similar way.
-</p>
-
-<pre class="line-numbers"><code class="language-go">func (*Int32) Add(delta int32) (new int32)
+<p></p>
+<div class="tmd-usual">
+Among these types, <code class="tmd-code-span">Int32</code>, <code class="tmd-code-span">Int64</code>, <code class="tmd-code-span">Uint32</code>, <code class="tmd-code-span">Uint64</code> and <code class="tmd-code-span">Uintptr</code> are for integer atomic operations. The methods of the <code class="tmd-code-span">atomic.Int32</code> type are listed below. The methods of the other four types present in the similar way.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func (*Int32) Add(delta int32) (new int32)
 func (*Int32) Load() int32
 func (*Int32) Store(val int32)
 func (*Int32) Swap(new int32) (old int32)
 func (*Int32) CompareAndSwap(old, new int32) (swapped bool)
 </code></pre>
-
-<p>
-Since Go 1.18, Go has already supported custom generics.
-And some standard packages started to adopt custom generics since Go 1.19.
-The <code>sync/atomic</code> package is one of these packages.
-The <code>Pointer[T any]</code> type introudced in this package by Go 1.19 is a generic type.
-Its methods are listed below.
-</p>
-
-<pre class="line-numbers"><code class="language-go">(*Pointer[T]) Load() *T
+<p></p>
+<div class="tmd-usual">
+Since Go 1.18, Go has already supported custom generics. And some standard packages started to adopt custom generics since Go 1.19. The <code class="tmd-code-span">sync/atomic</code> package is one of these packages. The <code class="tmd-code-span">Pointer[T any]</code> type introudced in this package by Go 1.19 is a generic type. Its methods are listed below.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">(*Pointer[T]) Load() *T
 (*Pointer[T]) Store(val *T)
 (*Pointer[T]) Swap(new *T) (old *T)
 (*Pointer[T]) CompareAndSwap(old, new *T) (swapped bool)
 </code></pre>
-
-<p>
-Go 1.19 also introduced a <code>Bool</code> type to do boolean atomic operations.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+Go 1.19 also introduced a <code class="tmd-code-span">Bool</code> type to do boolean atomic operations.
 </div>
-
-<a class="anchor" id="integer"></a>
-<h3>Atomic Operations for Integers</h3>
-
-<div>
-<p>
+<p></p>
+<h3 id="integer" class="tmd-header-3">
+Atomic Operations for Integers
+</h3>
+<p></p>
+<div class="tmd-usual">
 The remaining of this article shows some examples on how to use the atomic operations provided in Go.
-</p>
-
-The following example shows how to do the <code>Add</code> atomic operation
-on an <code>int32</code> value by using the <code>AddInt32</code> function.
-In this example, 1000 new concurrent goroutines are created by the main goroutine.
-Each of the new created goroutine increases the integer <code>n</code> by one.
-Atomic operations guarantee that there are no data races among these goroutines.
-In the end, <code>1000</code> is guaranteed to be printed.
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+The following example shows how to do the <code class="tmd-code-span">Add</code> atomic operation on an <code class="tmd-code-span">int32</code> value by using the <code class="tmd-code-span">AddInt32</code> function. In this example, 1000 new concurrent goroutines are created by the main goroutine. Each of the new created goroutine increases the integer <code class="tmd-code-span">n</code> by one. Atomic operations guarantee that there are no data races among these goroutines. In the end, <code class="tmd-code-span">1000</code> is guaranteed to be printed.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -141,28 +128,29 @@ import (
 func main() {
 	var n int32
 	var wg sync.WaitGroup
-	for i := 0; i < 1000; i++ {
+	for i := 0; i &lt; 1000; i++ {
 		wg.Add(1)
 		go func() {
-			atomic.AddInt32(&n, 1)
+			atomic.AddInt32(&amp;n, 1)
 			wg.Done()
 		}()
 	}
 	wg.Wait()
 
-	fmt.Println(atomic.LoadInt32(&n)) // 1000
+	fmt.Println(atomic.LoadInt32(&amp;n)) // 1000
 }
 </code></pre>
-
-<p>
-If the statement <code>atomic.AddInt32(&amp;n, 1)</code> is replaced with <code>n++</code>,
-then the output might be not <code>1000</code>.
-</p>
-
-The following code re-implements the above program by using the <code>atomic.Int32</code> type and its methods (since Go 1.19).
-This code looks a bit tidier.
-
-<pre class="line-numbers"><code class="language-go">package main
+<p></p>
+<div class="tmd-usual">
+If the statement <code class="tmd-code-span">atomic.AddInt32(&amp;n, 1)</code> is replaced with <code class="tmd-code-span">n++</code>, then the output might be not <code class="tmd-code-span">1000</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+The following code re-implements the above program by using the <code class="tmd-code-span">atomic.Int32</code> type and its methods (since Go 1.19). This code looks a bit tidier.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -173,7 +161,7 @@ import (
 func main() {
 	var n atomic.Int32
 	var wg sync.WaitGroup
-	for i := 0; i < 1000; i++ {
+	for i := 0; i &lt; 1000; i++ {
 		wg.Add(1)
 		go func() {
 			n.Add(1)
@@ -185,31 +173,31 @@ func main() {
 	fmt.Println(n.Load()) // 1000
 }
 </code></pre>
-
-<p>
-</p>
-
-The <code>StoreT</code> and <code>LoadT</code> atomic functions/methods are often used
-to implement the setter and getter methods of (the corresponding pointer type of)
-a type if the values of the type need to be used concurrently.
-For example, the function version:
-
-<pre class="line-numbers"><code class="language-go">type Page struct {
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">StoreT</code> and <code class="tmd-code-span">LoadT</code> atomic functions/methods are often used to implement the setter and getter methods of (the corresponding pointer type of) a type if the values of the type need to be used concurrently. For example, the function version:
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type Page struct {
 	views uint32
 }
 
 func (page *Page) SetViews(n uint32) {
-	atomic.StoreUint32(&page.views, n)
+	atomic.StoreUint32(&amp;page.views, n)
 }
 
 func (page *Page) Views() uint32 {
-	return atomic.LoadUint32(&page.views)
+	return atomic.LoadUint32(&amp;page.views)
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 And the type+methods version (since Go 1.19):
-
-<pre class="line-numbers"><code class="language-go">type Page struct {
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">type Page struct {
 	views atomic.Uint32
 }
 
@@ -221,46 +209,37 @@ func (page *Page) Views() uint32 {
 	return page.views.Load()
 }
 </code></pre>
-
-<p>
-</p>
-
-For a signed integer type <code>T</code> (<code>int32</code> or <code>int64</code>),
-the second argument for a call to the <code>AddT</code> function can be a negative value,
-to do an atomic decrease operation.
-But how to do atomic decrease operations for values of an unsigned type <code>T</code>,
-such as <code>uint32</code>, <code>uint64</code> and <code>uintptr</code>?
-There are two circumstances for the second unsigned arguments.
-<ol>
-<li>
-	For an unsigned variable <code>v</code> of type <code>T</code>,
-	<code>-v</code> is legal in Go.
-	So we can just pass <code>-v</code> as the second argument of an <code>AddT</code> call.
+<p></p>
+<div class="tmd-usual">
+For a signed integer type <code class="tmd-code-span">T</code> (<code class="tmd-code-span">int32</code> or <code class="tmd-code-span">int64</code>), the second argument for a call to the <code class="tmd-code-span">AddT</code> function can be a negative value, to do an atomic decrease operation. But how to do atomic decrease operations for values of an unsigned type <code class="tmd-code-span">T</code>, such as <code class="tmd-code-span">uint32</code>, <code class="tmd-code-span">uint64</code> and <code class="tmd-code-span">uintptr</code>? There are two circumstances for the second unsigned arguments.
+</div>
+<ol class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+For an unsigned variable <code class="tmd-code-span">v</code> of type <code class="tmd-code-span">T</code>, <code class="tmd-code-span">-v</code> is legal in Go. So we can just pass <code class="tmd-code-span">-v</code> as the second argument of an <code class="tmd-code-span">AddT</code> call.
+</div>
 </li>
-<li>
-	For a positive constant integer <code>c</code>,
-	<code>-c</code> is illegal to be used as the second argument of an <code>AddT</code> call
-	(where <code>T</code> denotes an unsigned integer type).
-	We can used <code>^T(c-1)</code> as the second argument instead.
+<li class="tmd-list-item">
+<div class="tmd-usual">
+For a positive constant integer <code class="tmd-code-span">c</code>, <code class="tmd-code-span">-c</code> is illegal to be used as the second argument of an <code class="tmd-code-span">AddT</code> call (where <code class="tmd-code-span">T</code> denotes an unsigned integer type). We can used <code class="tmd-code-span">^T(c-1)</code> as the second argument instead.
+</div>
 </li>
 </ol>
-
-<p>
-</p>
-
-<p>
-This <code>^T(v-1)</code> trick also works for an unsigned variable <code>v</code>,
-but <code>^T(v-1)</code> is less efficient than <code>T(-v)</code>.
-</p>
-
-<p>
-In the trick <code>^T(c-1)</code>, if <code>c</code> is a typed value
-and its type is exactly <code>T</code>, then the form can shortened as <code>^(c-1)</code>.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+This <code class="tmd-code-span">^T(v-1)</code> trick also works for an unsigned variable <code class="tmd-code-span">v</code>, but <code class="tmd-code-span">^T(v-1)</code> is less efficient than <code class="tmd-code-span">T(-v)</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
+In the trick <code class="tmd-code-span">^T(c-1)</code>, if <code class="tmd-code-span">c</code> is a typed value and its type is exactly <code class="tmd-code-span">T</code>, then the form can shortened as <code class="tmd-code-span">^(c-1)</code>.
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -281,44 +260,40 @@ func main() {
 	)
 
 	show := fmt.Println
-	atomic.AddUint64(&n, -m)
+	atomic.AddUint64(&amp;n, -m)
 	show(n) // 96 (97 - 1)
-	atomic.AddUint64(&n, -uint64(k))
+	atomic.AddUint64(&amp;n, -uint64(k))
 	show(n) // 94 (96 - 2)
-	atomic.AddUint64(&n, ^uint64(a - 1))
+	atomic.AddUint64(&amp;n, ^uint64(a - 1))
 	show(n) // 91 (94 - 3)
-	atomic.AddUint64(&n, ^(b - 1))
+	atomic.AddUint64(&amp;n, ^(b - 1))
 	show(n) // 87 (91 - 4)
-	atomic.AddUint64(&n, ^uint64(c - 1))
+	atomic.AddUint64(&amp;n, ^uint64(c - 1))
 	show(n) // 82 (87 - 5)
-	atomic.AddUint64(&n, ^uint64(d - 1))
+	atomic.AddUint64(&amp;n, ^uint64(d - 1))
 	show(n) // 76 (82 - 6)
-	x := b; atomic.AddUint64(&n, -x)
+	x := b; atomic.AddUint64(&amp;n, -x)
 	show(n) // 72 (76 - 4)
-	atomic.AddUint64(&n, ^(m - 1))
+	atomic.AddUint64(&amp;n, ^(m - 1))
 	show(n) // 71 (72 - 1)
-	atomic.AddUint64(&n, ^uint64(k - 1))
+	atomic.AddUint64(&amp;n, ^uint64(k - 1))
 	show(n) // 69 (71 - 2)
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-A <code>SwapT</code> function call is like a <code>StoreT</code> function call,
-but returns the old value.
-</p>
-
-<p>
-A <code>CompareAndSwapT</code> function call only applies the store operation
-when the current value matches the passed old value.
-The <code>bool</code> return result of the <code>CompareAndSwapT</code>
-function call indicates whether or not the store operation is applied.
-</p>
-
+<p></p>
+<div class="tmd-usual">
+A <code class="tmd-code-span">SwapT</code> function call is like a <code class="tmd-code-span">StoreT</code> function call, but returns the old value.
+</div>
+<p></p>
+<div class="tmd-usual">
+A <code class="tmd-code-span">CompareAndSwapT</code> function call only applies the store operation when the current value matches the passed old value. The <code class="tmd-code-span">bool</code> return result of the <code class="tmd-code-span">CompareAndSwapT</code> function call indicates whether or not the store operation is applied.
+</div>
+<p></p>
+<div class="tmd-usual">
 Example:
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -327,20 +302,23 @@ import (
 
 func main() {
 	var n int64 = 123
-	var old = atomic.SwapInt64(&n, 789)
+	var old = atomic.SwapInt64(&amp;n, 789)
 	fmt.Println(n, old) // 789 123
-	swapped := atomic.CompareAndSwapInt64(&n, 123, 456)
+	swapped := atomic.CompareAndSwapInt64(&amp;n, 123, 456)
 	fmt.Println(swapped) // false
 	fmt.Println(n)       // 789
-	swapped = atomic.CompareAndSwapInt64(&n, 789, 456)
+	swapped = atomic.CompareAndSwapInt64(&amp;n, 789, 456)
 	fmt.Println(swapped) // true
 	fmt.Println(n)       // 456
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 The following is the corresponding type+methods version (since Go 1.19):
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -360,42 +338,36 @@ func main() {
 	fmt.Println(n.Load()) // 456
 }
 </code></pre>
-
-<p>
-</p>
-
-<p>
-Please note, up to now (Go 1.23), atomic operations for 64-bit words,
-a.k.a. int64 and uint64 values,
-require the 64-bit words must be 8-byte aligned in memory.
-For Go 1.19 introduced atomic method operations, this requirement is always satisfied,
-either on 32-bit or 64-bit architectures,
-but this is not true for atomic function operations on 32-bit architectures.
-Please read <a href="memory-layout.html">memory layout</a> for details.
-</p>
+<p></p>
+<div class="tmd-usual">
+Please note, up to now (Go 1.23), atomic operations for 64-bit words, a.k.a. int64 and uint64 values, require the 64-bit words must be 8-byte aligned in memory. For Go 1.19 introduced atomic method operations, this requirement is always satisfied, either on 32-bit or 64-bit architectures, but this is not true for atomic function operations on 32-bit architectures. Please read <a href="memory-layout.html">memory layout</a> for details.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
+<p></p>
+<h3 id="pointer" class="tmd-header-3">
+Atomic Operations for Pointers
+</h3>
+<p></p>
+<div class="tmd-usual">
+Above has mentioned that there are four functions provided in the <code class="tmd-code-span">sync/atomic</code> standard package to do atomic pointer operations, with the help of unsafe pointers.
+</div>
+<p></p>
+<div class="tmd-usual">
+From the article <a href="unsafe.html">type-unsafe pointers</a>, we learn that, in Go, values of any pointer type can be explicitly converted to <code class="tmd-code-span">unsafe.Pointer</code>, and vice versa. So values of <code class="tmd-code-span">*unsafe.Pointer</code> type can also be explicitly converted to <code class="tmd-code-span">unsafe.Pointer</code>, and vice versa.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<a class="anchor" id="pointer"></a>
-<h3>Atomic Operations for Pointers</h3>
-
-<div>
-<p>
-Above has mentioned that there are four functions provided in the
-<code>sync/atomic</code> standard package to do atomic pointer operations,
-with the help of unsafe pointers.
-</p>
-
-<p>
-From the article <a href="unsafe.html">type-unsafe pointers</a>, we learn that,
-in Go, values of any pointer type can be explicitly converted to <code>unsafe.Pointer</code>, and vice versa.
-So values of <code>*unsafe.Pointer</code> type can also be explicitly converted to <code>unsafe.Pointer</code>, and vice versa.
-</p>
-
-The following example is not a concurrent program.
-It just shows how to do atomic pointer operations.
-In this example, <code>T</code> can be an arbitrary type.
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<div class="tmd-usual">
+The following example is not a concurrent program. It just shows how to do atomic pointer operations. In this example, <code class="tmd-code-span">T</code> can be an arbitrary type.
+</div>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -407,61 +379,45 @@ type T struct {x int}
 
 func main() {
 	var pT *T
-	var unsafePPT = (*unsafe.Pointer)(unsafe.Pointer(&pT))
+	var unsafePPT = (*unsafe.Pointer)(unsafe.Pointer(&amp;pT))
 	var ta, tb = T{1}, T{2}
 	// store
 	atomic.StorePointer(
-		unsafePPT, unsafe.Pointer(&ta))
-	fmt.Println(pT) // &{1}
+		unsafePPT, unsafe.Pointer(&amp;ta))
+	fmt.Println(pT) // &amp;{1}
 	// load
 	pa1 := (*T)(atomic.LoadPointer(unsafePPT))
-	fmt.Println(pa1 == &ta) // true
+	fmt.Println(pa1 == &amp;ta) // true
 	// swap
 	pa2 := atomic.SwapPointer(
-		unsafePPT, unsafe.Pointer(&tb))
-	fmt.Println((*T)(pa2) == &ta) // true
-	fmt.Println(pT) // &{2}
+		unsafePPT, unsafe.Pointer(&amp;tb))
+	fmt.Println((*T)(pa2) == &amp;ta) // true
+	fmt.Println(pT) // &amp;{2}
 	// compare and swap
 	b := atomic.CompareAndSwapPointer(
-		unsafePPT, pa2, unsafe.Pointer(&tb))
+		unsafePPT, pa2, unsafe.Pointer(&amp;tb))
 	fmt.Println(b) // false
 	b = atomic.CompareAndSwapPointer(
-		unsafePPT, unsafe.Pointer(&tb), pa2)
+		unsafePPT, unsafe.Pointer(&amp;tb), pa2)
 	fmt.Println(b) // true
 }
 </code></pre>
+<p></p>
+<div class="tmd-usual">
+Yes, it is quite verbose to use the pointer atomic functions. In fact, not only are the uses verbose, they are also not protected by <a href="https://golang.org/doc/go1compat">Go 1 compatibility guidelines</a>, for these uses require to import the <code class="tmd-code-span">unsafe</code> standard package.
+</div>
+<p></p>
+<div class="tmd-usual">
 
-<p>
-Yes, it is quite verbose to use the pointer atomic functions.
-In fact, not only are the uses verbose, they are also not protected by
-<a href="https://golang.org/doc/go1compat">Go 1 compatibility guidelines</a>,
-for these uses require to import the <code>unsafe</code> standard package.
-</p>
-
-<!--
-<p>
-Personally, I think the possibility is small that the legal pointer value
-atomic operations used in the above example will become illegal later.
-Even if they become illegal later, the <code>go fix</code> command provided in
-Go Toolchain should fix them with a later alternative new legal way.
-But, this is just my opinion, which is not authoritative.
-</p>
-
-<p>
-If you do worry about the future legality of the pointer atomic operations used
-in the above example, you can use the atomic operations introduced in the next
-section for pointers, though the to be introduced operations are less
-efficient than the ones introduced in the current section.
-</p>
--->
-
-<p>
-On the contrary, the code will be much simpler and cleaner if
-we use the Go 1.19 introduced generic <code>Pointer</code> type and its methods
-to do atomic pointer operations, as the following code shows.
-</p>
-
-<pre class="line-numbers must-line-numbers"><code class="language-go">package main
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+On the contrary, the code will be much simpler and cleaner if we use the Go 1.19 introduced generic <code class="tmd-code-span">Pointer</code> type and its methods to do atomic pointer operations, as the following code shows.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers must-line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -474,56 +430,48 @@ func main() {
 	var pT atomic.Pointer[T]
 	var ta, tb = T{1}, T{2}
 	// store
-	pT.Store(&ta)
-	fmt.Println(pT.Load()) // &{1}
+	pT.Store(&amp;ta)
+	fmt.Println(pT.Load()) // &amp;{1}
 	// load
 	pa1 := pT.Load()
-	fmt.Println(pa1 == &ta) // true
+	fmt.Println(pa1 == &amp;ta) // true
 	// swap
-	pa2 := pT.Swap(&tb)
-	fmt.Println(pa2 == &ta) // true
-	fmt.Println(pT.Load())  // &{2}
+	pa2 := pT.Swap(&amp;tb)
+	fmt.Println(pa2 == &amp;ta) // true
+	fmt.Println(pT.Load())  // &amp;{2}
 	// compare and swap
-	b := pT.CompareAndSwap(&ta, &tb)
+	b := pT.CompareAndSwap(&amp;ta, &amp;tb)
 	fmt.Println(b) // false
-	b = pT.CompareAndSwap(&tb, &ta)
+	b = pT.CompareAndSwap(&amp;tb, &amp;ta)
 	fmt.Println(b) // true
 }
 </code></pre>
-
-<p>
-More importantly, the implementation using the generic <code>Pointer</code> type
-is protected by Go 1 compatibility guidelines.
-</p>
+<p></p>
+<div class="tmd-usual">
+More importantly, the implementation using the generic <code class="tmd-code-span">Pointer</code> type is protected by Go 1 compatibility guidelines.
+</div>
+<p></p>
+<h3 id="arbitrary" class="tmd-header-3">
+Atomic Operations for Values of Arbitrary Types
+</h3>
+<p></p>
+<div class="tmd-usual">
+The <code class="tmd-code-span">Value</code> type provided in the <code class="tmd-code-span">sync/atomic</code> standard package can be used to atomically load and store values of any type.
+</div>
+<p></p>
+<div class="tmd-usual">
+Type <code class="tmd-code-span">*Value</code> has several methods: <code class="tmd-code-span">Load</code>, <code class="tmd-code-span">Store</code>, <code class="tmd-code-span">Swap</code> and <code class="tmd-code-span">CompareAndSwap</code> (The latter two are introduced in Go 1.17). The input parameter types of these methods are all <code class="tmd-code-span">interface{}</code>. So any value may be passed to the calls to these methods. But for an addressable <code class="tmd-code-span">Value</code> value <code class="tmd-code-span">v</code>, once the <code class="tmd-code-span">v.Store()</code> (a shorthand of <code class="tmd-code-span">(&amp;v).Store()</code>) call has ever been called, then the subsequent method calls on value <code class="tmd-code-span">v</code> must also take argument values with the same <a href="type-system-overview.html#concrete-type">concrete type</a> as the argument of the first <code class="tmd-code-span">v.Store()</code> call, otherwise, panics will occur. A <code class="tmd-code-span">nil</code> interface argument will also make the <code class="tmd-code-span">v.Store()</code> call panic.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<a class="anchor" id="arbitrary"></a>
-<h3>Atomic Operations for Values of Arbitrary Types</h3>
-
-<div>
-<p>
-The <code>Value</code> type provided in the <code>sync/atomic</code> standard package
-can be used to atomically load and store values of any type.
-</p>
-
-<p>
-Type <code>*Value</code> has several methods: <code>Load</code>, <code>Store</code>,
-<code>Swap</code> and <code>CompareAndSwap</code> (The latter two are introduced in Go 1.17).
-The input parameter types of these methods are all <code>interface{}</code>.
-So any value may be passed to the calls to these methods.
-But for an addressable <code>Value</code> value <code>v</code>,
-once the <code>v.Store()</code> (a shorthand of <code>(&amp;v).Store()</code>)
-call has ever been called,
-then the subsequent method calls on value <code>v</code> must also take argument values
-with the same <a href="type-system-overview.html#concrete-type">concrete type</a>
-as the argument of the first <code>v.Store()</code> call,
-otherwise, panics will occur.
-A <code>nil</code> interface argument will also make the <code>v.Store()</code> call panic.
-</p>
-
+<p></p>
+<div class="tmd-usual">
 An example:
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -542,9 +490,12 @@ func main() {
 	v.Store("hello") // will panic
 }
 </code></pre>
-
+<p></p>
+<div class="tmd-usual">
 Another example (for Go 1.17+):
-<pre class="line-numbers"><code class="language-go">package main
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
 
 import (
 	"fmt"
@@ -568,19 +519,20 @@ func main() {
 	fmt.Println(swapped, v) // true {{7 8 9}}
 }
 </code></pre>
-
-<p>
-In fact, we can also use the atomic pointer functions explained in the last section
-to do atomic operations for values of any type, with one more level indirection.
-Both ways have their respective advantages and disadvantages.
-Which way should be used depends on the requirements in practice.
-</p>
+<p></p>
+<div class="tmd-usual">
+In fact, we can also use the atomic pointer functions explained in the last section to do atomic operations for values of any type, with one more level indirection. Both ways have their respective advantages and disadvantages. Which way should be used depends on the requirements in practice.
+</div>
+<p></p>
+<h3 class="tmd-header-3">
+Memory Order Guarantee Made by Atomic Operations in Go
+</h3>
+<p></p>
+<div class="tmd-usual">
+Please read <a href="memory-model.html#atomic">Go memory model</a> for details.
+</div>
+<p></p>
+<div class="tmd-usual">
 
 </div>
-
-<h3>Memory Order Guarantee Made by Atomic Operations in Go</h3>
-
-<p>
-Please read <a href="memory-model.html#atomic">Go memory model</a> for details.
-</p>
-
+<p></p>

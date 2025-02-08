@@ -1,0 +1,1112 @@
+### Type-Unsafe Pointers
+
+We have learned Go pointers from the article
+__pointers in Go__.
+From that article, we know that, comparing to C pointers,
+there are many restrictions made for Go pointers.
+For example, Go pointers can't participate arithmetic operations,
+and for two arbitrary pointer types, it is very possible that
+their values can't be converted to each other.
+
+// __ pointers in Go :: pointer.html
+
+The pointers explained in that article are called type-safe pointers actually.
+Although the restrictions on type-safe pointers really make
+us be able to write safe Go code with ease,
+they also make some obstacles to write efficient code for some scenarios.
+
+In fact, Go also supports type-unsafe pointers,
+which are pointers without the restrictions made for safe pointers.
+Type-unsafe pointers are also called unsafe pointers in Go.
+Go unsafe pointers are much like C pointers,
+they are powerful, and also dangerous.
+For some cases, we can write more efficient code with the help of unsafe pointers.
+On the other hand, by using unsafe pointers,
+it is easy to write bad code which is too subtle to detect in time.
+
+Another big risk of using unsafe pointers comes from the fact that
+the unsafe mechanism is not protected by
+__the Go 1 compatibility guidelines__.
+Code depending on unsafe pointers works today could break
+since a later Go version.
+
+// __ the Go 1 compatibility guidelines :: https://golang.org/doc/go1compat
+
+If you really desire the code efficient improvements by using unsafe
+pointers for any reason, you should not only know the above mentioned risks,
+but also follow the instructions written in the official Go
+documentation and clearly understand the effect of each unsafe pointer use,
+so that you can write safe Go code with unsafe pointers.
+
+###+++++++++++ About the `unsafe` Standard Package
+
+Go provides a special __kind of types__ for unsafe pointers.
+We must import __the `unsafe` standard package__
+to use unsafe pointers.
+The `unsafe.Pointer` type is defined as
+
+@@@ .disable-line-numbers111
+'''go
+type Pointer *ArbitraryType
+'''
+
+// __ kind of types :: type-system-overview.html#type-kinds
+// __ the `unsafe` standard package :: https://golang.org/pkg/unsafe/
+
+Surely, it is not a usual type definition.
+Here the `ArbitraryType`
+just hints that a `unsafe.Pointer` value can be converted
+to any safe pointer values in Go (and vice versa).
+In other words, `unsafe.Pointer` is like the `void*` in C language.
+
+Go unsafe pointers mean the types
+whose underlying types are `unsafe.Pointer`.
+
+The zero values of unsafe pointers are also represented with
+the predeclared identifier `nil`.
+
+Before Go 1.17, the `unsafe` standard package has already provided three functions.
+*
+	`func Alignof(variable ArbitraryType) uintptr`,
+	which is used to get the address alignment of a value.
+	Please notes, the aligns for struct-field values and non-field values
+	of the same type may be different, though for the standard
+	Go compiler, they are always the same. For the gccgo compiler, they may be different.
+
+*
+	`func Offsetof(selector ArbitraryType) uintptr`,
+	which is used to get the address offset of a field in a struct value.
+	The offset is relative to the address of the struct value.
+	The return results should be always the same for the same corresponding
+	field of values of the same struct type in the same program.
+*
+	`func Sizeof(variable ArbitraryType) uintptr`,
+	which is used to get the size of a value
+	(a.k.a., the size of the type of the value).
+	The return results should be always the same
+	for all values of the same type in the same program.
+
+
+Note,
+*
+	the types of the return results of the three functions are all
+	`uintptr`. Below we will learn that uintptr values
+	can be converted to unsafe pointers (and vice versa).
+*
+	although the return results of calls of any of the three functions
+	are consistent in the same program,
+	they might be different crossing operating systems, crossing architectures,
+	crossing compilers, and crossing compiler versions.
+*
+	calls to the three functions are always evaluated at compile time.
+	The evaluation results are typed constants with type `uintptr`.
+*
+	the argument passed to a call to the `unsafe.Offsetof` function
+	must the struct field selector form `value.field`.
+	The selector may denote an embedded field, but the field must be reachable
+	without implicit pointer indirections.
+
+
+An example of using the three functions.
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "unsafe"
+
+func main() {
+	var x struct {
+		a int64
+		b bool
+		c string
+	}
+	const M, N = unsafe.Sizeof(x.c), unsafe.Sizeof(x)
+	fmt.Println(M, N) // 16 32
+
+	fmt.Println(unsafe.Alignof(x.a)) // 8
+	fmt.Println(unsafe.Alignof(x.b)) // 1
+	fmt.Println(unsafe.Alignof(x.c)) // 8
+
+	fmt.Println(unsafe.Offsetof(x.a)) // 0
+	fmt.Println(unsafe.Offsetof(x.b)) // 8
+	fmt.Println(unsafe.Offsetof(x.c)) // 16
+}
+'''
+
+An example which demonstrates the last note mentioned above.
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "unsafe"
+
+func main() {
+	type T struct {
+		c string
+	}
+	type S struct {
+		b bool
+	}
+	var x struct {
+		a int64
+		*S
+		T
+	}
+
+	fmt.Println(unsafe.Offsetof(x.a)) // 0
+	
+	fmt.Println(unsafe.Offsetof(x.S)) // 8
+	fmt.Println(unsafe.Offsetof(x.T)) // 16
+	
+	// This line compiles, for c can be reached
+	// without implicit pointer indirections.
+	fmt.Println(unsafe.Offsetof(x.c)) // 16
+	
+	// This line doesn't compile, for b must be
+	// reached with the implicit pointer field S.
+	//fmt.Println(unsafe.Offsetof(x.b)) // error
+	
+	// This line compiles. However, it prints
+	// the offset of field b in the value x.S.
+	fmt.Println(unsafe.Offsetof(x.S.b)) // 0
+}
+'''
+
+Please note, the print results shown in the comments are for the standard
+Go compiler version 1.23.n on Linux AMD64 architecture.
+
+The three functions provided in the `unsafe` package don't look much dangerous.
+The signatures of these functions are very
+__impossible to be changed in future Go 1 versions__.
+Rob Pike even ever __made a proposal to move the three functions to elsewhere__.
+Most of the unsafety of the `unsafe` package comes from unsafe pointers.
+They are as dangerous as C pointers, what is Go safe pointers always try to avoid.
+
+// __ impossible to be changed ... :: https://groups.google.com/g/golang-nuts/c/Pi7VveWDUPc
+// __ made a proposal ... :: https://github.com/golang/go/issues/5602
+
+Go 1.17 introduces one new type and two new functions into the `unsafe` package.
+The new type is `IntegerType`, The following is its definition.
+This type doesn't denote a specified type. It just represents any arbitrary integer type.
+We can view it as a generic type.
+@@@ .disable-line-numbers111
+'''go
+type IntegerType int
+'''
+
+The two functions introduced in Go 1.17 are:
+*
+	`func Add(ptr Pointer, len IntegerType) Pointer`.
+	This function adds an offset to the address represented by an unsafe pointer
+	and return a new unsafe pointer which represents the new address.
+	This function partially covers the usages of the below introduced
+	unsafe pointer use pattern 3.
+*
+	`func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType`.
+	This function is used to derive a slice with the specified length from a safe pointer,
+	where `ArbitraryType` is the element type of the result slice.
+
+
+Go 1.20 further introduced three more functions:
+*
+	`func String(ptr *byte, len IntegerType) string`.
+	This function is used to derive a string with the specified length from a safe `byte` pointer.
+*
+	`func StringData(str string) *byte`.
+	This function is used to get the pointer to the underlying byte sequence of a string.
+	Please note, don't pass empty strings as arguments to this function.
+*
+	`func SliceData(slice []ArbitraryType) *ArbitraryType`.
+	This function is used to get the pointer to the underlying element sequence of a slice.
+
+These functions introduced since Go 1.17 have certain dangerousness.
+They need to be used with caution.
+This following is an example using the two functions introduced in Go 1.17.
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+func main() {
+	a := [16]int{3: 3, 9: 9, 11: 11}
+	fmt.Println(a)
+	eleSize := int(unsafe.Sizeof(a[0]))
+	p9 := &a[9]
+	up9 := unsafe.Pointer(p9)
+	p3 := (*int)(unsafe.Add(up9, -6 * eleSize))
+	fmt.Println(*p3) // 3
+	s := unsafe.Slice(p9, 5)[:3]
+	fmt.Println(s) // [9 0 11]
+	fmt.Println(len(s), cap(s)) // 3 5
+
+	t := unsafe.Slice((*int)(nil), 0)
+	fmt.Println(t == nil) // true
+
+	// The following two calls are dangerous.
+	// They make the results reference
+	// unknown memory blocks.
+	_ = unsafe.Add(up9, 7 * eleSize)
+	_ = unsafe.Slice(p9, 8)
+}
+'''
+
+{//
+https://github.com/golang/go/issues/46742
+}
+
+The following two functions may be used to do conversions between strings and byte slices, in type unsafe manners.
+Comparing with type safe manners, the type unsafe manners don't duplicate underlying byte sequences of strings and byte slices,
+so they are more performant.
+
+@@@ .line-numbers
+'''go
+import "unsafe"
+
+func String2ByteSlice(str string) []byte {
+	if str == "" {
+		return nil
+	}
+	return unsafe.Slice(unsafe.StringData(str), len(str))
+}
+
+func ByteSlice2String(bs []byte) string {
+	if len(bs) == 0 {
+		return ""
+	}
+	return unsafe.String(unsafe.SliceData(bs), len(bs))
+}
+'''
+
+###+++++++++++ Unsafe Pointers Related Conversion Rules
+
+Currently (Go 1.23), Go compilers allow the following explicit conversions.
+*
+	A safe pointer can be explicitly converted to an unsafe pointer,
+	and vice versa.
+*
+	An uintptr value can be explicitly converted to an unsafe pointer,
+	and vice versa.
+	But please note, a nil unsafe.Pointer shouldn't be converted to uintptr and back with arithmetic.
+
+By using these conversions, we can convert a safe pointer value to an arbitrary safe pointer type.
+
+However, although these conversions are all legal at compile time,
+not all of them are valid (safe) at run time.
+These conversions defeat the memory safety the whole Go type system
+(except the unsafe part) tries to maintain.
+We must follow the instructions listed in a later section below
+to write valid Go code with unsafe pointers.
+
+
+###+++++++++++ Some Facts in Go We Should Know
+
+Before introducing the valid unsafe pointer use patterns,
+we need to know some facts in Go.
+
+###----------- Fact 1: unsafe pointers are pointers and uintptr values are integers
+
+Each of non-nil safe and unsafe pointers references another value.
+However uintptr values don't reference any values, they are just plain integers,
+though often each of them stores an integer which can be used to represent a memory address.
+
+Go is a language supporting automatic garbage collection.
+When a Go program is running, Go runtime will
+__check which memory blocks are not used
+by any value any more and collect the memory__ allocated for these unused blocks,
+from time to time.
+Pointers play an important role in the check process.
+If a memory block is unreachable from (referenced by) any values still in use,
+then Go runtime thinks it is an unused value and it can be safely garbage collected.
+
+// __ check which ... :: memory-block.html#when-to-collect
+
+As uintptr values are integers, they can participate arithmetic operations.
+
+The example in the next subsection shows the differences between
+pointers and uintptr values.
+
+###----------- Fact 2: unused memory blocks may be collected at any time
+
+At run time, the garbage collector may run at an uncertain time,
+and each garbage collection process may last an uncertain duration.
+So when a memory block becomes unused, it may be
+__collected at an uncertain time__.
+
+// __ collected at an uncertain time :: memory-block.html#when-can-collect
+
+For example:
+
+@@@ .line-numbers
+'''go
+import "unsafe"
+
+// Assume createInt will not be inlined.
+//go:noinline
+func createInt() *int {
+	return new(int)
+}
+
+func foo() {
+	p0, y, z := createInt(), createInt(), createInt()
+	var p1 = unsafe.Pointer(y)
+	var p2 = uintptr(unsafe.Pointer(z))
+
+	// At the time, even if the address of the int
+	// value referenced by z is still stored in p2,
+	// the int value has already become unused, so
+	// garbage collector can collect the memory
+	// allocated for it now. On the other hand, the
+	// int values referenced by p0 and p1 are still
+	// in use.
+
+	// uintptr can participate arithmetic operations.
+	p2 += 2; p2--; p2--
+
+	*p0 = 1                         // okay
+	*(*int)(p1) = 2                 // okay
+	*(*int)(unsafe.Pointer(p2)) = 3 // dangerous!
+}
+'''
+
+In the above example, the fact that value `p2` is still in use can't guarantee
+that the memory block ever hosting the `int` value referenced by `z` has not been garbage collected yet.
+In other words, when `*(*int)(unsafe.Pointer(p2)) = 3` is executed, the memory block may be collected, or not.
+It is dangerous to dereference the address stored in value `p2` to an `int` value,
+for it is possible that the memory block has been already reallocated for another value (even for another program).
+
+
+{//
+https://github.com/golang/go/issues/32115
+}
+{//
+###----------- Fact 3: we can use a `runtime.KeepAlive` function call to mark a value as still in use (reachable) before the call
+
+%% (I decided to remove this fact from this article. This doesn't means the fact is not existing.
+It just means that the fact is not very relevant to this article.
+And it is helpless to fix the problem shown in the last sub-section.
+Please read the next fact for the reason.)
+
+To mark a value and the value parts referenced by it still reachable, we should pass a value which references
+the value as the argument of a `runtime.KeepAlive` function call.
+A pointer to the value is often used as such an argument.
+
+For example, by appending a `runtime.KeepAlive(&z)`
+call to the example in the last subsection,
+`*(*int)(unsafe.Pointer(p2)) = 3` can be executed safely now.
+
+@@@ .line-numbers
+'''go
+func foo() {
+	p0, y, z := createInt(), createInt(), createInt()
+	var p1 = unsafe.Pointer(y)
+	var p2 = uintptr(unsafe.Pointer(z))
+
+	p2 += 2; p2 - -; p2 - -
+
+	*p0 = 1
+	*(*int)(p1) = 2
+	*(*int)(unsafe.Pointer(p2)) = 3 // safe now!
+
+	runtime.KeepAlive(&z) // This line k
+}
+'''
+
+}
+
+@@@ #fact-value-address-might-change
+###----------- Fact 3: the addresses of some values might change at run time
+
+Please read the article __memory blocks__ for details (see the end of the hyperlinked section).
+Here, we should just know that when the size of the stack of a goroutine changes,
+the memory blocks allocated on the stack will be moved.
+In other words, the addresses of the values hosted on these memory blocks will change.
+
+// __ memory blocks :: memory-block.html#where-to-allocate
+
+###----------- Fact 4: the life range of a value at run time may be not as large as it looks in code
+
+
+In the following example, the fact value `t` is still in use
+can't guarantee that the values referenced by value `t.y` are still in use.
+
+@@@ .line-numbers
+'''go
+type T struct {
+	x int
+	y *[1<<23]byte
+}
+
+func bar() {
+	t := T{y: new([1<<23]byte)}
+	p := uintptr(unsafe.Pointer(&t.y[0]))
+
+	... // use T.x and T.y
+
+	// A smart compiler can detect that the value
+	// t.y will never be used again and think the
+	// memory block hosting t.y can be collected now.
+
+	// Using *(*byte)(unsafe.Pointer(p))) is
+	// dangerous here.
+
+	// Continue using value t, but only use its x field.
+	println(t.x)
+}
+'''
+
+###----------- Fact 5: `*unsafe.Pointer` is a general safe pointer type
+
+Yes, `*unsafe.Pointer` is a safe pointer type.
+Its base type is `unsafe.Pointer`.
+As it is a safe pointer, according the conversion rules listed above,
+it can be converted to `unsafe.Pointer` type, and vice versa.
+
+For example:
+
+@@@ .line-numbers
+'''go
+package main
+
+import "unsafe"
+
+func main() {
+	x := 123                // of type int
+	p := unsafe.Pointer(&x) // of type unsafe.Pointer
+	pp := &p                // of type *unsafe.Pointer
+	p = unsafe.Pointer(pp)
+	pp = (*unsafe.Pointer)(p)
+}
+'''
+
+###+++++++++++ How to Use Unsafe Pointers Correctly?
+
+The `unsafe` standard package documentation lists
+__six unsafe pointer use patterns__.
+Following will introduce and explain them one by one.
+
+// __ six unsafe pointer use patterns :: https://golang.org/pkg/unsafe/#Pointer
+
+###----------- Pattern 1: convert a `*T1` value to unsafe Pointer, then convert the unsafe pointer value to `*T2`.
+
+As mentioned above, by using the unsafe pointer conversion rules above,
+we can convert a value of `*T1` to type `*T2`,
+where `T1` and `T2` are two arbitrary types.
+However, we should only do such conversions if the size of `T1`
+is no smaller than `T2`, and only if the conversions are meaningful.
+
+As a result, we can also achieve the conversions between
+type `T1` and `T2` by using this pattern.
+
+One example is the `math.Float64bits` function,
+which converts a `float64` value to an `uint64` value,
+without changing any bit in the `float64` value.
+The `math.Float64frombits` function does reverse conversions.
+
+@@@ .line-numbers
+'''go
+func Float64bits(f float64) uint64 {
+	return *(*uint64)(unsafe.Pointer(&f))
+}
+
+func Float64frombits(b uint64) float64 {
+	return *(*float64)(unsafe.Pointer(&b))
+}
+'''
+
+Please note, the return result of the `math.Float64bits(aFloat64)`
+function call is different from the result of the explicit conversion
+`uint64(aFloat64)`.
+
+In the following example, we use this pattern to convert a `[]MyString`
+slice to type `[]string`, and vice versa.
+The result slice and the original slice share the underlying elements.
+Such conversions are impossible through safe ways,
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+func main() {
+	type MyString string
+	ms := []MyString{"C", "C++", "Go"}
+	fmt.Printf("%s\n", ms)  // [C C++ Go]
+	// ss := ([]string)(ms) // compiling error
+	ss := *(*[]string)(unsafe.Pointer(&ms))
+	ss[1] = "Zig"
+	fmt.Printf("%s\n", ms) // [C Zig Go]
+	// ms = []MyString(ss) // compiling error
+	ms = *(*[]MyString)(unsafe.Pointer(&ss))
+	
+	// Since Go 1.17, we may also use the
+	// unsafe.Slice function to do the conversions.
+	ss = unsafe.Slice((*string)(&ms[0]), len(ms))
+	ms = unsafe.Slice((*MyString)(&ss[0]), len(ms))
+}
+'''
+
+By the way, since Go 1.17, we may also use the `unsafe.Slice` function to do the conversions:
+
+@@@ .line-numbers
+'''go
+func main() {
+	...
+	
+	ss = unsafe.Slice((*string)(&ms[0]), len(ms))
+	ms = unsafe.Slice((*MyString)(&ss[0]), len(ss))
+}
+'''
+
+A practice by using the pattern is to convert a byte slice, which will not be used after the conversion, to a string,
+as the following code shows. In this conversion, a duplication of the underlying byte sequence is avoided.
+
+@@@ .line-numbers
+'''go
+func ByteSlice2String(bs []byte) string {
+	return *(*string)(unsafe.Pointer(&bs))
+}
+'''
+
+This is the implementation adopted by the `String` method
+of the `Builder` type supported since Go 1.10 in the
+`strings` standard package.
+The size of a byte slice is larger than a string,
+and __their internal structures__ are similar,
+so the conversion is valid (for main stream Go compilers).
+However, despite the implementation may be safely used in standard packages now,
+it is not recommended to be used in general user code.
+Since Go 1.20, in general user code, we should try to use the implementation
+which uses the `unsafe.String` function, mentioned above in this article.
+
+// __ their internal structures :: value-part.html#internal-definitions
+
+The converse, converting a string to a byte slice in the similar way, is invalid,
+for the size of a string is smaller than a byte slice.
+
+@@@ .line-numbers
+'''go
+func String2ByteSlice(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&s)) // dangerous!
+}
+'''
+
+In the pattern 6 section below, a valid implementation to do the same job is introduced.
+
+Note: when using the just introduced unsafe way to convert a byte slice to a string,
+please make sure not to modify the bytes in the byte slice if the result string still survives.
+
+###----------- Pattern 2: convert unsafe pointer to uintptr, then use the uintptr value.
+
+This pattern is not very useful.
+Usually, we print the result uintptr values to check the memory addresses
+stored in them. However, there are other both safe and less verbose ways to this job.
+So this pattern is not much useful.
+
+Example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "unsafe"
+
+func main() {
+	type T struct{a int}
+	var t T
+	fmt.Printf("%p\n", &t)                          // 0xc6233120a8
+	println(&t)                                     // 0xc6233120a8
+	fmt.Printf("%x\n", uintptr(unsafe.Pointer(&t))) // c6233120a8
+}
+'''
+
+The outputted addresses might be different for each run.
+
+@@@ #pattern-convert-to-uintptr-and-back
+###----------- Pattern 3: convert unsafe pointer to uintptr, do arithmetic operations with the uintptr value, then convert it back
+
+In this pattern, the result unsafe pointer must continue to point into the original allocated memory block.
+For example:
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "unsafe"
+
+type T struct {
+	x bool
+	y [3]int16
+}
+
+const N = unsafe.Offsetof(T{}.y)
+const M = unsafe.Sizeof(T{}.y[0])
+
+func main() {
+	t := T{y: [3]int16{123, 456, 789}}
+	p := unsafe.Pointer(&t)
+	// "uintptr(p)+N+M+M" is the address of t.y[2].
+	ty2 := (*int16)(unsafe.Pointer(uintptr(p)+N+M+M))
+	fmt.Println(*ty2) // 789
+}
+'''
+
+In fact, since Go 1.17, it is more recommended to use the above introduced
+`unsafe.Add` function to do such address offset operations.
+
+Please note, in this specified example,
+the conversion `unsafe.Pointer(uintptr(p) + N + M + M)`
+shouldn't be split into two lines, like the following code shows.
+Please read the comments in the code for the reason.
+
+@@@ .line-numbers
+'''go
+func main() {
+	t := T{y: [3]int16{123, 456, 789}}
+	p := unsafe.Pointer(&t)
+	// ty2 := (*int16)(unsafe.Pointer(uintptr(p)+N+M+M))
+	addr := uintptr(p) + N + M + M
+	
+	// ... (some other operations)
+	
+	// Now the t value becomes unused, its memory may be
+	// garbage collected at this time. So the following
+	// use of the address of t.y[2] may become invalid
+	// and dangerous! 
+	// Another potential danger is, if some operations
+	// make the stack grow or shrink here, then the
+	// address of t might change, so that the address
+	// saved in addr will become invalid (fact 3).
+	ty2 := (*int16)(unsafe.Pointer(addr))
+	fmt.Println(*ty2)
+}
+'''
+
+Such bugs are very subtle and hard to detect,
+which is why the uses of unsafe pointers are dangerous.
+
+{//
+If we do want to split that conversion line into two lines,
+we should call the `runtime.KeepAlive` function and pass the unsafe pointer `p`
+(or any other value which is also referencing value `t.y[2]`) as the argument,
+after the split two lines. Like this
+
+@@@ .line-numbers
+'''go
+func main() {
+	t := T{y: [3]int16{123, 456, 789}}
+	p := unsafe.Pointer(&t)
+	addr := uintptr(p) + N + M + M
+	ty2 := (*int16)(unsafe.Pointer(addr))
+	// This following line ensures the memory of
+	// the value t will not get garbage collected
+	// for sure at this time if the code compiles
+	// with the official compilers.
+	runtime.KeepAlive(p)
+	fmt.Println(*ty2)
+}
+'''
+
+https://github.com/golang/go/issues/34684#issuecomment-584461646
+
+
+However, I don't recommend to use the `runtime.KeepAlive` trick for this use pattern,
+for the potential another danger mentioned above.
+It is possible that the stack grows when the runtime allocates memory for the variable `ty2`,
+so that the address of `t` changes and the value stored in `addr` becomes invalid,
+which directly leads to the value of `ty2` is also invalid.
+But honestly speaking, this potential danger doesn't exist here if the code compiles with
+the standard Go compiler. In the implementation of the standard Go compiler,
+a `runtime.KeepAlive` call will make the values referenced by
+its argument be allocated on heap, and memory blocks allocated on heap will be never moved.
+
+%% (The above explanations are removed. The reason is it is not guaranteed that
+a `runtime.KeepAlive` call will make the values referenced by
+its argument be allocated on heap.) %%
+}
+
+The intermediate uintptr value may also participate in `&^` bitwise clear operations to do address alignment,
+as long as the result unsafe pointer and the original one point into the same allocated memory block.
+
+Another detail which should be also noted is that,
+it is not recommended to store the end boundary of a memory block
+in a pointer (either safe or unsafe one).
+Doing this will prevent another memory block which closely follows
+the former memory block from being garbage collected,
+or crash program if that boundary address is not valid for any allocated memory blocks
+(depending on compiler implementations).
+Please read __this FAQ item__ to get more explanations.
+
+// __ this FAQ item :: unofficial-faq.html#final-zero-size-field
+
+###----------- Pattern 4: convert unsafe pointers to `uintptr` values as arguments of `syscall.Syscall` calls.
+
+From the explanations for the last pattern,
+we know that the following function is dangerous.
+
+@@@ .line-numbers
+'''go
+// Assume this function will not inlined.
+func DoSomething(addr uintptr) {
+	// read or write values at the passed address ...
+}
+'''
+
+The reason why the above function is dangerous is that the function
+itself can't guarantee the memory block at the passed argument address
+is not garbage collected yet.
+If the memory block is collected or is reallocated for other values,
+then the operations made in the function body are dangerous.
+
+However, the prototype of the `Syscall` function in
+the `syscall` standard package is as
+@@@ .disable-line-numbers111
+'''go
+func Syscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
+'''
+
+How does this function guarantee that the memory blocks at the passed addresses
+`a1`, `a2` and `a3` are still not garbage
+collected yet within the function internal?
+The function can't guarantee this.
+In fact, compilers will make the guarantee.
+It is the privilege of calls to `syscall.Syscall` alike functions.
+
+We can think that, compilers will automatically insert some instructions
+for each of the unsafe pointer arguments who are converted to `uintptr`,
+like the third argument in the following `syscall.Syscall` call,
+to prevent the memory block referenced by that argument from being garbage collected or moved.
+
+Please note that, before Go 1.15, it was okay the conversion expressions `uintptr(anUnsafePointer)`
+act as sub-expressions of the talked arguments.
+Since Go 1.15, the requirement becomes a bit stricter:
+the talked arguments must present exactly as the `uintptr(anUnsafePointer)` form.
+
+The following call is safe:
+@@@ .line-numbers
+'''go
+syscall.Syscall(SYS_READ, uintptr(fd),
+			uintptr(unsafe.Pointer(p)), uintptr(n))
+'''
+
+But the following calls are dangerous:
+
+@@@ .line-numbers
+'''go
+u := uintptr(unsafe.Pointer(p))
+// At this time, the value referenced by p might
+// have become unused and been collected already,
+// or the address of the value has changed.
+syscall.Syscall(SYS_READ, uintptr(fd), u, uintptr(n))
+
+// Arguments must be in the "uintptr(anUnsafePointer)"
+// form. In fact, the call was safe before Go 1.15.
+// But Go 1.15 changes the rule a bit.
+syscall.Syscall(SYS_XXX, uintptr(uintptr(fd)),
+			uint(uintptr(unsafe.Pointer(p))), uintptr(n))
+'''
+
+{//
+https://github.com/golang/go/issues/34684#issuecomment-540103545
+}
+Note: this pattern also applies to the __syscall.Proc.Call__
+and __syscall.LazyProc.Call__ methods on Windows.
+
+// __ syscall.Proc.Call :: https://golang.org/pkg/syscall/?GOOS=windows#Proc.Call
+// __ syscall.LazyProc.Call :: https://golang.org/pkg/syscall/?GOOS=windows#LazyProc.Call
+
+Again, never use this pattern when calling other functions.
+
+###----------- Pattern 5: convert the `uintptr` result of `reflect.Value.Pointer` or `reflect.Value.UnsafeAddr` method call to unsafe pointer
+
+The methods `Pointer` and `UnsafeAddr` of the
+`Value` type in the `reflect` standard package
+both return a result of type `uintptr` instead of
+`unsafe.Pointer`.
+This is a deliberate design, which is to avoid converting the results of calls
+(to the two methods) to any safe pointer types
+without importing the `unsafe` standard package.
+
+The design requires the return result of a call to either of the two methods
+must be converted to an unsafe pointer immediately after making the call.
+Otherwise, there will be small time window in which the memory block allocated at the
+address stored in the result might lose all references and be garbage collected.
+
+For example, the following call is safe.
+
+@@@ .disable-line-numbers111
+'''go
+p := (*int)(unsafe.Pointer(reflect.ValueOf(new(int)).Pointer()))
+'''
+
+On the other hand, the following call is dangerous.
+
+@@@ .line-numbers
+'''go
+u := reflect.ValueOf(new(int)).Pointer()
+// At this moment, the memory block at the address
+// stored in u might have been collected already.
+p := (*int)(unsafe.Pointer(u))
+'''
+
+Please note that, Go 1.19 introduces a new method, `reflect.Value.UnsafePointer()`,
+which returns a `unsafe.Pointer` value and is preferred over the two just mentioned functions.
+That means, the old deliberate design is thought as not good now.
+
+###----------- Pattern 6: convert a `reflect.SliceHeader.Data` or `reflect.StringHeader.Data` field to unsafe pointer, and the inverse.
+
+For the same reason mentioned for the last subsection, the `Data` fields
+of the struct type `SliceHeader` and `StringHeader` in
+the `reflect` standard package are declared with type
+`uintptr` instead of `unsafe.Pointer`.
+
+We can convert a string pointer to a `*reflect.StringHeader` pointer value,
+so that we can manipulate the internal of the string.
+The same, we can convert a slice pointer to a `*reflect.SliceHeader` pointer value,
+so that we can manipulate the internal of the slice.
+
+An example of using `reflect.StringHeader`:
+
+@@@ .line-numbers
+'''go
+package main
+
+import "fmt"
+import "unsafe"
+import "reflect"
+
+func main() {
+	a := [...]byte{'G', 'o', 'l', 'a', 'n', 'g'}
+	s := "Java"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	hdr.Data = uintptr(unsafe.Pointer(&a))
+	hdr.Len = len(a)
+	fmt.Println(s) // Golang
+	// Now s and a share the same byte sequence, which
+	// makes the bytes in the string s become mutable.
+	a[2], a[3], a[4], a[5] = 'o', 'g', 'l', 'e'
+	fmt.Println(s) // Google
+}
+'''
+
+An example of using `reflect.SliceHeader`:
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"unsafe"
+	"reflect"
+)
+
+func main() {
+	a := [6]byte{'G', 'o', '1', '0', '1'}
+	bs := []byte("Golang")
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	hdr.Data = uintptr(unsafe.Pointer(&a))
+
+	hdr.Len = 2
+	hdr.Cap = len(a)
+	fmt.Printf("%s\n", bs) // Go
+	bs = bs[:cap(bs)]
+	fmt.Printf("%s\n", bs) // Go101
+}
+'''
+
+{// not correct
+Note, a `runtime.KeepAlive` call is needed in this example,
+otherwise, the slice might reference an invalid underlying byte sequence.
+
+%% (The `runtime.KeepAlive` call is not essential here.) %%
+https://groups.google.com/forum/#!topic/golang-nuts/MgIP2KvEAaU
+}
+
+In general,
+we should only get a `*reflect.StringHeader` pointer value from an actual (already existed) string,
+or get a `*reflect.SliceHeader` pointer value from an actual (already existed) slice.
+We shouldn't do the contrary, such as creating a string from a new allocated `StringHeader`,
+or creating a slice from a new allocated `SliceHeader`.
+For example, the following code is dangerous.
+
+@@@ .line-numbers
+'''go
+var hdr reflect.StringHeader
+hdr.Data = uintptr(unsafe.Pointer(new([5]byte)))
+// Now the just allocated byte array has lose all
+// references and it can be garbage collected now.
+hdr.Len = 5
+s := *(*string)(unsafe.Pointer(&hdr)) // dangerous!
+'''
+
+The following is an example which shows how to convert a string to a byte slice,
+by using the unsafe way.
+Different from the safe conversion from a string to a byte slice,
+the unsafe way doesn't allocate a new underlying byte sequence
+for the result slice in each conversion.
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"strings"
+	"unsafe"
+)
+
+func String2ByteSlice(str string) (bs []byte) {
+	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	sliceHdr.Data = strHdr.Data
+	sliceHdr.Cap = strHdr.Len
+	sliceHdr.Len = strHdr.Len
+	return
+}
+
+func main() {
+	// str := "Golang"
+	// For the official standard compiler, the above
+	// line will make the bytes in str allocated on
+	// an immutable memory zone.
+	// So we use the following line instead.
+	str := strings.Join([]string{"Go", "land"}, "")
+	s := String2ByteSlice(str)
+	fmt.Printf("%s\n", s) // Goland
+	s[5] = 'g'
+	fmt.Println(str) // Golang
+}
+'''
+
+{//
+%% (The current article ever stated that the `runtime.KeepAlive` call in the above example is essential.
+I'm very sorry for that I spread the wrong information. In fact, this call is not essential here,
+at least for the official standard compiler.) %%
+}
+
+Note, when using the just introduced unsafe way to convert a string to a byte slice,
+please make sure not to modify the bytes in the result byte slice if the string still survives
+(for demonstration purpose, the above example violates this principle).
+
+It is also possible to convert a byte slice to a string in a similar way,
+which is a bit safer (but a bit slower) than the way shown in pattern 1.
+
+@@@ .line-numbers
+'''go
+func ByteSlice2String(bs []byte) (str string) {
+	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	strHdr.Data = sliceHdr.Data
+	strHdr.Len = sliceHdr.Len
+	return
+}
+'''
+
+Similarly, please make sure not to modify the bytes in the argument byte slice if the result string still survives.
+
+BTW, let's view a bad example which violates the principle of pattern 3
+(the example is borrowed from one slack comment posted by Bryan C. Mills):
+
+@@@ .line-numbers
+'''go
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"unsafe"
+)
+
+func Example_Bad() *byte {
+	var str = "godoc"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	pbyte := (*byte)(unsafe.Pointer(hdr.Data + 2))
+	return pbyte // *pbyte == 'd'
+}
+
+func main() {
+	fmt.Println(string(*Example_Bad()))
+}
+'''
+
+Two correct implementations:
+
+@@@ .line-numbers
+'''go
+func Example_Good1() *byte {
+	var str = "godoc"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	pbyte := (*byte)(unsafe.Pointer(
+		uintptr(unsafe.Pointer(hdr.Data)) + 2))
+	return pbyte
+}
+
+// Works since Go 1.17.
+func Example_Good2() *byte {
+	var str = "godoc"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	pbyte := (*byte)(unsafe.Add(unsafe.Pointer(hdr.Data), 2))
+	return pbyte
+}
+'''
+
+Tricky? Yes.
+
+__The docs__ of the `SliceHeader` and `StringHeader` types in the
+`reflect` standard package are similar in that
+they say the representations of the two struct types may change in a later release.
+So the above valid examples using the two types may become invalid even if the unsafe rules keep unchanged.
+Fortunately, at present (Go 1.23), the two available mainstream Go compilers (the standard Go compiler and the gccgo compiler)
+both recognize the representations of the two types declared in the `reflect` standard package.
+
+The Go core development team also realized that the two types are inconvenient and error-prone,
+so the two types have been not recommended any more since Go 1.20 and they have been deprecated since Go 1.21. 
+Instead, we should try to use the `unsafe.String`, `unsafe.StringData`,
+`unsafe.Slice` and `unsafe.SliceData` functions described earlier in this article.
+
+// __ The docs :: https://golang.org/pkg/reflect/#SliceHeader
+
+###+++++++++++ Final Words
+
+From the above contents, we know that, for some cases,
+the unsafe mechanism can help us write more efficient Go code.
+However, it is very easy to introduce some subtle bugs which have
+very low possibilities to produce when using the unsafe mechanism.
+A program with these bugs may run well for a long time,
+but suddenly behave abnormally and even crash at a later time.
+Such bugs are very hard to detect and debug.
+
+We should only use the unsafe mechanism when we have to,
+and we must use it with extreme care.
+In particular, we should follow the instructions described above.
+
+And again, we should aware that the unsafe mechanism introduced above
+may change and even become invalid totally in later Go versions,
+though no evidences this will happen soon.
+If the unsafe mechanism rules change,
+the above introduced valid unsafe pointer use patterns may become invalid.
+So please keep it easy to switch back to the safe implementations
+for you code depending on the unsafe mechanism.
+
+In the end, it is worth mentioning that a dynamic analysis compiler option
+`-gcflags=all=-d=checkptr` is supported since Go Toolchain 1.14
+(it is recommended to use this option on Windows with Go Toolchain 1.15+).
+When this option is used, some (but not all) incorrect unsafe pointer uses will be detected at run time.
+Once such an incorrect use is detected, a panic will occur.
+Thanks to Matthew Dempsky for implementing this __great feature__!
+
+// __ great feature :: https://github.com/golang/go/issues/22218
+
