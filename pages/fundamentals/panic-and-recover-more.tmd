@@ -212,8 +212,8 @@ This will make the nesting call enter (if it hasn't entered) its exiting phase i
 
 When a Goexit signal associates with a function call,
 if the function call is associating with an unrecovered panic,
-then the panic will be recovered.
-For example, the following program will exit peacefully and print `<nil>`,
+then the panic will be recovered (honestly, it is weird to me).
+For example, the following program will exit peacefully,
 because the `bye` panic will be recovered by the Goexit signal.
 
 @@@ .line-numbers
@@ -221,15 +221,10 @@ because the `bye` panic will be recovered by the Goexit signal.
 package main
 
 import (
-	"fmt"
 	"runtime"
 )
 
 func f() {
-	defer func() {
-		fmt.Println(recover())
-	}()
-
 	// The Goexit signal will disable the "bye" panic.
 	defer runtime.Goexit()
 	panic("bye")
@@ -243,6 +238,7 @@ func main() {
 	}
 }
 '''
+
 
 {//
 The above has mentioned that a panic and a Goexit signal are independent of each other.
