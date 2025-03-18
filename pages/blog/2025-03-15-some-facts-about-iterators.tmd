@@ -1,0 +1,446 @@
+
+####### Some Facts About Go Iterators
+
+###---
+
+@@@ #introduction
+###+++++ A simple introduction of Go iterators
+
+// __iterators :: https://go.dev/blog/range-functions
+
+Go 1.23 inroduced __iterators__,
+Iteators in Go are some functions which can be ranged over.
+Specifically, function expressions of types whose underlying types
+are in the following forms can be ranged over.
+
+'''Go
+func(func() bool)
+func(func(V) bool)
+func(func(K, V) bool)
+
+// K and V both denote types.
+'''
+
+All of the types take a callback function parameter which is called `yield` by convention.
+Such ballback functions might take zero, one or two parameters and return a
+bool result.
+
+@@@ #example-1
+For example, the following Go program prints `abc` (since Go 1.23).
+
+'''Go
+package main
+
+import "fmt"
+
+func main() {
+	for v := range abc {
+		fmt.Print(v)
+	}
+}
+
+func abc(yield func(string) bool) {
+	if yield("a") {
+		if yield("b") {
+			yield("c")
+		}
+	}
+}
+'''
+
+The function `abc` is used as an iterator here.
+Its parameter `yield` is a callback function which takes a `string` parameter
+and returns a `bool` result.
+* Three arguments `"a"`, `"b"` and `"c"` are in turn passed to
+  the `string` paramter and are used as
+  the values of (the instances of) the loop variable `v`.
+* The loop body can be basically viewed as the function body of the `yield` function.
+  Just note that, if the execution of a loop step during ranging over
+  an iterator function terminates the whole loop (such as `break` the loop),
+  then the corresponding `yield` call returns false (to the iterator function);
+  otherwise the corresponding `yield` call returns true.
+
+The iterator function in the above example can also be written as
+
+'''Go
+func abc(yield func(string) bool) {
+	_ = yield("a") && yield("b") && yield("c")
+}
+'''
+
+@@@ #dont-call-yield-if-it-ever-returned-false
+###+++++++++ Don't call a `yield` callback again if a call to the callback has ever returned false
+
+The callback function of an iterator function must not be called any more
+if a call of the callback function ever returned false.
+For example, the following program crashes when running.
+
+'''Go
+package main
+
+import "fmt"
+
+func main() {
+	for v := range ab {
+		fmt.Println(v)
+		break // remove this line to avoid crashing.
+	}
+}
+
+func ab(yield func(string) bool) {
+	var done = yield("a")
+	fmt.Println(done) // false
+	
+	yield("b") // runtime error: range function
+	           // continued iteration after function
+	           // for loop body returned false.
+}
+'''
+
+The official Go compiler doesn't check such invalid uses.
+So such an invalid use produces a runtime (recoverable) error.
+
+Note, `go vet` also doesn't check such invalid uses (up to v1.24.x).
+
+@@@ #dont-call-yield-if-it-caller-has-returned
+###++++++++++ Don't call the `yield` callback of an iterator function if the iterator function has returned
+
+The callback function of an iterator function must not be called any more
+if the iterator function has returned.
+For example, the following program crashes when running.
+
+'''Go
+package main
+
+import "fmt"
+
+var f func(string) bool
+
+func main() {
+	for v := range abc {
+		fmt.Print(v)
+	}
+	f("d") // runtime error: range function
+	       // continued iteration after
+	       // whole loop exit
+}
+
+func abc(yield func(string) bool) {
+	_ = yield("a") && yield("b") && yield("c")
+	f = yield
+}
+'''
+
+@@@ #calling-yield-concurrently-needs-synchronizations
+###+++++++++++++ Calling a `yield` callback function needs careful synchronizations
+
+__Parallel calls to a `yield` callback function are not synchronized__
+by default. You need to do the synchronizations by yourself.
+
+// __ Parallel calls ... :: https://github.com/golang/go/issues/68897
+
+For example, the following program crashes for a confusing panic.
+
+'''Go
+package main
+
+import "fmt"
+import "sync"
+
+var c = make(chan int)
+
+func main() {
+	// runtime error: range function continued iteration after loop body panic
+	for v := range oneHundred {
+		<-c
+		fmt.Println(v)
+	}
+}
+
+func oneHundred(yield func(int) bool) {
+	var wg sync.WaitGroup
+	for v := range 100 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			yield(v)
+		}()
+	}
+	close(c)
+	wg.Wait()
+}
+'''
+
+To make it work, it should be synchronized, like
+
+'''Go
+func abc(yield func(int) bool) {
+	var wg sync.WaitGroup
+	var mu sync.Mutex // use a mutex to sync
+	for v := range 100 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			mu.Lock()         // prevent yield being
+			defer mu.Unlock() // called parallelly.
+			yield(v)
+		}()
+	}
+	close(c)
+	wg.Wait()
+}
+'''
+
+However, it is strongly recommended not to use `yield` callback functions
+in other goroutines.
+
+@@@ #impact-on-goroutine-execution
+###++++++++++ The top function calls in the call stack of a goroutine
+   will be executed concurrently when ranging over iterator functions
+
+When an iterator function is ranged over, it is called implicitly.
+During ranging over the iterator function, the execution of a goroutine will
+jump back and forth between the iterator function call and the loop body
+(the loop body is a statement within the caller of the iterator function call).
+
+For example, the following program prints `0a1b2c`.
+
+'''Go
+package main
+
+import "fmt"
+
+func main() {
+	for v := range abc {
+		fmt.Print(v)
+	}
+}
+
+func abc(yield func(string) bool) {
+	for i, v := range "abc" {
+		fmt.Print(i)
+		if (!yield(string(v))) {
+			break
+		}
+	}
+}
+'''
+
+The following is another example, in which the execution of a goroutine will
+jump back and forth between 2^$$22$$ iterator function calls and the loop body
+in the `main` function.
+Finally, the program prints `4194304`, `4194305` and `4194306` in turn.
+
+'''Go
+package main
+
+func wrap(it func(yield func(int) bool)) func(yield func(int) bool) {
+	return func(yield func(int) bool) {
+		for v := range it {
+			yield(v+1)
+		}
+	}
+}
+
+func main() {
+	iterator := func(yield func(int) bool) {
+		_ = yield(0) && yield(1) && yield (2)
+	}
+	for range 1 << 22 { // 23 crashes the program
+		iterator = wrap(iterator)
+	}
+	for v := range iterator {
+		println(v)
+	}
+}
+'''
+
+@@@ #equivalence-between-range-over-and-direct-call
+###+++++ Calling an iterator function explicitly might be equivalent to ranging over the iterator function or not
+
+For the iterator function shown above:
+
+'''Go
+func abc(yield func(string) bool) {
+	_ = yield("a") && yield("b") && yield("c")
+}
+'''
+
+the following two ways of using it are equvalent.
+
+* ### Way 1
+  '''Go
+	for v := range abc {
+		fmt.Print(v)
+	}
+  '''
+	
+* ### Way 2
+  '''Go
+	abc(func(v string) bool {
+		fmt.Print(v)
+		return true
+	})
+  '''
+
+However, for the following iterator function:
+
+'''Go
+func abcThenPanic(yield func(string) bool) {
+	_ = yield("a") && yield("b") && yield("c")
+	panic("bye")
+}
+'''
+
+the following two ways of using it are not equvalent.
+
+* ### Way 1
+  '''Go
+	for v := range abcThenPanic {
+		defer func() {
+			recover()
+		}()
+		fmt.Print(v)
+	}
+  '''
+	
+* ### Way 2
+  '''Go
+	abcThenPanic(func(v string) bool {
+		defer func() {
+			recover()
+		}()
+		fmt.Print(v)
+		return true
+	})
+  '''
+
+When loop bodies contain `goto` statements, the equivalence between the two
+ways becomes even less likely.
+
+@@@ #design-flaws
+###+++++ The iterator design has a flaw
+
+The following two programs should behave the same,
+but they don't now (as of Go toolchain v1.24.1):
+
+* ### Program 1
+  '''Go
+package main
+
+func main() {
+	defer func() {
+		var v = recover()
+		println(v == 123)
+	}()
+	for range iter {
+		panic(123)
+	}
+}
+
+func iter(yield func() bool) {
+	defer func() {
+		recover()
+	}()
+	yield()
+}
+   '''
+   ;;;
+   The program prints `false`.
+
+* ### Program 2
+  '''Go
+package main
+
+func main() {
+	defer func() {
+		var v = recover()
+		println(v == 123)
+	}()
+	for range iter {}
+	panic(123)
+}
+
+func iter(yield func() bool) {
+	defer func() {
+		recover()
+	}()
+	yield()
+}
+  '''
+   ;;;
+   The program prints `true`.
+
+The cause of the behavior difference is, by the current design,
+*. __the panic created in the loop body of ranging over an iterator function
+will propagate to the iterator function__.
+*. the iterator function should not recover the panic created in the loop body.
+If the iterator function recovers the panic propagated from the loop body,
+then the runtime will a new runtime panic.
+
+// __ ... propagate to the iterator function :: https://github.com/golang/go/issues/71830
+
+If the yield call just returns false when the loop body creates a panic,
+then there will no behavior differences between the two programs.
+
+@@@ #implementation-bugs
+###+++++ The implementation of iterators still has some bugs
+
+For example, the following two programs should have the same behavior,
+but they don't now (as of Go toolchain v1.24.1).
+
+* ### Program 1
+   '''Go
+package main
+
+import "fmt"
+
+func main() {
+	defer foo()
+	panic(123)
+}
+
+func foo() {
+	for range iter {
+		fmt.Println(recover())
+	}
+}
+
+func iter(yield func() bool) {
+	yield()
+}
+   '''
+   ;;;
+   The program prints `<nil>` then crashes.
+
+* ### Program 2
+   '''Go
+package main
+
+import "fmt"
+
+func main() {
+	defer foo()
+	panic(123)
+}
+
+func foo() {
+	for range 1 {
+		fmt.Println(recover())
+	}
+}
+   '''
+   ;;;
+   The program prints `<123` then exits normally.
+
+@@@ #importance
+###+++++ The importance of iterators has not been proved yet
+
+Iterators surely have certain usefulness.
+However, it is still not proved that it is worth adding so much
+complexity to the language.
+
+
+
+
+

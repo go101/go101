@@ -57,6 +57,11 @@ var gogetInfos = map[string]GoGetInfo{
 		GoGetSourceRepo: "go101/gotv",
 		GoDocWebsite:    "https://pkg.go.dev/",
 	},
+	"tmd.go": {
+		RootPackage:     "go101.org/tmd.go",
+		GoGetSourceRepo: "go101/tmd.go",
+		GoDocWebsite:    "https://pkg.go.dev/",
+	},
 	"tmd": {
 		RootPackage:     "go101.org/tmd",
 		GoGetSourceRepo: "go101/tmd",

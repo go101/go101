@@ -185,13 +185,12 @@ func retrieveArticleContent(group, file string) (Article, error) {
 		return article, err
 	}
 
-	article.Content = template.HTML(content)
 	article.Group = group
 	article.Filename = file
 	article.FilenameWithoutExt = strings.TrimSuffix(file, ".html")
 
 	// retrieve titles
-	splitTitleContent := func(startTag, endTag []byte) (int, int) {
+	splitTitleContent := func(startTag, endTag []byte, toH1 bool) (int, int) {
 		j, i := -1, bytes.Index(content, startTag)
 		if i >= 0 {
 			i += len(startTag)
@@ -200,18 +199,24 @@ func retrieveArticleContent(group, file string) (Article, error) {
 		if j < 0 {
 			return -1, 0
 		}
+		if (toH1) {
+			content[i-1] = '1'
+			content[i + j + len(endTag) - 2] = '1'
+		}
 		return i - len(startTag), i + j + len(endTag)
 	}
 
-	titleStart, contentStart := splitTitleContent(H1, _H1)
+	titleStart, contentStart := splitTitleContent(H1, _H1, false)
 	if titleStart < 0 {
-		titleStart, contentStart = splitTitleContent(H2, _H2)
+		titleStart, contentStart = splitTitleContent(H2, _H2, true)
 	}
+	article.Content = template.HTML(content)
 	if titleStart < 0 {
 		//log.Println("retrieveTitlesForArticle failed:", group, file)
 	} else {
 		article.Title = template.HTML(html.UnescapeString(string(article.Content[titleStart:contentStart])))
-		article.Content = article.Content[contentStart:]
+
+		//article.Content = article.Content[contentStart:]
 		k, s := 0, make([]rune, 0, MaxTitleLen)
 		for _, r := range article.Title {
 			if r == TagSigns[k] {
