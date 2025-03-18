@@ -34,7 +34,7 @@ Here is an unprofessional Go program which doesn't consider instruction reorderi
 the program is expanded from an example in the official documentation
 __Go 1 memory model__.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "log"
@@ -72,7 +72,7 @@ The reason is compilers and CPUs may exchange the execution orders of
 the first two lines in the `setup` function,
 so the final effect of the `setup` function may become to
 @@@ .line-numbers
-'''go
+''' go
 func setup() {
 	done = true
 	a = "hello, world"
@@ -135,7 +135,7 @@ any of the statements presented after event `B` in source code.
 For other irrelevant goroutines,
 the observed orders may be different from the just described.
 
-{//
+{ //
 ###----------- `init` functions related order guarantees
 
 The execution order of the `init` functions in a program order guarantees:
@@ -144,21 +144,21 @@ The article __code packages and package imports__
 has introduced the execution order of the `init` functions in a program.
 Here lists the guaranteed orders:
 *
-	The completion of all the `init` functions in the dependency packages of a package
-	happens before the start of any `init` function in the package.
+   The completion of all the `init` functions in the dependency packages of a package
+   happens before the start of any `init` function in the package.
 *
-	The completion of all `init` functions in a program
-	happens before the start of the program `main` entry function.
+   The completion of all `init` functions in a program
+   happens before the start of the program `main` entry function.
 
 // __ code packages and package imports :: packages-and-imports.html#initialization-order
 
 In fact, there are two other order guarantees:
 *
-	the completion of all package-level variable initializations in a package
-	happens before the start of any `init` function in the package.
+   the completion of all package-level variable initializations in a package
+   happens before the start of any `init` function in the package.
 *
-	the completion of all the `init` functions in the dependency packages of a package
-	happens before any package-level variable initialization in the package.
+   the completion of all the `init` functions in the dependency packages of a package
+   happens before any package-level variable initialization in the package.
 
 Package loading only involves one goroutine.
 
@@ -172,7 +172,7 @@ the assignment `x, y = 123, 789` will be executed before the call `fmt.Println(x
 and the call `fmt.Println(x)` will be executed before the call `fmt.Println(y)`.
 
 @@@ .line-numbers
-'''go
+''' go
 var x, y int
 func f1() {
 	x, y = 123, 789
@@ -189,7 +189,7 @@ However, the execution orders of the three in the following function are not det
 There are data races in this function.
 
 @@@ .line-numbers
-'''go
+''' go
 var x, y int
 func f2() {
 	go func() {
@@ -207,34 +207,34 @@ func f2() {
 @@@ #channel
 ###----------- Channel operations related order guarantees
 
-{//
+{ //
 The following listed guarantees are not mentioned in Go 1 memory model,
 but I think they are obvious.
 *
-	A channel send operation happens before the completion of the send operation.
+   A channel send operation happens before the completion of the send operation.
 *
-	A channel receive operation happens before the completion of the receive operation.
+   A channel receive operation happens before the completion of the receive operation.
 *
-	The completions of two send operations on a channel can't happen at the same time.
+   The completions of two send operations on a channel can't happen at the same time.
 *
-	The completions of two receive operations on a channel can't happen at the same time.
+   The completions of two receive operations on a channel can't happen at the same time.
 
 }
 
 Go 1 memory model lists the following three channel related order guarantees.
 *.
-	The **%% n %%**th successful send to a channel happens before
-	the **%% n %%**th successful receive from that channel completes,
-	no matter that channel is buffered or unbuffered.
+   The **%% n %%**th successful send to a channel happens before
+   the **%% n %%**th successful receive from that channel completes,
+   no matter that channel is buffered or unbuffered.
 *.
-	The **%% n %%**th successful receive from a channel with capacity **%% m %%**
-	happens before the (**%% n+m %%**)th successful send to that channel completes.
-	In particular, if that channel is unbuffered (`m == 0`),
-	the **%% n %%**th successful receive from that channel happens
-	before the **%% n %%**th successful send on that channel completes.
+   The **%% n %%**th successful receive from a channel with capacity **%% m %%**
+   happens before the (**%% n+m %%**)th successful send to that channel completes.
+   In particular, if that channel is unbuffered (`m == 0`),
+   the **%% n %%**th successful receive from that channel happens
+   before the **%% n %%**th successful send on that channel completes.
 *.
-	The closing of a channel happens before a receive completes if
-	the receive returns a zero value because the channel is closed.
+   The closing of a channel happens before a receive completes if
+   the receive returns a zero value because the channel is closed.
 
 
 In fact, the completion of the **%% n %%**th successful send to a channel and
@@ -244,7 +244,7 @@ are the same event.
 Here is an example show some guaranteed code execution orders
 in using an unbuffered channel.
 @@@ .line-numbers
-'''go
+''' go
 func f3() {
 	var a, b int
 	var c = make(chan bool)
@@ -269,18 +269,18 @@ func f3() {
 
 Here, for the two new created goroutines, the following orders are guaranteed:
 *
-	the execution of the assignment `b = 1` absolutely ends
-	before the evaluation of the condition `b != 1`.
+   the execution of the assignment `b = 1` absolutely ends
+   before the evaluation of the condition `b != 1`.
 *
-	the execution of the assignment `a = 1` absolutely ends
-	before the evaluation of the condition `a != 1`.
+   the execution of the assignment `a = 1` absolutely ends
+   before the evaluation of the condition `a != 1`.
 
 
 So the two calls to `panic` in the above example will never get executed.
 However, the `panic` calls in the following example may get executed.
 
 @@@ .line-numbers
-'''go
+''' go
 func f4() {
 	var a, b, x, y int
 	c := make(chan bool)
@@ -334,7 +334,7 @@ We should stick to the Go official documentation to write professional Go code.
 
 Here is an example using a buffered channel.
 @@@ .line-numbers
-'''go
+''' go
 func f5() {
 	var k, l, m, n, x, y int
 	c := make(chan bool, 2)
@@ -359,11 +359,11 @@ func f5() {
 
 The following orders are guaranteed:
 *
-	the execution of `k = 1` ends before
-	the execution of `y = 1`.
+   the execution of `k = 1` ends before
+   the execution of `y = 1`.
 *
-	the execution of `x = 1` ends before
-	the execution of `n = 1`.
+   the execution of `x = 1` ends before
+   the execution of `n = 1`.
 
 However, the execution of `x = 1` is not guaranteed to happen before
 the execution of `l = 1` and `m = 1`,
@@ -375,7 +375,7 @@ In this example, the execution of `k = 1`
 is guaranteed to end before the execution of `y = 1`,
 but not guaranteed to end before the execution of `x = 1`,
 @@@ .line-numbers
-'''go
+''' go
 func f6() {
 	var k, x, y int
 	c := make(chan bool, 1)
@@ -395,17 +395,17 @@ func f6() {
 }
 '''
 
-{//
+{ //
 The two guarantees may be not true.
 
 There are two other obvious channel related order guarantees.
 But they are not very valuable for Go programming in practice.
 *.
-	The completion of the **n**th successful send on a channel happens before
-	the completion of the (**n+1**)th successful send on the channel.
+   The completion of the **n**th successful send on a channel happens before
+   the completion of the (**n+1**)th successful send on the channel.
 *.
-	The completion of the **n**th successful receive on a channel happens before
-	the completion of the (**n+1**)th successful receive on the channel.
+   The completion of the **n**th successful receive on a channel happens before
+   the completion of the (**n+1**)th successful receive on the channel.
 
 }
 
@@ -414,37 +414,37 @@ But they are not very valuable for Go programming in practice.
 
 The followings are the mutex related order guarantees in Go.
 *.
-	For an addressable value `m` of type `Mutex` or `RWMutex`
-	in the `sync` standard package, the **%% n %%**th successful
-	`m.Unlock()` method call happens before the (**%% n+1 %%**)th
-	`m.Lock()` method call returns.
+   For an addressable value `m` of type `Mutex` or `RWMutex`
+   in the `sync` standard package, the **%% n %%**th successful
+   `m.Unlock()` method call happens before the (**%% n+1 %%**)th
+   `m.Lock()` method call returns.
 *.
-	For an addressable value `rw` of type `RWMutex`,
-	if its **%% n %%**th `rw.Lock()` method call has returned,
-	then its successful **%% n %%**th `rw.Unlock()` method call happens
-	before the return of any `rw.RLock()` method call which is guaranteed
-	to happen after the **%% n %%**th `rw.Lock()` method call returns.
+   For an addressable value `rw` of type `RWMutex`,
+   if its **%% n %%**th `rw.Lock()` method call has returned,
+   then its successful **%% n %%**th `rw.Unlock()` method call happens
+   before the return of any `rw.RLock()` method call which is guaranteed
+   to happen after the **%% n %%**th `rw.Lock()` method call returns.
 *.
-	For an addressable value `rw` of type `RWMutex`,
-	if its **%% n %%**th `rw.RLock()` method call has returned,
-	then its **%% m %%**th successful `rw.RUnlock()` method call,
-	where `m <= n`, happens before the return of any
-	`rw.Lock()` method call which is guaranteed to happen
-	after the **%% n %%**th `rw.RLock()` method call returns.
+   For an addressable value `rw` of type `RWMutex`,
+   if its **%% n %%**th `rw.RLock()` method call has returned,
+   then its **%% m %%**th successful `rw.RUnlock()` method call,
+   where `m <= n`, happens before the return of any
+   `rw.Lock()` method call which is guaranteed to happen
+   after the **%% n %%**th `rw.RLock()` method call returns.
 
 In the following example, the following orders are guaranteed:
 *
-	the execution of `a = 1` ends before
-	the execution of `b = 1`.
-*.
-	the execution of `m = 1` ends before
-	the execution of `n = 1`.
-*.
-	the execution of `x = 1` ends before
-	the execution of `y = 1`.
+   the execution of `a = 1` ends before
+   the execution of `b = 1`.
+   *.
+      the execution of `m = 1` ends before
+      the execution of `n = 1`.
+   *.
+      the execution of `x = 1` ends before
+      the execution of `y = 1`.
 
 @@@ .line-numbers
-'''go
+''' go
 func fab() {
 	var a, b int
 	var l sync.Mutex // or sync.RWMutex
@@ -499,7 +499,7 @@ the execution of `p = 1` is not guaranteed to end before the execution of `q = 1
 though most compilers do make such guarantees.
 
 @@@ .line-numbers
-'''go
+''' go
 var p, q int
 func fpq() {
 	var l sync.Mutex
@@ -557,7 +557,7 @@ the read operation on the same variable.
 So the following program is guaranteed to print `2`.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -592,9 +592,9 @@ Please read __this article__ to get how to do atomic operations.
 @@@ #finalizer
 ###----------- Finalizers related order guarantees
 
-A call to `runtime.SetFinalizer(x, f)` happens before the finalization call `f(x)`. 
+A call to `runtime.SetFinalizer(x, f)` happens before the finalization call `f(x)`.
 
-{//
+{ //
 
 ToDo: about the outcomes of data races.
 

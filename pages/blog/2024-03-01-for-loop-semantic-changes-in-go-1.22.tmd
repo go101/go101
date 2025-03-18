@@ -1,6 +1,6 @@
 
 #######################################################
-	`for` Loop Semantic Changes in Go 1.22: Be Aware of the Impact
+    `for` Loop Semantic Changes in Go 1.22: Be Aware of the Impact
 
 Go 1.22 changed the semantics of `for` loops,
 including both `for-range` loops and traditional
@@ -13,7 +13,7 @@ in order to write Go code which will behave as intended.
 Otherwise, your code may exhibit unexpected behavior.
 
 ###========================================
-	What are the changes?
+    What are the changes?
 
 Specifically speaking, only the semantics of the `for` loops
 which loop variables are declared within the loops are changed
@@ -23,7 +23,7 @@ For example, in the following piece of code,
 the semantics of the former two loops are not changed,
 but the latter two ones are changed (from Go 1.21 to 1.22).
 
-'''Go
+''' Go
 	for k, v = range aContainer {...}
 	for a, b, c = f(); condition; statement {...}
 
@@ -38,7 +38,7 @@ The semantics of the former two loops are not changed.
 Let's view a simple Go program which undergoes semantic change
 (and behavior change) from Go 1.21 to Go 1.22:
 
-'''Go
+''' Go
 //demo1.go
 package main
 
@@ -75,23 +75,23 @@ $ gotv 1.22. run demo1.go
 '''
 
 The behavior difference is obvious:
-* prior to Go 1.22, it printed `14` (very probably, when without the participation of the channel `c`);
-* since Go 1.22, it prints `10` (always, even without the participation of the channel `c`).
+*  prior to Go 1.22, it printed `14` (very probably, when without the participation of the channel `c`);
+*  since Go 1.22, it prints `10` (always, even without the participation of the channel `c`).
 
 The reason for the difference:
-* prior to Go 1.22, every freshly-declared loop variable used in
-  a `for` loop is shared by all iterations during executing the loop.
-  The two new created goroutines are executed after
-  the execution of the `for` loop, in which case,
-  the final values of the `i` and `v` loop variables are `3` and `4`.
-  `(3+4) + (3+4)` gives `14`.
-* since Go 1.22, every freshly-declared loop variable used in
-  a `for` loop will be instantiated as a distinctive instance
-  at the start of each iteration. In other words,
-  it is per-iteration scoped now. So the values of
-  the `i` and `v` loop variables used in the two new
-  created goroutines are `1 2` and `3 4`, respectively.
-  `(1+2) + (3+4)` gives `10`.
+*  prior to Go 1.22, every freshly-declared loop variable used in
+   a `for` loop is shared by all iterations during executing the loop.
+   The two new created goroutines are executed after
+   the execution of the `for` loop, in which case,
+   the final values of the `i` and `v` loop variables are `3` and `4`.
+   `(3+4) + (3+4)` gives `14`.
+*  since Go 1.22, every freshly-declared loop variable used in
+   a `for` loop will be instantiated as a distinctive instance
+   at the start of each iteration. In other words,
+   it is per-iteration scoped now. So the values of
+   the `i` and `v` loop variables used in the two new
+   created goroutines are `1 2` and `3 4`, respectively.
+   `(1+2) + (3+4)` gives `10`.
 
 
 Prior to Go 1.22, **without the participation of the channel `c`**,
@@ -100,7 +100,7 @@ which should be a clear fact for a competent Go programmer.
 In order to avoid data race and get the same result as the new semantics,
 the loop in the program should be re-written as:
 
-'''Go
+''' Go
 	for i, v := range m {
 		i, v := i, v // this line is added
 		go func() {
@@ -115,7 +115,7 @@ In fact, this is the main reason why the semantic changes were made in Go 1.22.
 Similarly, the following program also undergoes
 semantic/behavior change from Go 1.21 to Go 1.22:
 
-'''Go
+''' Go
 // demo2.go
 package main
 
@@ -162,7 +162,7 @@ see
    and the blog article: __https://go.dev/blog/loopvar-preview__.
    Both of them were created after the proposal was accepted,
    which means ** the proposal was accepted before the experiment phase even began!**
-   %% (It was very unusual. The experiment phase seemed like a mere formality.  
+   %% (It was very unusual. The experiment phase seemed like a mere formality.
    This was evident in the brevity of the experiment phase period and
    the lack of a strong public call for participation. Consequently,
    the numerous problems mentioned in this article only surfaced
@@ -171,10 +171,10 @@ see
    the release maintains __the Go 1 promise of compatibility__. However,
    ** this is simply not the case (read below for reasons).
 
-   // __the Go 1 promise of compatibility `` https://go.dev/doc/go1compat
+// __the Go 1 promise of compatibility `` https://go.dev/doc/go1compat
 
 ###==========================================
-	The impact of the changes
+    The impact of the changes
 
 Personally, I think the rationale of the change to `for-range` loops is well-justified.
 The new semantics of `for-range` loops become more intuitive.
@@ -182,13 +182,13 @@ The change only affects `for k, v := range .. {...}` loops, in which
 the `:=` symbol strongly suggests that the loop variables are per-iteration scoped.
 No implications are introduced. The impact of the change is almost positive.
 
-On the other hand, in my honest opinion, the rationale of the change to `for;;` loops 
+On the other hand, in my honest opinion, the rationale of the change to `for;;` loops
 is insufficient. The main reason provided by the proposal makers is to make a consistency
 with `for-range` loops (they are both `for` loops).
 However, It's not intuitive at all to think the loop variables in the following alike
 loops are per-iteration scoped.
 
-'''Go
+''' Go
 for a, b, c := anExpression; aCondition; postStatement {
 	... // loop body
 }
@@ -202,11 +202,11 @@ The new semantics make the the loop variables instantiated
 at each iteration, which means there must be some **%%implicit**%%
 code to do the job. This is true. __Go 1.22+ specification__ says:
 
-> Each iteration has its own separate declared variable (or variables).
-  The variable used by the first iteration is declared by the init statement.
-  The variable used by each subsequent iteration is declared implicitly
-  before executing the post statement and initialized to the value of
-  the previous iteration's variable at that moment. 
+>  Each iteration has its own separate declared variable (or variables).
+   The variable used by the first iteration is declared by the init statement.
+   The variable used by each subsequent iteration is declared implicitly
+   before executing the post statement and initialized to the value of
+   the previous iteration's variable at that moment.
 
 // __... specification``https://go.dev/ref/spec#For_statements
 
@@ -216,7 +216,7 @@ the new semantics are hard to explain in a clear and perfect way.
 None of Go official documentations ever successfully achieve this goal.
 Here, I have tried my best.%%):
 
-'''Go
+''' Go
 {
 	a_last, b_last, c_last := anExpression
 	pa_last, pb_last, pc_last = &a_last, &b_last, &c_last
@@ -244,11 +244,11 @@ Implicitness frequently results in unintended surprises, a fact that is itself u
 The following will show several cases which might break your expectations.
 
 ###++++++++++++++
-	The behaviors of deferred function calls which capture loop variables might change
+    The behaviors of deferred function calls which capture loop variables might change
 
 A simple example:
 
-'''Go
+''' Go
 // demo-defer.go
 package main
 
@@ -284,7 +284,7 @@ As mentioned above, it is some hard to clearly explain
 the new semantics and I don't think I have the ability to do this.
 You may get it from the following equivalent code:
 
-'''Go
+''' Go
 func main() {
 	counter_last, n_last := 0, 2
 	p_counter_last, p_n_last := &counter_last, &n_last
@@ -311,7 +311,7 @@ func main() {
 
 A more realistic example:
 
-'''Go
+''' Go
 // search.go
 package main
 
@@ -356,31 +356,31 @@ $ gotv 1.22. run search.go
 So, since Go 1.22, just be careful when using freshly-declared loop variables
 in deferred function calls.
 
-! The above example suggests that some freshly-declared loop variables in the first clause of
-  a `for;;` loops might be okay to be per-iteration scoped,
-  but some are strongly expected to be whole-loop scoped,
-  such as the `index` and `counter` loop variables shown above.
-  I ever suggested to __allow re-declaration statements as `postStatement`
-  of `for;;` loops to **%%explicitly%%** specify which variables are per-iteration scoped__.
-  For example, in the following loop code, `n` is per-iteration scoped but `counter`
-  is whole-loop scoped.
-  {
+!  The above example suggests that some freshly-declared loop variables in the first clause of
+   a `for;;` loops might be okay to be per-iteration scoped,
+   but some are strongly expected to be whole-loop scoped,
+   such as the `index` and `counter` loop variables shown above.
+   I ever suggested to __allow re-declaration statements as `postStatement`
+   of `for;;` loops to **%%explicitly%%** specify which variables are per-iteration scoped__.
+   For example, in the following loop code, `n` is per-iteration scoped but `counter`
+   is whole-loop scoped.
+   {
 
-  '''Go
+   ''' Go
   for counter, n := 0, 2; n >= 0; n := n - 1 { ... }
-  '''
+   '''
 
-  However, sadly, the suggestion was ignored totally.
-  }
+   However, sadly, the suggestion was ignored totally.
+   }
 
-  // __allow re-declaration... ``https://github.com/golang/go/issues/60078#issuecomment-1547130632
+// __allow re-declaration... ``https://github.com/golang/go/issues/60078#issuecomment-1547130632
 
 ###++++++++++++++
-	Be careful when capturing loop variables in closures
+    Be careful when capturing loop variables in closures
 
 An example:
 
-'''Go
+''' Go
 // demo-closure-1.go
 package main
 
@@ -417,7 +417,7 @@ That is the reason of the behavior difference between the two Go versions.
 
 Here is a similar example:
 
-'''Go
+''' Go
 // demo-closure-2.go
 package main
 
@@ -452,7 +452,7 @@ a
 
 The third example:
 
-'''Go
+''' Go
 package main
 
 func main() {
@@ -468,13 +468,13 @@ func main() {
 
 It will never exit since Go 1.22 (prior to Go 1.22, it prints `012` then exits immediately)
 
-! So, whether you think it is intuitive or not, just remember that,
-since Go 1.22, a freshly-declared loop variable may have many instances at run time,
-whether or not it is modified in `postStatement`.
-Each of the instances is instantiated in one iteration.
+!  So, whether you think it is intuitive or not, just remember that,
+   since Go 1.22, a freshly-declared loop variable may have many instances at run time,
+   whether or not it is modified in `postStatement`.
+   Each of the instances is instantiated in one iteration.
 
 ###++++++++++++++
-	Be careful when taking addresses of loop variables
+    Be careful when taking addresses of loop variables
 
 Similarly, since Go 1.22, it may be dangerous to use
 the address of a freshly-declared loop variable across loop iterations.
@@ -484,7 +484,7 @@ For example, what does the following Go program print?
 should not be kept for such cases. What a ridiculous point!
 The code in reality may be more bizarre than this!)%%
 
-'''Go
+''' Go
 // demo-pointer1.go
 package main
 
@@ -513,7 +513,7 @@ in the comparison `p == &i`, `p` points to the first instance of `i`,
 whereas `&i` takes the address of the second instance of `i`.
 So the comparison evaluation result is `false`.
 
-'''Go
+''' Go
 func main() {
 	i_last, p_last := 0, (*int)(nil)
 	p_i_last, p_p_last := &i_last, &p_last
@@ -536,7 +536,7 @@ func main() {
 
 Another example:
 
-'''Go
+''' Go
 // demo-pointer2.go
 package main
 
@@ -567,12 +567,12 @@ $ gotv 1.22. run demo-pointer2.go
 '''
 
 ###++++++++++++++
-	Be careful when moving the 3rd clause statements inside loop bodies
+    Be careful when moving the 3rd clause statements inside loop bodies
 
 Since Go 1.22, the following two loops might be not equivalent with each other any more
 (prior to Go 1.22, they are equivalent).
 
-'''Go
+''' Go
 for ...; ...; postStatement {
 	... // no continue statements here
 }
@@ -586,7 +586,7 @@ for ...; ...; {
 For example, if we move the 3rd clause statements of the loops in the last section
 into loop bodies, then their behaviors change (since Go 1.22).
 
-'''Go
+''' Go
 // demo-pointer3.go
 package main
 
@@ -626,7 +626,7 @@ true
 '''
 
 ###++++++++++++++
-	Be careful when declaring no-copy values as loop variables
+    Be careful when declaring no-copy values as loop variables
 
 As explained above, since Go 1.22, at the start of each loop iteration,
 each freshly-declared loop variable will get copied once, **%%implicitly%%**.
@@ -639,7 +639,7 @@ For example, in Go versions prior to 1.22, the following code was considered con
 However, starting with Go 1.22, this code is considered to have a concurrency issue,
 because the loop variable `wg` will be (implicitly) copied at the start of each loop iteration.
 
-'''Go
+''' Go
 // demo-nocopy1.go
 package main
 
@@ -693,7 +693,7 @@ The `go vet` command in Go toolchain v1.24+ still can't catch such cases.
 Let's view an example which uses `strings.Builder` (each `strings.Builder` value
 contains a pointer field which should point to itself):
 
-'''Go
+''' Go
 // demo-nocopy2.go
 package main
 
@@ -746,12 +746,12 @@ goroutine 1 [running]:
 '''
 
 The outputs show that:
-* prior to Go 1.22, the behaviors of the two `a2z` functions are consistent.
-  No loop variables duplication happens, so there will be no panic.
-* since Go 1.22, as fresh-declared loop variables implicitly get copied
-  at the start of each loop iteration, the run-time `no-copy` check functions.
-  But the check only works for the `a2z_bar` function,
-  not for the `a2z_foo` function.
+*  prior to Go 1.22, the behaviors of the two `a2z` functions are consistent.
+   No loop variables duplication happens, so there will be no panic.
+*  since Go 1.22, as fresh-declared loop variables implicitly get copied
+   at the start of each loop iteration, the run-time `no-copy` check functions.
+   But the check only works for the `a2z_bar` function,
+   not for the `a2z_foo` function.
 
 But why doesn't the run-time `no-copy` check work for the `a2z_foo` function?
 Because of two compiler optimizations.
@@ -766,13 +766,13 @@ only once for the entire loop, even though its semantics suggest per-iteration i
 However, the compiler is too smart to __make a bad decision__ here.
 The compiler incorrectly implements the semantics.
 The behaviors of the two `a2z` functions in the above program should be still consistent since Go 1.22.
-They should both panic. 
+They should both panic.
 
 The Go core team __refused to fix this bug__, which raises the alarm that
 unexpected behavior may happen in other similar scenarios.
 
-  // __make a bad decision `` https://github.com/golang/go/issues/66070
-  // __refused to fix this bug `` https://github.com/golang/go/issues/66070#issuecomment-1981642904
+// __make a bad decision `` https://github.com/golang/go/issues/66070
+// __refused to fix this bug `` https://github.com/golang/go/issues/66070#issuecomment-1981642904
 
 The `go vet` command in the latest Go toolchain versions still can't catch such implicit duplication
 of no-copy values.
@@ -788,7 +788,7 @@ because copying no-copy values does not always cause damage
 
 @@@ #large-size-loop-vars
 ###++++++++++++++
-	Warning: the performance of your Go programs might be degraded silently
+    Warning: the performance of your Go programs might be degraded silently
 
 Sometimes, a compiler is over smart; sometimes, it is not smart enough.
 For example, sometimes, the official standard compiler provided in Go toolchain 1.22 is
@@ -802,7 +802,7 @@ When these situations occur, the performance of the program will be degraded.
 Let's view an example, in which a large-size loop variable is used
 in the `bar` function.
 
-'''Go
+''' Go
 // demo-largesize.go
 package main
 
@@ -851,7 +851,7 @@ bar time: 18.795043596s
 '''
 
 The benchmark results reveal a significant performance regression
-in the `bar` function between Go 1.21 and 1.22 (note that 1s == 1,000,000us). 
+in the `bar` function between Go 1.21 and 1.22 (note that 1s == 1,000,000us).
 Why? Because, with the official standard Go compiler 1.22,
 the loop variable `a` in the `bar` function is duplicated in each iteration.
 Whereas in prior versions, such duplication is always needless.
@@ -870,11 +870,11 @@ Suggestions to avoid such performance degradation issue:
    guarantee that the variables don't need to be instantiated in each iteration.
 
 ###++++++++++++++
-	Warning: things might become more subtle than before when loop variables are used concurrently
+    Warning: things might become more subtle than before when loop variables are used concurrently
 
 Firstly, let's view a simple program.
 
-'''Go
+''' Go
 // demo-concurency1.go
 package main
 
@@ -930,7 +930,7 @@ But is it worth it to fix such a small problem by introducing magical implicit c
 The effect of the attempt to fix the problem by making semantic change is actually limited.
 Let's modify the above program a bit:
 
-'''Go
+''' Go
 // demo-concurency2.go
 package main
 
@@ -988,7 +988,7 @@ This can significantly delay the identification and resolution of the problem!
 More seriously, some old good concurrent code will become problematic.
 Here is an example:
 
-'''Go
+''' Go
 // demo-concurency3.go
 package main
 
@@ -1059,15 +1059,15 @@ Found gold 3145728
 "Proposal: Less Error-Prone Loop Variable Scoping".)
 
 How to fix the (since-1.22-)data-racy code?
-* To merely avoid the race condition, we can still use the old trick:
-  just add an `i := i` line at the start of the loop body.
-  Yes, this is still the best suggestion to avoid data race for such situations in the Go 1.22+ era.
-  Is this a mockery of the new semantics (of `for;;` loops)?
-* To avoid the race condition and correct the logic,
-  the variable `i` should be declared outside the loop block (since Go 1.22).
+*  To merely avoid the race condition, we can still use the old trick:
+   just add an `i := i` line at the start of the loop body.
+   Yes, this is still the best suggestion to avoid data race for such situations in the Go 1.22+ era.
+   Is this a mockery of the new semantics (of `for;;` loops)?
+*  To avoid the race condition and correct the logic,
+   the variable `i` should be declared outside the loop block (since Go 1.22).
 
 ###==============================================
-	Advice and suggestions
+    Advice and suggestions
 
 Okay, the above are the potential issues I've identified so far
 with the new `for;;` semantics introduced in Go 1.22.
@@ -1076,7 +1076,7 @@ There might be more, I'm not sure.
 Here are some recommendations you can follow in the Go 1.22+ era.
 
 ###++++++++++++++
-	Specify Go language versions for Go source files
+    Specify Go language versions for Go source files
 
 As demonstrated in many above examples, the semantic changes made
 in Go 1.22 break backward-compatibility.
@@ -1101,8 +1101,8 @@ for Go source files:
    A missing go directive line is assumed as `go 1.16`.
    The effects of the directive line are __described here__.
 
-   // __described here``https://go.dev/ref/mod#go-mod-file-go
-   // __this known bug``https://github.com/golang/go/issues/66092
+// __described here``https://go.dev/ref/mod#go-mod-file-go
+// __this known bug``https://github.com/golang/go/issues/66092
 
 If the Go language version of a Go source file is not specified by
 any of the above ways, then the version of the used Go compiler is used.
@@ -1127,7 +1127,7 @@ in any of the above introduced ways, to reduce compiler version dependent behavi
 This is the minimum standard to be a professional Go programmer in the Go 1.22+ era.
 
 ###++++++++++++++
-	Upgrading module versions
+    Upgrading module versions
 
 If you are maintaining a public Go module which are depended by other Go projects,
 please carefully check all the uses of `for;;` loops in the module's code
@@ -1145,14 +1145,14 @@ to provide automatic ways for identifying potential problems
 when upgrading module versions**.
 
 ###++++++++++++++
-	Avoid using freshly-declared loop variables in `for;;` loops
+    Avoid using freshly-declared loop variables in `for;;` loops
     if you worry about getting bitten by the pitful of the new semantics
 
 Don't be too nervous, :D.
 In fact, most `for;;` loops behave the same with either the old semantics or the new semantics.
 But if you're unsure about it, you can always rewrite the following alike loops
 
-'''Go
+''' Go
 for a, b, c := anExpression; aCondition; postStatement {
 	... // loop body
 }
@@ -1160,7 +1160,7 @@ for a, b, c := anExpression; aCondition; postStatement {
 
 as
 
-'''Go
+''' Go
 {
 	a, b, c := anExpression
 	for ; aCondition; postStatement {
@@ -1176,7 +1176,7 @@ For example, in the following code, `a` and
 `c` are instantiated per loop iteration, but `b` will be
 only instantiated once during the whole loop.
 
-'''Go
+''' Go
 {
 	a, b, c := anExpression
 	for ; aCondition; postStatement {
@@ -1189,7 +1189,7 @@ only instantiated once during the whole loop.
 This is a little awkward, but it is much safer.
 
 ###=====================================
-	Final words
+    Final words
 
 Overall, I find the impact of the new semantics of `for-range` loops
 is positive, while the impact of the new semantics of `for;;` loops is negative.
@@ -1210,10 +1210,10 @@ The semantic changes introduced in Go 1.22 significantly lower the standard
 for maintaining backward compatibility. This is a bad start.
 
 I have expressed my opinions in the following comments:
-* __https://github.com/golang/go/issues/60078#issuecomment-1541407014
-* __https://github.com/golang/go/issues/60078#issuecomment-1544324607
-* __https://github.com/golang/go/issues/60078#issuecomment-1547130632
-* __https://github.com/golang/go/issues/60078#issuecomment-1558730767
+*  __https://github.com/golang/go/issues/60078#issuecomment-1541407014
+*  __https://github.com/golang/go/issues/60078#issuecomment-1544324607
+*  __https://github.com/golang/go/issues/60078#issuecomment-1547130632
+*  __https://github.com/golang/go/issues/60078#issuecomment-1558730767
 
 But the proposal makers (some members in the Go core team) totally ignored them
 and decided to proceed with the semantic change of `for;;` loops anyway.

@@ -6,7 +6,7 @@ This article will explain the code blocks and identifier scopes in Go.
 (Please note, the definitions of code block hierarchies in this article
 are a little different from the viewpoint of `go/*` standard packages.)
 
-{//
+{ //
 https://github.com/golang/go/issues/7429#issuecomment-282480782
 }
 
@@ -14,37 +14,37 @@ https://github.com/golang/go/issues/7429#issuecomment-282480782
 ###+++++++++++ Code Blocks
 
 In a Go project, there are four kinds of code blocks (also called blocks later):
-* the **universe block** contains all project source code.
-* each package has a **package block** containing all source code,
-	excluding the package import declarations in that package.
-* each file has a **file block** containing all the source code,
-	including the package import declarations, in that file.
-* generally, a pair of braces `{}` encloses a **local block**.
-	However, some local blocks aren't enclosed within `{}`,
-	such blocks are called implicit local blocks.
-	The local blocks enclosed in `{}` are called explicit local blocks.
-	The `{}` in composite literals and type definitions don't form
-	local blocks.
+*  the **universe block** contains all project source code.
+*  each package has a **package block** containing all source code,
+   excluding the package import declarations in that package.
+*  each file has a **file block** containing all the source code,
+   including the package import declarations, in that file.
+*  generally, a pair of braces `{}` encloses a **local block**.
+   However, some local blocks aren't enclosed within `{}`,
+   such blocks are called implicit local blocks.
+   The local blocks enclosed in `{}` are called explicit local blocks.
+   The `{}` in composite literals and type definitions don't form
+   local blocks.
 
 Some keywords in all kinds of control flows are followed by some implicit code blocks.
 *
-	An `if`, `switch` or `for` keyword
-	is followed by two nested local blocks. One is implicit, the other is explicit.
-	The explicit one is nested in the implicit one.
-	If such a keyword is followed by a short variable declaration,
-	then the variables are declared in the implicit block.
+   An `if`, `switch` or `for` keyword
+   is followed by two nested local blocks. One is implicit, the other is explicit.
+   The explicit one is nested in the implicit one.
+   If such a keyword is followed by a short variable declaration,
+   then the variables are declared in the implicit block.
 *
-	An `else` keyword is followed by one explicit or implicit block,
-	which is nested in the implicit block following its `if` counterpart keyword.
-	If the `else` keyword is followed by another `if` keyword,
-	then the code block following the `else` keyword can be implicit,
-	otherwise, the code block must be explicit.
+   An `else` keyword is followed by one explicit or implicit block,
+   which is nested in the implicit block following its `if` counterpart keyword.
+   If the `else` keyword is followed by another `if` keyword,
+   then the code block following the `else` keyword can be implicit,
+   otherwise, the code block must be explicit.
 *
-	An `select` keyword is followed by one explicit block.
+   An `select` keyword is followed by one explicit block.
 *
-	Each `case` and `default` keyword is followed by one implicit block,
-	which is nested in the explicit block following its corresponding
-	`switch` or `select` keyword.
+   Each `case` and `default` keyword is followed by one implicit block,
+   which is nested in the explicit block following its corresponding
+   `switch` or `select` keyword.
 
 The local blocks which aren't nested in any other local blocks are called top-level
 (or package-level) local blocks. Top-level local blocks are all function bodies.
@@ -54,23 +54,23 @@ declared in explicit body code block of the function, even if their declarations
 stay out of the pair of braces enclosing the function body block.
 
 Code block hierarchies:
-* 
-	package blocks are nested in the universe block.
-* 
-	file blocks are also directly nested in the universe block, instead of package blocks.
-	(This explanation is different from the `go/*` standard packages.)
-* 
-	each top-level local block is nested in both a package block and a file block.
-	(This explanation is also different from the `go/*` standard packages.)
-* 
-	a non-top local block must be nested in another local block.
+*
+   package blocks are nested in the universe block.
+*
+   file blocks are also directly nested in the universe block, instead of package blocks.
+   (This explanation is different from the `go/*` standard packages.)
+*
+   each top-level local block is nested in both a package block and a file block.
+   (This explanation is also different from the `go/*` standard packages.)
+*
+   a non-top local block must be nested in another local block.
 
 %%
 (The differences to Go specification are to make the below explanations for identifier shadowing simpler.)
 
 Here is a picture shows the block hierarchies in a program:
 
-{>< // todo: code block hierarchies
+{ >< // todo: code block hierarchies
 && ./res/blocks.png
 }
 
@@ -80,12 +80,12 @@ Code blocks are mainly used to explain allowed declaration positions and scopes 
 ###+++++++++++ Source Code Element Declaration Places
 
 There are six kinds of source code elements which can be declared:
-* package imports.
-* defined types and type alias.
-* named constants.
-* variables.
-* functions.
-* labels.
+*  package imports.
+*  defined types and type alias.
+*  named constants.
+*  variables.
+*  functions.
+*  labels.
 
 Labels are used in the `break`, `continue`, and `goto` statements.
 
@@ -94,96 +94,96 @@ In other words, in the declaration, the declared source code element is named as
 After the declaration, we can use the non-blank identifier to represent the declared source code element.
 
 The following table shows which code blocks all kinds of source code elements can be directly declared in:
-# ### 
-  ### the universe block
-  ### package blocks
-  ### file blocks
-  ### local blocks
-  @@@ .active
-  -----------------------
-  ### predeclared (built-in elements) ^$$(1)$$
-  ;;; Yes
-  ;;;
-  ;;;
-  ;;;
-  -----------------------
-  ### package imports
-  ;;;
-  ;;;
-  ;;; Yes
-  ;;;
-  @@@ .active
-  -----------------------
-  ### defined types and type alias (non-builtin)
-  ;;;
-  ;;; Yes
-  ;;; Yes
-  ;;; Yes
-  -----------------------
-  ### named constants (non-builtin)
-  ;;;
-  ;;; Yes
-  ;;; Yes
-  ;;; Yes
-  @@@ .active
-  -----------------------
-  ### variables (non-builtin) ^$$(2)$$
-  ;;;
-  ;;; Yes
-  ;;; Yes
-  ;;; Yes
-  -----------------------
-  ### functions (non-builtin)
-  ;;;
-  ;;; Yes
-  ;;; Yes
-  ;;;
-  @@@ .active
-  -----------------------
-  ### variables (non-builtin) ^$$(2)$$
-  ;;;
-  ;;;
-  ;;;
-  ;;; Yes
+#  ###
+   ### the universe block
+   ### package blocks
+   ### file blocks
+   ### local blocks
+   @@@ .active
+   -----------------------
+   ### predeclared (built-in elements) ^$$(1)$$
+   ;;; Yes
+   ;;;
+   ;;;
+   ;;;
+   -----------------------
+   ### package imports
+   ;;;
+   ;;;
+   ;;; Yes
+   ;;;
+   @@@ .active
+   -----------------------
+   ### defined types and type alias (non-builtin)
+   ;;;
+   ;;; Yes
+   ;;; Yes
+   ;;; Yes
+   -----------------------
+   ### named constants (non-builtin)
+   ;;;
+   ;;; Yes
+   ;;; Yes
+   ;;; Yes
+   @@@ .active
+   -----------------------
+   ### variables (non-builtin) ^$$(2)$$
+   ;;;
+   ;;; Yes
+   ;;; Yes
+   ;;; Yes
+   -----------------------
+   ### functions (non-builtin)
+   ;;;
+   ;;; Yes
+   ;;; Yes
+   ;;;
+   @@@ .active
+   -----------------------
+   ### variables (non-builtin) ^$$(2)$$
+   ;;;
+   ;;;
+   ;;;
+   ;;; Yes
 
 ^$$(1)$$ predeclared elements are documented in __`builtin` standard package__.
 \\
 ^$$(2)$$ excluding struct field variables.
 
-	// __ `builtin` standard package :: https://golang.org/pkg/builtin/
+// __ `builtin` standard package :: https://golang.org/pkg/builtin/
 
 So,
 *
-package imports can never be declared in package blocks and local blocks.
+   package imports can never be declared in package blocks and local blocks.
 *
-functions can never be declared in local blocks.
-(Anonymous functions can be enclosed in local blocks but they are not declarations.)
+   functions can never be declared in local blocks.
+   (Anonymous functions can be enclosed in local blocks but they are not declarations.)
 *
-labels can only be declared in local blocks.
+   labels can only be declared in local blocks.
 
 Please note,
 *
-	if the innermost containing blocks of two code element declarations are the same one,
-	then the names (identifiers) of the two code elements can't be identical.
+   if the innermost containing blocks of two code element declarations are the same one,
+   then the names (identifiers) of the two code elements can't be identical.
 *
-	the name (identifier) of a package-level code element declared in a package must not
-	be identical to any package import name declared in any source file in the package
-	(a.k.a., a package import name in a package must not be identical to any package-level
-	code element declared in the package).
-	This rule might __be relaxed later__.
-		// __ be relaxed later :: https://github.com/golang/go/issues/7429
+   the name (identifier) of a package-level code element declared in a package must not
+   be identical to any package import name declared in any source file in the package
+   (a.k.a., a package import name in a package must not be identical to any package-level
+   code element declared in the package).
+   This rule might __be relaxed later__.
+   // __ be relaxed later :: https://github.com/golang/go/issues/7429
 *
-	if the innermost containing function body blocks of two label declarations are the same one,
-	then the names (identifiers) of the two labels can't be identical.
+   if the innermost containing function body blocks of two label declarations are the same one,
+   then the names (identifiers) of the two labels can't be identical.
 *
-	the references of a label must be within the innermost function body block containing the declaration of the label.
+   the references of a label must be within the innermost function body block containing the declaration of the label.
 *
-	some special portions in the implicit local blocks in all kinds of control flows have special requirements.
-	Generally, no code elements are allowed to be directly declared in such implicit local blocks, except some short variable declarations.
-	-
-		Each `if`, `switch` or `for` keyword can be closely followed by a short variable declaration.
-	-
-		Each `case` keyword in a `select` control flow can be closely followed by a short variable declaration.
+   some special portions in the implicit local blocks in all kinds of control flows have special requirements.
+   Generally, no code elements are allowed to be directly declared in such implicit local blocks, except some short variable declarations.
+   -
+      Each `if`, `switch` or `for` keyword can be closely followed by a short variable declaration.
+   -
+      Each `case` keyword in a `select` control flow can be closely followed by a short variable declaration.
 
 %%
 (BTW, the `go/*` standard packages think file code blocks can only contain package import declarations.)
@@ -194,7 +194,7 @@ Package-level source code elements can be named constants, variables, functions,
 @@@ #scope
 ###+++++++++++ Scopes of Declared Source Code Elements
 
-	// __ the scope definitions :: https://golang.org/ref/spec#Declarations_and_scope
+// __ the scope definitions :: https://golang.org/ref/spec#Declarations_and_scope
 
 The scope of a declared identifier means the identifiable range of the identifier (or visible range).
 
@@ -202,31 +202,31 @@ Without considering identifier shadowing which will be explained in the last sec
 __the scope definitions__ for the identifiers
 of all kinds of source code elements are listed below.
 *
-	The scope of a predeclared/built-in identifier is the universe block.
+   The scope of a predeclared/built-in identifier is the universe block.
 *
-	The scope of the identifier of a package import is the file block containing the package import declaration.
+   The scope of the identifier of a package import is the file block containing the package import declaration.
 *
-	The scope of an identifier denoting a constant, type, variable, or function
-	(but not method) declared at package level is the package block.
+   The scope of an identifier denoting a constant, type, variable, or function
+   (but not method) declared at package level is the package block.
 *
-	The scope of an identifier denoting a method receiver, function parameter,
-	or result variable is the corresponding function body (a local block).
+   The scope of an identifier denoting a method receiver, function parameter,
+   or result variable is the corresponding function body (a local block).
 *
-	The scope of the identifier of a constant or a variable declared inside a function body
-	begins at the end of the specification of the constant or variable
-	(or the end of the declaration for a short declared variable)
-	and ends at the end of the innermost containing block.
+   The scope of the identifier of a constant or a variable declared inside a function body
+   begins at the end of the specification of the constant or variable
+   (or the end of the declaration for a short declared variable)
+   and ends at the end of the innermost containing block.
 *
-	The scope of the identifier of a type or a type alias declared inside
-	a function body begins at the end of the identifier in the corresponding
-	type specification and ends at the end of the innermost containing block.
+   The scope of the identifier of a type or a type alias declared inside
+   a function body begins at the end of the identifier in the corresponding
+   type specification and ends at the end of the innermost containing block.
 *
-	The scope of a label is the body of the innermost function body block containing the label declaration
-	but excludes all the bodies of anonymous functions nested in the containing function.
+   The scope of a label is the body of the innermost function body block containing the label declaration
+   but excludes all the bodies of anonymous functions nested in the containing function.
 *
-	About the scopes of type parameters, please read the __Go generics 101__ book.
+   About the scopes of type parameters, please read the __Go generics 101__ book.
 
-	// __ Go generics 101 :: https://go101.org/generics/555-type-constraints-and-parameters.html#type-parameter-scope
+// __ Go generics 101 :: https://go101.org/generics/555-type-constraints-and-parameters.html#type-parameter-scope
 
 Blank identifiers have no scopes.
 
@@ -240,7 +240,7 @@ The difference means a defined type may be able to
 reference itself in its declaration.
 Here is an example to show the difference.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 func main() {
@@ -285,7 +285,7 @@ Note, call `fmt.Print(s)` and call `fmt.Print(m)` both panic (for stack overflow
 
 And the scope difference between package-level and local declarations:
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 // Here the two identifiers at each line are the
@@ -334,7 +334,7 @@ The code contains 6 declared variables named `x`.
 A `x` declared in a deeper block shadows
 the `x`s declared in shallower blocks.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -365,7 +365,7 @@ func main() {
 Another example: the following program prints `Sheep Goat` instead of `Sheep Sheep`.
 Please read the comments for explanations.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -388,7 +388,7 @@ func main() {
 
 If we modify the above program as the following shown, then it will print `Sheep Sheep`.
 @@@ .line-numbers
-'''go
+''' go
 func main() {
 	var f func(b bool)
 	f = func(b bool) {
@@ -410,7 +410,7 @@ The following example (which has bugs) shows the famous trap in Go.
 Almost every gopher has ever fallen into the trap in the early days of using Go.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -457,7 +457,7 @@ The output:
 
 @@@ #weird-shadowing
 
-	// __ 25 keywords :: keywords-and-identifiers.html#keyword
+// __ 25 keywords :: keywords-and-identifiers.html#keyword
 
 Go only has __25 keywords__. Keywords can't be used as identifiers.
 Many familiar words in Go are not keywords, such as `int`, `bool`,
@@ -468,7 +468,7 @@ so custom declared identifiers can shadow them.
 Here is a weird example in which many predeclared identifiers are shadowed.
 Its compiles and runs okay.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (

@@ -14,7 +14,7 @@ To get latest news of Go 101 books, please follow the official twitter account [
 
 ### Install, Update, and Read Locally
 
-If you use Go toolchain v1.16+, then you don't need to clone the project respository:
+Go toolchain 1.18+ is needed to build and run the Go 101 website.
 
 ```shell
 ### Install or update.
@@ -24,26 +24,6 @@ $ go install go101.org/go101@latest
 ### Read. (GOBIN path, defaulted as GOPATH/bin, should be set in PATH)
 
 $ go101
-Server started:
-   http://localhost:55555 (non-cached version)
-   http://127.0.0.1:55555 (cached version)
-```
-
-If you use Go toolchain v1.15-, or you would make some modifications (for contribution, etc.):
-
-```shell
-### Install.
-
-$ git clone https://github.com/go101/go101.git
-
-### Update. Enter the Go 101 project directory (which
-# contains the current `README.md` file), then run
-
-$ git pull
-
-### Read. Enter the Go 101 project directory, then run
-
-$ go run .
 Server started:
    http://localhost:55555 (non-cached version)
    http://127.0.0.1:55555 (cached version)

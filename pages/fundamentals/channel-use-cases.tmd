@@ -10,11 +10,11 @@ to master Go channel programming.
 The remaining of this article will show many channel use cases.
 I hope this article will convince you that
 *
-	asynchronous and concurrency programming with Go channels is easy and enjoyable.
+   asynchronous and concurrency programming with Go channels is easy and enjoyable.
 *
-	the channel synchronization technique has a wider range of uses
-	and has more variations than the synchronization solutions used in some other languages,
-	such as __the actor model__ and the __async/await pattern__.
+   the channel synchronization technique has a wider range of uses
+   and has more variations than the synchronization solutions used in some other languages,
+   such as __the actor model__ and the __async/await pattern__.
 
 // __ the actor model :: https://en.wikipedia.org/wiki/Actor_model
 // __ async/await pattern :: https://en.wikipedia.org/wiki/Async/await
@@ -44,7 +44,7 @@ a send operation performs on the corresponding channel.
 It takes about three seconds instead of six seconds to return the final result.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -87,7 +87,7 @@ takes a send-only channel as parameter instead of
 returning a receive-only channel result.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -122,7 +122,7 @@ we don't need two channels to transfer results.
 Using one channel is okay.
 
 @@@ .line-numbers
-'''go
+''' go
 ...
 
 	// The channel can be buffered or not.
@@ -153,7 +153,7 @@ the communication channel must be at least %% N-1 %%,
 to avoid the goroutines corresponding the discarded responses being blocked for ever.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -231,7 +231,7 @@ In the following example, the channel `done`
 is used as a signal channel to do notifications.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -281,7 +281,7 @@ This notification way is used much less common than
 the way introduced in the last example.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -323,7 +323,7 @@ By extending the above two use cases a little,
 it is easy to do N-to-1 and 1-to-N notifications.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "log"
@@ -378,7 +378,7 @@ with one channel close operation `close(ready)`
 to do an 1-to-N notifications.
 
 @@@ .line-numbers
-'''go
+''' go
 ...
 	close(ready) // broadcast notifications
 ...
@@ -400,7 +400,7 @@ It is easy to use channels to implement one-time timers.
 A custom one-time timer implementation:
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -449,14 +449,14 @@ the mutexes provided in the `sync` standard package.
 
 There are two manners to use one-capacity buffered channels as mutex locks.
 *.
-	Lock through a send, unlock through a receive.
+   Lock through a send, unlock through a receive.
 *.
-	Lock through a receive, unlock through a send.
+   Lock through a receive, unlock through a send.
 
 The following is a lock-through-send example.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -491,7 +491,7 @@ The following is a lock-through-receive example.
 It just shows the modified part based on the above lock-through-send example.
 
 @@@ .line-numbers
-'''go
+''' go
 ...
 func main() {
 	mutex := make(chan struct{}, 1)
@@ -522,14 +522,14 @@ Counting semaphores are often used to enforce a maximum number of concurrent req
 
 Like using channels as mutexes, there are also two manners to acquire one piece of ownership of a channel semaphore.
 *.
-	Acquire ownership through a send, release through a receive.
+   Acquire ownership through a send, release through a receive.
 *.
-	Acquire ownership through a receive, release through a send.
+   Acquire ownership through a receive, release through a send.
 
 An example of acquiring ownership through receiving values from a channel.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -587,7 +587,7 @@ the total resources consumed by a large number of goroutines are not negligible.
 So it is best to create a customer goroutine only if there is an available seat.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 ... // same code as the above example
 
 func (bar Bar) ServeCustomerAtSeat(c int, seat Seat) {
@@ -623,7 +623,7 @@ In a more efficient implementation shown below, at most
 ten customer serving goroutines will be created in the program lifetime.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 ... // same code as the above example
 
 func (bar Bar) ServeCustomerAtSeat(consumers chan int) {
@@ -659,7 +659,7 @@ func main() {
 Off-topic: surely, if we don't care about seat IDs (which is common in practice), then the `bar24x7` semaphore is not essential at all:
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 ... // same code as the above example
 
 func ServeCustomer(consumers chan int) {
@@ -690,7 +690,7 @@ The manner of acquiring semaphore ownership through sending is simpler comparati
 The step of placing seats is not needed.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -726,7 +726,7 @@ func main() {
 }
 '''
 
-{//
+{ //
 There is a variant of the channel semaphore use case.
 In the above two examples, although the throughput is limited,
 but there may be many requests (customers) are queuing.
@@ -741,7 +741,7 @@ Two goroutines can dialogue through a channel.
 The following is an example which will print a series of Fibonacci numbers.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -782,7 +782,7 @@ In the following example, `chan chan<- int` is a channel type
 which element type is a send-only channel type `chan<- int`.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -843,7 +843,7 @@ a non-closed channel `c` which no ones will send values to any more,
 then we can use the following code to receive remaining values.
 
 @@@ .line-numbers
-'''go
+''' go
 // Assume the current goroutine is the only
 // goroutine tries to receive values from
 // the channel c at present.
@@ -863,7 +863,7 @@ and the goroutine is the only sender of the channel,
 then we can use the following code to do this job.
 
 @@@ .line-numbers
-'''go
+''' go
 for len(c) < cap(c) {
 	c <- aValue
 }
@@ -891,7 +891,7 @@ exiting, for if the main goroutine exits, the whole program will also exit.
 
 An example:
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "runtime"
@@ -927,19 +927,19 @@ depending on whether the channel operation following the `case`
 keyword is a channel send or receive operation.
 
 *
-	If the operation following the `case` keyword is a send operation,
-	then the `select` block is called as try-send operation.
-	If the send operation would block,
-	then the `default` branch will get executed (fail to send),
-	otherwise, the send succeeds and
-	the only `case` branch will get executed.
+   If the operation following the `case` keyword is a send operation,
+   then the `select` block is called as try-send operation.
+   If the send operation would block,
+   then the `default` branch will get executed (fail to send),
+   otherwise, the send succeeds and
+   the only `case` branch will get executed.
 *
-	If the operation following the `case` keyword is a receive operation,
-	then the `select` block is called as try-receive operation.
-	If the receive operation would block,
-	then the `default` branch will get executed (fail to receive),
-	otherwise, the receive succeeds and
-	the only `case` branch will get executed.
+   If the operation following the `case` keyword is a receive operation,
+   then the `select` block is called as try-receive operation.
+   If the receive operation would block,
+   then the `default` branch will get executed (fail to receive),
+   otherwise, the receive succeeds and
+   the only `case` branch will get executed.
 
 Try-send and try-receive operations never block.
 
@@ -950,7 +950,7 @@ much higher than multi-case select blocks.
 The following is an example which shows how try-send and try-receive work.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -1008,7 +1008,7 @@ the channel is already closed without blocking the current goroutine,
 where `T` the element type of the corresponding channel type.
 
 @@@ .line-numbers
-'''go
+''' go
 func IsClosed(c chan T) bool {
 	select {
 	case <-c:
@@ -1035,7 +1035,7 @@ __use channels as counting semaphores__ section.
 // __ use channels as counting semaphores :: #semaphore
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 ...
 	// Can serve most 10 customers at the same time
 	bar24x7 := make(Bar, 10)
@@ -1060,7 +1060,7 @@ with a buffered channel which capacity is one (at least) to implement
 the first-response-wins use case. For example,
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -1104,7 +1104,7 @@ for example, two or three, we can use a `select` code block
 to receive the source responses at the same time. For example,
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -1159,7 +1159,7 @@ Such a timeout solution can be implemented with the select mechanism.
 The following code shows how to make a request with a timeout.
 
 @@@ .line-numbers
-'''go
+''' go
 func requestWithTimeout(timeout time.Duration) (int, error) {
 	c := make(chan int)
 	// May need a long time to get the response.
@@ -1179,7 +1179,7 @@ func requestWithTimeout(timeout time.Duration) (int, error) {
 We can use the try-send mechanism to implement a ticker.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -1226,7 +1226,7 @@ In this example, the number of handled requests in any one-minute duration will 
 // __ the official Go wiki :: https://github.com/golang/go/wiki/RateLimiting
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -1289,7 +1289,7 @@ At the end of each loop step,
 the on/off statuses of the two `case` branches are switched.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -1335,7 +1335,7 @@ It has not much usefulness in practice.
 It is shown here just for learning purpose.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -1361,7 +1361,7 @@ to increase the execution possibility weigh of the corresponding code.
 
 Example:
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -1409,19 +1409,19 @@ Each module may own one or several workers (goroutines),
 which concurrently do the same job specified for that module.
 Here is a list of some module job examples in practice:
 *
-	data generation/collecting/loading.
+   data generation/collecting/loading.
 *
-	data serving/saving.
+   data serving/saving.
 *
-	data calculation/analysis.
+   data calculation/analysis.
 *
-	data validation/filtering.
+   data validation/filtering.
 *
-	data aggregation/division
+   data aggregation/division
 *
-	data composition/decomposition.
+   data composition/decomposition.
 *
-	data duplication/proliferation.
+   data duplication/proliferation.
 
 A worker in a module may receive data from several other modules
 as inputs and send data to serve other modules as outputs.
@@ -1442,19 +1442,19 @@ so they are very simple and they may be not efficient.
 There are all kinds of producer-only modules.
 A producer-only module worker may produce a data stream
 *
-	by loading a file, reading a database, or crawling the web.
+   by loading a file, reading a database, or crawling the web.
 *
-	by collecting all kinds of metrics from a software system or all kinds of hardware.
+   by collecting all kinds of metrics from a software system or all kinds of hardware.
 *
-	by generating random numbers.
+   by generating random numbers.
 *
-	etc.
+   etc.
 
 Here, we use a random number generator as an example.
 The generator function returns one result but takes no parameters.
 
 @@@ .line-numbers
-'''go
+''' go
 import (
 	"crypto/rand"
 	"encoding/binary"
@@ -1491,7 +1491,7 @@ then the following function will aggregate an arbitrary
 number of data streams into one.
 
 @@@ .line-numbers
-'''go
+''' go
 func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
 	out := make(chan uint64)
 	for _, in := range inputs {
@@ -1510,7 +1510,7 @@ an input stream has been closed.
 (Also valid for the following other module worker implementations.)
 
 @@@ .line-numbers
-'''go
+''' go
 import "sync"
 
 func Aggregator(inputs ...<-chan uint64) <-chan uint64 {
@@ -1539,7 +1539,7 @@ If the number of aggregated data streams is very small (two or three),
 we can use `select` block to aggregate these data streams.
 
 @@@ .line-numbers
-'''go
+''' go
 // Assume the number of input stream is two.
 ...
 	output := make(chan uint64)
@@ -1563,7 +1563,7 @@ It is easy to implement a division worker,
 but in practice, division workers are not very useful and seldom used.
 
 @@@ .line-numbers
-'''go
+''' go
 func Divisor(input <-chan uint64, outputs ...chan<- uint64) {
 	for _, out := range outputs {
 		go func(o chan<- uint64) {
@@ -1585,7 +1585,7 @@ compose one new `uint64` value.
 Surely, these stream channel element types are different generally in practice.
 
 @@@ .line-numbers
-'''go
+''' go
 func Composer(inA, inB <-chan uint64) <-chan uint64 {
 	output := make(chan uint64)
 	go func() {
@@ -1613,7 +1613,7 @@ be sent to different output data streams.
 
 An example:
 @@@ .line-numbers
-'''go
+''' go
 func Duplicator(in <-chan uint64) (<-chan uint64, <-chan uint64) {
 	outA, outB := make(chan uint64), make(chan uint64)
 	go func() {
@@ -1636,7 +1636,7 @@ For simple demo purpose, here shows a worker example
 which inverts every bit of each transferred `uint64` value.
 
 @@@ .line-numbers
-'''go
+''' go
 func Calculator(in <-chan uint64, out chan uint64) (<-chan uint64) {
 	if out == nil {
 		out = make(chan uint64)
@@ -1657,7 +1657,7 @@ some transferred data in a stream.
 For example, the following worker function discards all non-prime numbers.
 
 @@@ .line-numbers
-'''go
+''' go
 import "math/big"
 
 func Filter0(input <-chan uint64, output chan uint64) <-chan uint64 {
@@ -1691,7 +1691,7 @@ Here just provides a simple worker which prints each piece of data
 received from the input stream.
 
 @@@ .line-numbers
-'''go
+''' go
 import "fmt"
 
 func Printer(input <-chan uint64) {
@@ -1710,7 +1710,7 @@ of different modules, and specify the input streams for every worker.
 
 Data flow system example 1 (a linear pipeline):
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 ... // the worker functions declared above.
@@ -1728,13 +1728,13 @@ func main() {
 
 The above data flow system is depicted in the following diagram.
 
-{><
+{ ><
 && res/data-flow-linear.png
 }
 
 Data flow system example 2 (a directed acyclic graph pipeline):
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 ... // the worker functions declared above.
@@ -1753,7 +1753,7 @@ func main() {
 
 The above data flow system is depicted in the following diagram.
 
-{><
+{ ><
 && res/data-flow-dag.png
 }
 
@@ -1771,7 +1771,7 @@ In fact, we can use a simple channel to replace the role of an aggregator.
 For example, the following example replaces the two aggregators with two channels.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 ... // the worker functions declared above.
@@ -1790,7 +1790,7 @@ func main() {
 
 The modified data flow system is depicted in the following diagram.
 
-{><
+{ ><
 && res/data-flow-dag-b.png
 }
 
@@ -1800,7 +1800,7 @@ for explanations on how to gracefully close channels.
 
 // __ this article :: channel-closing.html
 
-{//
+{ //
 
 // channel pattern: use buffered channels and try-send to capture at least notifications.
 

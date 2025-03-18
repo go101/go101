@@ -31,18 +31,18 @@ which will be introduced in other articles later.
 
 The default type of a literal constant is determined by its literal form.
 *
-	The default type of a string literal is `string`.
+   The default type of a string literal is `string`.
 *
-	The default type of a boolean literal is `bool`.
+   The default type of a boolean literal is `bool`.
 *
-	The default type of an integer literal is `int`.
+   The default type of an integer literal is `int`.
 *
-	The default type of a rune literal is `rune` (a.k.a., `int32`).
+   The default type of a rune literal is `rune` (a.k.a., `int32`).
 *
-	The default type of a floating-point literal is `float64`.
+   The default type of a floating-point literal is `float64`.
 *
-	If a literal contains an imaginary part,
-	then its default type is `complex128`.
+   If a literal contains an imaginary part,
+   then its default type is `complex128`.
 
 @@@ #explicit-conversion
 ###+++++++++++ Explicit Conversions of Untyped Constants
@@ -63,34 +63,34 @@ the last article and the untyped named constants which will be introduced soon.
 For an untyped constant value `v`,
 there are two scenarios where `T(v)` is legal.
 *.
-	`v` (or the literal denoted by `v`) is
-	__representable__
-	as a value of a basic type `T`.
-	The result value is a typed constant of type `T`.
+   `v` (or the literal denoted by `v`) is
+   __representable__
+   as a value of a basic type `T`.
+   The result value is a typed constant of type `T`.
 *.
-	The default type of `v` is an integer type (`int`
-	or `rune`) and `T` is a string type.
-	The result of `T(v)` is a string of type `T`
-	and contains the UTF-8 representation of the integer as a Unicode code point.
-	Integer values outside the range of valid Unicode code points
-	result strings represented by `"\uFFFD"`
-	(a.k.a., `"\xef\xbf\xbd"`).
-	`0xFFFD` is the code point for the Unicode replacement character.
-	The result string of a conversion from an integer always contains one and only one rune.
-	(Note, later Go version might __only allow converting rune or byte integers to strings__.
-	Since Go Toolchain 1.15, the `go vet` command warns on conversions from non-rune and non-byte integers to strings.)
+   The default type of `v` is an integer type (`int`
+   or `rune`) and `T` is a string type.
+   The result of `T(v)` is a string of type `T`
+   and contains the UTF-8 representation of the integer as a Unicode code point.
+   Integer values outside the range of valid Unicode code points
+   result strings represented by `"\uFFFD"`
+   (a.k.a., `"\xef\xbf\xbd"`).
+   `0xFFFD` is the code point for the Unicode replacement character.
+   The result string of a conversion from an integer always contains one and only one rune.
+   (Note, later Go version might __only allow converting rune or byte integers to strings__.
+   Since Go Toolchain 1.15, the `go vet` command warns on conversions from non-rune and non-byte integers to strings.)
 
 // __ representable :: basic-types-and-value-literals.html#representability
 // __ ... to strings :: https://github.com/golang/go/issues/3939
 
 !
-	In fact, the second scenario doesn't require `v` to be a constant.
-	If `v` is a constant, then the result of the conversion is also a constant;
-	otherwise, the result is not a constant.
+   In fact, the second scenario doesn't require `v` to be a constant.
+   If `v` is a constant, then the result of the conversion is also a constant;
+   otherwise, the result is not a constant.
 
 For example, the following conversions are all legal.
 @@@ .disable-line-numbers111
-'''go
+''' go
 // Rounding happens in the following 3 lines.
 complex128(1 + -1e-1000i)  // 1.0+0.0i
 float32(0.49999999)        // 0.5
@@ -112,7 +112,7 @@ string(0x2FFFFFFFF) // "\uFFFD"
 
 And the following conversions are all illegal.
 @@@ .disable-line-numbers111
-'''go
+''' go
 // 1.23 is not representable as a value of int.
 int(1.23)
 // -1 is not representable as a value of uint8.
@@ -134,9 +134,9 @@ string(66+0i)
 '''
 
 !
-	From the above examples, we know that an untyped constant,
-	(for example `-1e1000` and `0x10000000000000000`),
-	may even not be able to represent as a value of its default type.
+   From the above examples, we know that an untyped constant,
+   (for example `-1e1000` and `0x10000000000000000`),
+   may even not be able to represent as a value of its default type.
 
 Please note,
 sometimes, the form of explicit conversions must
@@ -180,7 +180,7 @@ The keyword `const` is used to declare named constants.
 The following program contains some constant declarations.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 // Declare two individual constants. Yes,
@@ -257,7 +257,7 @@ The types of `X` and `Y` are both `float32`
 and the types of `A` and `B` are both `int64`.
 
 @@@ .line-numbers
-'''go
+''' go
 const X float32 = 3.14
 
 const (
@@ -277,7 +277,7 @@ in which `X`, `Y`, `A` and `B`
 are all typed constants.
 
 @@@ .line-numbers
-'''go
+''' go
 const X = float32(3.14)
 
 const (
@@ -291,7 +291,7 @@ literal must be representable as a value of the type of the constant.
 The following typed constant declarations are invalid.
 
 @@@ .line-numbers
-'''go
+''' go
 // error: 256 overflows uint8
 const a uint8 = 256
 // error: 256 overflows uint8
@@ -313,7 +313,7 @@ For each `uint` value has only 32 bits on 32-bit OSes.
 (Here, `<<` is bitwise-left-shift operator.)
 
 @@@ .line-numbers
-'''go
+''' go
 const MaxUint uint = (1 << 64) - 1
 '''
 
@@ -321,7 +321,7 @@ Then how to declare a typed `uint` constant and bind
 the largest `uint` value to it? Use the following way instead.
 
 @@@ .line-numbers
-'''go
+''' go
 const MaxUint = ^uint(0)
 '''
 
@@ -330,7 +330,7 @@ and bind the largest `int` value to it.
 (Here, `>>` is bitwise-right-shift operator.)
 
 @@@ .line-numbers
-'''go
+''' go
 const MaxInt = int(^uint(0) >> 1)
 '''
 
@@ -338,7 +338,7 @@ A similar method can be used to get the number of bits of a native word,
 and check the current OS is 32-bit or 64-bit.
 
 @@@ .line-numbers
-'''go
+''' go
 // NativeWordBits is 64 or 32.
 const NativeWordBits = 32 << (^uint(0) >> 63)
 const Is64bitOS = ^uint(0) >> 63 != 0
@@ -358,7 +358,7 @@ For example, at compile time, compilers will automatically
 complete the following code
 
 @@@ .line-numbers
-'''go
+''' go
 const (
 	X float32 = 3.14
 	Y           // here must be one identifier
@@ -374,7 +374,7 @@ const (
 as
 
 @@@ .line-numbers
-'''go
+''' go
 const (
 	X float32 = 3.14
 	Y float32 = 3.14
@@ -394,7 +394,7 @@ which can only be used in other constant declarations.
 It is declared as
 
 @@@ .line-numbers
-'''go
+''' go
 const iota = 0
 '''
 
@@ -414,7 +414,7 @@ Please read the comments to get what will happen at compile time.
 The `+` symbol in this example is the addition operator.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 func main() {
@@ -453,7 +453,7 @@ Surely, in practice, we should use it in more meaningful ways.
 For example,
 
 @@@ .line-numbers
-'''go
+''' go
 const (
 	Failed = iota - 1 // == -1
 	Unknown           // == 0
@@ -503,7 +503,7 @@ The following are some full standard declaration forms.
 In these declarations,
 the types and initial values of the declared variables are all specified.
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 var lang, website string = "Go", "https://golang.org"
 var compiled, dynamic bool = true, false
 var announceYear int = 2009
@@ -528,7 +528,7 @@ Please note, in the following declarations, the types of the multiple variables
 declared in the same declaration line can be different.
 
 @@@ .line-numbers
-'''go
+''' go
 // The types of the lang and dynamic variables
 // will be deduced as built-in types "string"
 // and "bool" by compilers, respectively.
@@ -551,7 +551,7 @@ In these declarations, all declared variables are initialized
 as the zero values of their respective types.
 
 @@@ .line-numbers
-'''go
+''' go
 // Both are initialized as blank strings.
 var lang, website string
 // Both are initialized as false.
@@ -564,7 +564,7 @@ Multiple variables can be grouped into one standard form declaration
 by using `()`. For example:
 
 @@@ .line-numbers
-'''go
+''' go
 var (
 	lang, bornYear, compiled     = "Go", 2007, true
 	announceAt, releaseAt    int = 2009, 2012
@@ -603,7 +603,7 @@ Blank identifiers can't be used as source values in assignments.
 
 Example:
 @@@ .line-numbers
-'''go
+''' go
 const N = 123
 var x int
 var y, z float32
@@ -631,7 +631,7 @@ The explicit conversion rules for non-constant numeric values
 are introduced below.
 Go doesn't support assignment chain. For example, the following code is illegal.
 @@@ .line-numbers
-'''go
+''' go
 var a, b int
 a = b = 123 // syntax error
 '''
@@ -643,7 +643,7 @@ Short variable declarations can only be used to declare local variables.
 Let's view an example which uses some short variable declarations.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 func main() {
@@ -667,25 +667,25 @@ Each short variable declaration must declare at least one new variable.
 
 There are several differences between short and standard variable declarations.
 *.
-	In the short declaration form, the `var` keyword and
-	variable types must be omitted.
+   In the short declaration form, the `var` keyword and
+   variable types must be omitted.
 *.
-	The assignment sign must be `:=` instead of `=`.
+   The assignment sign must be `:=` instead of `=`.
 *.
-	In the short variable declaration, old variables and new
-	variables can mix at the left of `:=`. But there must be
-	at least one new variable at the left.
+   In the short variable declaration, old variables and new
+   variables can mix at the left of `:=`. But there must be
+   at least one new variable at the left.
 
 !
-	Please note, comparing to pure assignments, there is a limit for short variable declarations.
-	**In a short variable declaration, all items at the left of the
-	`:=` sign must pure identifiers.**
-	This means some other items which can be assigned to,
-	which will be introduced in other articles,
-	can't appear at the left of `:=`.
-	These items include qualified identifiers, container elements,
-	pointer dereferences and struct field selectors.
-	Pure assignments have no such limit.
+   Please note, comparing to pure assignments, there is a limit for short variable declarations.
+   **In a short variable declaration, all items at the left of the
+   `:=` sign must pure identifiers.**
+   This means some other items which can be assigned to,
+   which will be introduced in other articles,
+   can't appear at the left of `:=`.
+   These items include qualified identifiers, container elements,
+   pointer dereferences and struct field selectors.
+   Pure assignments have no such limit.
 
 ###----------- About the terminology "assignment"
 
@@ -719,7 +719,7 @@ it will also be viewed as unused.
 For example, in the following program, `r` is only used as destination.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 // Some package-level variables.
@@ -745,7 +745,7 @@ The fix is easy, we can assign `r` and `s`
 to blank identifiers to avoid compilation errors.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 var x, y, z = 123, true, "foo"
@@ -770,7 +770,7 @@ for unused local variables have negative effects on both code readability and pr
 For the following example,
 
 @@@ .line-numbers
-'''go
+''' go
 var x, y = a+1, 5         // 8 5
 var a, b, c = b+1, c+1, y // 7 6 5
 '''
@@ -786,7 +786,7 @@ Package-level variables can't be depended circularly in their declaration.
 The following code fails to compile.
 
 @@@ .line-numbers
-'''go
+''' go
 var x, y = y, x
 '''
 
@@ -813,11 +813,11 @@ Here we introduce two more legal non-constant numeric values
 related conversion cases.
 
 *
-	Non-constant floating-point and integer values can be explicitly
-	converted to any other floating-point and integer types.
+   Non-constant floating-point and integer values can be explicitly
+   converted to any other floating-point and integer types.
 *
-	Non-constant complex values can be explicitly
-	converted to any other complex types.
+   Non-constant complex values can be explicitly
+   converted to any other complex types.
 
 Unlike constant number conversions, overflows are allowed in non-constant number conversions.
 And when converting a non-constant floating-point value to an integer, rounding is also allowed.
@@ -834,7 +834,7 @@ at line %% 7 %% and line %% 18 %% both don't work.
 The explicit conversions at line %% 5 %% and line %% 16 %% are also disallowed.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 const a = -1.23
 // The type of b is deduced as float64.
 var b = a
@@ -875,7 +875,7 @@ all of them are called `x`.
 An inner `x` shadows an outer one.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 const y = 789
@@ -925,7 +925,7 @@ __blocks and scopes__ later.
 For example, the following code compiles okay.
 
 @@@ .line-numbers
-'''go
+''' go
 // 3 untyped named constants. Their bound
 // values all overflow their respective
 // default types. This is allowed.
@@ -943,7 +943,7 @@ func main() {
 But the following code does't compile, for the constants are all typed.
 
 @@@ .line-numbers
-'''go
+''' go
 // 3 typed named constants. Their bound
 // values are not allowed to overflow their
 // respective default types. The 3 lines
@@ -969,7 +969,7 @@ Please read the next article __common operators__ for details.
 For example, at compile time, the following code
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 const X = 3
@@ -985,7 +985,7 @@ func main() {
 will be viewed as
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 var a = 3

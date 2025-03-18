@@ -21,25 +21,25 @@ Exiting phases might also be called returning phases elsewhere.
 
 A function call may enter its exiting phase (or exit directly) through three ways:
 *.
-	after the call returns normally.
+   after the call returns normally.
 *.
-	when a panic occurs in the call.
+   when a panic occurs in the call.
 *.
-	after the `runtime.Goexit` function is called and fully exits in the call.
+   after the `runtime.Goexit` function is called and fully exits in the call.
 
 For example, in the following code snippet,
 *
-	a call to the function `f0` or `f1`
-	will enter its existing phase after it returns normally.
+   a call to the function `f0` or `f1`
+   will enter its existing phase after it returns normally.
 *
-	a call to the function `f2` will enter its exiting phase
-	after the divided-by-zero panic happens.
+   a call to the function `f2` will enter its exiting phase
+   after the divided-by-zero panic happens.
 *
-	a call to the function `f3` will enter its exiting phase
-	after the `runtime.Goexit` function call fully exits.
+   a call to the function `f3` will enter its exiting phase
+   after the `runtime.Goexit` function call fully exits.
 
 @@@ .line-numbers
-'''go
+''' go
 import (
 	"fmt"
 	"runtime"
@@ -94,16 +94,16 @@ However, there are no ways to cancel a Goexit signal.
 At any give time, a function call may associate with at most one unrecovered panic.
 If a call is associating with an unrecovered panic, then
 *
-	the call will associate with no panics when the unrecovered panic is recovered.
+   the call will associate with no panics when the unrecovered panic is recovered.
 *
-	when a new panic occurs in the function call, the new one will replace
-	the old one to become the associating unrecovered panic of the function call.
+   when a new panic occurs in the function call, the new one will replace
+   the old one to become the associating unrecovered panic of the function call.
 
 For example, in the following program, the recovered panic is panic 3,
 which is the last panic associating with the `main` function call.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -130,15 +130,15 @@ the unrecovered panic will spread to the nesting call (the caller of the nested 
 The effect is the same as a panic occurs directly in the nesting call.
 That says,
 *
-	if there was an old unrecovered panic associating with the nesting call before,
-	the old one will be replaced by the spread one.
-	For this case, the nesting call must had already entered its exiting phase for sure,
-	so the next deferred function call in its defer-call stack will be invoked.
+   if there was an old unrecovered panic associating with the nesting call before,
+   the old one will be replaced by the spread one.
+   For this case, the nesting call must had already entered its exiting phase for sure,
+   so the next deferred function call in its defer-call stack will be invoked.
 *
-	if there was not an unrecovered panic associating with the nesting call before,
-	the spread one will associates with the nesting call.
-	For this case, the nesting call might have entered its exiting phase or not.
-	If it hasn't, it will enter its exiting phase immediately.
+   if there was not an unrecovered panic associating with the nesting call before,
+   the spread one will associates with the nesting call.
+   For this case, the nesting call might have entered its exiting phase or not.
+   If it hasn't, it will enter its exiting phase immediately.
 
 So, when a goroutine finishes to exit, there may be at most one unrecovered panic in the goroutine.
 If a goroutine exits with an unrecovered panic, the whole program crashes,
@@ -154,7 +154,7 @@ The following example program will crash if it runs,
 because the panic 2 is still not recovered when the new goroutine exits.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 func main() {
@@ -217,7 +217,7 @@ For example, the following program will exit peacefully,
 because the `bye` panic will be recovered by the Goexit signal.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -240,7 +240,7 @@ func main() {
 '''
 
 
-{//
+{ //
 The above has mentioned that a panic and a Goexit signal are independent of each other.
 In other words, an unrecovered panic should not cancel a Goexit signal,
 and a Goexit signal should not shadow an unrecovered panic or be cancelled.
@@ -250,7 +250,7 @@ For example, the following program should crash but it doesn't
 if it is compiled with the current versions of gc and gccgo.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "runtime"
@@ -276,13 +276,13 @@ __The problem__ will be fixed in future versions of gc and gccgo.
 // __ The problem_ :: https://github.com/golang/go/issues/35378
 }
 
-{//
+{ //
 The following example program should exit quickly in running,
 but it will not compile correctly with the current gccgo version (v8.0) and gc versions before Go Toolchain 1.14.
 In fact, it never exits if it compiles with those compiler versions.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "runtime"
@@ -321,7 +321,7 @@ Otherwise, the calls are no-ops.
 For example, none of the `recover` calls in the following example recover the `bye` panic.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 func main() {
@@ -355,7 +355,7 @@ func main() {
 We have already known that the following `recover` call takes effect.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 func main() {
@@ -374,11 +374,11 @@ Let's read the current version of __Go specification__:
 
 
 >  The return value of `recover` is `nil` if any of the following conditions holds:
-	{
-	* `panic`'s argument was nil;
-	* the goroutine is not panicking;
-	* `recover` was not called directly by a deferred function.
-	}
+   {
+   *  `panic`'s argument was nil;
+   *  the goroutine is not panicking;
+   *  `recover` was not called directly by a deferred function.
+   }
 
 There is __an example__ showing the first condition case in the last article.
 
@@ -387,11 +387,11 @@ There is __an example__ showing the first condition case in the last article.
 Most of the `recover` calls in the first example of the current section satisfy
 either the second or the third conditions mentioned in Go specification,
 except the first call. Yes, here, the current descriptions are not precise yet.
-The third condition should be described as 
+The third condition should be described as
 
 *
-	`recover` was not called directly by a deferred function **call which was called directly
-	by the function call associating with the expected to-be-recovered panic**.
+   `recover` was not called directly by a deferred function **call which was called directly
+   by the function call associating with the expected to-be-recovered panic**.
 
 In the first example of the current section, the expected to-be-recovered panic is associating with
 the `main` function call. The first `recover` call is called
@@ -403,7 +403,7 @@ In fact, the current Go specification also doesn't explain well why the second
 in the following example doesn't take effect.
 
 @@@ .line-numbers
-'''go
+''' go
 // This program exits without recovering panic 1.
 package main
 
@@ -449,15 +449,15 @@ the newest unrecovered panic in the current goroutine.
 An effective `recover` call disassociates the
 newest unrecovered panic from its associating function call,
 and returns the value passed to the `panic` call
-which produced the newest unrecovered panic. 
+which produced the newest unrecovered panic.
 }
 
-{//
+{ //
 other bugs:
-* https://github.com/golang/go/issues/43942
-* https://github.com/golang/go/issues/43941
-* https://github.com/golang/go/issues/43921
-* https://github.com/golang/go/issues/43920
+*  https://github.com/golang/go/issues/43942
+*  https://github.com/golang/go/issues/43941
+*  https://github.com/golang/go/issues/43921
+*  https://github.com/golang/go/issues/43920
 }
 
 

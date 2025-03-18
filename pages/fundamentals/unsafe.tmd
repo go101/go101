@@ -46,7 +46,7 @@ to use unsafe pointers.
 The `unsafe.Pointer` type is defined as
 
 @@@ .disable-line-numbers111
-'''go
+''' go
 type Pointer *ArbitraryType
 '''
 
@@ -67,49 +67,49 @@ the predeclared identifier `nil`.
 
 Before Go 1.17, the `unsafe` standard package has already provided three functions.
 *
-	`func Alignof(variable ArbitraryType) uintptr`,
-	which is used to get the address alignment of a value.
-	Please notes, the aligns for struct-field values and non-field values
-	of the same type may be different, though for the standard
-	Go compiler, they are always the same. For the gccgo compiler, they may be different.
+   `func Alignof(variable ArbitraryType) uintptr`,
+   which is used to get the address alignment of a value.
+   Please notes, the aligns for struct-field values and non-field values
+   of the same type may be different, though for the standard
+   Go compiler, they are always the same. For the gccgo compiler, they may be different.
 
 *
-	`func Offsetof(selector ArbitraryType) uintptr`,
-	which is used to get the address offset of a field in a struct value.
-	The offset is relative to the address of the struct value.
-	The return results should be always the same for the same corresponding
-	field of values of the same struct type in the same program.
+   `func Offsetof(selector ArbitraryType) uintptr`,
+   which is used to get the address offset of a field in a struct value.
+   The offset is relative to the address of the struct value.
+   The return results should be always the same for the same corresponding
+   field of values of the same struct type in the same program.
 *
-	`func Sizeof(variable ArbitraryType) uintptr`,
-	which is used to get the size of a value
-	(a.k.a., the size of the type of the value).
-	The return results should be always the same
-	for all values of the same type in the same program.
+   `func Sizeof(variable ArbitraryType) uintptr`,
+   which is used to get the size of a value
+   (a.k.a., the size of the type of the value).
+   The return results should be always the same
+   for all values of the same type in the same program.
 
 
 Note,
 *
-	the types of the return results of the three functions are all
-	`uintptr`. Below we will learn that uintptr values
-	can be converted to unsafe pointers (and vice versa).
+   the types of the return results of the three functions are all
+   `uintptr`. Below we will learn that uintptr values
+   can be converted to unsafe pointers (and vice versa).
 *
-	although the return results of calls of any of the three functions
-	are consistent in the same program,
-	they might be different crossing operating systems, crossing architectures,
-	crossing compilers, and crossing compiler versions.
+   although the return results of calls of any of the three functions
+   are consistent in the same program,
+   they might be different crossing operating systems, crossing architectures,
+   crossing compilers, and crossing compiler versions.
 *
-	calls to the three functions are always evaluated at compile time.
-	The evaluation results are typed constants with type `uintptr`.
+   calls to the three functions are always evaluated at compile time.
+   The evaluation results are typed constants with type `uintptr`.
 *
-	the argument passed to a call to the `unsafe.Offsetof` function
-	must the struct field selector form `value.field`.
-	The selector may denote an embedded field, but the field must be reachable
-	without implicit pointer indirections.
+   the argument passed to a call to the `unsafe.Offsetof` function
+   must the struct field selector form `value.field`.
+   The selector may denote an embedded field, but the field must be reachable
+   without implicit pointer indirections.
 
 
 An example of using the three functions.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -137,7 +137,7 @@ func main() {
 An example which demonstrates the last note mentioned above.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -193,41 +193,41 @@ The new type is `IntegerType`, The following is its definition.
 This type doesn't denote a specified type. It just represents any arbitrary integer type.
 We can view it as a generic type.
 @@@ .disable-line-numbers111
-'''go
+''' go
 type IntegerType int
 '''
 
 The two functions introduced in Go 1.17 are:
 *
-	`func Add(ptr Pointer, len IntegerType) Pointer`.
-	This function adds an offset to the address represented by an unsafe pointer
-	and return a new unsafe pointer which represents the new address.
-	This function partially covers the usages of the below introduced
-	unsafe pointer use pattern 3.
+   `func Add(ptr Pointer, len IntegerType) Pointer`.
+   This function adds an offset to the address represented by an unsafe pointer
+   and return a new unsafe pointer which represents the new address.
+   This function partially covers the usages of the below introduced
+   unsafe pointer use pattern 3.
 *
-	`func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType`.
-	This function is used to derive a slice with the specified length from a safe pointer,
-	where `ArbitraryType` is the element type of the result slice.
+   `func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType`.
+   This function is used to derive a slice with the specified length from a safe pointer,
+   where `ArbitraryType` is the element type of the result slice.
 
 
 Go 1.20 further introduced three more functions:
 *
-	`func String(ptr *byte, len IntegerType) string`.
-	This function is used to derive a string with the specified length from a safe `byte` pointer.
+   `func String(ptr *byte, len IntegerType) string`.
+   This function is used to derive a string with the specified length from a safe `byte` pointer.
 *
-	`func StringData(str string) *byte`.
-	This function is used to get the pointer to the underlying byte sequence of a string.
-	Please note, don't pass empty strings as arguments to this function.
+   `func StringData(str string) *byte`.
+   This function is used to get the pointer to the underlying byte sequence of a string.
+   Please note, don't pass empty strings as arguments to this function.
 *
-	`func SliceData(slice []ArbitraryType) *ArbitraryType`.
-	This function is used to get the pointer to the underlying element sequence of a slice.
+   `func SliceData(slice []ArbitraryType) *ArbitraryType`.
+   This function is used to get the pointer to the underlying element sequence of a slice.
 
 These functions introduced since Go 1.17 have certain dangerousness.
 They need to be used with caution.
 This following is an example using the two functions introduced in Go 1.17.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -258,7 +258,7 @@ func main() {
 }
 '''
 
-{//
+{ //
 https://github.com/golang/go/issues/46742
 }
 
@@ -267,7 +267,7 @@ Comparing with type safe manners, the type unsafe manners don't duplicate underl
 so they are more performant.
 
 @@@ .line-numbers
-'''go
+''' go
 import "unsafe"
 
 func String2ByteSlice(str string) []byte {
@@ -289,12 +289,12 @@ func ByteSlice2String(bs []byte) string {
 
 Currently (Go 1.24), Go compilers allow the following explicit conversions.
 *
-	A safe pointer can be explicitly converted to an unsafe pointer,
-	and vice versa.
+   A safe pointer can be explicitly converted to an unsafe pointer,
+   and vice versa.
 *
-	An uintptr value can be explicitly converted to an unsafe pointer,
-	and vice versa.
-	But please note, a nil unsafe.Pointer shouldn't be converted to uintptr and back with arithmetic.
+   An uintptr value can be explicitly converted to an unsafe pointer,
+   and vice versa.
+   But please note, a nil unsafe.Pointer shouldn't be converted to uintptr and back with arithmetic.
 
 By using these conversions, we can convert a safe pointer value to an arbitrary safe pointer type.
 
@@ -345,7 +345,7 @@ __collected at an uncertain time__.
 For example:
 
 @@@ .line-numbers
-'''go
+''' go
 import "unsafe"
 
 // Assume createInt will not be inlined.
@@ -383,10 +383,10 @@ It is dangerous to dereference the address stored in value `p2` to an `int` valu
 for it is possible that the memory block has been already reallocated for another value (even for another program).
 
 
-{//
+{ //
 https://github.com/golang/go/issues/32115
 }
-{//
+{ //
 ###----------- Fact 3: we can use a `runtime.KeepAlive` function call to mark a value as still in use (reachable) before the call
 
 %% (I decided to remove this fact from this article. This doesn't means the fact is not existing.
@@ -403,7 +403,7 @@ call to the example in the last subsection,
 `*(*int)(unsafe.Pointer(p2)) = 3` can be executed safely now.
 
 @@@ .line-numbers
-'''go
+''' go
 func foo() {
 	p0, y, z := createInt(), createInt(), createInt()
 	var p1 = unsafe.Pointer(y)
@@ -438,7 +438,7 @@ In the following example, the fact value `t` is still in use
 can't guarantee that the values referenced by value `t.y` are still in use.
 
 @@@ .line-numbers
-'''go
+''' go
 type T struct {
 	x int
 	y *[1<<23]byte
@@ -472,7 +472,7 @@ it can be converted to `unsafe.Pointer` type, and vice versa.
 For example:
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "unsafe"
@@ -511,7 +511,7 @@ without changing any bit in the `float64` value.
 The `math.Float64frombits` function does reverse conversions.
 
 @@@ .line-numbers
-'''go
+''' go
 func Float64bits(f float64) uint64 {
 	return *(*uint64)(unsafe.Pointer(&f))
 }
@@ -531,7 +531,7 @@ The result slice and the original slice share the underlying elements.
 Such conversions are impossible through safe ways,
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -560,7 +560,7 @@ func main() {
 By the way, since Go 1.17, we may also use the `unsafe.Slice` function to do the conversions:
 
 @@@ .line-numbers
-'''go
+''' go
 func main() {
 	...
 	
@@ -573,7 +573,7 @@ A practice by using the pattern is to convert a byte slice, which will not be us
 as the following code shows. In this conversion, a duplication of the underlying byte sequence is avoided.
 
 @@@ .line-numbers
-'''go
+''' go
 func ByteSlice2String(bs []byte) string {
 	return *(*string)(unsafe.Pointer(&bs))
 }
@@ -596,7 +596,7 @@ The converse, converting a string to a byte slice in the similar way, is invalid
 for the size of a string is smaller than a byte slice.
 
 @@@ .line-numbers
-'''go
+''' go
 func String2ByteSlice(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&s)) // dangerous!
 }
@@ -616,7 +616,7 @@ So this pattern is not much useful.
 
 Example:
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -639,7 +639,7 @@ The outputted addresses might be different for each run.
 In this pattern, the result unsafe pointer must continue to point into the original allocated memory block.
 For example:
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -671,7 +671,7 @@ shouldn't be split into two lines, like the following code shows.
 Please read the comments in the code for the reason.
 
 @@@ .line-numbers
-'''go
+''' go
 func main() {
 	t := T{y: [3]int16{123, 456, 789}}
 	p := unsafe.Pointer(&t)
@@ -696,14 +696,14 @@ func main() {
 Such bugs are very subtle and hard to detect,
 which is why the uses of unsafe pointers are dangerous.
 
-{//
+{ //
 If we do want to split that conversion line into two lines,
 we should call the `runtime.KeepAlive` function and pass the unsafe pointer `p`
 (or any other value which is also referencing value `t.y[2]`) as the argument,
 after the split two lines. Like this
 
 @@@ .line-numbers
-'''go
+''' go
 func main() {
 	t := T{y: [3]int16{123, 456, 789}}
 	p := unsafe.Pointer(&t)
@@ -756,7 +756,7 @@ From the explanations for the last pattern,
 we know that the following function is dangerous.
 
 @@@ .line-numbers
-'''go
+''' go
 // Assume this function will not inlined.
 func DoSomething(addr uintptr) {
 	// read or write values at the passed address ...
@@ -772,7 +772,7 @@ then the operations made in the function body are dangerous.
 However, the prototype of the `Syscall` function in
 the `syscall` standard package is as
 @@@ .disable-line-numbers111
-'''go
+''' go
 func Syscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
 '''
 
@@ -795,7 +795,7 @@ the talked arguments must present exactly as the `uintptr(anUnsafePointer)` form
 
 The following call is safe:
 @@@ .line-numbers
-'''go
+''' go
 syscall.Syscall(SYS_READ, uintptr(fd),
 			uintptr(unsafe.Pointer(p)), uintptr(n))
 '''
@@ -803,7 +803,7 @@ syscall.Syscall(SYS_READ, uintptr(fd),
 But the following calls are dangerous:
 
 @@@ .line-numbers
-'''go
+''' go
 u := uintptr(unsafe.Pointer(p))
 // At this time, the value referenced by p might
 // have become unused and been collected already,
@@ -817,7 +817,7 @@ syscall.Syscall(SYS_XXX, uintptr(uintptr(fd)),
 			uint(uintptr(unsafe.Pointer(p))), uintptr(n))
 '''
 
-{//
+{ //
 https://github.com/golang/go/issues/34684#issuecomment-540103545
 }
 Note: this pattern also applies to the __syscall.Proc.Call__
@@ -846,14 +846,14 @@ address stored in the result might lose all references and be garbage collected.
 For example, the following call is safe.
 
 @@@ .disable-line-numbers111
-'''go
+''' go
 p := (*int)(unsafe.Pointer(reflect.ValueOf(new(int)).Pointer()))
 '''
 
 On the other hand, the following call is dangerous.
 
 @@@ .line-numbers
-'''go
+''' go
 u := reflect.ValueOf(new(int)).Pointer()
 // At this moment, the memory block at the address
 // stored in u might have been collected already.
@@ -879,7 +879,7 @@ so that we can manipulate the internal of the slice.
 An example of using `reflect.StringHeader`:
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -903,7 +903,7 @@ func main() {
 An example of using `reflect.SliceHeader`:
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -926,7 +926,7 @@ func main() {
 }
 '''
 
-{// not correct
+{ // not correct
 Note, a `runtime.KeepAlive` call is needed in this example,
 otherwise, the slice might reference an invalid underlying byte sequence.
 
@@ -942,7 +942,7 @@ or creating a slice from a new allocated `SliceHeader`.
 For example, the following code is dangerous.
 
 @@@ .line-numbers
-'''go
+''' go
 var hdr reflect.StringHeader
 hdr.Data = uintptr(unsafe.Pointer(new([5]byte)))
 // Now the just allocated byte array has lose all
@@ -958,7 +958,7 @@ the unsafe way doesn't allocate a new underlying byte sequence
 for the result slice in each conversion.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -991,7 +991,7 @@ func main() {
 }
 '''
 
-{//
+{ //
 %% (The current article ever stated that the `runtime.KeepAlive` call in the above example is essential.
 I'm very sorry for that I spread the wrong information. In fact, this call is not essential here,
 at least for the official standard compiler.) %%
@@ -1005,7 +1005,7 @@ It is also possible to convert a byte slice to a string in a similar way,
 which is a bit safer (but a bit slower) than the way shown in pattern 1.
 
 @@@ .line-numbers
-'''go
+''' go
 func ByteSlice2String(bs []byte) (str string) {
 	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
 	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
@@ -1021,7 +1021,7 @@ BTW, let's view a bad example which violates the principle of pattern 3
 (the example is borrowed from one slack comment posted by Bryan C. Mills):
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -1045,7 +1045,7 @@ func main() {
 Two correct implementations:
 
 @@@ .line-numbers
-'''go
+''' go
 func Example_Good1() *byte {
 	var str = "godoc"
 	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
@@ -1073,7 +1073,7 @@ Fortunately, at present (Go 1.24), the two available mainstream Go compilers (th
 both recognize the representations of the two types declared in the `reflect` standard package.
 
 The Go core development team also realized that the two types are inconvenient and error-prone,
-so the two types have been not recommended any more since Go 1.20 and they have been deprecated since Go 1.21. 
+so the two types have been not recommended any more since Go 1.20 and they have been deprecated since Go 1.21.
 Instead, we should try to use the `unsafe.String`, `unsafe.StringData`,
 `unsafe.Slice` and `unsafe.SliceData` functions described earlier in this article.
 

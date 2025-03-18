@@ -24,22 +24,22 @@ Code lines might be __not executed by their appearance order__.
 
 There are two mistakes in the following program.
 *
-	First, the read of `b` in the main goroutine and the write
-	of `b` in the new goroutine might cause data races.
+   First, the read of `b` in the main goroutine and the write
+   of `b` in the new goroutine might cause data races.
 *
-	Second, the condition `b == true` can't ensure
-	that `a != nil` in the main goroutine.
-	Compilers and CPUs may make optimizations by
-	__reordering instructions__
-	in the new goroutine, so the assignment of `b` may happen
-	before the assignment of `a` at run time,
-	which makes that slice `a` is still `nil`
-	when the elements of `a` are modified in the main goroutine.
+   Second, the condition `b == true` can't ensure
+   that `a != nil` in the main goroutine.
+   Compilers and CPUs may make optimizations by
+   __reordering instructions__
+   in the new goroutine, so the assignment of `b` may happen
+   before the assignment of `a` at run time,
+   which makes that slice `a` is still `nil`
+   when the elements of `a` are modified in the main goroutine.
 
 // __ reordering instructions :: memory-model.html
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -73,7 +73,7 @@ the `sync` standard package to ensure the memory orders.
 For example,
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 func main() {
@@ -97,7 +97,7 @@ func main() {
 Let's view a simple example.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -128,14 +128,14 @@ the write of `x` might happen after the read of `x`.
 This is why we should never use `time.Sleep` calls to do
 synchronizations in formal projects.
 
-{//
+{ //
 https://groups.google.com/forum/#!topic/golang-nuts/J3kXXZivlHA
 }
 
 Let's view another example.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -181,7 +181,7 @@ before creating the new goroutine and send the temporary value instead
 in the new goroutine to remove the data races.
 
 @@@ .line-numbers
-'''go
+''' go
 ...
 	tmp := n
 	go func() {
@@ -195,19 +195,19 @@ in the new goroutine to remove the data races.
 Hanging goroutines are the goroutines staying in blocking state for ever.
 There are many reasons leading goroutines into hanging. For example,
 *
-	a goroutine tries to receive a value from a channel which no more other goroutines will send values to.
+   a goroutine tries to receive a value from a channel which no more other goroutines will send values to.
 *
-	a goroutine tries to send a value to nil channel or
-	to a channel which no more other goroutines will receive values from.
+   a goroutine tries to send a value to nil channel or
+   to a channel which no more other goroutines will receive values from.
 *
-	a goroutine is dead locked by itself.
+   a goroutine is dead locked by itself.
 *
-	a group of goroutines are dead locked by each other.
+   a group of goroutines are dead locked by each other.
 *
-	a goroutine is blocked when executing a `select` code block
-	without `default` branch, and all the channel operations
-	following the `case` keywords in the `select`
-	code block keep blocking for ever.
+   a goroutine is blocked when executing a `select` code block
+   without `default` branch, and all the channel operations
+   following the `case` keywords in the `select`
+   code block keep blocking for ever.
 
 Except sometimes we deliberately let the main goroutine in a program hanging
 to avoid the program exiting, most other hanging goroutine cases are unexpected.
@@ -225,7 +225,7 @@ there will be 4 goroutines stay in blocking state for ever.
 // __ first-response-wins :: channel-use-cases.html#first-response-wins
 
 @@@ .line-numbers
-'''go
+''' go
 func request() int {
 	c := make(chan int)
 	for i := 0; i < 5; i++ {
@@ -249,7 +249,7 @@ it is possible that the channel receiver will miss all responses and hang.
 // __ the second way to ... :: channel-use-cases.html#first-response-wins-2
 
 @@@ .line-numbers
-'''go
+''' go
 func request() int {
 	c := make(chan int)
 	for i := 0; i < 5; i++ {
@@ -290,7 +290,7 @@ Even if it is not corrupted, what it protects is the use of
 the copied field `n`, which is meaningless generally.
 
 @@@ .line-numbers
-'''go
+''' go
 import "sync"
 
 type Counter struct {
@@ -347,7 +347,7 @@ the `Done` method calls are guaranteed to
 happen before the `Wait` method call returns.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -378,7 +378,7 @@ method calls out of the new goroutines created in the `for` loop,
 as the following code shown.
 
 @@@ .line-numbers
-'''go
+''' go
 ...
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
@@ -401,7 +401,7 @@ then the following call uses future arguments improperly.
 // __ channels as futures :: channel-use-cases.html#future-promise
 
 @@@ .line-numbers
-'''go
+''' go
 doSomethingWithFutureArguments(<-fa(), <-fb())
 '''
 
@@ -410,7 +410,7 @@ In the above code line, the generations of the two arguments are processed seque
 We should modify it as the following to process them concurrently.
 
 @@@ .line-numbers
-'''go
+''' go
 ca, cb := fa(), fb()
 doSomethingWithFutureArguments(<-ca, <-cb)
 '''
@@ -466,7 +466,7 @@ be millions of `Timer` values alive in a certain small period (several seconds),
 even if most of these `Timer` values have already become useless.
 
 @@@ .line-numbers
-'''go
+''' go
 import (
 	"fmt"
 	"time"
@@ -493,7 +493,7 @@ Before Go 1.23, to avoid too many `Timer` values being created in the above code
 we should use (and reuse) a single `Timer` value to do the same job.
 
 @@@ .line-numbers
-'''go
+''' go
 func longRunning(messages <-chan string) {
 	timer := time.NewTimer(time.Minute)
 	defer timer.Stop()
@@ -525,7 +525,7 @@ Note: since Go 1.23, the `Timer.Reset` method will aoutomatically discard/drain 
 So the above code can be simplified as
 
 @@@ .line-numbers
-'''go
+''' go
 func longRunning(messages <-chan string) {
 	timer := time.NewTimer(time.Minute)
 	// defer timer.Stop() // become needless since Go 1.23
@@ -552,19 +552,19 @@ Since Go 1.23, they have gone.)
 An idiomatic use example of `time.Timer` values has been shown in the last section.
 Some explanations:
 *
-	the `Stop` method of a `*Timer` value returns `false`
-	if the corresponding `Timer` value has already expired or been stopped.
-	If we know the `Timer` value has not been stopped yet, and 
-	the `Stop` method returns `false`,
-	then the `Timer` value must have already expired.
+   the `Stop` method of a `*Timer` value returns `false`
+   if the corresponding `Timer` value has already expired or been stopped.
+   If we know the `Timer` value has not been stopped yet, and
+   the `Stop` method returns `false`,
+   then the `Timer` value must have already expired.
 *
-	before Go 1.23, after a `Timer` value is stopped, its `C` channel field
-	can only contain most one timeout notification.
+   before Go 1.23, after a `Timer` value is stopped, its `C` channel field
+   can only contain most one timeout notification.
 *
-	before Go 1.23, we should take out the timeout notification, if it hasn't been taken out,
-	from a timeout `Timer` value after the `Timer` value is stopped
-	and before resetting and reusing the `Timer` value.
-	This is the meaningfulness of the `if` code block in the example in the last section.
+   before Go 1.23, we should take out the timeout notification, if it hasn't been taken out,
+   from a timeout `Timer` value after the `Timer` value is stopped
+   and before resetting and reusing the `Timer` value.
+   This is the meaningfulness of the `if` code block in the example in the last section.
 
 The `Reset` method of a `*Timer` value must be called
 when the corresponding `Timer` value has already expired or been stopped, otherwise,
@@ -583,7 +583,7 @@ For example, the following program is very possible to exit in about one second,
 instead of ten seconds. And more importantly, the program is not data race free.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -617,10 +617,10 @@ We should not rely on the return value of a `Reset` method call.
 The return result of the `Reset` method exists
 just for compatibility purpose.
 
-{//
+{ //
 go concurrency programming mistake: hybrid mutex and atomic
 Don't mix atomic and non-atomic accesses for a given memory word:
-* https://groups.google.com/forum/#!topic/golang-dev/vVkH_9fl1D8
+*  https://groups.google.com/forum/#!topic/golang-dev/vVkH_9fl1D8
 
 https://github.com/golang/go/issues/34889
 

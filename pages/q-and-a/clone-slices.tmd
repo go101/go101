@@ -6,17 +6,17 @@ There are several ways to do the task.
 
 ###++++++++ Way 1: use `make` and `copy`
 
-'''Go
+''' Go
 	cloned := make(SliceType, len(aSlice))
 	copy(cloned, aSlice)
 '''
 
 Note:
-* since Go toolchain v1.15, this way is optimized specifically so that
-  the elements of the cloned slice will not get zeroed in the `make` call.
-* the capacity of the cloned slice is not aligned to a memory class size.
-  %%(Memory class sizes are mentioned in __Go Optimizations 101__.)
-  // __Go Optimizations 101 `` https://go101.org/optimizations/0.3-memory-allocations.html
+*  since Go toolchain v1.15, this way is optimized specifically so that
+   the elements of the cloned slice will not get zeroed in the `make` call.
+*  the capacity of the cloned slice is not aligned to a memory class size.
+   %%(Memory class sizes are mentioned in __Go Optimizations 101__.)
+   // __Go Optimizations 101 `` https://go101.org/optimizations/0.3-memory-allocations.html
 
 For the two reasons, thw way is the fastest approach.
 
@@ -28,7 +28,7 @@ The drawbacks of this approach:
 
 ###++++++++ Way 2: the more verbose form of way 1
 
-'''Go
+''' Go
 	var cloned SliceType
 	if aSlice != nil {
 		cloned = make(SliceType, len(aSlice))
@@ -40,18 +40,18 @@ Excpet for the first drawback of the way 1, the verbose way offers similar benef
 
 ###++++++++ Way 3: use `make` and `append`
 
-'''Go
+''' Go
 	append(make(SliceType, 0, len(aSlice)), aSlice...)
 '''
 
 The approach can be used as a sub-expression in statements.
 
 Note:
-* the `make` call will __unnecessarily zeros the elements of the cloned slice__,
-  // ____unnecessarily... `` https://github.com/golang/go/issues/46079
-* with the official toolchain, the capacity of the cloned slice is aligned to a memory class size.
-  This might make it even slower.
-  %%(Memory class sizes are mentioned in __Go Optimizations 101__.)
+*  the `make` call will __unnecessarily zeros the elements of the cloned slice__,
+   // ____unnecessarily... `` https://github.com/golang/go/issues/46079
+*  with the official toolchain, the capacity of the cloned slice is aligned to a memory class size.
+   This might make it even slower.
+   %%(Memory class sizes are mentioned in __Go Optimizations 101__.)
 
 The drawbacks of this approach:
 *. For the two reasons, currently, thw way is the slowest way.
@@ -60,7 +60,7 @@ The drawbacks of this approach:
 
 ###++++++++ Way 4: use `append`
 
-'''Go
+''' Go
 	append(SliceType(nil), aSlice...) // manner 1
 	// or
 	append(SliceType{}, aSlice...) // manner 2
@@ -69,28 +69,28 @@ The drawbacks of this approach:
 Similar to the last one, the approach can be used as a sub-expression in statements.
 
 Note:
-* this approach doesn't unnecessarily zeros elements, so it is performant.
-* with the official toolchain, the capacity of the cloned slice is aligned to a memory class size.
-  This makes it not always as fast as the way 1 approach.
-  %%(Memory class sizes are mentioned in __Go Optimizations 101__.)
+*  this approach doesn't unnecessarily zeros elements, so it is performant.
+*  with the official toolchain, the capacity of the cloned slice is aligned to a memory class size.
+   This makes it not always as fast as the way 1 approach.
+   %%(Memory class sizes are mentioned in __Go Optimizations 101__.)
 
 The drawbacks of this approach:
 *. For the two reasons, thw way is slower than other ones.
-   - for manner 1, if the source slice `aSlice` is a non-nil blank slice, the cloned slice is nil.
-   - for manner 2, if the source slice `aSlice` is a nil slice, the cloned slice is not nil.
+   -  for manner 1, if the source slice `aSlice` is a non-nil blank slice, the cloned slice is nil.
+   -  for manner 2, if the source slice `aSlice` is a nil slice, the cloned slice is not nil.
 *. It needs to import the containing package of type `SliceType` if `SliceType` is declared in another package.
 
 ###++++++++ Way 5: use `append` cleverly
 
-'''Go
+''' Go
 	append(aSlice[:0:0], aSlice...)
 '''
 
 This approach improves on the last one by avoiding the two drawbacks listed above,
 which means:
-* If the source slice `aSlice` is a non-nil blank slice, the cloned slice is also a non-nil blank slice.
-* If the source slice `aSlice` is a nil slice, the cloned slice is also nil.
-* It never needs to import the containing package of type `SliceType`.
+*  If the source slice `aSlice` is a non-nil blank slice, the cloned slice is also a non-nil blank slice.
+*  If the source slice `aSlice` is a nil slice, the cloned slice is also nil.
+*  It never needs to import the containing package of type `SliceType`.
 
 This might be the cleanest implementation while still maintaining great performance.
 It is almost perfect. But it has one (potential tiny) drawback:
@@ -103,11 +103,11 @@ The tiny drawback can be removed by __improving the official
 Go runtime implementation__.
 But up to now, the improvement has not been made.
 
-	// __improving... :: https://github.com/golang/go/issues/68488#issuecomment-2267179883
+// __improving... :: https://github.com/golang/go/issues/68488#issuecomment-2267179883
 
-###++++++++ Way 6: use `slices.Clone` (since Go 1.21) 
+###++++++++ Way 6: use `slices.Clone` (since Go 1.21)
 
-'''Go
+''' Go
 import "slices"
 
 	slices.Clone(aSlice)

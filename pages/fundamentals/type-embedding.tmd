@@ -14,7 +14,7 @@ This article will explain the purpose of type embedding and all kinds of details
 
 Here is an example demonstrating type embedding:
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "net/http"
@@ -57,9 +57,9 @@ For example, the names of the six embedded fields in the above examples are
 
 The current Go specification (version 1.24) __says__
 
-> 	An embedded field must be specified as a type name `T`
-	or as a pointer to a non-interface type name `*T`,
-	and `T` itself may not be a pointer type.
+>  An embedded field must be specified as a type name `T`
+   or as a pointer to a non-interface type name `*T`,
+   and `T` itself may not be a pointer type.
 
 // __ says :: https://golang.org/ref/spec#Struct_types
 
@@ -73,37 +73,37 @@ the `P` field in the example in the last section.
 
 Here, the article tries to provide more accurate descriptions.
 *
-	A type name `T` can be embedded as an embedded field
-	unless `T` denotes a named pointer type or a pointer type
-	whose base type is either a pointer or an interface type.
+   A type name `T` can be embedded as an embedded field
+   unless `T` denotes a named pointer type or a pointer type
+   whose base type is either a pointer or an interface type.
 *
-	A pointer type `*T`, where `T` is a type name denoting
-	the base type of the pointer type, can be embedded as an embedded field
-	unless type name `T` denotes a pointer or interface type.
+   A pointer type `*T`, where `T` is a type name denoting
+   the base type of the pointer type, can be embedded as an embedded field
+   unless type name `T` denotes a pointer or interface type.
 
 
-{//
+{ //
 Here, the article tries to provide more accurate descriptions.
 *
-	A type name `T` can be embedded as an embedded field
-	unless `T` denotes a pointer type which base type
-	is either a pointer or an interface type.
+   A type name `T` can be embedded as an embedded field
+   unless `T` denotes a pointer type which base type
+   is either a pointer or an interface type.
 *
-	A pointer type `*T`, where `T` is a type name denoting
-	the base type of the pointer type, can be embedded as an embedded field
-	only if type name `T` doesn't denote a pointer or interface type.
+   A pointer type `*T`, where `T` is a type name denoting
+   the base type of the pointer type, can be embedded as an embedded field
+   only if type name `T` doesn't denote a pointer or interface type.
 
 
 Or, a slight modification on the description in Go specification:
 
-> 
-	An embedded field must be specified as the form `T` or `*T`,
-	where T is a type name and the embedded type may not
-	be a pointer type whose base type is a pointer or interface type.
+>
+   An embedded field must be specified as the form `T` or `*T`,
+   where T is a type name and the embedded type may not
+   be a pointer type whose base type is a pointer or interface type.
 
 }
 
-{//
+{ //
 The above rules for which types can be embedded are some over-restricted and unnecessarily complicated,
 which makes it some hard to describe them clearly in brief.
 It looks they are intended to avoid types without methods being embedded.
@@ -118,7 +118,7 @@ The rule specified in the proposal is quite simple and doesn't do any harm:
 
 The following lists some example types which can and can't be embedded:
 @@@ .line-numbers
-'''go
+''' go
 type Encoder interface {Encode([]byte) []byte}
 type Person struct {name string; age int}
 type Alias = struct {name string; age int}
@@ -176,22 +176,22 @@ Here, this article will not discuss which one is better.
 We should just know Go chose the type embedding mechanism,
 and there is a big difference between the two:
 *
-	If a type `T` inherits another type,
-	then type `T` obtains the abilities of the other type.
-	At the same time, each value of type `T` can also be
-	viewed as a value of the other type.
+   If a type `T` inherits another type,
+   then type `T` obtains the abilities of the other type.
+   At the same time, each value of type `T` can also be
+   viewed as a value of the other type.
 *
-	If a type `T` embeds another type,
-	then type other type becomes a part of type `T`,
-	and type `T` obtains the abilities of the other type,
-	but none values of type `T` can be viewed as values of the other type.
+   If a type `T` embeds another type,
+   then type other type becomes a part of type `T`,
+   and type `T` obtains the abilities of the other type,
+   but none values of type `T` can be viewed as values of the other type.
 
 // __ benefits and drawbacks :: https://en.wikipedia.org/wiki/Composition_over_inheritance
 
 Here is an example to show how an embedding type extends
 the functionalities of the embedded type.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -230,7 +230,7 @@ Are the conclusions right? The following sections will answer this question.
 Please note that, a `Singer` value is not a `Person` value,
 the following code doesn't compile:
 @@@ .line-numbers
-'''go
+''' go
 var gaga = Singer{}
 var _ Person = gaga
 '''
@@ -245,7 +245,7 @@ functionalities__ provided in the `reflect` standard package.
 // __ the reflection functionalities :: reflection.html
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -319,7 +319,7 @@ This is why embedded fields are also called anonymous fields.
 
 For example:
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 type A struct {
@@ -397,13 +397,13 @@ selectors have the same last item `y`
 and every middle name of these selectors represents an embedded field.
 For such cases,
 *
-	only the full-form selector with the shallowest depth (assume it is the only one) can be shortened as `x.y`.
-	In other words, `x.y` denotes the full-form selector with the shallowest depth.
-	Other full-form selectors are **shadowed** by the one with the shallowest depth.
+   only the full-form selector with the shallowest depth (assume it is the only one) can be shortened as `x.y`.
+   In other words, `x.y` denotes the full-form selector with the shallowest depth.
+   Other full-form selectors are **shadowed** by the one with the shallowest depth.
 *
-	if there are more than one full-form selectors with the shallowest depth,
-	then none of those full-form selectors can be shortened as `x.y`.
-	We say those full-form selectors with the shallowest depth are **colliding** with each other.
+   if there are more than one full-form selectors with the shallowest depth,
+   then none of those full-form selectors can be shortened as `x.y`.
+   We say those full-form selectors with the shallowest depth are **colliding** with each other.
 
 If a method selector is shadowed by another method selector,
 and the two corresponding method signatures are identical,
@@ -414,7 +414,7 @@ For example, assume `A`, `B` and `C` are three __defined types__.
 // __ defined types :: type-system-overview.html#type-definition
 
 @@@ .line-numbers
-'''go
+''' go
 type A struct {
 	x string
 }
@@ -439,7 +439,7 @@ neither of them can be shortened to `v1.x`.
 The same situation is for the selectors `v1.A.y` and `v1.B.y`.
 
 @@@ .line-numbers
-'''go
+''' go
 var v1 struct {
 	A
 	B
@@ -458,7 +458,7 @@ For the same reason, the selector `v2.y` is a shortened form of
 `v2.A.y`, not of `v2.C.B.y`.
 
 @@@ .line-numbers
-'''go
+''' go
 var v2 struct {
 	A
 	C
@@ -474,7 +474,7 @@ Colliding or shadowed selectors don't prevent their deeper selectors being promo
 For example, the `.M` and `.z` selectors still get promoted in the following example.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 type x string
@@ -516,7 +516,7 @@ But if all the `m()` occurrences are replaced with `M()`, then the program will 
 for `A.M` and `B.M` collide with each other, so `c.M` is not a valid selector.
 
 @@@ .line-numbers
-'''go
+''' go
 package foo // import "x.y/foo"
 
 import "fmt"
@@ -539,7 +539,7 @@ func Bar(i I) {
 '''
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -576,35 +576,35 @@ for the two types. Where do these methods come from?
 In fact, assume a struct type `S` embeds a type (or a type alias) `T`
 and the embedding is legal,
 *
-	for each method of the embedded type `T`,
-	if the selectors to that method neither collide with nor are shadowed
-	by other selectors, then compilers will implicitly declare
-	a corresponding method with the same specification
-	for the embedding struct type `S`.
-	And consequently, compilers will also
-	__implicitly declare a corresponding method__ for the pointer type `*S`.
+   for each method of the embedded type `T`,
+   if the selectors to that method neither collide with nor are shadowed
+   by other selectors, then compilers will implicitly declare
+   a corresponding method with the same specification
+   for the embedding struct type `S`.
+   And consequently, compilers will also
+   __implicitly declare a corresponding method__ for the pointer type `*S`.
 *
-	for each method of the pointer type `*T`,
-	if the selectors to that method neither collide with nor are shadowed
-	by other selectors, then compilers will implicitly declare
-	a corresponding method with the same specification for the pointer type `*S`.
+   for each method of the pointer type `*T`,
+   if the selectors to that method neither collide with nor are shadowed
+   by other selectors, then compilers will implicitly declare
+   a corresponding method with the same specification for the pointer type `*S`.
 
 // __ implicitly ... :: method.html#implicit-pointer-methods
 
 Simply speaking,
 *
-	type `struct{T}` and type `*struct{T}` both obtain all the methods
-	of the type denoted by `T`.
+   type `struct{T}` and type `*struct{T}` both obtain all the methods
+   of the type denoted by `T`.
 *
-	type `*struct{T}`, type `struct{*T}`,
-	and type `*struct{*T}` all obtain all the methods of type `*T`.
+   type `*struct{T}`, type `struct{*T}`,
+   and type `*struct{*T}` all obtain all the methods of type `*T`.
 
 
 The following (promoted) methods are implicitly declared by compilers
 for type `Singer` and type `*Singer`.
 
 @@@ .line-numbers
-'''go
+''' go
 // Note: these declarations are not legal Go syntax.
 // They are shown here just for explanation purpose.
 // They indicate how implicit method values are
@@ -623,10 +623,10 @@ But through type embedding, such unnamed types can also own methods.
 
 // __ methods in Go :: method.html
 
-{//
+{ //
 Here is another example to show which implicit methods are declared.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -708,20 +708,20 @@ In other words, the method set of a type is composed of the methods declared dir
 (either explicitly or implicitly) for the type and the method set of the type's underlying type.
 For example, in the following code,
 *
-	the type `Age` has no methods, for it doesn't embed any types.
+   the type `Age` has no methods, for it doesn't embed any types.
 *
-	the type `X` has two methods, `IsOdd` and `Double`.
-	`IsOdd` is obtained by embedding the  type `MyInt`.
+   the type `X` has two methods, `IsOdd` and `Double`.
+   `IsOdd` is obtained by embedding the  type `MyInt`.
 *
-	the type `Y` has no methods, for its embedded the type `Age` has not methods.
+   the type `Y` has no methods, for its embedded the type `Age` has not methods.
 *
-	the type `Z` has only one method, `IsOdd`,
-	which is obtained by embedding the type `MyInt`.
-	It doesn't obtain the method `Double` from the type `X`,
-	for it doesn't embed the type `X`.
+   the type `Z` has only one method, `IsOdd`,
+   which is obtained by embedding the type `MyInt`.
+   It doesn't obtain the method `Double` from the type `X`,
+   for it doesn't embed the type `X`.
 
 @@@ .line-numbers
-'''go
+''' go
 type MyInt int
 func (mi MyInt) IsOdd() bool {
 	return mi%2 == 1
@@ -761,27 +761,27 @@ a copy of the evaluation result is saved and used in later calls to the method v
 
 For example, in the following code
 *
-	the full form selector of the promoted method expression `s.M1`
-	is `s.T.X.M1`. After changing the implicit address taking and
-	pointer dereference operations in it, it becomes `(*s.T).X.M1`.
-	At run time, the receiver argument `(*s.T).X` is evaluated
-	and a copy of the evaluation result is saved and used in later calls to the promoted method value.
-	The evaluation result is `1`,
-	that is why the call `f()` always prints `1`.
+   the full form selector of the promoted method expression `s.M1`
+   is `s.T.X.M1`. After changing the implicit address taking and
+   pointer dereference operations in it, it becomes `(*s.T).X.M1`.
+   At run time, the receiver argument `(*s.T).X` is evaluated
+   and a copy of the evaluation result is saved and used in later calls to the promoted method value.
+   The evaluation result is `1`,
+   that is why the call `f()` always prints `1`.
 *
-	the full form selector of the promoted method expression `s.M2`
-	is `s.T.X.M2`. After changing the implicit address taking and
-	pointer dereference operations in it, it becomes `(&(*s.T).X).M2`.
-	At run time, the receiver argument `&(*s.T).X` is evaluated
-	and a copy of the evaluation result is saved and used in later calls to the promoted method value.
-	The evaluation result is the address of the field `s.X` (a.k.a. `(*s.T).X`).
-	Any change of the value `s.X` will be reflected through the dereference of the address,
-	but the changes of the value `s.T` have no effects on the evaluation result,
-	that is why the two `g()` calls both print `2`.
+   the full form selector of the promoted method expression `s.M2`
+   is `s.T.X.M2`. After changing the implicit address taking and
+   pointer dereference operations in it, it becomes `(&(*s.T).X).M2`.
+   At run time, the receiver argument `&(*s.T).X` is evaluated
+   and a copy of the evaluation result is saved and used in later calls to the promoted method value.
+   The evaluation result is the address of the field `s.X` (a.k.a. `(*s.T).X`).
+   Any change of the value `s.X` will be reflected through the dereference of the address,
+   but the changes of the value `s.T` have no effects on the evaluation result,
+   that is why the two `g()` calls both print `2`.
 
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -823,14 +823,14 @@ Please read __interfaces in Go__ for details.
 
 // __ interfaces in Go :: interface.html
 
-{//
+{ //
 
 ###+++++++++++ Two Types Embedding Two Types Which Denote the Same Type But Have Different Names Are Two Distinct Types
 
 For example,
 
 @@@ .line-numbers
-'''go
+''' go
 
 '''
 
@@ -848,7 +848,7 @@ it is easy to understand why it will dead loop.
 // __ polymorphism :: interface.html#polymorphism
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 type I interface {

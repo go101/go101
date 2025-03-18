@@ -8,8 +8,8 @@ In Go, there are three built-in functions to manipulate slices:
 1. the `make` function is used to create a slice with specified length and capacity. All the elements are set to zero values.
 1. the `copy` function is used to copy some elements from one slice to another if the two slices have identical element types.
 1. the `append` function is used to append some elements to a base slice and result in a new slice.
-   The base slice might share all of its elements with the new slice or not,
-   depending on whether or not the capacity of the base slice is large enough to hold all the appended elements.
+The base slice might share all of its elements with the new slice or not,
+depending on whether or not the capacity of the base slice is large enough to hold all the appended elements.
 
 When the capacity of the base slice if an `append` function call is not larger enough.
 the call can be viewed as a way to merge two slices.
@@ -18,7 +18,7 @@ As the way is built-in, it is performant.
 However, there is not a performant way to merge 3+ slices.
 The following implementation might be the most performant way to do the task:
 
-'''Go
+''' Go
 func merge[S ~[]E, E any](ss ...S) S {
 	var n, allNils, k = 0, true, -1
 	for i := range ss {
@@ -72,7 +72,7 @@ is large enough to hold all the appended elements.
 For some scenarios, we want to prevent an `append` call from modifying the elements in `base[len(base):]`
 and we achieve this by clipping the capacity of `base` to its length:
 
-'''Go
+''' Go
 var x, y, z T
 
 	... = append(base[:len(base):len(base)], x, y, z)
@@ -81,20 +81,20 @@ var x, y, z T
 Nothing to complain about, except that it is some verbose,
 in particular when the `base` expression is verbose, such as
 
-'''Go
+''' Go
 	... = append(aValue.Field.Slice[:len(aValue.Field.Slice):len(aValue.Field.Slice)], x, y, z)
 '''
 
 If the `base` expression is a function call, then we must store the result of a call in a temporary intermediate variable:
 
-'''Go
+''' Go
 	base := aFunctionCall()
 	... = append(base[:len(base):len(base)], x, y, z)
 '''
 
 We can use the `Clip` function in the `golang.org/x/exp/slices` package, but this way is still not clean enough.
 
-'''Go
+''' Go
 import "golang.org/x/exp/slices"
 
 	... = append(slices.Clip((base), x, y, z)
@@ -106,7 +106,7 @@ import "golang.org/x/exp/slices"
 
 I do perfer __this proposal__, but it has been rejected:
 
-'''Go
+''' Go
 aSlice[ : n : ]  // <=> aSlice[ : n : n]
 aSlice[m : n : ] // <=> aSlice[m : n : n]
 sSlice[ : : ]    // <=> aSlice[ : len(aSlice) : len(aSlice)]
@@ -115,7 +115,7 @@ aSlice[m : : ]   // <=> aSlice[m : len(aSlice) : len(aSlice)]
 
 If the proposal is adopted, then we may just write the code as
 
-'''Go
+''' Go
 	... = append(base[::], x, y, z)
 	
 	... = append(aValue.Field.Slice[::], x, y, z)
@@ -125,7 +125,7 @@ If the proposal is adopted, then we may just write the code as
 
 which is much cleaner.
 
-	// __this proposal `` https://github.com/golang/go/issues/25638
+// __this proposal `` https://github.com/golang/go/issues/25638
 
 ###========= Lack of a safe way to detect element overlapping of two slices
 
@@ -134,8 +134,8 @@ This fact prevents custom Go packages to make perfect implementations for some s
 Some standard packages are using (ever used) unsafe ways to do the job.
 For example:
 
-* __https://github.com/golang/go/blob/13529cc5f443ef4e242da3716daa0032aa8d34f2/src/slices/slices.go#L466-L479
-* __https://github.com/golang/crypto/blob/eec23a3978ad/internal/subtle/aliasing.go#L13-L19
+*  __https://github.com/golang/go/blob/13529cc5f443ef4e242da3716daa0032aa8d34f2/src/slices/slices.go#L466-L479
+*  __https://github.com/golang/crypto/blob/eec23a3978ad/internal/subtle/aliasing.go#L13-L19
 
 These unsafe usages actually don't follow any [valid unsafe use patterns](https://pkg.go.dev/unsafe#Pointer),
 so they are bad and dangerous implementations.

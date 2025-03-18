@@ -11,11 +11,11 @@ This is easy to comprehend.
 An apparent example is an expression is evaluated later than its sub-expressions.
 For example, in a function call `f(x, y[n])`,
 *
-	`f()` is evaluated later than its depended expressions,
-	including `f`, `x` and `y[n]`.
+   `f()` is evaluated later than its depended expressions,
+   including `f`, `x` and `y[n]`.
 *
-	the evaluation of the expression `y[n]` is later than
-	the evaluations of `n` and `y`.
+   the evaluation of the expression `y[n]` is later than
+   the evaluations of `n` and `y`.
 
 Please read __program code element initialization order__
 for another example on package-level variable initialization orders.
@@ -41,20 +41,20 @@ variable `a` depends `b`,
 and variables `c` and `_` depend on `a`.
 So
 *.
-	The first initialized variable is `b`,
-	which is the first package-level variable without dependencies on other package-level variables.
+   The first initialized variable is `b`,
+   which is the first package-level variable without dependencies on other package-level variables.
 *.
-	The second initialized variable is `a`.
-	After `b` is initialized,
-	`a` is the first package-level variable
-	without dependencies on uninitialized package-level variables.
+   The second initialized variable is `a`.
+   After `b` is initialized,
+   `a` is the first package-level variable
+   without dependencies on uninitialized package-level variables.
 *.
-	The third and fourth initialized variables are `_` and `c`.
-	After `a` and `b` are initialized,
-	`_` and `c` both don't depend on uninitialized package-level variables.
+   The third and fourth initialized variables are `_` and `c`.
+   After `a` and `b` are initialized,
+   `_` and `c` both don't depend on uninitialized package-level variables.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -78,9 +78,9 @@ func main() {
 
 The above program prints `5 6 5`.
 
-{//
+{ //
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 var (
@@ -105,7 +105,7 @@ __href="https://github.com/golang/go/issues/22326">didn't implement the rule cor
 If the above program is compiled with the standard Go compiler version 1.12, it will print `zxwy`.)
 }
 
-{//
+{ //
 https://github.com/golang/go/issues/31292
 https://github.com/golang/go/commit/451cf3e2cd8950571f436896a3987343f8c2d7f6
 }
@@ -123,14 +123,14 @@ before initializing all package-level variables.
 For example,
 
 @@@ .line-numbers
-'''go
+''' go
 var m, n = expr1, expr2
 '''
 
-is equivalent to 
+is equivalent to
 
 @@@ .line-numbers
-'''go
+''' go
 var m = expr1
 var n = expr2
 '''
@@ -139,16 +139,16 @@ If hidden dependencies exist between variables,
 the initialization order between those variables is unspecified.
 In the following example (copied from Go specification),
 *
-	the variable `a` will be initialized after `b` for sure,
+   the variable `a` will be initialized after `b` for sure,
 *
-	but whether `x` is initialized before `b`, between
-	`b` and `a`, or after `a`, is not specified.
+   but whether `x` is initialized before `b`, between
+   `b` and `a`, or after `a`, is not specified.
 *
-	and the moment at which function `sideEffect()` is called (before
-	or after `x` is initialized) is also not specified.
+   and the moment at which function `sideEffect()` is called (before
+   or after `x` is initialized) is also not specified.
 
 @@@ .line-numbers
-'''go
+''' go
 // x has a hidden dependency on a and b
 var x = I(T{}).ab()
 // Assume sideEffect is unrelated to x, a, and b.
@@ -170,9 +170,9 @@ And please be aware of that some Go Toolchain versions don't correctly implement
 the above rules described in the current section. For example:
 
 *
-	__a bug`` https://github.com/golang/go/issues/66575__ in Go Toolchain 1.22.0 - 1.22.4.
+   __a bug`` https://github.com/golang/go/issues/66575__ in Go Toolchain 1.22.0 - 1.22.4.
 *
-	__a bug`` https://github.com/golang/go/issues/66585__ in Go Toolchain versions prior to 1.23.
+   __a bug`` https://github.com/golang/go/issues/66585__ in Go Toolchain versions prior to 1.23.
 
 ###+++++++++++ Operand Evaluation Orders in Logical Operations
 
@@ -189,10 +189,10 @@ So `b` will be evaluated, if it needs to be evaluated, after the evaluation of `
 For the evaluations within a function body, Go specification says
 
 >
-	...,
-	when evaluating the operands of an expression, assignment, or return statement,
-	all function calls, method calls, and (channel) communication operations
-	are evaluated in lexical left-to-right order.
+   ...,
+   when evaluating the operands of an expression, assignment, or return statement,
+   all function calls, method calls, and (channel) communication operations
+   are evaluated in lexical left-to-right order.
 
 The just described order is called **%% the usual order %%**.
 
@@ -204,53 +204,53 @@ assume `x` and `y` are two variables,
 is guaranteed to be evaluated (executed) before `fb()`.
 However, the following the evaluation orders are unspecified in Go specification:
 *
-	the evaluation order of `x` (or `y`) and `fa()` (or `fb()`).
+   the evaluation order of `x` (or `y`) and `fa()` (or `fb()`).
 *
-	the evaluation order of `x`, `y`, `fa` and `fb`.
+   the evaluation order of `x`, `y`, `fa` and `fb`.
 
 Another example, the following assignment, is demoed in Go specification.
 
 @@@ .disable-line-numbers111
-'''go
+''' go
 y[z.f()], ok = g(h(a, b), i()+x[j()], <-c), k()
 '''
 
 where
 *
-	`c` is a channel expression and will be evaluated to a channel value.
+   `c` is a channel expression and will be evaluated to a channel value.
 *
-	`g`, `h`, `i`, `j` and `k`
-	are function expressions.
+   `g`, `h`, `i`, `j` and `k`
+   are function expressions.
 *
-	`f` is a method of expression `z`.
+   `f` is a method of expression `z`.
 
 Also considering the rule mentioned in the last section, compilers should guarantee the following evaluation orders at run time.
 *
-	The function calls, method calls and channel communication operations
-	happen in the order `z.f()`→`h()`→`i()`→`j()`→`<-c`→`g()`→`k()`.
+   The function calls, method calls and channel communication operations
+   happen in the order `z.f()`→`h()`→`i()`→`j()`→`<-c`→`g()`→`k()`.
 *
-	`h()` is evaluated after the evaluations of expressions `h`, `a` and `b`.
+   `h()` is evaluated after the evaluations of expressions `h`, `a` and `b`.
 *
-	`y[]` is evaluated after the evaluation of `z.f()`.
+   `y[]` is evaluated after the evaluation of `z.f()`.
 *
-	`z.f()` is evaluated after the evaluation of expression `z`.
+   `z.f()` is evaluated after the evaluation of expression `z`.
 *
-	`x[]` is evaluated after the evaluation of `j()`.
+   `x[]` is evaluated after the evaluation of `j()`.
 
 However, the following orders (and more others) are not specified.
 *
-	The evaluation order of `y`, `z`, `g`,
-	`h`, `a`, `b`, `x`,
-	`i`, `j`, `c` and `k`.
+   The evaluation order of `y`, `z`, `g`,
+   `h`, `a`, `b`, `x`,
+   `i`, `j`, `c` and `k`.
 *
-	The evaluation order of `y[]`, `x[]` and `<-c`.
+   The evaluation order of `y[]`, `x[]` and `<-c`.
 
 By the usual order, we know the following declared variables `x`,
 `m` and `n` (also demoed in Go specification)
 will be initialized with ambiguous values.
 
 @@@ .line-numbers
-'''go
+''' go
 	a := 1
 	f := func() int { a++; return a }
 
@@ -274,12 +274,12 @@ will be initialized with ambiguous values.
 Beside the above introduced rules, Go specification specifies more on the expression evaluation order
 the order of individual assignments in an assignment statement:
 
-> 
-	The assignment proceeds in two phases.
-	First, the operands of index expressions and pointer indirection
-	(including implicit pointer indirection in selectors) on the left
-	and the expressions on the right are all evaluated in the usual order.
-	Second, the assignments are carried out in left-to-right order.
+>
+   The assignment proceeds in two phases.
+   First, the operands of index expressions and pointer indirection
+   (including implicit pointer indirection in selectors) on the left
+   and the expressions on the right are all evaluated in the usual order.
+   Second, the assignments are carried out in left-to-right order.
 
 Later, we may call the first phase as evaluation phase and the second phase as carry-out phase.
 
@@ -304,26 +304,26 @@ each destination expression on the left of an assignment
 has been evaluated as its elementary form.
 Different destination expressions have different elementary forms.
 *
-	If a destination expression is a blank identifier, then its elementary form is still a blank identifier.
+   If a destination expression is a blank identifier, then its elementary form is still a blank identifier.
 *
-	If a destination expression is a container (array, slice or map) index expression `c[k]`,
-	then its elementary form is `(*cAddr)[k]`,
-	where `cAddr` is a pointer pointing to `c`.
+   If a destination expression is a container (array, slice or map) index expression `c[k]`,
+   then its elementary form is `(*cAddr)[k]`,
+   where `cAddr` is a pointer pointing to `c`.
 *
-	For other cases, the destination expression must result an addressable value,
-	then its elementary form is a dereference to the address of the destination expression evaluation result.
+   For other cases, the destination expression must result an addressable value,
+   then its elementary form is a dereference to the address of the destination expression evaluation result.
 
 Assume `a` and `b` are two addressable variables of the same type, the following assignment
 
 @@@ .line-numbers
-'''go
+''' go
 	a, b = b, a
 '''
 
 will be executed like the following steps:
 
 @@@ .line-numbers
-'''go
+''' go
 // The evaluation phase:
 P0 := &a; P1 := &b
 R0 := b; R1 := a 
@@ -338,7 +338,7 @@ R0 := b; R1 := a
 Here is another example, in which `x[0]` instead of `x[1]` is modified.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 	x := []int{0, 0}
 	i := 0
 	i, x[i] = 1, 2
@@ -348,7 +348,7 @@ Here is another example, in which `x[0]` instead of `x[1]` is modified.
 The decomposed execution steps for the line %% 3 %% shown below are like:
 
 @@@ .line-numbers
-'''go
+''' go
 // The evaluation phase:
 P0 := &i; P1 := &x; T2 := i
 R0 := 1; R1 := 2
@@ -364,7 +364,7 @@ R0 := 1; R1 := 2
 An example which is a little more complex.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -383,7 +383,7 @@ func main() {
 The decomposed execution steps for the line %% 10 %% shown below are like:
 
 @@@ .line-numbers
-'''go
+''' go
 // The evaluation phase:
 P0 := &s; PM1 := &m; K1 := "Go"; P2 := p; PS3 := &s; T3 := 2
 R0 := []int{2, 2, 2}; R1 := s[1]; R2 := m["Go"]; R3 := 5
@@ -402,7 +402,7 @@ R0 := []int{2, 2, 2}; R1 := s[1]; R2 := m["Go"]; R3 := 5
 The following example rotates all elements in a slice for one index.
 
 @@@ .line-numbers
-'''go
+''' go
 	x := []int{2, 3, 5, 7, 11}
 	t := x[0]
 	var i int
@@ -414,7 +414,7 @@ The following example rotates all elements in a slice for one index.
 Another example:
 
 @@@ .line-numbers
-'''go
+''' go
 	x := []int{123}
 	x, x[0] = nil, 456        // will not panic
 	x, x[0] = []int{123}, 789 // will panic
@@ -431,7 +431,7 @@ In the following example, the expression order of
 So the example may print `100 99` or `1 99`.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -453,7 +453,7 @@ It may print `1 7 2`, `1 8 2` or `1 9 2`,
 depending on different compiler implementations.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -480,7 +480,7 @@ until a comparison results in `true`.
 // __ described before :: control-flows.html#switch-case
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -530,7 +530,7 @@ In the following example, the expression `*fptr("aaa")` will never get evaluated
 for its corresponding receive operation `<-fchan("bbb", nil)` will not be selected.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -571,7 +571,7 @@ ccc
 Note that the expression `*fptr("ccc")` is the last evaluated expression in the above example.
 It is evaluated after its corresponding receive operation `<-fchan("ddd", c)` is selected.
 
-{//
+{ //
 
 var y, z = string(x),  f()
 

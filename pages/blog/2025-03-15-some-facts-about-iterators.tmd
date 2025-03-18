@@ -13,7 +13,7 @@ Iteators in Go are some functions which can be ranged over.
 Specifically, function expressions of types whose underlying types
 are in the following forms can be ranged over.
 
-'''Go
+''' Go
 func(func() bool)
 func(func(V) bool)
 func(func(K, V) bool)
@@ -28,7 +28,7 @@ bool result.
 @@@ #example-1
 For example, the following Go program prints `abc` (since Go 1.23).
 
-'''Go
+''' Go
 package main
 
 import "fmt"
@@ -51,18 +51,18 @@ func abc(yield func(string) bool) {
 The function `abc` is used as an iterator here.
 Its parameter `yield` is a callback function which takes a `string` parameter
 and returns a `bool` result.
-* Three arguments `"a"`, `"b"` and `"c"` are in turn passed to
-  the `string` paramter and are used as
-  the values of (the instances of) the loop variable `v`.
-* The loop body can be basically viewed as the function body of the `yield` function.
-  Just note that, if the execution of a loop step during ranging over
-  an iterator function terminates the whole loop (such as `break` the loop),
-  then the corresponding `yield` call returns false (to the iterator function);
-  otherwise the corresponding `yield` call returns true.
+*  Three arguments `"a"`, `"b"` and `"c"` are in turn passed to
+   the `string` paramter and are used as
+   the values of (the instances of) the loop variable `v`.
+*  The loop body can be basically viewed as the function body of the `yield` function.
+   Just note that, if the execution of a loop step during ranging over
+   an iterator function terminates the whole loop (such as `break` the loop),
+   then the corresponding `yield` call returns false (to the iterator function);
+   otherwise the corresponding `yield` call returns true.
 
 The iterator function in the above example can also be written as
 
-'''Go
+''' Go
 func abc(yield func(string) bool) {
 	_ = yield("a") && yield("b") && yield("c")
 }
@@ -75,7 +75,7 @@ The callback function of an iterator function must not be called any more
 if a call of the callback function ever returned false.
 For example, the following program crashes when running.
 
-'''Go
+''' Go
 package main
 
 import "fmt"
@@ -109,7 +109,7 @@ The callback function of an iterator function must not be called any more
 if the iterator function has returned.
 For example, the following program crashes when running.
 
-'''Go
+''' Go
 package main
 
 import "fmt"
@@ -132,7 +132,7 @@ func abc(yield func(string) bool) {
 '''
 
 @@@ #calling-yield-concurrently-needs-synchronizations
-###+++++++++++++ Calling a `yield` callback function needs careful synchronizations
+###+++++++++++++ Calling a `yield` callback function concurrently needs careful synchronizations
 
 __Parallel calls to a `yield` callback function are not synchronized__
 by default. You need to do the synchronizations by yourself.
@@ -141,7 +141,7 @@ by default. You need to do the synchronizations by yourself.
 
 For example, the following program crashes for a confusing panic.
 
-'''Go
+''' Go
 package main
 
 import "fmt"
@@ -173,7 +173,7 @@ func oneHundred(yield func(int) bool) {
 
 To make it work, it should be synchronized, like
 
-'''Go
+''' Go
 func abc(yield func(int) bool) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex // use a mutex to sync
@@ -196,7 +196,7 @@ in other goroutines.
 
 @@@ #impact-on-goroutine-execution
 ###++++++++++ The top function calls in the call stack of a goroutine
-   will be executed concurrently when ranging over iterator functions
+    will be executed concurrently when ranging over iterator functions
 
 When an iterator function is ranged over, it is called implicitly.
 During ranging over the iterator function, the execution of a goroutine will
@@ -205,7 +205,7 @@ jump back and forth between the iterator function call and the loop body
 
 For example, the following program prints `0a1b2c`.
 
-'''Go
+''' Go
 package main
 
 import "fmt"
@@ -231,7 +231,7 @@ jump back and forth between 2^$$22$$ iterator function calls and the loop body
 in the `main` function.
 Finally, the program prints `4194304`, `4194305` and `4194306` in turn.
 
-'''Go
+''' Go
 package main
 
 func wrap(it func(yield func(int) bool)) func(yield func(int) bool) {
@@ -260,7 +260,7 @@ func main() {
 
 For the iterator function shown above:
 
-'''Go
+''' Go
 func abc(yield func(string) bool) {
 	_ = yield("a") && yield("b") && yield("c")
 }
@@ -268,24 +268,24 @@ func abc(yield func(string) bool) {
 
 the following two ways of using it are equvalent.
 
-* ### Way 1
-  '''Go
+*  ### Way 1
+   ''' Go
 	for v := range abc {
 		fmt.Print(v)
 	}
-  '''
-	
-* ### Way 2
-  '''Go
+   '''
+
+*  ### Way 2
+   ''' Go
 	abc(func(v string) bool {
 		fmt.Print(v)
 		return true
 	})
-  '''
+   '''
 
 However, for the following iterator function:
 
-'''Go
+''' Go
 func abcThenPanic(yield func(string) bool) {
 	_ = yield("a") && yield("b") && yield("c")
 	panic("bye")
@@ -294,18 +294,18 @@ func abcThenPanic(yield func(string) bool) {
 
 the following two ways of using it are not equvalent.
 
-* ### Way 1
-  '''Go
+*  ### Way 1
+   ''' Go
 	for v := range abcThenPanic {
 		defer func() {
 			recover()
 		}()
 		fmt.Print(v)
 	}
-  '''
-	
-* ### Way 2
-  '''Go
+   '''
+
+*  ### Way 2
+   ''' Go
 	abcThenPanic(func(v string) bool {
 		defer func() {
 			recover()
@@ -313,7 +313,7 @@ the following two ways of using it are not equvalent.
 		fmt.Print(v)
 		return true
 	})
-  '''
+   '''
 
 When loop bodies contain `goto` statements, the equivalence between the two
 ways becomes even less likely.
@@ -324,8 +324,8 @@ ways becomes even less likely.
 The following two programs should behave the same,
 but they don't now (as of Go toolchain v1.24.1):
 
-* ### Program 1
-  '''Go
+*  ### Program 1
+   ''' Go
 package main
 
 func main() {
@@ -348,8 +348,8 @@ func iter(yield func() bool) {
    ;;;
    The program prints `false`.
 
-* ### Program 2
-  '''Go
+*  ### Program 2
+   ''' Go
 package main
 
 func main() {
@@ -367,16 +367,16 @@ func iter(yield func() bool) {
 	}()
 	yield()
 }
-  '''
+   '''
    ;;;
    The program prints `true`.
 
 The cause of the behavior difference is, by the current design,
 *. __the panic created in the loop body of ranging over an iterator function
-will propagate to the iterator function__.
+   will propagate to the iterator function__.
 *. the iterator function should not recover the panic created in the loop body.
-If the iterator function recovers the panic propagated from the loop body,
-then the runtime will a new runtime panic.
+   If the iterator function recovers the panic propagated from the loop body,
+   then the runtime will create a new runtime panic implicitly.
 
 // __ ... propagate to the iterator function :: https://github.com/golang/go/issues/71830
 
@@ -389,8 +389,8 @@ then there will no behavior differences between the two programs.
 For example, the following two programs should have the same behavior,
 but they don't now (as of Go toolchain v1.24.1).
 
-* ### Program 1
-   '''Go
+*  ### Program 1
+   ''' Go
 package main
 
 import "fmt"
@@ -413,8 +413,8 @@ func iter(yield func() bool) {
    ;;;
    The program prints `<nil>` then crashes.
 
-* ### Program 2
-   '''Go
+*  ### Program 2
+   ''' Go
 package main
 
 import "fmt"
@@ -431,7 +431,7 @@ func foo() {
 }
    '''
    ;;;
-   The program prints `<123` then exits normally.
+   The program prints `123` then exits normally.
 
 @@@ #importance
 ###+++++ The importance of iterators has not been proved yet

@@ -16,7 +16,7 @@ for an integer type `T`, where `T` must be any of `int32`,
 `int64`, `uint32`, `uint64` and `uintptr`.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 func AddT(addr *T, delta T)(new T)
 func LoadT(addr *T) (val T)
 func StoreT(addr *T, val T)
@@ -26,7 +26,7 @@ func CompareAndSwapT(addr *T, old, new T) (swapped bool)
 
 For example, the following five functions are provided for type `int32`.
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 func AddInt32(addr *int32, delta int32)(new int32)
 func LoadInt32(addr *int32) (val int32)
 func StoreInt32(addr *int32, val int32)
@@ -43,7 +43,7 @@ Go didn't support custom generics, so these functions are implemented
 through the __unsafe pointer type__ `unsafe.Pointer`
 (the Go counterpart of C `void*`).
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
 func StorePointer(addr *unsafe.Pointer, val unsafe.Pointer)
 func SwapPointer(addr *unsafe.Pointer, new unsafe.Pointer,
@@ -61,7 +61,7 @@ which corresponding pointer type `*Value` has four methods
 We may use these methods to do atomic operations for values of any type.
 
 @@@ .line-numbers
-'''go
+''' go
 func (*Value) Load() (x interface{})
 func (*Value) Store(x interface{})
 func (*Value) Swap(new interface{}) (old interface{})
@@ -80,7 +80,7 @@ The methods of the `atomic.Int32` type are listed below.
 The methods of the other four types present in the similar way.
 
 @@@ .line-numbers
-'''go
+''' go
 func (*Int32) Add(delta int32) (new int32)
 func (*Int32) Load() int32
 func (*Int32) Store(val int32)
@@ -95,7 +95,7 @@ The `Pointer[T any]` type introudced in this package by Go 1.19 is a generic typ
 Its methods are listed below.
 
 @@@ .line-numbers
-'''go
+''' go
 (*Pointer[T]) Load() *T
 (*Pointer[T]) Store(val *T)
 (*Pointer[T]) Swap(new *T) (old *T)
@@ -117,7 +117,7 @@ Atomic operations guarantee that there are no data races among these goroutines.
 In the end, `1000` is guaranteed to be printed.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -149,7 +149,7 @@ The following code re-implements the above program by using the `atomic.Int32` t
 This code looks a bit tidier.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -180,7 +180,7 @@ a type if the values of the type need to be used concurrently.
 For example, the function version:
 
 @@@ .line-numbers
-'''go
+''' go
 type Page struct {
 	views uint32
 }
@@ -197,7 +197,7 @@ func (page *Page) Views() uint32 {
 And the type+methods version (since Go 1.19):
 
 @@@ .line-numbers
-'''go
+''' go
 type Page struct {
 	views atomic.Uint32
 }
@@ -218,14 +218,14 @@ But how to do atomic decrease operations for values of an unsigned type `T`,
 such as `uint32`, `uint64` and `uintptr`?
 There are two circumstances for the second unsigned arguments.
 *.
-	For an unsigned variable `v` of type `T`,
-	`-v` is legal in Go.
-	So we can just pass `-v` as the second argument of an `AddT` call.
+   For an unsigned variable `v` of type `T`,
+   `-v` is legal in Go.
+   So we can just pass `-v` as the second argument of an `AddT` call.
 *.
-	For a positive constant integer `c`,
-	`-c` is illegal to be used as the second argument of an `AddT` call
-	(where `T` denotes an unsigned integer type).
-	We can used `^T(c-1)` as the second argument instead.
+   For a positive constant integer `c`,
+   `-c` is illegal to be used as the second argument of an `AddT` call
+   (where `T` denotes an unsigned integer type).
+   We can used `^T(c-1)` as the second argument instead.
 
 This `^T(v-1)` trick also works for an unsigned variable `v`,
 but `^T(v-1)` is less efficient than `T(-v)`.
@@ -236,7 +236,7 @@ and its type is exactly `T`, then the form can shortened as `^(c-1)`.
 Example:
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -289,7 +289,7 @@ function call indicates whether or not the store operation is applied.
 
 Example:
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -313,7 +313,7 @@ func main() {
 The following is the corresponding type+methods version (since Go 1.19):
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -362,7 +362,7 @@ The following example is not a concurrent program.
 It just shows how to do atomic pointer operations.
 In this example, `T` can be an arbitrary type.
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -406,7 +406,7 @@ for these uses require to import the `unsafe` standard package.
 
 // __ Go 1 compatibility guidelines :: https://golang.org/doc/go1compat
 
-{//
+{ //
 Personally, I think the possibility is small that the legal pointer value
 atomic operations used in the above example will become illegal later.
 Even if they become illegal later, the `go fix` command provided in
@@ -424,7 +424,7 @@ we use the Go 1.19 introduced generic `Pointer` type and its methods
 to do atomic pointer operations, as the following code shows.
 
 @@@ .line-numbers;must-line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -481,7 +481,7 @@ A `nil` interface argument will also make the `v.Store()` call panic.
 
 An example:
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -504,7 +504,7 @@ func main() {
 
 Another example (for Go 1.17+):
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (

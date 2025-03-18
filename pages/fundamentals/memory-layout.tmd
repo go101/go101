@@ -1,6 +1,6 @@
 ### Memory Layouts
 
-{//
+{ //
 https://groups.google.com/forum/#!topic/golang-nuts/XDfQUn4U_g8
 https://groups.google.com/forum/#!topic/golang-nuts/YSxEBt9kzuc
 https://groups.google.com/forum/#!topic/golang-nuts/HaxJMtSngOo
@@ -44,10 +44,10 @@ of a type are always equal. For gccgo compiler, the statement is false.
 
 Go specification only mentions __a little on type alignment guarantees__:
 >
-	The following minimal alignment properties are guaranteed:
-	\\ 1. For a variable `x` of any type: `unsafe.Alignof(x)` is at least `1`.
-	\\ 2. For a variable `x` of struct type: `unsafe.Alignof(x)` is the largest of all the values `unsafe.Alignof(x.f)` for each field `f` of `x`, but at least `1`.
-	\\ 3. For a variable `x` of array type: `unsafe.Alignof(x)` is the same as the alignment of a variable of the array's element type.
+   The following minimal alignment properties are guaranteed:
+   \\ 1. For a variable `x` of any type: `unsafe.Alignof(x)` is at least `1`.
+   \\ 2. For a variable `x` of struct type: `unsafe.Alignof(x)` is the largest of all the values `unsafe.Alignof(x.f)` for each field `f` of `x`, but at least `1`.
+   \\ 3. For a variable `x` of array type: `unsafe.Alignof(x)` is the same as the alignment of a variable of the array's element type.
 
 // __ a little on type alignment guarantees :: https://golang.org/ref/spec#Size_and_alignment_guarantees
 
@@ -60,7 +60,7 @@ For the current version (v1.24.n) of the standard Go compiler,
 the alignment guarantees are listed here.
 
 @@@ .fixed-width
-'''go
+''' go
 type                      alignment guarantee
 ------                    ------
 bool, uint8, int8         1
@@ -75,7 +75,7 @@ other types               size of a native word
 Here, the size of a native word (or machine word) is 4-byte
 on 32-bit architectures and 8-byte on 64-bit architectures.
 
-{//
+{ //
 todo: above assertion may be not correct for some architectures?
 }
 
@@ -94,7 +94,7 @@ Please read the following two sections for details.
 
 Go specification only makes following __type size guarantees__:
 @@@ .fixed-width
-'''go
+''' go
 type                    size in bytes
 ------                  ------
 uint8, int8             1
@@ -131,22 +131,22 @@ sum of the sizes of all fields of the type.
 The following is an example showing how bytes are padded between struct fields.
 We have already learned that
 *
-	the alignment guarantee and size of the built-in type `int8` are both one byte.
+   the alignment guarantee and size of the built-in type `int8` are both one byte.
 *
-	the alignment guarantee and size of the built-in type `int16` are both two bytes.
+   the alignment guarantee and size of the built-in type `int16` are both two bytes.
 *
-	the size of the built-in type `int64` is 8 bytes, the alignment guarantee
-	of type `int64` is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
+   the size of the built-in type `int64` is 8 bytes, the alignment guarantee
+   of type `int64` is 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
 *
-	the alignment guarantees of the types `T1` and `T2`
-	are their respective largest field alignment guarantees, a.k.a., the alignment guarantee of the `int64` field.
-	So their alignment guarantees are both 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
+   the alignment guarantees of the types `T1` and `T2`
+   are their respective largest field alignment guarantees, a.k.a., the alignment guarantee of the `int64` field.
+   So their alignment guarantees are both 4 bytes on 32-bit architectures and 8 bytes on 64-bit architectures.
 *
-	the sizes of the types `T1` and `T2` must be multiples of their respective alignment guarantees,
-	a.k.a., 4N bytes on 32-bit architectures and 8N bytes on 64-bit architectures.
+   the sizes of the types `T1` and `T2` must be multiples of their respective alignment guarantees,
+   a.k.a., 4N bytes on 32-bit architectures and 8N bytes on 64-bit architectures.
 
 @@@ .line-numbers
-'''go
+''' go
 type T1 struct {
 	a int8
 
@@ -217,18 +217,18 @@ Worse, on very old CPU architectures, 64-bit atomic functions are not supported.
 At the end of the __`sync/atomic` documentation__,
 it mentions:
 >
-	On x86-32, the 64-bit functions use instructions unavailable before the Pentium MMX.
-	\\
-	\\ On non-Linux ARM, the 64-bit functions use instructions unavailable before the ARMv6k core.
-	\\
-	\\ On both ARM and x86-32, it is the caller's responsibility to
-	arrange for 64-bit alignment of 64-bit words accessed atomically.
-	The first word in a variable or in an allocated struct,
-	array, or slice can be relied upon to be 64-bit aligned.
+   On x86-32, the 64-bit functions use instructions unavailable before the Pentium MMX.
+   \\
+   \\ On non-Linux ARM, the 64-bit functions use instructions unavailable before the ARMv6k core.
+   \\
+   \\ On both ARM and x86-32, it is the caller's responsibility to
+   arrange for 64-bit alignment of 64-bit words accessed atomically.
+   The first word in a variable or in an allocated struct,
+   array, or slice can be relied upon to be 64-bit aligned.
 
 // __ `sync/atomic` documentation :: https://golang.org/pkg/sync/atomic/#pkg-note-BUG
 
-{//
+{ //
 %%
 (Note, although the above quoted texts shown in the bug zone of that documentation,
 what they describe are not bugs.)
@@ -237,12 +237,12 @@ what they describe are not bugs.)
 
 So, things are not very bad for two reasons.
 *.
-	The very old CPU architectures are not mainstream architectures nowadays.
-	If a program needs to do synchronization for 64-bit words on these architectures,
-	there are __other synchronization techniques__ to rescue.
+   The very old CPU architectures are not mainstream architectures nowadays.
+   If a program needs to do synchronization for 64-bit words on these architectures,
+   there are __other synchronization techniques__ to rescue.
 *.
-	On other not-very-old 32-bit architectures,
-	there are some ways to ensure some 64-bit words are relied upon to be 64-bit aligned.
+   On other not-very-old 32-bit architectures,
+   there are some ways to ensure some 64-bit words are relied upon to be 64-bit aligned.
 
 // __ other synchronization techniques :: concurrent-synchronization-more.html
 
@@ -267,7 +267,7 @@ It is just some subtle and verbose to make a simple clear description to include
 all the 64-bit words can be relied upon to be 64-bit aligned on 32-bit architectures,
 so the official documentation just makes a conservative description.
 
-{//
+{ //
 And **%% be relied upon to be 8-byte aligned %%** doesn't mean the address of
 the first 64-bit word in a global variable or in an allocated struct or array
 is always 8-byte aligned on 32-bit architectures.
@@ -284,7 +284,7 @@ Here is an example which lists some 64-bit words which are safe or unsafe
 to be accessed atomically on both 64-bit and 32-bit architectures.
 
 @@@ .line-numbers
-'''go
+''' go
 type (
 	T1 struct {
 		v uint64
@@ -342,7 +342,7 @@ we can use a value of type `[15]byte` to determine
 the address for the 64-bit word at run time. For example,
 
 @@@ .line-numbers
-'''go
+''' go
 package mylib
 
 import (
@@ -374,7 +374,7 @@ By using this solution, the `Counter` type can be embedded in other user types f
 even on 32-bit architectures.
 The drawback of this solution is there are seven bytes being wasted for every value of `Counter` type
 and it uses unsafe pointers.
-{//
+{ //
 The `sync` standard package uses
 __href="https://github.com/golang/go/blob/master/src/sync/waitgroup.go#L23">a `[3]uint32` value to do this trick instead__.
 This trick assumes that the alignment guarantee of the `uint32` type is a multiple of 4 bytes.
@@ -382,7 +382,7 @@ The assumption is true for both the standard Go compiler and gccgo compiler.
 However, it might __href="https://github.com/golang/go/issues/27577">be false for another third-party Go compiler__.
 }
 
-{//
+{ //
 https://github.com/golang/go/issues/36606
 }
 
@@ -398,7 +398,7 @@ For example, in the following code, the `x` field of any value of the type `T`
 is always 8-byte aligned, in any situations, either on 64-bit or 32-bit architectures.
 
 @@@ .line-numbers
-'''go
+''' go
 type T struct {
 	_ [0]atomic.Int64
 	x int64

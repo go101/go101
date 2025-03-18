@@ -11,11 +11,11 @@ but there are also some criticisms on Go channel design details.
 
 I collected some criticisms on the following designs and rules of Go channels:
 *.
-	no easy and universal ways to check whether or not a channel is closed without modifying the status of the channel.
+   no easy and universal ways to check whether or not a channel is closed without modifying the status of the channel.
 *.
-	closing a closed channel will panic, so it is dangerous to close a channel if the closers don't know whether or not the channel is closed.
+   closing a closed channel will panic, so it is dangerous to close a channel if the closers don't know whether or not the channel is closed.
 *.
-	sending values to a closed channel will panic, so it is dangerous to send values to a channel if the senders don't know whether or not the channel is closed.
+   sending values to a closed channel will panic, so it is dangerous to send values to a channel if the senders don't know whether or not the channel is closed.
 
 The criticisms look reasonable, however in fact are not.
 Yes, there is really not a built-in function to check whether or not a channel has been closed.
@@ -27,7 +27,7 @@ if you can make sure no values were (and will be) ever sent to the channel.
 The method has been shown in __the last article__.
 Here, for better coherence, the method is listed in the following example again.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import "fmt"
@@ -95,7 +95,7 @@ of the channel anyway, then you can use __the recover mechanism__
 to prevent the possible panic from crashing your program.
 Here is an example (assume the channel element type is `T`).
 @@@ .line-numbers
-'''go
+''' go
 func SafeClose(ch chan T) (justClosed bool) {
 	defer func() {
 		if recover() != nil {
@@ -115,7 +115,7 @@ This solution obviously breaks the **channel closing principle**.
 
 The same idea can be used for sending values to a potential closed channel.
 @@@ .line-numbers
-'''go
+''' go
 func SafeSend(ch chan T, value T) (closed bool) {
 	defer func() {
 		if recover() != nil {
@@ -135,7 +135,7 @@ but data races might also happen in the process.
 
 Many people prefer using `sync.Once` to close channels:
 @@@ .line-numbers
-'''go
+''' go
 type MyChannel struct {
 	C    chan T
 	once sync.Once
@@ -154,7 +154,7 @@ func (mc *MyChannel) SafeClose() {
 
 Surely, we can also use `sync.Mutex` to avoid closing a channel multiple times:
 @@@ .line-numbers
-'''go
+''' go
 type MyChannel struct {
 	C      chan T
 	closed bool
@@ -206,7 +206,7 @@ It may be not always essential to use it in real practice.)
 This is the simplest situation, just let the sender close the data channel
 when it doesn't want to send more.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -270,7 +270,7 @@ since doing this will break the **channel closing principle**.
 But we can let the receiver close an additional signal channel to
 notify senders to stop sending values.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -374,7 +374,7 @@ One trick in the following example is how to use a try-send operation to
 notify the moderator to close the additional signal channel.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -526,7 +526,7 @@ We can also set the capacity of the `toStop` channel
 as the sum number of senders and receivers,
 then we don't need a try-send `select` block to notify the moderator.
 @@@ .line-numbers
-'''go
+''' go
 ...
 toStop := make(chan string, NumReceivers + NumSenders)
 ...
@@ -550,7 +550,7 @@ For such cases, we can use an extra signal channel to notify the sender
 to close the data channel. For example,
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -644,7 +644,7 @@ For such cases, we can translate a N-sender situation to a one-sender situation 
 The middle channel has only one sender, so that we can close it instead of closing the original data channel.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (

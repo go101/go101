@@ -34,24 +34,24 @@ The `*WaitGroup` type has __three methods__:
 
 For an addressable `WaitGroup` value `wg`,
 *
-	we can call the `wg.Add(delta)` method to
-	change the counter value maintained by `wg`.
+   we can call the `wg.Add(delta)` method to
+   change the counter value maintained by `wg`.
 *
-	the method call `wg.Done()` is totally equivalent to
-	the method call `wg.Add(-1)`.
+   the method call `wg.Done()` is totally equivalent to
+   the method call `wg.Add(-1)`.
 *
-	if a call `wg.Add(delta)` (or `wg.Done()`) modifies
-	the counter maintained by `wg` to negative,  panic will happen.
+   if a call `wg.Add(delta)` (or `wg.Done()`) modifies
+   the counter maintained by `wg` to negative,  panic will happen.
 *
-	when a goroutine calls `wg.Wait()`,
-	-
-		if the counter maintained by `wg` is already zero,
-		then the call `wg.Wait()` can be viewed as a no-op.
-	-
-		otherwise (the counter is positive), the goroutine will enter blocking state.
-		It will enter running state again (a.k.a., the call `wg.Wait()` returns)
-		when another goroutine modifies the counter to zero,
-		generally by calling `wg.Done()`.
+   when a goroutine calls `wg.Wait()`,
+   -
+      if the counter maintained by `wg` is already zero,
+      then the call `wg.Wait()` can be viewed as a no-op.
+   -
+      otherwise (the counter is positive), the goroutine will enter blocking state.
+      It will enter running state again (a.k.a., the call `wg.Wait()` returns)
+      when another goroutine modifies the counter to zero,
+      generally by calling `wg.Done()`.
 
 Please note that `wg.Add(delta)`, `wg.Done()` and `wg.Wait()`
 are shorthands of `(&wg).Add(delta)`, `(&wg).Done()`
@@ -62,7 +62,7 @@ one goroutine waits until all of several other goroutines finish their respectiv
 An example:
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -111,7 +111,7 @@ values: [71 89 50 62 60]
 
 We can split the only `Add` method call in the above example into multiple ones.
 @@@ .line-numbers
-'''go
+''' go
 ...
 	var wg sync.WaitGroup
 	for i := 0; i < N; i++ {
@@ -129,7 +129,7 @@ The `Wait` method can be called in multiple goroutines.
 When the counter becomes zero, all of them will be notified, in a broadcast way.
 
 @@@ .line-numbers
-'''go
+''' go
 func main() {
 	rand.Seed(time.Now().UnixNano()) // needed before Go 1.20
 
@@ -188,7 +188,7 @@ a piece of code will be executed exactly once in concurrent programming.
 
 An example:
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -259,7 +259,7 @@ are shorthands of `(&m).Lock()` and `(&m).Unlock()`, respectively.
 
 An example of using `sync.Mutex`:
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -328,33 +328,33 @@ are shorthands of `(&m).Lock()`, `(&m).Unlock()`,
 
 For an addressable `RWMutex` value `rwm`, the following rules exist.
 *
-	The write lock of `rwm` may be locked only if neither of
-	the read lock and write lock of `rwm` is in locked status.
-	In other words, the write lock of `rwm` may only be held by at most one writer at any given time,
-	and the read lock and write lock of `rwm` may not be held at the same time.
+   The write lock of `rwm` may be locked only if neither of
+   the read lock and write lock of `rwm` is in locked status.
+   In other words, the write lock of `rwm` may only be held by at most one writer at any given time,
+   and the read lock and write lock of `rwm` may not be held at the same time.
 *
-	When the write lock of `rwm` is in locked status, any newer
-	attempts to lock the write lock or the read lock of `rwm`
-	will be blocked until the initial write lock is unlocked.
+   When the write lock of `rwm` is in locked status, any newer
+   attempts to lock the write lock or the read lock of `rwm`
+   will be blocked until the initial write lock is unlocked.
 *
-	When the read lock of `rwm` is in locked status,
-	any newer attempts to lock the write lock will be blocked
-	until the read lock is unlocked.
-	However, newer attempts to lock the read lock will succeed
-	as long as the attempts are performed before any blocked attempts to lock the write lock
-	(see the next rule for details). 
-	In other words, the read lock may be held by more than one readers at a time.
-	The read lock will return to unlocked status when its lock count returns to zero. 
+   When the read lock of `rwm` is in locked status,
+   any newer attempts to lock the write lock will be blocked
+   until the read lock is unlocked.
+   However, newer attempts to lock the read lock will succeed
+   as long as the attempts are performed before any blocked attempts to lock the write lock
+   (see the next rule for details).
+   In other words, the read lock may be held by more than one readers at a time.
+   The read lock will return to unlocked status when its lock count returns to zero.
 *
-	Assume the read lock of the value `rwm` is in locked status now,
-	to avoid endless read locking, any newer attempts to lock the read lock after
-	the a being blocked attempt to lock the write lock will be blocked.
+   Assume the read lock of the value `rwm` is in locked status now,
+   to avoid endless read locking, any newer attempts to lock the read lock after
+   the a being blocked attempt to lock the write lock will be blocked.
 *
-	Assume the write lock of the value `rwm` is in locked status now,
-	for the official standard Go compiler, to avoid endless write locking,
-	the attempts to lock the read lock before releasing the write lock will succeed for sure
-	once the write lock is unlocked, even if some of the attempts are made
-	after some still being blocked attempts to lock the write lock.
+   Assume the write lock of the value `rwm` is in locked status now,
+   for the official standard Go compiler, to avoid endless write locking,
+   the attempts to lock the read lock before releasing the write lock will succeed for sure
+   once the write lock is unlocked, even if some of the attempts are made
+   after some still being blocked attempts to lock the write lock.
 
 The last two rules are to ensure both readers and writers have chances to acquire locks.
 
@@ -362,7 +362,7 @@ Please note, locks are not bound to goroutines.
 A lock may be locked in one goroutine and unlocked in another one later.
 In other words, a lock doesn't know which goroutine successfully locked or unlocked it.
 
-{//
+{ //
 https://github.com/golang/go/issues/17973
 }
 
@@ -372,7 +372,7 @@ when the `Value` method is called very frequently but the `Increase` method
 is called not frequently.
 
 @@@ .line-numbers
-'''go
+''' go
 ...
 type Counter struct {
 	//m sync.Mutex
@@ -396,7 +396,7 @@ Please read the next section for an example.
 By the last two rules mentioned above, the following program is very possible to output `abdc`.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -447,7 +447,7 @@ which is __a bad practice for production code__.
 though there are many other better ways to do the same job.
 Here is an example which makes a notification by using a `sync.Mutex` value.
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -494,38 +494,38 @@ The `*sync.Cond` type has __three methods__:
 Each `sync.Cond` value also maintains a FIFO (first in first out) waiting goroutine queue.
 For an addressable `sync.Cond` value `c`,
 *
-	`c.Wait()` must be called when `c.L` is locked,
-	otherwise, a `c.Wait()` will cause panic.
-	A `c.Wait()` call will
-	*.
-		first push the current caller goroutine into
-		the waiting goroutine queue maintained by `c`,
-	*.
-		then call `c.L.Unlock()` to unlock/unhold the lock `c.L`.
-	*.
-		{
-		then make the current caller goroutine enter blocking state.
-		// <sup>(1)</sup}
+   `c.Wait()` must be called when `c.L` is locked,
+   otherwise, a `c.Wait()` will cause panic.
+   A `c.Wait()` call will
+   *.
+      first push the current caller goroutine into
+      the waiting goroutine queue maintained by `c`,
+   *.
+      then call `c.L.Unlock()` to unlock/unhold the lock `c.L`.
+   *.
+      {
+      then make the current caller goroutine enter blocking state.
+      // <sup>(1)</sup}
 
-		%%
-		(The caller goroutine will be unblocked by another goroutine
-		through calling `c.Signal()` or `c.Broadcast()` later.)
-		
-		Once the caller goroutine is unblocked and enters running state again,
-		`c.L.Lock()` will be called (in the resumed `c.Wait()` call)
-		to try to lock and hold the lock `c.L` again,
-		The `c.Wait()` call will exit after
-		the `c.L.Lock()` call returns.
-		}
-	
+      %%
+      (The caller goroutine will be unblocked by another goroutine
+      through calling `c.Signal()` or `c.Broadcast()` later.)
+
+      Once the caller goroutine is unblocked and enters running state again,
+      `c.L.Lock()` will be called (in the resumed `c.Wait()` call)
+      to try to lock and hold the lock `c.L` again,
+      The `c.Wait()` call will exit after
+      the `c.L.Lock()` call returns.
+      }
+
 *
-	a `c.Signal()` call will unblock the first goroutine in (and
-	remove it from) the waiting goroutine queue maintained by `c`,
-	if the queue is not empty.
+   a `c.Signal()` call will unblock the first goroutine in (and
+   remove it from) the waiting goroutine queue maintained by `c`,
+   if the queue is not empty.
 *
-	a `c.Broadcast()` call will unblock all the goroutines in (and
-	remove them from) the waiting goroutine queue maintained by `c`,
-	if the queue is not empty.
+   a `c.Broadcast()` call will unblock all the goroutines in (and
+   remove them from) the waiting goroutine queue maintained by `c`,
+   if the queue is not empty.
 
 
 Please note that `c.Wait()`, `c.Signal()` and `c.Broadcast()`
@@ -535,17 +535,17 @@ and `(&c).Broadcast()`, respectively.
 `c.Signal()` and `c.Broadcast()` are often used to notify the status of a condition is changed,
 Generally, `c.Wait()` should be called in a loop of checking whether or not a condition has got satisfied.
 
-{//
+{ //
 ^$$(1)$$ This is for the most common case,
 by assuming that `c.Signal()` and `c.Broadcast()` are not called
 in the short period between the step 2 and step 3.
 
 *
-	If `c.Signal()` is called in the short period between the step 2 and step 3,
-	then the caller goroutine of `c.Wait()` might not enter blocking state.
+   If `c.Signal()` is called in the short period between the step 2 and step 3,
+   then the caller goroutine of `c.Wait()` might not enter blocking state.
 *
-	If `c.Broadcast()` is called in the short period between the step 2 and step 3,
-	then the caller goroutine of `c.Wait()` will not enter blocking state for sure.
+   If `c.Broadcast()` is called in the short period between the step 2 and step 3,
+   then the caller goroutine of `c.Wait()` will not enter blocking state for sure.
 
 }
 
@@ -555,7 +555,7 @@ and some other goroutines change the condition and send notifications.
 Here is an example:
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
@@ -645,7 +645,7 @@ and each of the ten parts of the user defined condition can be modified when the
 just as the following code shows:
 
 @@@ .line-numbers
-'''go
+''' go
 ...
 	cond := sync.NewCond(&sync.RWMutex{})
 	cond.L.Lock()
@@ -672,7 +672,7 @@ For such cases, the `Cond` value is used for notifications purely.
 For example, the following program will print `abc` or `bac`.
 
 @@@ .line-numbers
-'''go
+''' go
 package main
 
 import (
