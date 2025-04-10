@@ -1,0 +1,57 @@
+<div class="tmd-doc">
+<p></p>
+<h1 class="tmd-header-1">
+<code class="tmd-code-span">recover</code> Calls in the Loop Bodies of Ranging Over Iterators Don't Work
+</h1>
+<p></p>
+<div class="tmd-usual">
+By Go specification, the following program prints <code class="tmd-code-span">123</code>.
+</div>
+<p></p>
+<pre class="tmd-code">
+<code class="language-Go">package main
+
+import "fmt"
+
+func main() {
+	defer foo()
+	panic(123)
+}
+
+func foo() {
+	for range 1 {
+		fmt.Println(recover()) // 123
+	}
+}
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+Similarly, the following one should also print <code class="tmd-code-span">123</code>. But it prints <code class="tmd-code-span">&lt;nil&gt;</code> then crashes (since Go toolchain version 1.23.0).
+</div>
+<p></p>
+<pre class="tmd-code">
+<code class="language-Go">package main
+
+import "fmt"
+
+func main() {
+	defer foo()
+	panic(123)
+}
+
+func foo() {
+	for range iter {
+		fmt.Println(recover())
+	}
+}
+
+func iter(yield func() bool) {
+	yield()
+}
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+<span class="tmd-italic">(The releatd issue: </span><a href="https://github.com/golang/go/issues/71685"><span class="tmd-italic">https://github.com/golang/go/issues/71685</span></a><span class="tmd-italic">.)</span>
+</div>
+<p></p>
+</div>

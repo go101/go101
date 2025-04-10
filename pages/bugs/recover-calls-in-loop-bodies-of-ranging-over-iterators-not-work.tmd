@@ -1,0 +1,48 @@
+
+### `recover` Calls in the Loop Bodies of Ranging Over Iterators Don't Work
+
+By Go specification, the following program prints `123`.
+
+'''Go
+package main
+
+import "fmt"
+
+func main() {
+	defer foo()
+	panic(123)
+}
+
+func foo() {
+	for range 1 {
+		fmt.Println(recover()) // 123
+	}
+}
+'''
+
+Similarly, the following one should also print `123`.
+But it prints `<nil>` then crashes (since Go toolchain version 1.23.0).
+
+'''Go
+package main
+
+import "fmt"
+
+func main() {
+	defer foo()
+	panic(123)
+}
+
+func foo() {
+	for range iter {
+		fmt.Println(recover())
+	}
+}
+
+func iter(yield func() bool) {
+	yield()
+}
+'''
+
+%% (The releatd issue: __https://github.com/golang/go/issues/71685__.)
+
