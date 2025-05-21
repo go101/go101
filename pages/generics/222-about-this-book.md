@@ -29,6 +29,11 @@ the behavior differences between Go toolchain versions.
 
 <!--
 
+https://github.com/golang/go/issues/60377
+    A defined interface type X can be converted to a defined interface type Y,
+    and vice versa, if their underlying types are identical.
+    That is the difference between interface types and non-interface types.
+
 https://github.com/golang/go/issues/67025
 
 https://github.com/golang/go/issues/66751
