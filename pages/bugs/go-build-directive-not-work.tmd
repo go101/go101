@@ -34,7 +34,7 @@ package main
 import "fmt"
 
 func filter(n int) bool {
-	return n&3 == 1
+	return n&0xF == 0
 }
 
 // Search values and return them without perversing order.
@@ -53,24 +53,28 @@ func search(start, end int) (r []int) {
 	r = make([]int, count)
 	return
 }
+
+func main() {
+    fmt.Println(search(10, 36))
+}
 '''
 
 When run the Go file as a script with the `go run` command
 (without a `go.mod` file involved), the example program prints
-`[13 0]` with Go toolchain 1.22.x versions,
+`[16 0]` with Go toolchain 1.22.x versions,
 due to Go 1.22+ semantics are used, which is wrongly.
-It should prints `[17 13]`, as with older and newer toolchain versions.
+It should prints `[32 16]`, as with older (1.21-) and newer (1.23+) toolchain versions.
 
 '''
-$ gotv 1.21. run example.go
-[Run]: $HOME/.cache/gotv/tag_go1.21.12/bin/go run aa.go
-[17 13]
-$ gotv 1.22. run example.go
-[Run]: $HOME/.cache/gotv/tag_go1.22.5/bin/go run aa.go
-[13 0]
-$ gotv 1.23. run example.go
-[Run]: $HOME/.cache/gotv/tag_go1.23rc1/bin/go run aa.go
-[17 13]
+$ gotv 1.21 run a.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.13/bin/go run a.go
+[32 16]
+$ gotv 1.22 run a.go
+[Run]: $HOME/.cache/gotv/tag_go1.22.12/bin/go run a.go
+[16 0]
+$ gotv 1.23 run a.go
+[Run]: $HOME/.cache/gotv/tag_go1.23.9/bin/go run a.go
+[32 16]
 '''
 
 The Go core team deliberately __refused to fix the bug for 1.22.x versions__.
