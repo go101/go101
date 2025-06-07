@@ -1,7 +1,11 @@
 
 # Go Generics 101 Update History
 
-### v1.24.a (2023/Dec/23)
+### v1.25.a (2025/Jun/08)
+
+* remove the "core type" terminology.
+
+### v1.24.a (2024/Dec/23)
 
 * mention generic type aliases are supported since Go 1.24.
 

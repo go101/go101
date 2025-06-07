@@ -8,7 +8,7 @@ are valid and which are invalid in generic function bodies.
 Within a generic function body,
 an operation on a value of a type parameter is valid only if it is
 valid for values of every type in the type set of the constraint of the type parameter.
-In the current custom generic design and implementation (Go 1.24),
+In the current custom generic design and implementation (Go 1.25),
 it is not always vice versa.
 Some extra requirements must be met to make the operation valid.
 
@@ -200,66 +200,9 @@ Please read the [strings in Go](https://go101.org/article/string.html) article
 and [this issue](https://github.com/golang/go/issues/28591)
 for why the two functions return different results.
 
-## The core type of a type
+## A function of a type parameter is callable only if all types in the type set of the type parameter share an identical [underlying type](https://go101.org/article/type-system-overview.html#underlying-type)
 
-A non-interface type always has a core type, which
-is the underlying type of the non-interface type.
-Generally, we don't care about such case in using custom generics.
-
-An interface type might have a core type or not.
-
-1. Generally speaking, if all types in the type set of the interface type (a constraint)
-share an identical [underlying type](https://go101.org/article/type-system-overview.html#underlying-type),
-then the identical underlying type is called the core type of the interface type.
-1. If the types in the type set of then interface type don't share an identical underlying type
-but they are all [channel types](https://go101.org/article/channel.html)
-which share an identical element type `E`, and all directional channels in them have the same direction,
-then the core type of the interface type is the directional channel type
-`chan<- E` or `<-chan E`, depending on the direction of the directional channels present.
-1. For cases other than the above two, the interface type has not a core type.
-
-For example, in the following code, each of the types shown in the first group
-has a core type (indicated in the tail comments), yet the types shown in the
-second group all have no core types.
-
-```Go
-type (
-	Age      int                   // int
-	AgeC     interface {Age}       // int
-	AgeOrInt interface {Age | int} // int
-	Ints     interface {~int}      // int
-	
-	AgeSlice  []Age                        // []Age
-	AgeSlices interface{~[]Age}            // []Age
-	AgeSliceC interface {[]Age | AgeSlice} // []Age
-	
-	C1 interface {chan int | chan<- int} // chan<- int
-	C2 interface {chan int | <-chan int} // <-chan int
-)
-
-type (
-	AgeOrIntSlice interface {[]Age | []int}
-	OneParamFuncs interface {func(int) | func(int) bool}
-	Streams       interface {chan int | chan Age}
-	C3            interface {chan<- int | <-chan int}
-)
-```
-
-Many operations require the constraint of a type parameter has a core type.
-
-To make descriptions simple, sometimes, we also call the core type of the constraint
-of a type parameter as the core type of the type parameter.
-
-Please note that, since a future Go version, [the core type concept]
-might be removed so that many of the limitations listed below will be eliminated in future Go versions.
-
-[the core type concept]: https://github.com/golang/go/issues/63940
-
-## A function is required to have a core type to be callable
-
-For example, currently (Go 1.24), in the following code, the functions `foo` and `bar` don't compile, but the `tag` function does.
-The reason is the `F` type parameters in the `foo` and `bar` generic functions
-both have not a core type, but the `F` type parameter in the `tag` generic function have.
+For example, currently (Go 1.25), in the following code, the functions `foo` and `bar` don't compile, but the `tag` function does.
 
 ```Go
 func foo[F func(int) | func(any)] (f F, x int) {
@@ -279,9 +222,9 @@ func tag[F func(int) | Fun] (f F, x int) {
 
 It is unclear whether or not the rule will be relaxed in future Go versions.
 
-## The type literal in a composite literal must have a core type
+## If the type `T` in a composite literal is a type parameter, then all types in the type set of the type parameter must share an identical [underlying type](https://go101.org/article/type-system-overview.html#underlying-type)
 
-For example, currently (Go 1.24), in the following code snippet,
+For example, currently (Go 1.25), in the following code snippet,
 the functions `foo` and `bar` compile okay, but the other ones don't.
 
 ```Go
@@ -306,12 +249,11 @@ func jup[T [2]int | map[int]int] () {
 
 ## An element index operation requires the container operand's type set not to include maps and non-maps at the same time
 
-And if all types in the type set are maps, then their underlying types must be identical
-(in other words, the type of the operand must have a core type).
+And if all types in the type set are maps, then their underlying types must be identical.
 Otherwise, their element types must be identical.
 The elements of strings are viewed as `byte` values.
 
-For example, currently (Go 1.24), in the following code snippet, only the functions `foo` and `bar` compile okay.
+For example, currently (Go 1.25), in the following code snippet, only the functions `foo` and `bar` compile okay.
 
 ```Go
 func foo[T []byte | [2]byte | string](c T) {
@@ -345,29 +287,27 @@ func ind[K byte | int | int16](s []int, i K) {
 }
 ```
 
-_(It looks the current Go specification is not correct on this.
-The specification requires the index expression must has a core type.)_
+## Deriving a slice from a value of a type parameter requires that all types in the type set of the type parameter share an identical [underlying type](https://go101.org/article/type-system-overview.html#underlying-type)
 
-## A (sub)slice operation requires the container operand has a core type
 
-For example, currently (Go 1.24), the following two functions both fail to compile,
+For example, currently (Go 1.25), the following two functions both fail to compile,
 even if the subslice operations are valid for all types in the corresponding type sets.
 
 ```Go
 func foo[T []int | [2]int](c T) {
-	_ = c[:] // invalid operation: cannot slice c: T has no core type
+	_ = c[:] // cannot slice c
 }
 
 func bar[T [8]int | [2]int](c T) {
-	_ = c[:] // invalid operation: cannot slice c: T has no core type
+	_ = c[:] // cannot slice c
 }
 ```
 
 The restriction might be removed in the future Go versions
 (again, just my hope, in fact I'm not sure on this).
 
-There is an exception for this rule. If the container operand's type set
-only include string and byte slice types, then it is not required to have a core type.
+Please note that, deriving from a value of a type parameter
+whose type set contains only string and byte slice types is allowed.
 For example, the following function compiles okay.
 
 ```Go
@@ -376,18 +316,15 @@ func lol[T string | []byte](c T) {
 }
 ```
 
-Same as element index operations, if the type of an index expression is a type parameter,
-then all types in its type set must be integers.
+## If the ranged container in a `for-range` loop is a type parameter, then all types in the type set of the type parameter must share an identical [underlying type](https://go101.org/article/type-system-overview.html#underlying-type)
 
-## In a `for-range` loop, the ranged container is required to have a core type
-
-For example, currently (Go 1.24), in the following code, 
+For example, currently (Go 1.25), in the following code, 
 only the last two functions, `dot1` and `dot2`, compile okay.
 
 ```Go
 func values[T []E | map[int]E, E any](kvs T) []E {
 	r := make([]E, 0, len(kvs))
-	// error: cannot range over kvs (T has no core type)
+	// error: cannot range over kvs
 	for _, v := range kvs {
 		r = append(r, v)
 	}
@@ -396,36 +333,31 @@ func values[T []E | map[int]E, E any](kvs T) []E {
 
 func keys[T map[int]string | map[int]int](kvs T) []int {
 	r := make([]int, 0, len(kvs))
-	// error: cannot range over kvs (T has no core type)
-	for k := range kvs {
+	for k := range kvs { // error: cannot range over kvs
 		r = append(r, k)
 	}
 	return r
 }
 
 func sum[M map[int]int | map[string]int](m M) (sum int) {
-	// error: cannot range over m (M has no core type)
-	for _, v := range m {
+	for _, v := range m { // error: cannot range over m
 		sum += v
 	}
 	return
 }
 
 func foo[T []int | []string] (v T) {
-	// error: cannot range over v (T has no core type)
-	for range v {}
+	for range v {} // error: cannot range over v
 }
 
 func bar[T [3]int | [6]int] (v T) {
-	// error: cannot range over v (T has no core type)
-	for range v {}
+	for range v {} // error: cannot range over v
 }
 
 type MyInt int
 
 func cat[T []int | []MyInt] (v T) {
-	// error: cannot range over v (T has no core type)
-	for range v {}
+	for range v {} // error: cannot range over v
 }
 
 type Slice []int
@@ -470,7 +402,7 @@ whereas the iterated elements for `[]byte` are `byte` values.
 
 ```Go
 func mud[T string | []byte] (v T) {
-	for range v {} // error: cannot range over v (T has no core type)
+	for range v {} // error: cannot range over v
 }
 ```
 
@@ -487,14 +419,13 @@ The conversion `[]byte(v)` (if it follows the `range` keyword) is [specifically
 optimized by the official standard Go compiler](https://go101.org/article/string.html#conversion-optimizations) so that it doesn't duplicate
 underlying bytes.
 
-The following function doesn't compile now (Go 1.24),
+The following function doesn't compile now (Go 1.25),
 even if the types of the two iteration variables are always `int` and `rune`.
 Whether or not it will compile in future Go versions is unclear.
 
 ```Go
 func aka[T string | []rune](runes T) {
-	// cannot range over runes (T has no core type)
-	for i, r := range runes {
+	for i, r := range runes { // cannot range over runes
 		_ = i
 		_ = r
 	}
@@ -510,7 +441,7 @@ https://github.com/golang/go/issues/51053
 
 Firstly, we should know [the conversion rules for ordinary types/values](https://go101.org/article/value-conversions-assignments-and-comparisons.html).
 
-By the current specification (Go 1.24),
+By the current specification (Go 1.25),
 given two types `From` and `To`, assume at least one of them is a type parameter,
 then a value of `From` can be converted to `To` if a value of each type in
 the type set of `From` can be converted to each type in the type set of `T`
@@ -615,7 +546,7 @@ Firstly, we should know [the assignment rules for ordinary types/values](https:/
 
 In the following descriptions, the type of the destination value is called as the destination type, and the type of the source value is called as the source type.
 
-By the current specification (Go 1.24), for a type parameter involved assignment,
+By the current specification (Go 1.25), for a type parameter involved assignment,
 
 * if the destination type is a type parameter and the source value is
   an untyped value, then the assignment is valid only if
@@ -800,22 +731,23 @@ func MyNew[T any]() *T {
 }
 ```
 
-## A call to the predeclared `make` function requires its first argument (the container type) has a core type 
+## Requirements for a call to the predeclared `make` function when the first argument is a type parameter
 
-Currently (Go 1.24), in the following code snippet, the functions `voc` and `ted` both
+Requirements for the type set of the type parameter:
+
+* All types in the type set must share an identical [underlying type](https://go101.org/article/type-system-overview.html#underlying-type), or
+* All types in the type set are channel types sharing the same element type and the channel directions must not conflict (the type set must not contain both receive-only and send-only channel types).
+
+Currently (Go 1.25), in the following code snippet, the functions `voc` and `ted` both
 fail to compile, the other two compile okay.
-The reason is the first argument of a call to the predeclared `make` function
-is required to have a core type.
-Neither of the `voc` and `ted` functions satisfies this requirement,
-whereas both of the other two functions satisfy this requirement.
 
 ```Go
 func voc[T chan bool | chan int]() {
-	_ = make(T) // error: invalid argument: no core type
+	_ = make(T) // error: invalid argument: cannot make T
 }
 
 func ted[T chan<- int | <-chan int]() {
-	_ = make(T) // error: invalid argument: no core type
+	_ = make(T) // error: invalid argument: cannot make T
 }
 
 type Stream chan int
@@ -838,30 +770,15 @@ channel has a specified type (either a type parameter, or an ordinary type).
 Personally, I think the requirement is over strict.
 After all, for some cases, the supposed subsequent operations don't happen.
 
-To use values of a type parameter which doesn't have a core type within a generic function,
-we can pass such values as value arguments into the function, as the following code shows.
-
-```Go
-func doSomething(any) {}
-
-func voc2[T chan bool | chan int](x T) {
-	doSomething(x)
-}
-
-func ted2[T chan<- int | <-chan int](x T) {
-	doSomething(x)
-}
-```
-
 Because of the same requirement, neither of the following two functions compile.
 
 ```Go
 func zig[T ~[]int | map[int]int](c T) {
-	_ = make(T) // error: invalid argument: no core type
+	_ = make(T) // error: invalid argument: cannot make T
 }
 
 func rat[T ~[]int | ~[]bool](c T) {
-	_ = make(T) // error: invalid argument: no core type
+	_ = make(T) // error: invalid argument: cannot make T
 }
 ```
 
@@ -893,11 +810,6 @@ func dig[T ~chan int | ~chan bool | ~chan<- string](x T) {
 }
 ```
 
-Note that the current Go specification requires that the argument of
-a call to the predeclared `close` function must have a core type.
-But the above example doesn't satisfy this requirement.
-This is inconsistent with the implementation of the official standard Go compiler.
-
 ## Calls to predeclared `complex`, `real` and `imag` functions don't accept arguments of type parameter now
 
 Calling the three functions with arguments of type parameters might break the principle rule mentioned in the first section of the current chapter.
@@ -915,33 +827,12 @@ Empty-type-set interface types are totally useless in practice,
 but they might affect the implementation perfection from theory view.
 
 There are really several imperfections in the implementation
-of the current official standard Go compiler (v1.24.n).
+of the current official standard Go compiler (v1.25.n).
 
-For [example](https://github.com/golang/go/issues/51470),
-should the following function compile?
-It does with the latest official standard Go compiler (v1.24.n).
-However, one of the above sections has mentioned that a `make` call
-requires its argument must have a core type.
-The type set of the constraint `C` declared in the following code
-is empty, so it has not a core type, then the `make` call within
-the `foo` function should not compile.
-
-```Go
-// This is an empty-type-set interface type.
-type C interface {
-        map[int]int
-        M()
-}
-       
-func foo[T C]() {
-        var _ = make(T)
-}
-```
-
-This following is [another example](https://github.com/golang/go/issues/51917#issuecomment-1084188702),
+This following is [an example](https://github.com/golang/go/issues/51917#issuecomment-1084188702),
 in which all the function calls in the function `g` should compile okay.
 However, two of them fail to compile with
-the latest official standard Go compiler (v1.24.n).
+the latest official standard Go compiler (v1.25.n).
 
 ```Go
 func f1[T any](x T) {}

@@ -8,7 +8,7 @@ implementation of Go custom generics.
 {#embed-type-parameter}
 ## Embedding type parameters is not allowed now
 
-Due to design and implementation complexities, currently (Go 1.24), type parameters are
+Due to design and implementation complexities, currently (Go 1.25), type parameters are
 disallowed to be embedded in either interface types or struct types.
 
 For example, the following type declaration is illegal.
@@ -34,9 +34,9 @@ The Go specification states:
 
 > The method set of an interface type is the intersection of the method sets of each type in the interface's type set.
 
-However, currently (Go toolchain 1.24), only the methods explicitly specified in interface types are calculated into method sets.
+However, currently (Go toolchain 1.25), only the methods explicitly specified in interface types are calculated into method sets.
 For example, in the following code, the method set of the constraint should contain both `Foo` and `Bar`,
-and the code should compile okay, but it doesn't (as of Go toolchain 1.24).
+and the code should compile okay, but it doesn't (as of Go toolchain 1.25).
 
 ```Go
 package main
@@ -58,22 +58,22 @@ func foobar[T C](v T) {
 func main() {}
 ```
 
-This restriction is planed [to be removed in future Go toolchain versions](https://github.com/golang/go/issues/51183).
+This restriction is planned [to be removed in future Go toolchain versions](https://github.com/golang/go/issues/51183).
 
 ## No ways to specific a field set for a constraint
 
 We know that an interface type may specify a method set.
-But up to now (Go 1.24), it could not specify a (struct) field set.
+But up to now (Go 1.25), it could not specify a (struct) field set.
 
 There is a proposal for this: https://github.com/golang/go/issues/51259.
 
 The restriction might be lifted from future Go versions.
 
-## No ways to use common fields for a constraint if the constraint has not a core (struct) type
+## Fields of values of type parameters are not accessible
 
-Currently (Go 1.24), even if all types in the type set of a constraint
+Currently (Go 1.25), even if all types in the type set of a constraint
 are structs and they share some common fields, the common fields still
-could not be used if the structs don't share the identical underlying type.
+can't be used.
 
 For example, the generic functions in the following example all fail to compile.
 
@@ -112,33 +112,25 @@ func F14[T S1 | S4](v T) {
 func main() {}
 ```
 
-There is [a proposal](https://github.com/golang/go/issues/48522) to remove this limit.
 A temporary (quite verbose) workaround is to specify/declare some getter and setter methods
-for involved constraints and concrete types.
+for the involved constraints and concrete types.
 
-## Fields of values of type parameters are not accessible
-
-Currently (Go 1.24), even if a type parameter has a core struct type,
-the fields of the core struct type still may not be accessed through
-values of the type parameter.
-For example, the following code doesn't compile.
+For a special case, the following code also doesn't compile.
 
 ```Go
 type S struct{x, y, z int}
 
-func mod[T S](v *T) {
-	v.x = 1 // error: v.x undefined
+func mod[T S](v T) {
+	_ = v.x // error: v.x undefined
 }
 ```
-
-The restriction mentioned in the last section is actually a special case
-of the one described in the current section.
 
 The restriction (described in the current section) was [added just before
 Go 1.18 is released](https://github.com/golang/go/issues/51576).
 It might be removed since a future Go version.
 
 <!--
+https://github.com/golang/go/issues/48522
 https://github.com/golang/go/issues/50417
 https://github.com/golang/go/issues/50233
 -->
@@ -149,7 +141,7 @@ It has been mentioned that [a type parameter is an interface type from semantic 
 On the other hand, a type parameter has wave-particle duality.
 For some situations, it acts as the types in its type set.
 
-Up to now (Go 1.24), values of type parameters may not be asserted.
+Up to now (Go 1.25), values of type parameters may not be asserted.
 The following two functions both fail to compile.
 
 ```Go
@@ -205,7 +197,7 @@ follow the progress of this problem.
 
 ## Generic methods are not supported
 
-Currently (Go 1.24), for design and implementation difficulties,
+Currently (Go 1.25), for design and implementation difficulties,
 generic methods (not methods of generic types) are
 [not supported](https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md#methods-may-not-take-additional-type-arguments).
 

@@ -249,7 +249,7 @@ Interface types whose type sets can be defined entirely by a method set (may be 
 are called basic interface types.
 Before 1.18, Go only supports basic interface types.
 Basic interfaces may be used as either value types or type constraints,
-but non-basic interfaces may only be used as type constraints (as of Go 1.24).
+but non-basic interfaces may only be used as type constraints (as of Go 1.25).
 
 Take the types declared above as an example,, `L`, `M`, `U`, `Z` and `any` are basic types.
 
@@ -298,7 +298,7 @@ type C interface {
 
 _(Note, some earlier Go toolchain 1.18 and 1.19 versions failed to exclude `[2]any` from the type set of `C`. The bug has been fixed in newer Go toolchain 1.18 and 1.19 versions.)_
 
-Currently (Go 1.24), the `comparable` interface is treated as a non-basic interface type.
+Currently (Go 1.25), the `comparable` interface is treated as a non-basic interface type.
 So, now, it may only be used as type parameter constraints, not as value types.
 The following code is illegal:
 
@@ -397,7 +397,7 @@ type C interface {
 }
 ```
 
-As of Go 1.24, type satisfactions are used to verify whether or not an ordinary value type
+As of Go 1.25, type satisfactions are used to verify whether or not an ordinary value type
 can be used as a type argument of an instantiation of a generic type/function.
 Please read the next chapter for details.
 
@@ -406,7 +406,7 @@ Please read the next chapter for details.
 The above has mentioned that a union term may not be a type parameter. There are two other requirements for union terms.
 
 The first is an implementation specific requirement: a term union with more than one term cannot contain the predeclared identifier `comparable` or interfaces that have methods. 
-For example, the following term unions are both illegal (as of Go toolchain 1.24):
+For example, the following term unions are both illegal (as of Go toolchain 1.25):
 
 ```Go
 []byte | comparable
@@ -634,7 +634,7 @@ Two different type parameters are never identical.
 The type of a type parameter is a constraint, a.k.a an interface type.
 This means the underlying type of a type parameter type should be an interface type.
 However, this doesn't mean a type parameter behaves like an interface type.
-Its values may neither box non-interface values nor be type asserted (as of Go 1.24).
+Its values may neither box non-interface values nor be type asserted (as of Go 1.25).
 In fact, it is almost totally meaningless to talk about underlying types of type parameters.
 We just need to know that the underlying type of a type parameter is not itself.
 And we ought to think that two type parameters never share an identical underlying type,
@@ -666,7 +666,7 @@ type Cy[T int] interface {
 }
 ```
 
-In fact, currently (Go 1.24), [type parameters may not be embedded in struct types](888-the-status-quo-of-Go-custom-generics.md#embed-type-parameter), too.
+In fact, currently (Go 1.25), [type parameters may not be embedded in struct types](888-the-status-quo-of-Go-custom-generics.md#embed-type-parameter), too.
 
 {#type-parameter-scope}
 ## The scopes of a type parameters
