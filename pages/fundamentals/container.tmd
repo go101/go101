@@ -911,7 +911,7 @@ func main() {
 '''
 
 The first argument of an `append` function
-call can't be an untyped `nil` (up to Go 1.24).
+call can't be an untyped `nil` (up to Go 1.25).
 
 @@@ #make
 ###+++++++++++ Create Slices and Maps With the Built-in `make` Function
@@ -1440,7 +1440,7 @@ can be used to __copy bytes from a string to a byte slice__.
 // __ copy bytes ... :: string.html#use-string-as-byte-slice
 
 Neither of the two arguments of a `copy`
-function call can be an untyped `nil` value (up to Go 1.24).
+function call can be an untyped `nil` value (up to Go 1.25).
 
 
 @@@ #iteration
@@ -1773,7 +1773,7 @@ func main() {
 }
 '''
 
-Use different Go Toolchain versions to run the code (__gotv__ is a tool used to
+By using different Go Toolchain versions to run the code (__gotv__ is a tool used to
 manage and use multiple coexisting installations of official Go toolchain versions),
 we will get different outputs:
 
@@ -1934,35 +1934,6 @@ Nil array pointer arguments for the two functions will not produce panics.
 ''' go
 var pa *[5]int // == nil
 fmt.Println(len(pa), cap(pa)) // 5 5
-'''
-
-@@@ #memclr
-###+++++++++++ The `memclr` Optimization
-
-Assume `t0` is a literal presentation of the zero value of
-type `T`, and `a` is an array or slice which element type
-is `T`, then the standard Go compiler will translate the following
-one-iteration-variable `for-range` loop block
-@@@ .line-numbers
-''' go
-for i := range a {
-	a[i] = t0
-}
-'''
-to an __internal `memclr` call__, generally which is faster
-than resetting each element one by one.
-
-// __ internal `memclr` call :: https://github.com/golang/go/issues/5373
-
-The optimization was adopted in the standard Go compiler 1.5.
-
-Since Go Toolchain 1.19, the optimization also works if the ranged value is an array pointer.
-
-Note: Go 1.21 introduced a `clear` builtin function,
-which can be used to clear map entries and reset slice elements.
-We should try to use that function instead of relying on this optimization
-to reset slice/array elements.
-Please read the next section for the `clear` builtin function.
 
 @@@ #clear
 ###+++++++++++ Use the built-in `clear` function to clear map entries and reset slice elements
@@ -2003,11 +1974,27 @@ func main() {
 
 We can find that the `clear` function can even delete map entries with keys as `NaN`.
 
+
+'''
+
+@@@ #memclr
+###+++++++++++ The `memclr` Optimization
+
+The Go standard Go compiler makes several optimizations so that
+it will convert loops with certain pattterns into internal
+`memclr` calls. Before Go 1.21, we can make use of these optimizations
+to reset array/slice elements and clear map entries.
+
+These optimizations (and many more others) are collected in
+__Go Optimizations 101__ book.
+
+// __ Go Optimizations 101 :: https://go101.org/optimizations/101.html
+
 @@@ #compile-time-evaluation
 ###+++++++++++ Calls to the Built-in `len` and `cap` Functions May Be Evaluated at Compile Time
 
-If the argument passed to a built-in function `len` or
-`cap` function call is an array or an array pointer value,
+If the argument passed to a call of the built-in function `len` or
+`cap` function is an array or an array pointer value,
 then the call is evaluated at compile time and the result of the call
 is a typed constant with type as the built-in type `int`.
 The result can be bound to named constants.
@@ -2031,6 +2018,14 @@ func main() {
 	fmt.Println(M) // 7
 }
 '''
+
+There are more scenarios in which calls to
+the built-in function `len` and `cap` functions are
+evaluated at compile time.
+Please read the __Go Details & Tips 101__ book for such cases.
+
+// __ Go Details & Tips 101 :: https://go101.org/details-and-tips/101.html
+
 
 @@@ #modify-slice-length-and-capacity
 ###+++++++++++ Modify the Length and Capacity Properties of a Slice Individually
@@ -2079,9 +2074,21 @@ The reflection way is very inefficient, it is slower than a slice assignment.
 @@@ #slice-manipulations
 ###+++++++++++ More Slice Manipulations
 
+@@@ #delete-slice-elements
+//
+
+@@@ #delete-one-slice-element
+//
+
 Go doesn't support more built-in slice operations,
 such as slice clone, element deletion and insertion.
 We must compose the built-in ways to achieve those operations.
+
+Please read the "Arrays and Slices" chapter in the
+__Go Optimizations 101__ book for how to efficiently
+make such operations.
+
+"""comment
 
 In the following examples in the current section,
 assume `s` is the talked slice,
@@ -2090,7 +2097,7 @@ is a zero value literal representation of `T`.
 
 ###----------- Clone slices
 
-For the current Go version (1.24), the simplest way to clone a slice is:
+For the current Go version (1.25), the simplest way to clone a slice is:
 @@@ .disable-line-numbers111
 ''' go
 sClone := append(s[:0:0], s...)
@@ -2113,7 +2120,7 @@ sClone := make([]T, len(s))
 copy(sClone, s)
 
 // Or the following one-line make+append way.
-// As of Go Toolchain v1.24.n, this way is a bit
+// As of Go Toolchain v1.25.n, this way is a bit
 // slower than the above two-line make+copy way.
 sClone := append(make([]T, 0, len(s)), s...)
 '''
@@ -2167,6 +2174,7 @@ For example, it only works for the first case in the following code:
 }
 
 @@@ #delete-slice-elements
+@@@ #delete-one-slice-element
 ###----------- Delete a segment of slice elements
 
 Above has mentioned that the elements a slice are stored contiguously
@@ -2299,7 +2307,7 @@ s = append(s[:i], append(elements, s[i:]...)...)
 // might make at most two allocations.
 // The following verbose way always copies s[i:]
 // once and will only make at most one allocation.
-// However, as of Go Toolchain v1.24.n, the "make"
+// However, as of Go Toolchain v1.25.n, the "make"
 // call will clear partial of just allocated elements,
 // which is actually unnecessary. So the verbose
 // way is more efficient than the one-line way
@@ -2363,6 +2371,8 @@ the above ways may not satisfy some specific requirements in practice.
 So, please learn and apply elastically.
 This may be the reason why Go doesn't support the more operations
 introduced above in the built-in way.
+
+""" 
 
 ###+++++++++++ Use Maps to Simulate Sets
 

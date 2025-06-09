@@ -314,91 +314,10 @@ func main() {
 @@@ #conversion-optimizations
 ###+++++++++++ Compiler Optimizations for Conversions Between Strings and Byte Slices
 
-Above has mentioned that the underlying bytes in the conversions
-between strings and byte slices will be copied.
-The standard Go compiler makes some optimizations,
-which are proven to still work in Go Toolchain 1.24.n,
-for some special scenarios to avoid the duplicate copies.
-These scenarios include:
-*
-   a conversion (from string to byte slice) which
-   follows the `range` keyword in a `for-range` loop.
-*
-   a conversion (from byte slice to string) which is used as a map key in map element retrieval indexing syntax.
-*
-   a conversion (from byte slice to string) which is used in a comparison.
-*
-   a conversion (from byte slice to string) which is used in
-   a string concatenation, and at least one of concatenated
-   string values is a non-blank string constant.
+Please read the "String and Byte Slices" chapter in the
+__Go Optimizations 101__ book.
 
-Example:
-@@@ .line-numbers
-''' go
-package main
-
-import "fmt"
-
-func main() {
-	var str = "world"
-	// Here, the []byte(str) conversion will
-	// not copy the underlying bytes of str.
-	for i, b := range []byte(str) {
-		fmt.Println(i, ":", b)
-	}
-
-	key := []byte{'k', 'e', 'y'}
-	m := map[string]string{}
-	// The string(key) conversion copys the bytes in key.
-	m[string(key)] = "value"
-	// Here, this string(key) conversion doesn't copy
-	// the bytes in key. The optimization will be still
-	// made, even if key is a package-level variable.
-	fmt.Println(m[string(key)]) // value (very possible)
-}
-'''
-
-Note, the last line might not output `value` if
-there are data races in evaluating `string(key)`.
-However, such data races will never cause panics.
-
-Another example:
-@@@ .line-numbers
-''' go
-package main
-
-import "fmt"
-import "testing"
-
-var s string
-var x = []byte{1023: 'x'}
-var y = []byte{1023: 'y'}
-
-func fc() {
-	// None of the below 4 conversions will
-	// copy the underlying bytes of x and y.
-	// Surely, the underlying bytes of x and y will
-	// be still copied in the string concatenation.
-	if string(x) != string(y) {
-		s = (" " + string(x) + string(y))[1:]
-	}
-}
-
-func fd() {
-	// Only the two conversions in the comparison
-	// will not copy the underlying bytes of x and y.
-	if string(x) != string(y) {
-		// Please note the difference between the
-		// following concatenation and the one in fc.
-		s = string(x) + string(y)
-	}
-}
-
-func main() {
-	fmt.Println(testing.AllocsPerRun(1, fc)) // 1
-	fmt.Println(testing.AllocsPerRun(1, fd)) // 3
-}
-'''
+// __ Go Optimizations 101 :: https://go101.org/optimizations/101.html
 
 { //
 https://groups.google.com/forum/#!topic/golang-nuts/EPhPFpuMTWI
@@ -489,7 +408,7 @@ func main() {
 
 From the above several examples, we know that
 `len(s)` will return the number of bytes in string `s`.
-The time complexity of `len(s)` is `%% O %%(1)`.
+The time complexity of `len(s)` is %% `O(1)` %%.
 How to get the number of runes in a string?
 Using a `for-range` loop to iterate and count all runes is a way, and using the
 __RuneCountInString__ function in the `unicode/utf8` standard package is another way.
@@ -497,32 +416,17 @@ The efficiencies of the two ways are almost the same.
 The third way is to use `len([]rune(s))` to get the count of runes in string `s`.
 Since Go Toolchain 1.11, the standard Go compiler makes an optimization for the third way
 to avoid an unnecessary deep copy so that it is as efficient as the former two ways.
-Please note that the time complexities of these ways are all `%% O %%(n)`.
+Please note that the time complexities of these ways are all %% `O(n)` %%.
 
 // __ RuneCountInString :: https://golang.org/pkg/unicode/utf8/#RuneCountInString
 
 @@@ #string-concatenation
 ###+++++++++++ More String Concatenation Methods
 
-Besides using the `+` operator to concatenate strings, we can also use following ways to concatenate strings.
-*
-   The `Sprintf`/`Sprint`/`Sprintln` functions
-   in the `fmt` standard package
-   can be used to concatenate values of any types, including string types.
-*
-   Use the `Join` function in the `strings` standard package.
-*
-   The `Buffer` type in the `bytes` standard package
-   (or the built-in `copy` function) can be used to build byte slices,
-   which afterwards can be converted to string values.
-*
-   Since Go 1.10, the `Builder` type in the `strings` standard package
-   can be used to build strings. Comparing with `bytes.Buffer` way,
-   this way avoids making an unnecessary duplicated copy of underlying bytes for the result string.
+Please read the "String and Byte Slices" chapter in the
+__Go Optimizations 101__ book.
 
-The standard Go compiler makes optimizations for string concatenations by using the `+` operator.
-So generally, using `+` operator to concatenate strings is convenient and efficient
-if all of the concatenated strings may present in a concatenation statement.
+// __ Go Optimizations 101 :: https://go101.org/optimizations/101.html
 
 @@@ #use-string-as-byte-slice
 ###+++++++++++ Sugar: Use Strings as Byte Slices

@@ -27,7 +27,7 @@ which is called the type set of the interface type.
 
 The requirements defined for an interface type are expressed
 by embedding some interface elements in the interface type.
-Currently (Go 1.24), there are two kinds of interface elements, method elements and type elements.
+Currently (Go 1.25), there are two kinds of interface elements, method elements and type elements.
 
 *
    A method element presents as a __method specification__.
@@ -161,7 +161,7 @@ the method set of any value of the type.
 Basic interface types are the interface types which may be used as value types.
 A non-basic interface type is also called a constraint-only interface type.
 
-Currently (Go 1.24), every basic interface type could be defined entirely
+Currently (Go 1.25), every basic interface type could be defined entirely
 by a method set (may be empty).
 In other words, a basic interface type doesn't need type elements to be defined.
 
@@ -262,7 +262,7 @@ This is an important fact in Go.
 @@@ #boxing
 ###+++++++++++ Value Boxing
 
-Again, currently (Go 1.24), the types of interface values must be basic interface types.
+Again, currently (Go 1.25), the types of interface values must be basic interface types.
 In the remaining contents of the current article,
 when a value type is mentioned, the value type may be
 non-interface type or a basic interface type.
@@ -282,8 +282,12 @@ When a `T` value is converted (assigned) to an `I` value,
    if type `T` is a non-interface type, then
    a copy of the `T` value is boxed (or encapsulated)
    into the result (or destination) `I` value.
-   The time complexity of the copy is `%% O %%(n)`,
+   The time complexity of the copy is %% `O(n)` %%,
    where `n` is the size of copied `T` value.
+   %%(The standard Go compiler makes several optimizations
+   to reduce the costs in boxing values satisfying certain conditions.
+   Please read the "Interfaces" chapter in the
+   __Go Optimizations 101__ book for such optimizations.)
 *
    if type `T` is also an interface type, then
    a copy of the value boxed in the `T` value is boxed
@@ -298,6 +302,7 @@ When a `T` value is converted (assigned) to an `I` value,
    storage the pointers of the copy in the interface value.
    }
 
+// __ Go Optimizations 101 :: https://go101.org/optimizations/101.html
 // __ assignable :: constants-and-variables.html#assignment
 
 The type information of the boxed value is also stored in the result (or destination) interface value.
@@ -1044,21 +1049,6 @@ todo: need a picture. Three parts
 *  the implementation info layout
 *  the type info layout
 }
-
-###----------- Pointer dynamic value vs. non-pointer dynamic value
-
-The official Go compiler/runtime makes an optimization
-which makes boxing pointer values into interface values
-more efficient than boxing non-pointer values.
-For __small size values__, the efficiency differences are small,
-but for large size values, the differences may be not small.
-For the same optimization, type assertions with a pointer type
-are also more efficient than type assertions with the base type
-of the pointer type if the base type is a large size type.
-
-// __ small size values :: value-copy-cost.html
-
-So please try to avoid boxing large size values, box their pointers instead.
 
 ###----------- Values of `[]T` can't be directly converted to `[]I`,
     even if type `T` implements interface type `I`.

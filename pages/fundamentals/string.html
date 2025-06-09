@@ -348,100 +348,12 @@ Compiler Optimizations for Conversions Between Strings and Byte Slices
 </h3>
 <p></p>
 <div class="tmd-usual">
-Above has mentioned that the underlying bytes in the conversions between strings and byte slices will be copied. The standard Go compiler makes some optimizations, which are proven to still work in Go Toolchain 1.24.n, for some special scenarios to avoid the duplicate copies. These scenarios include:
-</div>
-<ul class="tmd-list">
-<li class="tmd-list-item">
-<div class="tmd-usual">
-a conversion (from string to byte slice) which follows the <code class="tmd-code-span">range</code> keyword in a <code class="tmd-code-span">for-range</code> loop.
-</div>
-</li>
-<li class="tmd-list-item">
-<div class="tmd-usual">
-a conversion (from byte slice to string) which is used as a map key in map element retrieval indexing syntax.
-</div>
-</li>
-<li class="tmd-list-item">
-<div class="tmd-usual">
-a conversion (from byte slice to string) which is used in a comparison.
-</div>
-</li>
-<li class="tmd-list-item">
-<div class="tmd-usual">
-a conversion (from byte slice to string) which is used in a string concatenation, and at least one of concatenated string values is a non-blank string constant.
-</div>
-</li>
-</ul>
-<p></p>
-<div class="tmd-usual">
-Example:
-</div>
-<pre class="tmd-code line-numbers">
-<code class="language-go">package main
-
-import "fmt"
-
-func main() {
-	var str = "world"
-	// Here, the []byte(str) conversion will
-	// not copy the underlying bytes of str.
-	for i, b := range []byte(str) {
-		fmt.Println(i, ":", b)
-	}
-
-	key := []byte{'k', 'e', 'y'}
-	m := map[string]string{}
-	// The string(key) conversion copys the bytes in key.
-	m[string(key)] = "value"
-	// Here, this string(key) conversion doesn't copy
-	// the bytes in key. The optimization will be still
-	// made, even if key is a package-level variable.
-	fmt.Println(m[string(key)]) // value (very possible)
-}
-</code></pre>
-<p></p>
-<div class="tmd-usual">
-Note, the last line might not output <code class="tmd-code-span">value</code> if there are data races in evaluating <code class="tmd-code-span">string(key)</code>. However, such data races will never cause panics.
+Please read the "String and Byte Slices" chapter in the <a href="https://go101.org/optimizations/101.html">Go Optimizations 101</a> book.
 </div>
 <p></p>
 <div class="tmd-usual">
-Another example:
+
 </div>
-<pre class="tmd-code line-numbers">
-<code class="language-go">package main
-
-import "fmt"
-import "testing"
-
-var s string
-var x = []byte{1023: 'x'}
-var y = []byte{1023: 'y'}
-
-func fc() {
-	// None of the below 4 conversions will
-	// copy the underlying bytes of x and y.
-	// Surely, the underlying bytes of x and y will
-	// be still copied in the string concatenation.
-	if string(x) != string(y) {
-		s = (" " + string(x) + string(y))[1:]
-	}
-}
-
-func fd() {
-	// Only the two conversions in the comparison
-	// will not copy the underlying bytes of x and y.
-	if string(x) != string(y) {
-		// Please note the difference between the
-		// following concatenation and the one in fc.
-		s = string(x) + string(y)
-	}
-}
-
-func main() {
-	fmt.Println(testing.AllocsPerRun(1, fc)) // 1
-	fmt.Println(testing.AllocsPerRun(1, fd)) // 3
-}
-</code></pre>
 <p></p>
 <p></p>
 <h3 class="tmd-header-3">
@@ -556,7 +468,7 @@ func main() {
 </code></pre>
 <p></p>
 <div class="tmd-usual">
-From the above several examples, we know that <code class="tmd-code-span">len(s)</code> will return the number of bytes in string <code class="tmd-code-span">s</code>. The time complexity of <code class="tmd-code-span">len(s)</code> is <code class="tmd-code-span">%% O %%(1)</code>. How to get the number of runes in a string? Using a <code class="tmd-code-span">for-range</code> loop to iterate and count all runes is a way, and using the <a href="https://golang.org/pkg/unicode/utf8/#RuneCountInString">RuneCountInString</a> function in the <code class="tmd-code-span">unicode/utf8</code> standard package is another way. The efficiencies of the two ways are almost the same. The third way is to use <code class="tmd-code-span">len([]rune(s))</code> to get the count of runes in string <code class="tmd-code-span">s</code>. Since Go Toolchain 1.11, the standard Go compiler makes an optimization for the third way to avoid an unnecessary deep copy so that it is as efficient as the former two ways. Please note that the time complexities of these ways are all <code class="tmd-code-span">%% O %%(n)</code>.
+From the above several examples, we know that <code class="tmd-code-span">len(s)</code> will return the number of bytes in string <code class="tmd-code-span">s</code>. The time complexity of <code class="tmd-code-span">len(s)</code> is <span class="tmd-italic"><code class="tmd-code-span">O(1)</code></span>. How to get the number of runes in a string? Using a <code class="tmd-code-span">for-range</code> loop to iterate and count all runes is a way, and using the <a href="https://golang.org/pkg/unicode/utf8/#RuneCountInString">RuneCountInString</a> function in the <code class="tmd-code-span">unicode/utf8</code> standard package is another way. The efficiencies of the two ways are almost the same. The third way is to use <code class="tmd-code-span">len([]rune(s))</code> to get the count of runes in string <code class="tmd-code-span">s</code>. Since Go Toolchain 1.11, the standard Go compiler makes an optimization for the third way to avoid an unnecessary deep copy so that it is as efficient as the former two ways. Please note that the time complexities of these ways are all <span class="tmd-italic"><code class="tmd-code-span">O(n)</code></span>.
 </div>
 <p></p>
 <div class="tmd-usual">
@@ -568,33 +480,11 @@ More String Concatenation Methods
 </h3>
 <p></p>
 <div class="tmd-usual">
-Besides using the <code class="tmd-code-span">+</code> operator to concatenate strings, we can also use following ways to concatenate strings.
+Please read the "String and Byte Slices" chapter in the <a href="https://go101.org/optimizations/101.html">Go Optimizations 101</a> book.
 </div>
-<ul class="tmd-list">
-<li class="tmd-list-item">
-<div class="tmd-usual">
-The <code class="tmd-code-span">Sprintf</code>/<code class="tmd-code-span">Sprint</code>/<code class="tmd-code-span">Sprintln</code> functions in the <code class="tmd-code-span">fmt</code> standard package can be used to concatenate values of any types, including string types.
-</div>
-</li>
-<li class="tmd-list-item">
-<div class="tmd-usual">
-Use the <code class="tmd-code-span">Join</code> function in the <code class="tmd-code-span">strings</code> standard package.
-</div>
-</li>
-<li class="tmd-list-item">
-<div class="tmd-usual">
-The <code class="tmd-code-span">Buffer</code> type in the <code class="tmd-code-span">bytes</code> standard package (or the built-in <code class="tmd-code-span">copy</code> function) can be used to build byte slices, which afterwards can be converted to string values.
-</div>
-</li>
-<li class="tmd-list-item">
-<div class="tmd-usual">
-Since Go 1.10, the <code class="tmd-code-span">Builder</code> type in the <code class="tmd-code-span">strings</code> standard package can be used to build strings. Comparing with <code class="tmd-code-span">bytes.Buffer</code> way, this way avoids making an unnecessary duplicated copy of underlying bytes for the result string.
-</div>
-</li>
-</ul>
 <p></p>
 <div class="tmd-usual">
-The standard Go compiler makes optimizations for string concatenations by using the <code class="tmd-code-span">+</code> operator. So generally, using <code class="tmd-code-span">+</code> operator to concatenate strings is convenient and efficient if all of the concatenated strings may present in a concatenation statement.
+
 </div>
 <p></p>
 <h3 id="use-string-as-byte-slice" class="tmd-header-3">
