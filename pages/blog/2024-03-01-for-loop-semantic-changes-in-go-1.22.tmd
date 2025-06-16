@@ -15,6 +15,7 @@ Otherwise, your code may exhibit unexpected behavior.
 Contents:
 ###---
 
+@@@ #overview
 ###========================================
     What are the changes?
 
@@ -65,7 +66,7 @@ func main() {
 We can install multiple Go toolchain versions to check the outputs.
 Here, I use the __GoTV__ tool to (conveniently) choose Go toolchain versions.
 
-// __GoTV `` https://go101.org/apps-and-libs/gotv.html
+=== GoTV `` https://go101.org/apps-and-libs/gotv.html
 
 The outputs:
 '''
@@ -174,8 +175,9 @@ see
    the release maintains __the Go 1 promise of compatibility__. However,
    ** this is simply not the case (read below for reasons).
 
-// __the Go 1 promise of compatibility `` https://go.dev/doc/go1compat
+=== the Go 1 promise of compatibility `` https://go.dev/doc/go1compat
 
+@@@ #impact
 ###==========================================
     The impact of the changes
 
@@ -211,7 +213,7 @@ code to do the job. This is true. __Go 1.22+ specification__ says:
    before executing the post statement and initialized to the value of
    the previous iteration's variable at that moment.
 
-// __... specification``https://go.dev/ref/spec#For_statements
+=== ... specification``https://go.dev/ref/spec#For_statements
 
 By the speficication, since Go 1.22, the loop shown above is
 actually equivalent to the following pseudo-code (%%Sorry,
@@ -246,6 +248,7 @@ For a language that promotes explicitness, it's embarrassing.
 Implicitness frequently results in unintended surprises, a fact that is itself unsurprising.
 The following will show several cases which might break your expectations.
 
+@@@ #defer-calls
 ###++++++++++++++
     The behaviors of deferred function calls which capture loop variables might change
 
@@ -376,8 +379,9 @@ in deferred function calls.
    However, sadly, the suggestion was ignored totally.
    }
 
-// __allow re-declaration... ``https://github.com/golang/go/issues/60078#issuecomment-1547130632
+=== allow re-declaration... ``https://github.com/golang/go/issues/60078#issuecomment-1547130632
 
+@@@ #capture-loop-vars
 ###++++++++++++++
     Be careful when capturing loop variables in closures
 
@@ -476,6 +480,7 @@ It will never exit since Go 1.22 (prior to Go 1.22, it prints `012` then exits i
    whether or not it is modified in `postStatement`.
    Each of the instances is instantiated in one iteration.
 
+@@@ #take-addresses-of-loop-vars
 ###++++++++++++++
     Be careful when taking addresses of loop variables
 
@@ -569,6 +574,7 @@ $ gotv 1.22. run demo-pointer2.go
 ...
 '''
 
+@@@ #place-3rd-clauses
 ###++++++++++++++
     Be careful when moving the 3rd clause statements inside loop bodies
 
@@ -628,6 +634,7 @@ true
 2
 '''
 
+@@@ #nocopy-loop-vars
 ###++++++++++++++
     Be careful when declaring no-copy values as loop variables
 
@@ -774,8 +781,8 @@ They should both panic.
 The Go core team __refused to fix this bug__, which raises the alarm that
 unexpected behavior may happen in other similar scenarios.
 
-// __make a bad decision `` https://github.com/golang/go/issues/66070
-// __refused to fix this bug `` https://github.com/golang/go/issues/66070#issuecomment-1981642904
+=== make a bad decision `` https://github.com/golang/go/issues/66070
+=== refused to fix this bug `` https://github.com/golang/go/issues/66070#issuecomment-1981642904
 
 The `go vet` command in the latest Go toolchain versions still can't catch such implicit duplication
 of no-copy values.
@@ -872,6 +879,7 @@ Suggestions to avoid such performance degradation issue:
    the loop itself to optimize performance. This is beneficial if you can
    guarantee that the variables don't need to be instantiated in each iteration.
 
+@@@ #sharing-loop-vars
 ###++++++++++++++
     Warning: things might become more subtle than before when loop variables are used concurrently
 
@@ -1069,6 +1077,7 @@ How to fix the (since-1.22-)data-racy code?
 *  To avoid the race condition and correct the logic,
    the variable `i` should be declared outside the loop block (since Go 1.22).
 
+@@@ #advice
 ###==============================================
     Advice and suggestions
 
@@ -1078,6 +1087,7 @@ There might be more, I'm not sure.
 
 Here are some recommendations you can follow in the Go 1.22+ era.
 
+@@@ #file-go-versions
 ###++++++++++++++
     Specify Go language versions for Go source files
 
@@ -1104,8 +1114,8 @@ for Go source files:
    A missing go directive line is assumed as `go 1.16`.
    The effects of the directive line are __described here__.
 
-// __described here``https://go.dev/ref/mod#go-mod-file-go
-// __this known bug``https://github.com/golang/go/issues/66092
+=== described here``https://go.dev/ref/mod#go-mod-file-go
+=== this known bug``https://github.com/golang/go/issues/66092
 
 If the Go language version of a Go source file is not specified by
 any of the above ways, then the version of the used Go compiler is used.
@@ -1129,6 +1139,7 @@ Anyway, since Go 1.22, you should try to specify a Go language version for every
 in any of the above introduced ways, to reduce compiler version dependent behaviors.
 This is the minimum standard to be a professional Go programmer in the Go 1.22+ era.
 
+@@@ #notes-during-upgrading
 ###++++++++++++++
     Upgrading module versions
 
@@ -1147,6 +1158,7 @@ It is a sad fact that **the proposal (and trouble) makers never intend to
 to provide automatic ways for identifying potential problems
 when upgrading module versions**.
 
+@@@ #avoid-freshly-declared-loop-vars
 ###++++++++++++++
     Avoid using freshly-declared loop variables in `for;;` loops
     if you worry about getting bitten by the pitful of the new semantics
@@ -1191,6 +1203,7 @@ only instantiated once during the whole loop.
 
 This is a little awkward, but it is much safer.
 
+@@@ #final-words
 ###=====================================
     Final words
 
