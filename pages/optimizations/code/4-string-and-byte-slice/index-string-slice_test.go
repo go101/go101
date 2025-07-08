@@ -1,6 +1,7 @@
 package bytes
 
 import "testing"
+import "strings"
 
 var containsSlice = func() []string {
     return []string{
@@ -30,6 +31,8 @@ var containsSlice = func() []string {
         "lhoejyop",
     }
 }()
+
+var x = strings.Repeat("x", 8)
 
 func IndexStringA(strs []string, str string) int {
     for i := range strs {
@@ -69,26 +72,52 @@ func IndexStringD(strs []string, str string) int {
 
 var r int
 
-func BenchmarkIndexStringA(b *testing.B) {
+func BenchmarkIndexStringA_Constant(b *testing.B) {
     for i := 0; i < b.N; i++ {
         r = IndexStringA(containsSlice, "xxxxxxxx")
     }
 }
 
-func BenchmarkIndexStringB(b *testing.B) {
+func BenchmarkIndexStringB_Constant(b *testing.B) {
     for i := 0; i < b.N; i++ {
         r = IndexStringB(containsSlice, "xxxxxxxx")
     }
 }
 
-func BenchmarkIndexStringC(b *testing.B) {
+func BenchmarkIndexStringC_Constant(b *testing.B) {
     for i := 0; i < b.N; i++ {
         r = IndexStringC(containsSlice, "xxxxxxxx")
     }
 }
 
-func BenchmarkIndexStringD(b *testing.B) {
+func BenchmarkIndexStringD_Constant(b *testing.B) {
     for i := 0; i < b.N; i++ {
         r = IndexStringD(containsSlice, "xxxxxxxx")
+    }
+}
+
+
+
+func BenchmarkIndexStringA_Variable(b *testing.B) {
+    for i := 0; i < b.N; i++ {
+        r = IndexStringA(containsSlice, x)
+    }
+}
+
+func BenchmarkIndexStringB_Variable(b *testing.B) {
+    for i := 0; i < b.N; i++ {
+        r = IndexStringB(containsSlice, x)
+    }
+}
+
+func BenchmarkIndexStringC_Variable(b *testing.B) {
+    for i := 0; i < b.N; i++ {
+        r = IndexStringC(containsSlice, x)
+    }
+}
+
+func BenchmarkIndexStringD_Variable(b *testing.B) {
+    for i := 0; i < b.N; i++ {
+        r = IndexStringD(containsSlice, x)
     }
 }
