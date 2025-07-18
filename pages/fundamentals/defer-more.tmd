@@ -332,6 +332,36 @@ func writeManyFiles(files []File) error {
 }
 '''
 
+Or we can extract the file handler as a new function.
 
+@@@ .line-numbers
+''' go
+func writeManyFiles(files []File) error {
+	for _, file := range files {
+		if err := writeFile(file.path, file.content); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeFile(path string, content string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	// The close method will be called at
+	// the end of the current function.
+	defer f.Close()
+
+	_, err = f.WriteString(content)
+	if err != nil {
+		return err
+	}
+
+	return f.Sync()
+}
+'''
 
 
