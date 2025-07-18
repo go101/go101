@@ -277,4 +277,37 @@ For such cases, we can use an anonymous function to enclose the deferred calls s
 }
 </code></pre>
 <p></p>
+<div class="tmd-usual">
+Or we can extract the file handler as a new function.
+</div>
+<p></p>
+<pre class="tmd-code line-numbers">
+<code class="language-go">func writeManyFiles(files []File) error {
+	for _, file := range files {
+		if err := writeFile(file.path, file.content); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeFile(path string, content string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	// The close method will be called at
+	// the end of the current function.
+	defer f.Close()
+
+	_, err = f.WriteString(content)
+	if err != nil {
+		return err
+	}
+
+	return f.Sync()
+}
+</code></pre>
+<p></p>
 </div>
