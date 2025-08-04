@@ -112,9 +112,6 @@ func F14[T S1 | S4](v T) {
 func main() {}
 ```
 
-A temporary (quite verbose) workaround is to specify/declare some getter and setter methods
-for the involved constraints and concrete types.
-
 For a special case, the following code also doesn't compile.
 
 ```Go
@@ -124,6 +121,9 @@ func mod[T S](v T) {
 	_ = v.x // error: v.x undefined
 }
 ```
+
+A temporary (quite verbose) workaround is to specify/declare some getter and setter methods
+for the involved constraints and concrete types.
 
 The restriction (described in the current section) was [added just before
 Go 1.18 is released](https://github.com/golang/go/issues/51576).
@@ -165,14 +165,14 @@ The following modified versions of the above two functions compile okay:
 
 ```Go
 func tab2[T any](x T) {
-	if n, ok := any(x).(int); ok { // error
+	if n, ok := any(x).(int); ok {
 		_ = n
 	}
 }
 
 func kol2[T any]() {
 	var x T
-	switch any(x).(type) { // error
+	switch any(x).(type) {
 	case int:
 	case []bool:
 	default:
@@ -228,8 +228,17 @@ There is [an issue](https://github.com/golang/go/issues/49085) for this.
 And there are not such predeclared constraints like the following supposed `assignableTo` and `assignableFrom` constraints.
 
 ```Go
-// This function doesn't compile.
-func yex[Tx assignableTo[Ty], Ty assignableFrom[Tx]](x Tx, y Ty) {
+// These functions don't compile.
+
+func yex0[Tx assignableTo[Ty], Ty assignableFrom[Tx]](x Tx, y Ty) {
+	y = x
+}
+
+func yex1[Tx any, Ty assignableFrom[Tx]](x Tx, y Ty) {
+	y = x
+}
+
+func yex2[Tx assignableTo[Ty], Ty any](x Tx, y Ty) {
 	y = x
 }
 ```
@@ -287,21 +296,10 @@ var fs = x2y(bs, func(x byte) float64 {
 ```
 
 The workaround needs a callback function, which
-makes the code verbose and much less efficient,
+makes the code quite verbose and much less efficient,
 though I do admit it has more usage scenarios.
 
+## There are no ways to construct a constraint which is only satisfied by interface types or non-interface types
 
+No ways.
 
-
-
-
-
-<!--
-## No ways to construct a constraint which is only satisfied by interface types pr by non-interface types.
-
-The current constraint design lacks of two abilities:
-1. The ability of specifying a type argument must be an interface type.
-2. The ability of specifying a type argument must not be an interface type.
-
-https://groups.google.com/g/golang-nuts/c/EL6A2jFa92k
--->

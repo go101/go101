@@ -594,7 +594,7 @@ var _ = new(bool)
 var _ = MyNew[bool]()
 ```
 
-Personally, I think the inconsistency is pity and it increases the load of cognition burden in Go programming.
+Personally, I think the inconsistency is a pity and it increases the load of cognition burden in Go programming.
 On the other hand, I admit that it is hard (or even impossible) to make the syntax consistent.
 It is a pity that Go didn't support custom generics from the start.
 
