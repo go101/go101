@@ -99,12 +99,9 @@ func main() {
 </code></pre>
 <p></p>
 <div class="tmd-usual">
-We can install multiple Go toolchain versions to check the outputs. Here, I use the <span class="tmd-broken-link">GoTV</span> tool to (conveniently) choose Go toolchain versions.
+We can install multiple Go toolchain versions to check the outputs. Here, I use the <a href="https://go101.org/apps-and-libs/gotv.html">GoTV</a> tool to (conveniently) choose Go toolchain versions.
 </div>
 <p></p>
-<div class="tmd-usual">
-=== GoTV  https://go101.org/apps-and-libs/gotv.html
-</div>
 <p></p>
 <div class="tmd-usual">
 The outputs:
@@ -229,14 +226,11 @@ The wiki page:    <a href="https://go.dev/wiki/LoopvarExperiment">https://go.dev
 </li>
 <li class="tmd-list-item">
 <div class="tmd-usual">
-Go 1.22 release notes: <a href="https://go.dev/doc/go1.22">https://go.dev/doc/go1.22</a>, which claims the release maintains <span class="tmd-broken-link">the Go 1 promise of compatibility</span>. However, <span class="tmd-bold">this is simply not the case (read below for reasons).</span>
+Go 1.22 release notes: <a href="https://go.dev/doc/go1.22">https://go.dev/doc/go1.22</a>, which claims the release maintains <a href="https://go.dev/doc/go1compat">the Go 1 promise of compatibility</a>. However, <span class="tmd-bold">this is simply not the case (read below for reasons).</span>
 </div>
 </li>
 </ol>
 <p></p>
-<div class="tmd-usual">
-=== the Go 1 promise of compatibility  https://go.dev/doc/go1compat
-</div>
 <p></p>
 <h2 id="impact" class="tmd-header-2">
 The impact of the changes
@@ -257,7 +251,7 @@ On the other hand, in my honest opinion, the rationale of the change to <code cl
 </code></pre>
 <p></p>
 <div class="tmd-usual">
-The <code class="tmd-code-span">a, b, c := anExpression</code> statement is only executed once during the execution of the loop, so it is intuitive that the loop variables are only <span class="tmd-bold"><span class="tmd-italic">explicitly</span></span> instantiated once during the execution of the loop. The new semantics make the the loop variables instantiated at each iteration, which means there must be some <span class="tmd-bold"><span class="tmd-italic">implicit</span></span><span class="tmd-italic"></span> code to do the job. This is true. <span class="tmd-broken-link">Go 1.22+ specification</span> says:
+The <code class="tmd-code-span">a, b, c := anExpression</code> statement is only executed once during the execution of the loop, so it is intuitive that the loop variables are only <span class="tmd-bold"><span class="tmd-italic">explicitly</span></span> instantiated once during the execution of the loop. The new semantics make the the loop variables instantiated at each iteration, which means there must be some <span class="tmd-bold"><span class="tmd-italic">implicit</span></span><span class="tmd-italic"></span> code to do the job. This is true. <a href="https://go.dev/ref/spec#For_statements">Go 1.22+ specification</a> says:
 </div>
 <p></p>
 <div class="tmd-quotation">
@@ -266,9 +260,6 @@ Each iteration has its own separate declared variable (or variables). The variab
 </div>
 </div>
 <p></p>
-<div class="tmd-usual">
-=== ... specificationhttps://go.dev/ref/spec#For_statements
-</div>
 <p></p>
 <div class="tmd-usual">
 By the speficication, since Go 1.22, the loop shown above is actually equivalent to the following pseudo-code (<span class="tmd-italic">Sorry, the new semantics are hard to explain in a clear and perfect way. None of Go official documentations ever successfully achieve this goal. Here, I have tried my best.</span>):
@@ -427,7 +418,7 @@ So, since Go 1.22, just be careful when using freshly-declared loop variables in
 <div class="tmd-notice">
 <div class="tmd-notice-content">
 <div class="tmd-usual">
-The above example suggests that some freshly-declared loop variables in the first clause of a <code class="tmd-code-span">for;;</code> loops might be okay to be per-iteration scoped, but some are strongly expected to be whole-loop scoped, such as the <code class="tmd-code-span">index</code> and <code class="tmd-code-span">counter</code> loop variables shown above. I ever suggested to <span class="tmd-broken-link">allow re-declaration statements as <code class="tmd-code-span">postStatement</code> of <code class="tmd-code-span">for;;</code> loops to <span class="tmd-bold"><span class="tmd-italic">explicitly</span></span> specify which variables are per-iteration scoped</span>. For example, in the following loop code, <code class="tmd-code-span">n</code> is per-iteration scoped but <code class="tmd-code-span">counter</code> is whole-loop scoped.
+The above example suggests that some freshly-declared loop variables in the first clause of a <code class="tmd-code-span">for;;</code> loops might be okay to be per-iteration scoped, but some are strongly expected to be whole-loop scoped, such as the <code class="tmd-code-span">index</code> and <code class="tmd-code-span">counter</code> loop variables shown above. I ever suggested to <a href="https://github.com/golang/go/issues/60078#issuecomment-1547130632">allow re-declaration statements as <code class="tmd-code-span">postStatement</code> of <code class="tmd-code-span">for;;</code> loops to <span class="tmd-bold"><span class="tmd-italic">explicitly</span></span> specify which variables are per-iteration scoped</a>. For example, in the following loop code, <code class="tmd-code-span">n</code> is per-iteration scoped but <code class="tmd-code-span">counter</code> is whole-loop scoped.
 </div>
 <div class="tmd-base">
 <p></p>
@@ -442,9 +433,6 @@ However, sadly, the suggestion was ignored totally.
 </div>
 </div>
 <p></p>
-<div class="tmd-usual">
-=== allow re-declaration... https://github.com/golang/go/issues/60078#issuecomment-1547130632
-</div>
 <p></p>
 <h3 id="capture-loop-vars" class="tmd-header-3">
 Be careful when capturing loop variables in closures
@@ -863,16 +851,13 @@ But why doesn't the run-time <code class="tmd-code-span">no-copy</code> check wo
 </div>
 <p></p>
 <div class="tmd-usual">
-However, the compiler is too smart to <span class="tmd-broken-link">make a bad decision</span> here. The compiler incorrectly implements the semantics. The behaviors of the two <code class="tmd-code-span">a2z</code> functions in the above program should be still consistent since Go 1.22. They should both panic.
+However, the compiler is too smart to <a href="https://github.com/golang/go/issues/66070">make a bad decision</a> here. The compiler incorrectly implements the semantics. The behaviors of the two <code class="tmd-code-span">a2z</code> functions in the above program should be still consistent since Go 1.22. They should both panic.
 </div>
 <p></p>
 <div class="tmd-usual">
-The Go core team <span class="tmd-broken-link">refused to fix this bug</span>, which raises the alarm that unexpected behavior may happen in other similar scenarios.
+The Go core team <a href="https://github.com/golang/go/issues/66070#issuecomment-1981642904">refused to fix this bug</a>, which raises the alarm that unexpected behavior may happen in other similar scenarios.
 </div>
 <p></p>
-<div class="tmd-usual">
-=== make a bad decision  https://github.com/golang/go/issues/66070 === refused to fix this bug  https://github.com/golang/go/issues/66070#issuecomment-1981642904
-</div>
 <p></p>
 <div class="tmd-usual">
 The <code class="tmd-code-span">go vet</code> command in the latest Go toolchain versions still can't catch such implicit duplication of no-copy values.
@@ -1206,7 +1191,7 @@ There are several ways (in order of priority) to specify Go language versions fo
 <ol class="tmd-list">
 <li class="tmd-list-item">
 <div class="tmd-usual">
-Add a <code class="tmd-code-span">//go:build go1.xy</code> comment directive at the start of a source file to specify the language version for the source file. <span class="tmd-italic">(However, the <code class="tmd-code-span">//go:build go1.xy</code> comment directive in a Go source file might still be ignored due to potential bugs in the toolchain implementation. For example, the Go core team is not willing to fix </span><span class="tmd-broken-link"><span class="tmd-italic">this known bug</span></span><span class="tmd-italic"> for Go toolchain v1.22.x versions.)</span>
+Add a <code class="tmd-code-span">//go:build go1.xy</code> comment directive at the start of a source file to specify the language version for the source file. <span class="tmd-italic">(However, the <code class="tmd-code-span">//go:build go1.xy</code> comment directive in a Go source file might still be ignored due to potential bugs in the toolchain implementation. For example, the Go core team is not willing to fix </span><a href="https://github.com/golang/go/issues/66092"><span class="tmd-italic">this known bug</span></a><span class="tmd-italic"> for Go toolchain v1.22.x versions.)</span>
 </div>
 </li>
 <li class="tmd-list-item">
@@ -1216,14 +1201,11 @@ Use <code class="tmd-code-span">-gcflags=-lang=go1.xy</code> compiler option whe
 </li>
 <li class="tmd-list-item">
 <div class="tmd-usual">
-Put a <code class="tmd-code-span">go 1.xy</code> directive line in the <code class="tmd-code-span">go.mod</code> file of a Go module to specify the default Go language version for all of the source files in the Go module. A missing go directive line is assumed as <code class="tmd-code-span">go 1.16</code>. The effects of the directive line are <span class="tmd-broken-link">described here</span>.
+Put a <code class="tmd-code-span">go 1.xy</code> directive line in the <code class="tmd-code-span">go.mod</code> file of a Go module to specify the default Go language version for all of the source files in the Go module. A missing go directive line is assumed as <code class="tmd-code-span">go 1.16</code>. The effects of the directive line are <a href="https://go.dev/ref/mod#go-mod-file-go">described here</a>.
 </div>
 </li>
 </ol>
 <p></p>
-<div class="tmd-usual">
-=== described herehttps://go.dev/ref/mod#go-mod-file-go === this known bughttps://github.com/golang/go/issues/66092
-</div>
 <p></p>
 <div class="tmd-usual">
 If the Go language version of a Go source file is not specified by any of the above ways, then the version of the used Go compiler is used. In other words, the behavior of the code in the source file is compiler dependent.
