@@ -1978,16 +1978,79 @@ We can also pass array pointers as the arguments of the built-in <code class="tm
 <pre class="tmd-code line-numbers">
 <code class="language-go">var pa *[5]int // == nil
 fmt.Println(len(pa), cap(pa)) // 5 5
-
-@@@ #clear
-###+++++++++++ Use the built-in `clear` function to clear map entries and reset slice elements
-
-Go 1.21 introduced `clear` builtin function.
-This function is used to clear map entries and reset slice elements.
-
-An example:
-@@@ .line-numbers
 </code></pre>
+<p></p>
+<h3 id="clear" class="tmd-header-3">
+Use the built-in <code class="tmd-code-span">clear</code> function to clear map entries and reset slice elements
+</h3>
+<p></p>
+<div class="tmd-usual">
+Go 1.21 introduced <code class="tmd-code-span">clear</code> builtin function. This function is used to clear map entries and reset slice elements.
+</div>
+<p></p>
+<div class="tmd-usual">
+An example:
+</div>
+<pre class="tmd-code line-numbers">
+<code class="language-go">package main
+
+import "fmt"
+
+func main() {
+s := []int{1, 2, 3}
+clear(s)
+fmt.Println(s) // [0 0 0]
+
+a := [4]int{5, 6, 7, 8}
+clear(a[1:3])
+fmt.Println(a) // [5 0 0 8]
+
+m := map[float64]float64{}
+x := 0.0
+m[x] = x
+x /= x // x is NaN now
+m[x] = x
+fmt.Println(len(m)) // 2
+for k := range m {
+delete(m, k)
+}
+fmt.Println(len(m)) // 1
+clear(m)
+fmt.Println(len(m)) // 0
+}
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+We can find that the <code class="tmd-code-span">clear</code> function can even delete map entries with keys as <code class="tmd-code-span">NaN</code>.
+</div>
+<p></p>
+<pre class="tmd-code">
+
+@@@ #memclr
+###+++++++++++ The `memclr` Optimization
+
+The Go standard Go compiler makes several optimizations so that
+it will convert loops with certain pattterns into internal
+`memclr` calls. Before Go 1.21, we can make use of these optimizations
+to reset array/slice elements and clear map entries.
+
+These optimizations (and many more others) are collected in
+__Go Optimizations 101__ book.
+
+    === Go Optimizations 101 :: https://go101.org/optimizations/101.html
+
+@@@ #compile-time-evaluation
+###+++++++++++ Calls to the Built-in `len` and `cap` Functions May Be Evaluated at Compile Time
+
+If the argument passed to a call of the built-in function `len` or
+`cap` function is an array or an array pointer value,
+then the call is evaluated at compile time and the result of the call
+is a typed constant with type as the built-in type `int`.
+The result can be bound to named constants.
+
+Example:
+@@@ .line-numbers
+</pre>
 <div class="tmd-usual">
 package main
 </div>
@@ -1997,158 +2060,361 @@ import "fmt"
 </div>
 <p></p>
 <div class="tmd-usual">
-func main() { s := []int{1, 2, 3} clear(s) fmt.Println(s) // [0 0 0]
+var a [5]int var p *[7]string
 </div>
 <p></p>
 <div class="tmd-usual">
-a := [4]int{5, 6, 7, 8} clear(a[1:3]) fmt.Println(a) // [5 0 0 8]
+const N = len(a) const M = cap(p)
 </div>
 <p></p>
 <div class="tmd-usual">
-m := map[float64]float64{} x := 0.0 m[x] = x x /= x // x is NaN now m[x] = x fmt.Println(len(m)) // 2 for k := range m { delete(m, k) } fmt.Println(len(m)) // 1 clear(m) fmt.Println(len(m)) // 0 }
+func main() { fmt.Println(N) // 5 fmt.Println(M) // 7 }
 </div>
 <pre class="tmd-code">
 
-We can find that the `clear` function can even delete map entries with keys as `NaN`.
+There are more scenarios in which calls to
+the built-in function `len` and `cap` functions are
+evaluated at compile time.
+Please read the __Go Details &amp; Tips 101__ book for such cases.
+
+    === Go Details &amp; Tips 101 :: https://go101.org/details-and-tips/101.html
+
+
+@@@ #modify-slice-length-and-capacity
+###+++++++++++ Modify the Length and Capacity Properties of a Slice Individually
+
+Above has mentioned, generally, the length and capacity of
+a slice value can't be modified individually.
+A slice value can only be overwritten as a whole
+by assigning another slice value to it.
+However, we can modify the length and capacity of a slice
+individually by using reflections.
+Reflection will be explained in __a later article__ in detail.
+
+    === a later article :: reflection.html
+
+Example:
+@@@ .line-numbers
+</pre>
+<div class="tmd-usual">
+package main
+</div>
+<p></p>
+<div class="tmd-usual">
+import ( "fmt" "reflect" )
+</div>
+<p></p>
+<div class="tmd-usual">
+func main() { s := make([]int, 2, 6) fmt.Println(len(s), cap(s)) // 2 6
+</div>
+<p></p>
+<div class="tmd-usual">
+reflect.ValueOf(&amp;s).Elem().SetLen(3) fmt.Println(len(s), cap(s)) // 3 6
+</div>
+<p></p>
+<div class="tmd-usual">
+reflect.ValueOf(&amp;s).Elem().SetCap(5) fmt.Println(len(s), cap(s)) // 3 5 }
+</div>
+<pre class="tmd-code">
+
+The second argument passed to the `reflect.SetLen` function must not
+be larger than the current capacity of the argument slice `s`.
+The second argument passed to the `reflect.SetCap` function must not
+be smaller than the current length of the argument slice `s` and
+larger than the current capacity of the argument slice `s`.
+Otherwise, a panic will occur.
+
+The reflection way is very inefficient, it is slower than a slice assignment.
+
+@@@ #slice-manipulations
+###+++++++++++ More Slice Manipulations
+
+@@@ #delete-slice-elements
+//
+
+@@@ #delete-one-slice-element
+//
+
+Go doesn't support more built-in slice operations,
+such as slice clone, element deletion and insertion.
+We must compose the built-in ways to achieve those operations.
+
+Please read the "Arrays and Slices" chapter in the
+__Go Optimizations 101__ book for how to efficiently
+make such operations.
+
+""" comment
+
+In the following examples in the current section,
+assume `s` is the talked slice,
+`T` is its element type and `t0`
+is a zero value literal representation of `T`.
+
+###----------- Clone slices
+
+For the current Go version (1.25), the simplest way to clone a slice is:
+@@@ .disable-line-numbers111
+</pre>
+<div class="tmd-usual">
+sClone := append(s[:0:0], s...)
+</div>
+<pre class="tmd-code">
+
+We can also use the following line instead, but comparing with the above way, it has one imperfection.
+If the source slice `s` is blank non-nil slice, then the result slice is nil.
+@@@ .disable-line-numbers111
+</pre>
+<div class="tmd-usual">
+sClone := append([]T(nil), s...)
+</div>
+<pre class="tmd-code">
+
+The above append ways have one drawback.
+They both might allocate (then initialize) more elements than needed.
+We can also use the following ways to avoid this drawback:
+@@@ .disable-line-numbers111
+</pre>
+<div class="tmd-usual">
+sClone := make([]T, len(s)) copy(sClone, s)
+</div>
+<p></p>
+<div class="tmd-usual">
+sClone := append(make([]T, 0, len(s)), s...)
+</div>
+<pre class="tmd-code">
+
+The "make" ways have a drawback that if `s` is a nil slice,
+then they both result a non-nil blank slice.
+However, in practice, we often needn't to pursue the perfection.
+If we do, then three more lines are needed:
+
+@@@ .disable-line-numbers111
+</pre>
+<div class="tmd-usual">
+var sClone []T if s != nil { sClone = make([]T, len(s)) copy(sClone, s) }
+</div>
+<pre class="tmd-code">
+
+{ //
+Before Go Toolchain 1.15, for some common cases, the "append" ways are
+__href="https://github.com/go101/go101/wiki/How-to-efficiently-clone-a-slice%3F"&gt;much more efficient than__
+the "make+copy" way. However, since version 1.15, the "make+copy" way has been specially optimized by the
+official Go compiler so that this way becomes always more efficient than the "append" ways.
+But please note that, the optimization only works if the cloned slice presents as a pure or
+qualified identifier in code and the `make` call only take two arguments.
+For example, it only works for the first case in the following code:
+
+@@@ .disable-line-numbers111
+</pre>
+<div class="tmd-usual">
+var s = make([]byte, 10000) y = make([]T, len(s)) // works copy(y, s)
+</div>
+<p></p>
+<div class="tmd-usual">
+var s = make([]byte, 10000) y = make([]T, len(s), len(s)) // not work copy(y, s)
+</div>
+<p></p>
+<div class="tmd-usual">
+var a = [1][]byte{s} y = make([]T, len(a[0])) // not work copy(y, a[0])
+</div>
+<p></p>
+<div class="tmd-usual">
+type T struct {x []byte} var t = T{x: s} y = make([]T, len(t.x)) // not work copy(y, t.x)
+</div>
+<pre class="tmd-code">
+}
+
+@@@ #delete-slice-elements
+@@@ #delete-one-slice-element
+###----------- Delete a segment of slice elements
+
+Above has mentioned that the elements a slice are stored contiguously
+in memory and there are no gaps between any two adjacent elements of the slice.
+So when a slice element is removed,
+*
+   if the element order must be preserved,
+   then each of the subsequent elements followed the removed elements
+   must be moved forwards.
+*
+   if the element order doesn't need to be preserved,
+   then we can move the last elements in the slice to the removed indexes.
+
+
+In the following example, assume `from` and `to` are
+two legal indexes, `from` is not larger than `to`,
+and the `to` index is exclusive.
+@@@ .line-numbers
+</pre>
+<div class="tmd-usual">
+s = append(s[:from], s[to:]...)
+</div>
+<p></p>
+<div class="tmd-usual">
+s = s[:from + copy(s[from:], s[to:])]
+</div>
+<p></p>
+<div class="tmd-usual">
+if n := to-from; len(s)-to &lt; n { copy(s[from:to], s[to:]) } else { copy(s[from:to], s[len(s)-n:]) } s = s[:len(s)-(to-from)]
+</div>
+<pre class="tmd-code">
+
+If the slice elements reference other values, we should reset
+tail elements (on the just freed-up slots) to avoid memory leaking.
+
+@@@ .line-numbers
+</pre>
+<div class="tmd-usual">
+temp := s[len(s):len(s)+to-from] for i := range temp { temp[i] = t0 }
+</div>
+<pre class="tmd-code">
+
+As mentioned above, the `for-range` loop code block will be
+optimized as a `memclr` call by the standard Go compiler.
+
+@@@ #delete-one-slice-element
+###----------- Delete one slice element
+
+Deleting one element is similar to, and also simpler than,
+deleting a segment of elements.
+
+In the following example,
+assume `i` the index of the element to be removed
+and `i` is a legal index.
+
+@@@ .line-numbers
+</pre>
+<div class="tmd-usual">
+s = append(s[:i], s[i+1:]...)
+</div>
+<p></p>
+<div class="tmd-usual">
+s = s[:i + copy(s[i:], s[i+1:])]
+</div>
+<p></p>
+<div class="tmd-usual">
+
+</div>
+<p></p>
+<div class="tmd-usual">
+s[i] = s[len(s)-1] s = s[:len(s)-1]
+</div>
+<pre class="tmd-code">
+
+If the slice elements contain pointers, then after the deletion action,
+we should reset the last element of the old slice value
+to avoid memory leaking:
+@@@ .line-numbers
+</pre>
+<div class="tmd-usual">
+s[len(s):len(s)+1][0] = t0 s[:len(s)+1][len(s)] = t0
+</div>
+<pre class="tmd-code">
+
+###----------- Delete slice elements conditionally
+
+Sometimes, we may need to delete slice elements by some conditions.
+
+@@@ .line-numbers
+</pre>
+<div class="tmd-usual">
+func DeleteElements(s []T, keep func(T) bool, clear bool) []T { //result := make([]T, 0, len(s)) result := s[:0] // without allocating a new slice for _, v := range s { if keep(v) { result = append(result, v) } } if clear { // avoid memory leaking temp := s[len(result):] for i := range temp { temp[i] = t0 } } return result }
+</div>
+<pre class="tmd-code">
+
+Please note, if `T` is not a small-size type, then generally
+we should __try to__ avoid
+using `T` as function parameter types and using two-iteration-variable
+`for-range` block form to iterate slices with element types as `T`.
+
+=== try to :: value-copy-cost.html#copy-costs
+
+###----------- Insert all elements of a slice into another slice
+
+Assume the insertion position is a legal index `i`
+and `elements` is the slice whose elements are to be inserted.
+
+@@@ .line-numbers
+</pre>
+<div class="tmd-usual">
+s = append(s[:i], append(elements, s[i:]...)...)
+</div>
+<p></p>
+<div class="tmd-usual">
+
+</div>
+<p></p>
+<div class="tmd-usual">
+if cap(s) &gt;= len(s) + len(elements) { s = s[:len(s)+len(elements)] copy(s[i+len(elements):], s[i:]) copy(s[i:], elements) } else { x := make([]T, 0, len(elements)+len(s)) x = append(x, s[:i]...) x = append(x, elements...) x = append(x, s[i:]...) s = x }
+</div>
+<p></p>
+<div class="tmd-usual">
+s = append(s, elements...)
+</div>
+<p></p>
+<div class="tmd-usual">
+s = append(elements, s...)
+</div>
+<pre class="tmd-code">
+
+###----------- Insert several individual elements
+
+Inserting several individual elements is similar to inserting all elements of a slice.
+We can construct a slice with a slice composite literal with the elements
+to be inserted, then use the above ways to insert these elements.
+
+###----------- Special deletions and insertions: push front/back, pop front/back
+
+Assume the pushed or popped element is `e` and slice
+`s` has at least one element.
+
+@@@ .line-numbers
+</pre>
+<div class="tmd-usual">
+s, e = s[1:], s[0] s, e = s[:len(s)-1], s[len(s)-1] s = append([]T{e}, s...) s = append(s, e)
+</div>
+<pre class="tmd-code">
+
+Please note, using `append` to insert elements is often inefficient,
+for all the elements after the insertion position need to be move backwards,
+and a larger space needs to be allocated to store all the elements if the free capacity is insufficient.
+These might be not serious problems for small slices, but for large slices,
+they often are. So if the number of the elements needing to be moved is large,
+it is best to use a linked list to do the insertions.
+
+###----------- More slice operations
+
+In reality, the needs are varied.
+For some specific cases, it is possible none of the above ways shown
+in the above examples are the most efficient way. And sometimes,
+the above ways may not satisfy some specific requirements in practice.
+So, please learn and apply elastically.
+This may be the reason why Go doesn't support the more operations
+introduced above in the built-in way.
+
+"""
+
+###+++++++++++ Use Maps to Simulate Sets
+
+Go doesn't support built-in **set** types.
+However, it is easy to use a map type to simulate a set type.
+In practice, we often use the map type `map[K]struct{}`
+to simulate a set type with element type `K`.
+The size of the map element type `struct{}` is zero,
+elements of values of such map types don't occupy memory space.
+
+###+++++++++++ Container Related Operations Are Not Synchronized Internally
+
+Please note that, all container operations are not synchronized internally.
+Without making using of any data synchronization technique,
+it is okay for multiple goroutines to read a container concurrently,
+but it is not okay for multiple goroutines to manipulate a container
+concurrently and at least one goroutine modifies the container.
+The latter case will cause data races, even make goroutines panic.
+We must synchronize the container operations manually.
+Please read the articles on __data synchronizations__ for details.
+
+    === data synchronizations :: concurrent-synchronization-overview.html
 
 
 </pre>
-<p></p>
-<h3 id="memclr" class="tmd-header-3">
-The <code class="tmd-code-span">memclr</code> Optimization
-</h3>
-<p></p>
-<div class="tmd-usual">
-The Go standard Go compiler makes several optimizations so that it will convert loops with certain pattterns into internal <code class="tmd-code-span">memclr</code> calls. Before Go 1.21, we can make use of these optimizations to reset array/slice elements and clear map entries.
-</div>
-<p></p>
-<div class="tmd-usual">
-These optimizations (and many more others) are collected in <span class="tmd-broken-link">Go Optimizations 101</span> book.
-</div>
-<p></p>
-<div class="tmd-usual">
-=== Go Optimizations 101 <span class="tmd-smaller-size">https://go101.org/optimizations/101.html</span>
-</div>
-<p></p>
-<h3 id="compile-time-evaluation" class="tmd-header-3">
-Calls to the Built-in <code class="tmd-code-span">len</code> and <code class="tmd-code-span">cap</code> Functions May Be Evaluated at Compile Time
-</h3>
-<p></p>
-<div class="tmd-usual">
-If the argument passed to a call of the built-in function <code class="tmd-code-span">len</code> or <code class="tmd-code-span">cap</code> function is an array or an array pointer value, then the call is evaluated at compile time and the result of the call is a typed constant with type as the built-in type <code class="tmd-code-span">int</code>. The result can be bound to named constants.
-</div>
-<p></p>
-<div class="tmd-usual">
-Example:
-</div>
-<pre class="tmd-code line-numbers">
-<code class="language-go">package main
-
-import "fmt"
-
-var a [5]int
-var p *[7]string
-
-// N and M are both typed constants.
-const N = len(a)
-const M = cap(p)
-
-func main() {
-	fmt.Println(N) // 5
-	fmt.Println(M) // 7
-}
-</code></pre>
-<p></p>
-<div class="tmd-usual">
-There are more scenarios in which calls to the built-in function <code class="tmd-code-span">len</code> and <code class="tmd-code-span">cap</code> functions are evaluated at compile time. Please read the <span class="tmd-broken-link">Go Details &amp; Tips 101</span> book for such cases.
-</div>
-<p></p>
-<div class="tmd-usual">
-=== Go Details &amp; Tips 101 <span class="tmd-smaller-size">https://go101.org/details-and-tips/101.html</span>
-</div>
-<p></p>
-<h3 id="modify-slice-length-and-capacity" class="tmd-header-3">
-Modify the Length and Capacity Properties of a Slice Individually
-</h3>
-<p></p>
-<div class="tmd-usual">
-Above has mentioned, generally, the length and capacity of a slice value can't be modified individually. A slice value can only be overwritten as a whole by assigning another slice value to it. However, we can modify the length and capacity of a slice individually by using reflections. Reflection will be explained in <span class="tmd-broken-link">a later article</span> in detail.
-</div>
-<p></p>
-<div class="tmd-usual">
-=== a later article <span class="tmd-smaller-size">reflection.html</span>
-</div>
-<p></p>
-<div class="tmd-usual">
-Example:
-</div>
-<pre class="tmd-code line-numbers">
-<code class="language-go">package main
-
-import (
-	"fmt"
-	"reflect"
-)
-
-func main() {
-	s := make([]int, 2, 6)
-	fmt.Println(len(s), cap(s)) // 2 6
-
-	reflect.ValueOf(&amp;s).Elem().SetLen(3)
-	fmt.Println(len(s), cap(s)) // 3 6
-
-	reflect.ValueOf(&amp;s).Elem().SetCap(5)
-	fmt.Println(len(s), cap(s)) // 3 5
-}
-</code></pre>
-<p></p>
-<div class="tmd-usual">
-The second argument passed to the <code class="tmd-code-span">reflect.SetLen</code> function must not be larger than the current capacity of the argument slice <code class="tmd-code-span">s</code>. The second argument passed to the <code class="tmd-code-span">reflect.SetCap</code> function must not be smaller than the current length of the argument slice <code class="tmd-code-span">s</code> and larger than the current capacity of the argument slice <code class="tmd-code-span">s</code>. Otherwise, a panic will occur.
-</div>
-<p></p>
-<div class="tmd-usual">
-The reflection way is very inefficient, it is slower than a slice assignment.
-</div>
-<p></p>
-<h3 id="slice-manipulations" class="tmd-header-3">
-More Slice Manipulations
-</h3>
-<p></p>
-<div id="delete-slice-elements" class="tmd-usual">
-
-</div>
-<p></p>
-<div id="delete-one-slice-element" class="tmd-usual">
-
-</div>
-<p></p>
-<div class="tmd-usual">
-Go doesn't support more built-in slice operations, such as slice clone, element deletion and insertion. We must compose the built-in ways to achieve those operations.
-</div>
-<p></p>
-<div class="tmd-usual">
-Please read the "Arrays and Slices" chapter in the <span class="tmd-broken-link">Go Optimizations 101</span> book for how to efficiently make such operations.
-</div>
-<p></p>
-<p></p>
-<h3 class="tmd-header-3">
-Use Maps to Simulate Sets
-</h3>
-<p></p>
-<div class="tmd-usual">
-Go doesn't support built-in <span class="tmd-bold">set</span> types. However, it is easy to use a map type to simulate a set type. In practice, we often use the map type <code class="tmd-code-span">map[K]struct{}</code> to simulate a set type with element type <code class="tmd-code-span">K</code>. The size of the map element type <code class="tmd-code-span">struct{}</code> is zero, elements of values of such map types don't occupy memory space.
-</div>
-<p></p>
-<h3 class="tmd-header-3">
-Container Related Operations Are Not Synchronized Internally
-</h3>
-<p></p>
-<div class="tmd-usual">
-Please note that, all container operations are not synchronized internally. Without making using of any data synchronization technique, it is okay for multiple goroutines to read a container concurrently, but it is not okay for multiple goroutines to manipulate a container concurrently and at least one goroutine modifies the container. The latter case will cause data races, even make goroutines panic. We must synchronize the container operations manually. Please read the articles on <span class="tmd-broken-link">data synchronizations</span> for details.
-</div>
-<p></p>
-<div class="tmd-usual">
-=== data synchronizations <span class="tmd-smaller-size">concurrent-synchronization-overview.html</span>
-</div>
-<p></p>
 </div>
