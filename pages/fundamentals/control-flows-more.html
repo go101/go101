@@ -21,7 +21,7 @@ Concurrent computing is a form of computing in which several computations are ex
 <p></p>
 <div class="tmd-base tmd-align-center">
 <div class="tmd-usual">
-<img src="res/concurrent-vs-parallel.png" class="tmd-media"/>
+res/concurrent-vs-parallel.png
 </div>
 </div>
 <p></p>
@@ -42,9 +42,12 @@ Each Go program starts with only one goroutine, we call it the main goroutine. A
 </div>
 <p></p>
 <div class="tmd-usual">
-All the result values of a goroutine function call (if the called function returns values) must be discarded in the function call statement. The following is an example which creates two new goroutines in the main goroutine. In the example, <code class="tmd-code-span">time.Duration</code> is a custom type defined in the <code class="tmd-code-span">time</code> standard package. Its underlying type is the built-in type <code class="tmd-code-span">int64</code>. Underlying types will be explained in <a href="type-system-overview.html#underlying-type">the next article</a>.
+All the result values of a goroutine function call (if the called function returns values) must be discarded in the function call statement. The following is an example which creates two new goroutines in the main goroutine. In the example, <code class="tmd-code-span">time.Duration</code> is a custom type defined in the <code class="tmd-code-span">time</code> standard package. Its underlying type is the built-in type <code class="tmd-code-span">int64</code>. Underlying types will be explained in <span class="tmd-broken-link">the next article</span>.
 </div>
 <p></p>
+<div class="tmd-usual">
+=== the next article <span class="tmd-smaller-size">type-system-overview.html#underlying-type</span>
+</div>
 <p></p>
 <pre class="tmd-code line-numbers">
 <code class="language-go">package main
@@ -143,9 +146,12 @@ The program shown in the last section is not perfect. The two new goroutines are
 </div>
 <p></p>
 <div class="tmd-usual">
-Go supports several <a href="concurrent-synchronization-overview.html">concurrency synchronization techniques</a>. Among them, <a href="channel.html">the channel technique</a> is the most unique and popularly used one. However, for simplicity, here we will use another technique, the <code class="tmd-code-span">WaitGroup</code> type in the <code class="tmd-code-span">sync</code> standard package, to synchronize the executions between the two new goroutines and the main goroutine.
+Go supports several <span class="tmd-broken-link">concurrency synchronization techniques</span>. Among them, <span class="tmd-broken-link">the channel technique</span> is the most unique and popularly used one. However, for simplicity, here we will use another technique, the <code class="tmd-code-span">WaitGroup</code> type in the <code class="tmd-code-span">sync</code> standard package, to synchronize the executions between the two new goroutines and the main goroutine.
 </div>
 <p></p>
+<div class="tmd-usual">
+=== concurrency synchronization techniques <span class="tmd-smaller-size">concurrent-synchronization-overview.html === the channel technique</span> channel.html
+</div>
 <p></p>
 <div class="tmd-usual">
 The <code class="tmd-code-span">WaitGroup</code> type has three methods (special functions, will be explained later): <code class="tmd-code-span">Add</code>, <code class="tmd-code-span">Done</code> and <code class="tmd-code-span">Wait</code>. This type will be explained in detail later in another article. Here we can simply think
@@ -221,7 +227,7 @@ The following picture depicts a possible lifecycle of a goroutine.
 <p></p>
 <div class="tmd-base tmd-align-center">
 <div class="tmd-usual">
-<img src="res/goroutine-states.png" class="tmd-media"/>
+res/goroutine-states.png
 </div>
 </div>
 <p></p>
@@ -278,9 +284,12 @@ Goroutine Schedule
 </h3>
 <p></p>
 <div class="tmd-usual">
-Not all goroutines in running state are being executed at a given time. At any given time, the maximum number of goroutines being executed will not exceed the number of logical CPUs available for the current program. We can call the <a href="https://golang.org/pkg/runtime/#NumCPU"><code class="tmd-code-span">runtime.NumCPU</code></a> function to get the number of logical CPUs available for the current program. Each logical CPU can only execute one goroutine at any given time. Go runtime must frequently switch execution contexts between goroutines to let each running goroutine have a chance to execute. This is similar to how operating systems switch execution contexts between OS threads.
+Not all goroutines in running state are being executed at a given time. At any given time, the maximum number of goroutines being executed will not exceed the number of logical CPUs available for the current program. We can call the <span class="tmd-broken-link"><code class="tmd-code-span">runtime.NumCPU</code></span> function to get the number of logical CPUs available for the current program. Each logical CPU can only execute one goroutine at any given time. Go runtime must frequently switch execution contexts between goroutines to let each running goroutine have a chance to execute. This is similar to how operating systems switch execution contexts between OS threads.
 </div>
 <p></p>
+<div class="tmd-usual">
+=== runtime.NumCPU <span class="tmd-smaller-size">https://golang.org/pkg/runtime/#NumCPU</span>
+</div>
 <p></p>
 <div class="tmd-usual">
 The following picture depicts a more detailed possible lifecycle for a goroutine. In the picture, the running state is divided into several more sub-states. A goroutine in the queuing sub-state is waiting to be executed. A goroutine in the executing sub-state may enter the queuing sub-state again when it has been executed for a while (a very small piece of time).
@@ -288,7 +297,7 @@ The following picture depicts a more detailed possible lifecycle for a goroutine
 <p></p>
 <div class="tmd-base tmd-align-center">
 <div class="tmd-usual">
-<img src="res/goroutine-schedule.png" class="tmd-media"/>
+res/goroutine-schedule.png
 </div>
 </div>
 <p></p>
@@ -297,14 +306,20 @@ Please note, for simplicity, the sub-states shown in the above picture will be n
 </div>
 <p></p>
 <div class="tmd-usual">
-The standard Go runtime adopts the <a href="https://docs.google.com/document/d/1TTj4T2JO42uD5ID9e89oa0sLKhJYD0Y_kqxDv3I3XMw">M-P-G model</a> to do the goroutine schedule job, where <span class="tmd-bold">M</span> represents OS threads, <span class="tmd-bold">P</span> represents logical/virtual processors (not logical CPUs) and <span class="tmd-bold">G</span> represents goroutines. Most schedule work is made by logical processors (<span class="tmd-bold">P</span>s), which act as brokers by attaching goroutines (<span class="tmd-bold">G</span>s) to OS threads (<span class="tmd-bold">M</span>s). Each OS thread can only be attached to at most one goroutine at any given time, and each goroutine can only be attached to at most one OS thread at any given time. A goroutine can only get executed when it is attached to an OS thread. A goroutine which has been executed for a while will try to detach itself from the corresponding OS thread, so that other running goroutines can have a chance to get attached and executed.
+The standard Go runtime adopts the <span class="tmd-broken-link">M-P-G model</span> to do the goroutine schedule job, where <span class="tmd-bold">M</span> represents OS threads, <span class="tmd-bold">P</span> represents logical/virtual processors (not logical CPUs) and <span class="tmd-bold">G</span> represents goroutines. Most schedule work is made by logical processors (<span class="tmd-bold">P</span>s), which act as brokers by attaching goroutines (<span class="tmd-bold">G</span>s) to OS threads (<span class="tmd-bold">M</span>s). Each OS thread can only be attached to at most one goroutine at any given time, and each goroutine can only be attached to at most one OS thread at any given time. A goroutine can only get executed when it is attached to an OS thread. A goroutine which has been executed for a while will try to detach itself from the corresponding OS thread, so that other running goroutines can have a chance to get attached and executed.
 </div>
-<p></p>
 <p></p>
 <div class="tmd-usual">
-At runtime. we can call the <a href="https://golang.org/pkg/runtime/#GOMAXPROCS"><code class="tmd-code-span">runtime.GOMAXPROCS</code></a> function to get and set the number of logical processors (<span class="tmd-bold">P</span>s).
+=== M-P-G model <span class="tmd-smaller-size">https://docs.google.com/document/d/1TTj4T2JO42uD5ID9e89oa0sLKhJYD0Y_kqxDv3I3XMw</span>
 </div>
 <p></p>
+<div class="tmd-usual">
+At runtime. we can call the <span class="tmd-broken-link"><code class="tmd-code-span">runtime.GOMAXPROCS</code></span> function to get and set the number of logical processors (<span class="tmd-bold">P</span>s).
+</div>
+<p></p>
+<div class="tmd-usual">
+=== runtime.GOMAXPROCS <span class="tmd-smaller-size">https://golang.org/pkg/runtime/#GOMAXPROCS</span>
+</div>
 <p></p>
 <div class="tmd-usual">
 The default initial value of <code class="tmd-code-span">runtime.GOMAXPROCS</code> can also be set through the <code class="tmd-code-span">GOMAXPROCS</code> environment variable.
@@ -323,9 +338,12 @@ A deferred function call is a function call which follows a <code class="tmd-cod
 </div>
 <p></p>
 <div class="tmd-usual">
-When a defer statement is executed, the deferred function call is not executed immediately. Instead, it is pushed into a defer-call stack maintained by its innermost nesting function call. After a function call <code class="tmd-code-span">fc(...)</code> returns (but has not fully exited yet) and enters its <a href="function-declarations-and-calls.html#exiting-phase">exiting phase</a>, all the deferred function calls pushed into its defer-call stack will be removed from the defer-call stack and executed, in first-in, last-out order, that is, the reverse of the order in which they were pushed into the defer-call stack. Once all these deferred calls are executed, the function call <code class="tmd-code-span">fc(...)</code> fully exits.
+When a defer statement is executed, the deferred function call is not executed immediately. Instead, it is pushed into a defer-call stack maintained by its innermost nesting function call. After a function call <code class="tmd-code-span">fc(...)</code> returns (but has not fully exited yet) and enters its <span class="tmd-broken-link">exiting phase</span>, all the deferred function calls pushed into its defer-call stack will be removed from the defer-call stack and executed, in first-in, last-out order, that is, the reverse of the order in which they were pushed into the defer-call stack. Once all these deferred calls are executed, the function call <code class="tmd-code-span">fc(...)</code> fully exits.
 </div>
 <p></p>
+<div class="tmd-usual">
+=== exiting phase <span class="tmd-smaller-size">function-declarations-and-calls.html#exiting-phase</span>
+</div>
 <p></p>
 <div class="tmd-usual">
 Here is a simple example to show how to use deferred function calls.
@@ -450,9 +468,12 @@ func main() {
 }
 </code></pre>
 <p></p>
+<div class="tmd-usual">
+=== gotv <span class="tmd-smaller-size">https://go101.org/apps-and-libs/gotv.html</span>
+</div>
 <p></p>
 <div class="tmd-usual">
-Use different Go Toolchain versions to run the code (<a href="https://go101.org/apps-and-libs/gotv.html">gotv</a> is a tool used to manage and use multiple coexisting installations of official Go toolchain versions). The outputs:
+Use different Go Toolchain versions to run the code (<span class="tmd-broken-link">gotv</span> is a tool used to manage and use multiple coexisting installations of official Go toolchain versions). The outputs:
 </div>
 <pre class="tmd-code output">
 $ gotv 1.21. run eval-moment.go
@@ -476,9 +497,12 @@ b: 10
 </pre>
 <p></p>
 <div class="tmd-usual">
-Please note the behavior change caused by <a href="control-flows.html#for-semantic-change">the semantic change (of <code class="tmd-code-span">for</code> loop blocks) made in Go 1.22</a>.
+Please note the behavior change caused by <span class="tmd-broken-link">the semantic change (of <code class="tmd-code-span">for</code> loop blocks) made in Go 1.22</span>.
 </div>
 <p></p>
+<div class="tmd-usual">
+=== the semantic change ... <span class="tmd-smaller-size">control-flows.html#for-semantic-change</span>
+</div>
 <p></p>
 <p></p>
 <div class="tmd-usual">
@@ -505,9 +529,12 @@ func main() {
 </code></pre>
 <p></p>
 <div class="tmd-usual">
-By the way, it is not a good idea to do synchronizations by using <code class="tmd-code-span">time.Sleep</code> calls in formal projects. If the program runs on a computer which CPUs are occupied by many other programs running on the computer, the newly created goroutine may never get a chance to execute before the program exits. We should use the concurrency synchronization techniques introduced in the article <a href="concurrent-synchronization-overview.html">concurrency synchronization overview</a> to do synchronizations in formal projects.
+By the way, it is not a good idea to do synchronizations by using <code class="tmd-code-span">time.Sleep</code> calls in formal projects. If the program runs on a computer which CPUs are occupied by many other programs running on the computer, the newly created goroutine may never get a chance to execute before the program exits. We should use the concurrency synchronization techniques introduced in the article <span class="tmd-broken-link">concurrency synchronization overview</span> to do synchronizations in formal projects.
 </div>
 <p></p>
+<div class="tmd-usual">
+=== concurrency synchronization overview <span class="tmd-smaller-size">concurrent-synchronization-overview.html</span>
+</div>
 <p></p>
 <h3 class="tmd-header-3">
 The Necessity of the Deferred Function Feature
@@ -518,9 +545,12 @@ In the above examples, the deferred function calls are not absolutely necessary.
 </div>
 <p></p>
 <div class="tmd-usual">
-Deferred function calls can also help us write cleaner and more robust code. We can read more code examples that make use of deferred function calls and learn more details on deferred function calls in the article <a href="defer-more.html">more about deferred functions</a> later. For now, we will explore the importance of deferred functions for panic and recovery.
+Deferred function calls can also help us write cleaner and more robust code. We can read more code examples that make use of deferred function calls and learn more details on deferred function calls in the article <span class="tmd-broken-link">more about deferred functions</span> later. For now, we will explore the importance of deferred functions for panic and recovery.
 </div>
 <p></p>
+<div class="tmd-usual">
+=== more about deferred functions <span class="tmd-smaller-size">defer-more.html</span>
+</div>
 <p></p>
 <h3 id="panic-recover" class="tmd-header-3">
 Panic and Recover
@@ -555,9 +585,12 @@ func recover() interface{}
 </code></pre>
 <p></p>
 <div class="tmd-usual">
-Interface types and values will be explained in the article <a href="interface.html">interfaces in Go</a> later. Here, we just need to know that the blank interface type <code class="tmd-code-span">interface{}</code> can be viewed as the <code class="tmd-code-span">any</code> type or the <code class="tmd-code-span">Object</code> type in many other languages. In other words, we can pass a value of any type to a <code class="tmd-code-span">panic</code> function call.
+Interface types and values will be explained in the article <span class="tmd-broken-link">interfaces in Go</span> later. Here, we just need to know that the blank interface type <code class="tmd-code-span">interface{}</code> can be viewed as the <code class="tmd-code-span">any</code> type or the <code class="tmd-code-span">Object</code> type in many other languages. In other words, we can pass a value of any type to a <code class="tmd-code-span">panic</code> function call.
 </div>
 <p></p>
+<div class="tmd-usual">
+=== interfaces in Go <span class="tmd-smaller-size">interface.html</span>
+</div>
 <p></p>
 <div class="tmd-usual">
 The value returned by a <code class="tmd-code-span">recover</code> function call is the value a <code class="tmd-code-span">panic</code> function call consumed.
@@ -667,9 +700,12 @@ Generally, panics are used for logic errors, such as careless human errors. Logi
 </div>
 <p></p>
 <div class="tmd-usual">
-We can learn <a href="panic-and-recover-use-cases.html">some panic/recover use cases</a> and <a href="panic-and-recover-more.html">more about panic/recover mechanism</a> later.
+We can learn <span class="tmd-broken-link">some panic/recover use cases</span> and <span class="tmd-broken-link">more about panic/recover mechanism</span> later.
 </div>
 <p></p>
+<div class="tmd-usual">
+=== some panic/recover use cases <span class="tmd-smaller-size">panic-and-recover-use-cases.html === more about panic/recover mechanism</span> panic-and-recover-more.html
+</div>
 <p></p>
 <h3 class="tmd-header-3">
 Some Fatal Errors Are Not Panics and They Are Unrecoverable
