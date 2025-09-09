@@ -419,7 +419,7 @@ $ gotv 1.22. run demo-closure-1.go
 Prior to Go 1.22, what the `printN` closure captures is the only instance
 of the loop variable, which final value is `9`.
 However, since Go 1.22, what the `printN` closure captures is the first instance
-of the loop variable, which final value is `1`.
+of the loop variable, which final value is `0`.
 That is the reason of the behavior difference between the two Go versions.
 
 Here is a similar example:
@@ -1101,7 +1101,7 @@ There are several ways (in order of priority) to specify Go language versions
 for Go source files:
 +. Add a `//go:build go1.xy` comment directive at the start of
    a source file to specify the language version for the source file.
-   %% (However, the `//go:build go1.xy` comment directive in a Go source file might
+   **%% (However, the `//go:build go1.xy` comment directive in a Go source file might
    still be ignored due to potential bugs in the toolchain implementation.
    For example, the Go core team is not willing to fix __this known bug__ for
    Go toolchain v1.22.x versions.)
@@ -1143,20 +1143,31 @@ This is the minimum standard to be a professional Go programmer in the Go 1.22+ 
 ###++++++++++++++
     Upgrading module versions
 
-If you are maintaining a public Go module which are depended by other Go projects,
+It is a sad fact that ^::%%**the proposal (and trouble) makers never intend to
+to provide automatic ways to identify potential problems
+when upgrading module versions**%%::.
+So you must identify potential problems manually.
+
+* If you are maintaining a public Go module which are depended by other Go projects,
 please carefully check all the uses of `for;;` loops in the module's code
 before bumping the language version to Go 1.22+ in the go.mod file.
-Especially pay attention to those freshly-declared loop variables which
-are not modified in `postStatement`.
+especially pay attention to those freshly-declared loop variables which
+are not modified in `postStatement`, to avoid breaking the projects
+depending on this module.
 
-If you upgrade dependency modules of your Go projects,
-pay attention to those ones which language versions os
-upgraded to Go 1.22 or higher
-from a version with the old semantics before Go 1.22.
+* If you upgrade dependency modules of your Go projects,
+pay attention to those ones which language versions are upgraded to
+Go 1.22 or higher from a version with the old semantics before Go 1.22,
+to avoid breaking your projects.
+{
 
-It is a sad fact that **the proposal (and trouble) makers never intend to
-to provide automatic ways for identifying potential problems
-when upgrading module versions**.
+And please note that, **%%sometimes, the `go mod tidy` command provided by
+the official Go toolchain will automatically upgrade the language versions
+(specified in `go.mod` files) of your projects,
+without detecting potential problems that will break the behaviors
+of your projects, without notifying you the upgradation.
+You might find the behavior changes in time or not. Just be careful!
+}
 
 @@@ #avoid-freshly-declared-loop-vars
 ###++++++++++++++

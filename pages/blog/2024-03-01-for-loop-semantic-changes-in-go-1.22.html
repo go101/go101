@@ -474,7 +474,7 @@ $ gotv 1.22. run demo-closure-1.go
 </pre>
 <p></p>
 <div class="tmd-usual">
-Prior to Go 1.22, what the <code class="tmd-code-span">printN</code> closure captures is the only instance of the loop variable, which final value is <code class="tmd-code-span">9</code>. However, since Go 1.22, what the <code class="tmd-code-span">printN</code> closure captures is the first instance of the loop variable, which final value is <code class="tmd-code-span">1</code>. That is the reason of the behavior difference between the two Go versions.
+Prior to Go 1.22, what the <code class="tmd-code-span">printN</code> closure captures is the only instance of the loop variable, which final value is <code class="tmd-code-span">9</code>. However, since Go 1.22, what the <code class="tmd-code-span">printN</code> closure captures is the first instance of the loop variable, which final value is <code class="tmd-code-span">0</code>. That is the reason of the behavior difference between the two Go versions.
 </div>
 <p></p>
 <div class="tmd-usual">
@@ -1191,7 +1191,7 @@ There are several ways (in order of priority) to specify Go language versions fo
 <ol class="tmd-list">
 <li class="tmd-list-item">
 <div class="tmd-usual">
-Add a <code class="tmd-code-span">//go:build go1.xy</code> comment directive at the start of a source file to specify the language version for the source file. <span class="tmd-italic">(However, the <code class="tmd-code-span">//go:build go1.xy</code> comment directive in a Go source file might still be ignored due to potential bugs in the toolchain implementation. For example, the Go core team is not willing to fix </span><a href="https://github.com/golang/go/issues/66092"><span class="tmd-italic">this known bug</span></a><span class="tmd-italic"> for Go toolchain v1.22.x versions.)</span>
+Add a <code class="tmd-code-span">//go:build go1.xy</code> comment directive at the start of a source file to specify the language version for the source file. <span class="tmd-bold"><span class="tmd-italic">(However, the <code class="tmd-code-span">//go:build go1.xy</code> comment directive in a Go source file might still be ignored due to potential bugs in the toolchain implementation. For example, the Go core team is not willing to fix </span></span><a href="https://github.com/golang/go/issues/66092"><span class="tmd-bold"><span class="tmd-italic">this known bug</span></span></a><span class="tmd-bold"><span class="tmd-italic"> for Go toolchain v1.22.x versions.)</span></span>
 </div>
 </li>
 <li class="tmd-list-item">
@@ -1236,16 +1236,28 @@ Upgrading module versions
 </h3>
 <p></p>
 <div class="tmd-usual">
-If you are maintaining a public Go module which are depended by other Go projects, please carefully check all the uses of <code class="tmd-code-span">for;;</code> loops in the module's code before bumping the language version to Go 1.22+ in the go.mod file. Especially pay attention to those freshly-declared loop variables which are not modified in <code class="tmd-code-span">postStatement</code>.
+It is a sad fact that <span class="tmd-larger-size"><span class="tmd-italic"><span class="tmd-bold">the proposal (and trouble) makers never intend to to provide automatic ways to identify potential problems when upgrading module versions</span></span></span>. So you must identify potential problems manually.
 </div>
 <p></p>
+<ul class="tmd-list">
+<li class="tmd-list-item">
 <div class="tmd-usual">
-If you upgrade dependency modules of your Go projects, pay attention to those ones which language versions os upgraded to Go 1.22 or higher from a version with the old semantics before Go 1.22.
+If you are maintaining a public Go module which are depended by other Go projects, please carefully check all the uses of <code class="tmd-code-span">for;;</code> loops in the module's code before bumping the language version to Go 1.22+ in the go.mod file. especially pay attention to those freshly-declared loop variables which are not modified in <code class="tmd-code-span">postStatement</code>, to avoid breaking the projects depending on this module.
 </div>
 <p></p>
+</li>
+<li class="tmd-list-item">
 <div class="tmd-usual">
-It is a sad fact that <span class="tmd-bold">the proposal (and trouble) makers never intend to to provide automatic ways for identifying potential problems when upgrading module versions</span>.
+If you upgrade dependency modules of your Go projects, pay attention to those ones which language versions are upgraded to Go 1.22 or higher from a version with the old semantics before Go 1.22, to avoid breaking your projects.
 </div>
+<div class="tmd-base">
+<p></p>
+<div class="tmd-usual">
+And please note that, <span class="tmd-bold"><span class="tmd-italic">sometimes, the <code class="tmd-code-span">go mod tidy</code> command provided by the official Go toolchain will automatically upgrade the language versions (specified in <code class="tmd-code-span">go.mod</code> files) of your projects, without detecting potential problems that will break the behaviors of your projects, without notifying you the upgradation. You might find the behavior changes in time or not. Just be careful!</span></span>
+</div>
+</div>
+</li>
+</ul>
 <p></p>
 <h3 id="avoid-freshly-declared-loop-vars" class="tmd-header-3">
 Avoid using freshly-declared loop variables in <code class="tmd-code-span">for;;</code> loops if you worry about getting bitten by the pitful of the new semantics
