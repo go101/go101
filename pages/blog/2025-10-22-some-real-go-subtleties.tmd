@@ -1,0 +1,150 @@
+
+###### Some (Real) Go Subtleties
+
+I just read an article: __15 Go Subtleties You May Not Already Know__.
+After reading that article, I just feel the title is some weird/improper.
+Because all the so-called subtleties mentioned in that article
+are what a quanlified Go programer should know about.
+
+    === 15 Go Subtleties ... :: https://harrisoncramer.me/15-go-sublteties-you-may-not-already-know/
+
+Go indeed has many subtleties.
+Even many professional Go programmers are not aware of some of them.
+Here, this article shows several of them
+(all of them are from the __Go Details & Tips 101__ book).
+
+   === Go Details & Tips 101 :: https://go101.org/details-and-tips/101.html
+
+Contents:
+###---
+
+@@@ #zero-size-pointers
+###+++++ Comparing two pointers to zero-size values might result either true or false, even during the same program execution
+
+For example. What does the following program print? Nothing or true?
+
+'''Go
+package main
+
+var a, b [0]int
+var p, q = &a, &b
+
+func main() {
+	if (p == q) {
+		p, q = &a, &b
+		println(p == q)
+	}
+}
+'''
+
+It prints false (with the official Go toolchain).
+Surprised? But it looks the behavior doesn't violate Go specification.
+
+A similar one:
+
+'''Go
+package main
+
+var a, b struct{}
+var p, q = &a, &b
+
+func main() {
+	var p2, q2 = &a, &b
+	println(p == q)   // true
+	println(p == p2)  // true
+	println(q == q2)  // true
+	println(p == q2)  // true
+	println(q == p2)  // true
+	println(p2 == q2) // false
+}
+'''
+
+@@@ #bare-for-loops
+###+++++ `for true {...}` and `for {...}` are not equivalent
+
+For example, the function `foo` shown below compiles, but `bar` doesn't.
+
+'''Go
+func foo() int {
+  for {}
+}
+
+func bar() int {
+  for true {}
+}
+'''
+
+@@@ #make-with-negative-cap
+###+++++ When using the `make` built-in function to create a map, the second argument (`cap`) can be negative
+
+For example, the following code compiles.
+
+'''Go
+package main
+
+var n = -100
+
+func main() {
+    var m = make(map[int]bool, n)
+    m[123] = true;
+}
+'''
+
+A negative `cap` argument is equivalent to omitting it.
+
+@@@ #slicing-const-strings
+###+++++ `aConstantString[:]` is not a constant
+
+Here is an example to prove it.
+
+'''Go
+package main
+
+const s = "zigo 101" // len(s) == 8
+var a byte = 1 << len(s) / 128
+var b byte = 1 << len(s[:]) / 128
+
+func main() {
+	println(a, b) // 2 0
+}
+'''
+
+Some Go programmers might be surprised by this result.
+To understand the result well, we need to know about the next subtlety.
+
+@@@ #non-constant-bit-shift-expression
+###+++++ If the left operand of a non-constant bit-shift expression is untyped,
+   then its type is determined as the assumed type of the expression
+
+For example, the following program prints `0 0 2`.
+
+'''Go
+package main
+
+const N = 8
+var n = N
+
+func main() {
+	var x byte = 1 << n / 128
+	var y = byte(1 << n / 128)
+	var z byte = 1 << N / 128
+	
+	println(x, y, z) // 0 0 2
+}
+'''
+
+In the first two declarations, the types of `1` are both assumed as `byte`.
+So the two declarations are both equivalent to the following line,
+in which the run-time expression `byte(1) << n` overflows
+(and is truncated to 0).
+
+'''Go
+    ... = byte(1) << n // 128
+'''
+
+The last declaration is equivalent to the following line.
+The expression `1 << N / 128` is evaluated at compile time.
+In the expression, `1` is treated as untyped int value.
+'''Go
+   var z = 2
+'''

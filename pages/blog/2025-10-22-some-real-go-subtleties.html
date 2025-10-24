@@ -1,0 +1,183 @@
+<div class="tmd-doc">
+<p></p>
+<h1 class="tmd-header-1">
+Some (Real) Go Subtleties
+</h1>
+<p></p>
+<div class="tmd-usual">
+I just read an article: <a href="https://harrisoncramer.me/15-go-sublteties-you-may-not-already-know/">15 Go Subtleties You May Not Already Know</a>. After reading that article, I just feel the title is some weird/improper. Because all the so-called subtleties mentioned in that article are what a quanlified Go programer should know about.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+Go indeed has many subtleties. Even many professional Go programmers are not aware of some of them. Here, this article shows several of them (all of them are from the <a href="https://go101.org/details-and-tips/101.html">Go Details &amp; Tips 101</a> book).
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+Contents:
+</div>
+
+<ul class="tmd-list tmd-toc">
+<li class="tmd-list-item tmd-toc-item"><a href="#zero-size-pointers">Comparing two pointers to zero-size values might result either true or false, even during the same program execution</a>
+</li>
+<li class="tmd-list-item tmd-toc-item"><a href="#bare-for-loops"><code class="tmd-code-span">for true {...}</code> and <code class="tmd-code-span">for {...}</code> are not equivalent</a>
+</li>
+<li class="tmd-list-item tmd-toc-item"><a href="#make-with-negative-cap">When using the <code class="tmd-code-span">make</code> built-in function to create a map, the second argument (<code class="tmd-code-span">cap</code>) can be negative</a>
+</li>
+<li class="tmd-list-item tmd-toc-item"><a href="#slicing-const-strings"><code class="tmd-code-span">aConstantString[:]</code> is not a constant</a>
+</li>
+<li class="tmd-list-item tmd-toc-item"><a href="#non-constant-bit-shift-expression">If the left operand of a non-constant bit-shift expression is untyped, then its type is determined as the assumed type of the expression</a>
+</li>
+</ul>
+<p></p>
+<h3 id="zero-size-pointers" class="tmd-header-3">
+Comparing two pointers to zero-size values might result either true or false, even during the same program execution
+</h3>
+<p></p>
+<div class="tmd-usual">
+For example. What does the following program print? Nothing or true?
+</div>
+<p></p>
+<pre class="tmd-code">
+<code class="language-Go">package main
+
+var a, b [0]int
+var p, q = &amp;a, &amp;b
+
+func main() {
+	if (p == q) {
+		p, q = &amp;a, &amp;b
+		println(p == q)
+	}
+}
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+It prints false (with the official Go toolchain). Surprised? But it looks the behavior doesn't violate Go specification.
+</div>
+<p></p>
+<div class="tmd-usual">
+A similar one:
+</div>
+<p></p>
+<pre class="tmd-code">
+<code class="language-Go">package main
+
+var a, b struct{}
+var p, q = &amp;a, &amp;b
+
+func main() {
+	var p2, q2 = &amp;a, &amp;b
+	println(p == q)   // true
+	println(p == p2)  // true
+	println(q == q2)  // true
+	println(p == q2)  // true
+	println(q == p2)  // true
+	println(p2 == q2) // false
+}
+</code></pre>
+<p></p>
+<h3 id="bare-for-loops" class="tmd-header-3">
+<code class="tmd-code-span">for true {...}</code> and <code class="tmd-code-span">for {...}</code> are not equivalent
+</h3>
+<p></p>
+<div class="tmd-usual">
+For example, the function <code class="tmd-code-span">foo</code> shown below compiles, but <code class="tmd-code-span">bar</code> doesn't.
+</div>
+<p></p>
+<pre class="tmd-code">
+<code class="language-Go">func foo() int {
+  for {}
+}
+
+func bar() int {
+  for true {}
+}
+</code></pre>
+<p></p>
+<h3 id="make-with-negative-cap" class="tmd-header-3">
+When using the <code class="tmd-code-span">make</code> built-in function to create a map, the second argument (<code class="tmd-code-span">cap</code>) can be negative
+</h3>
+<p></p>
+<div class="tmd-usual">
+For example, the following code compiles.
+</div>
+<p></p>
+<pre class="tmd-code">
+<code class="language-Go">package main
+
+var n = -100
+
+func main() {
+    var m = make(map[int]bool, n)
+    m[123] = true;
+}
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+A negative <code class="tmd-code-span">cap</code> argument is equivalent to omitting it.
+</div>
+<p></p>
+<h3 id="slicing-const-strings" class="tmd-header-3">
+<code class="tmd-code-span">aConstantString[:]</code> is not a constant
+</h3>
+<p></p>
+<div class="tmd-usual">
+Here is an example to prove it.
+</div>
+<p></p>
+<pre class="tmd-code">
+<code class="language-Go">package main
+
+const s = "zigo 101" // len(s) == 8
+var a byte = 1 &lt;&lt; len(s) / 128
+var b byte = 1 &lt;&lt; len(s[:]) / 128
+
+func main() {
+	println(a, b) // 2 0
+}
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+Some Go programmers might be surprised by this result. To understand the result well, we need to know about the next subtlety.
+</div>
+<p></p>
+<h3 id="non-constant-bit-shift-expression" class="tmd-header-3">
+If the left operand of a non-constant bit-shift expression is untyped, then its type is determined as the assumed type of the expression
+</h3>
+<p></p>
+<div class="tmd-usual">
+For example, the following program prints <code class="tmd-code-span">0 0 2</code>.
+</div>
+<p></p>
+<pre class="tmd-code">
+<code class="language-Go">package main
+
+const N = 8
+var n = N
+
+func main() {
+	var x byte = 1 &lt;&lt; n / 128
+	var y = byte(1 &lt;&lt; n / 128)
+	var z byte = 1 &lt;&lt; N / 128
+	
+	println(x, y, z) // 0 0 2
+}
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+In the first two declarations, the types of <code class="tmd-code-span">1</code> are both assumed as <code class="tmd-code-span">byte</code>. So the two declarations are both equivalent to the following line, in which the run-time expression <code class="tmd-code-span">byte(1) &lt;&lt; n</code> overflows (and is truncated to 0).
+</div>
+<p></p>
+<pre class="tmd-code">
+<code class="language-Go">    ... = byte(1) &lt;&lt; n // 128
+</code></pre>
+<p></p>
+<div class="tmd-usual">
+The last declaration is equivalent to the following line. The expression <code class="tmd-code-span">1 &lt;&lt; N / 128</code> is evaluated at compile time. In the expression, <code class="tmd-code-span">1</code> is treated as untyped int value.
+</div>
+<pre class="tmd-code">
+<code class="language-Go">   var z = 2
+</code></pre>
+</div>
