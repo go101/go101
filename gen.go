@@ -133,14 +133,9 @@ func genStaticFiles(rootURL string) {
 	// tmd -> html
 	tmd2htmls := func(group string) {
 		dir := fullPath("pages", group)
-		filenames, _ := readFolder(dir)
-		for _, filename := range filenames {
-			if strings.HasSuffix(filename, ".tmd") {
-				outputs, err := runShellCommand(time.Minute/2, dir, "tmd", "gen", "--enabled-custom-apps=html", filename)
-				if err != nil {
-					log.Fatalf("tmd failed to execute in directory: %s.\n%s", dir, outputs)
-				}
-			}
+		outputs, err := runShellCommand(time.Minute/2, dir, "tmd", "gen", ".")
+		if err != nil {
+			log.Fatalf("tmd failed to execute in directory: %s.\n%s", dir, outputs)
 		}
 	}
 

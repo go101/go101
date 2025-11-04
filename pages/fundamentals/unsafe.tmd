@@ -8,7 +8,7 @@ For example, Go pointers can't participate arithmetic operations,
 and for two arbitrary pointer types, it is very possible that
 their values can't be converted to each other.
 
-    === pointers in Go :: pointer.html
+    === pointers in Go :: pointer.tmd
 
 The pointers explained in that article are called type-safe pointers actually.
 Although the restrictions on type-safe pointers really make
@@ -50,7 +50,7 @@ The `unsafe.Pointer` type is defined as
 type Pointer *ArbitraryType
 '''
 
-    === kind of types :: type-system-overview.html#type-kinds
+    === kind of types :: type-system-overview.tmd#type-kinds
     === the `unsafe` standard package :: https://golang.org/pkg/unsafe/
 
 Surely, it is not a usual type definition.
@@ -258,7 +258,7 @@ func main() {
 }
 '''
 
-{ //
+{ %%
 https://github.com/golang/go/issues/46742
 }
 
@@ -326,7 +326,7 @@ Pointers play an important role in the check process.
 If a memory block is unreachable from (referenced by) any values still in use,
 then Go runtime thinks it is an unused value and it can be safely garbage collected.
 
-    === check which ... :: memory-block.html#when-to-collect
+    === check which ... :: memory-block.tmd#when-to-collect
 
 As uintptr values are integers, they can participate arithmetic operations.
 
@@ -340,7 +340,7 @@ and each garbage collection process may last an uncertain duration.
 So when a memory block becomes unused, it may be
 __collected at an uncertain time__.
 
-    === collected at an uncertain time :: memory-block.html#when-can-collect
+    === collected at an uncertain time :: memory-block.tmd#when-can-collect
 
 For example:
 
@@ -383,13 +383,13 @@ It is dangerous to dereference the address stored in value `p2` to an `int` valu
 for it is possible that the memory block has been already reallocated for another value (even for another program).
 
 
-{ //
+{ %%
 https://github.com/golang/go/issues/32115
 }
-{ //
+{ %%
 ###----------- Fact 3: we can use a `runtime.KeepAlive` function call to mark a value as still in use (reachable) before the call
 
-%% (I decided to remove this fact from this article. This doesn't means the fact is not existing.
+// (I decided to remove this fact from this article. This doesn't means the fact is not existing.
 It just means that the fact is not very relevant to this article.
 And it is helpless to fix the problem shown in the last sub-section.
 Please read the next fact for the reason.)
@@ -429,7 +429,7 @@ Here, we should just know that when the size of the stack of a goroutine changes
 the memory blocks allocated on the stack will be moved.
 In other words, the addresses of the values hosted on these memory blocks will change.
 
-    === memory blocks :: memory-block.html#where-to-allocate
+    === memory blocks :: memory-block.tmd#where-to-allocate
 
 ###----------- Fact 4: the life range of a value at run time may be not as large as it looks in code
 
@@ -590,7 +590,7 @@ it is not recommended to be used in general user code.
 Since Go 1.20, in general user code, we should try to use the implementation
 which uses the `unsafe.String` function, mentioned above in this article.
 
-    === their internal structures :: value-part.html#internal-definitions
+    === their internal structures :: value-part.tmd#internal-definitions
 
 The converse, converting a string to a byte slice in the similar way, is invalid,
 for the size of a string is smaller than a byte slice.
@@ -696,7 +696,7 @@ func main() {
 Such bugs are very subtle and hard to detect,
 which is why the uses of unsafe pointers are dangerous.
 
-{ //
+{ %%
 If we do want to split that conversion line into two lines,
 we should call the `runtime.KeepAlive` function and pass the unsafe pointer `p`
 (or any other value which is also referencing value `t.y[2]`) as the argument,
@@ -731,9 +731,9 @@ the standard Go compiler. In the implementation of the standard Go compiler,
 a `runtime.KeepAlive` call will make the values referenced by
 its argument be allocated on heap, and memory blocks allocated on heap will be never moved.
 
-%% (The above explanations are removed. The reason is it is not guaranteed that
+// (The above explanations are removed. The reason is it is not guaranteed that
 a `runtime.KeepAlive` call will make the values referenced by
-its argument be allocated on heap.) %%
+its argument be allocated on heap.) //
 }
 
 The intermediate uintptr value may also participate in `&^` bitwise clear operations to do address alignment,
@@ -748,7 +748,7 @@ or crash program if that boundary address is not valid for any allocated memory 
 (depending on compiler implementations).
 Please read __this FAQ item__ to get more explanations.
 
-    === this FAQ item :: unofficial-faq.html#final-zero-size-field
+    === this FAQ item :: unofficial-faq.tmd#final-zero-size-field
 
 ###----------- Pattern 4: convert unsafe pointers to `uintptr` values as arguments of `syscall.Syscall` calls.
 
@@ -817,7 +817,7 @@ syscall.Syscall(SYS_XXX, uintptr(uintptr(fd)),
 			uint(uintptr(unsafe.Pointer(p))), uintptr(n))
 '''
 
-{ //
+{ %%
 https://github.com/golang/go/issues/34684#issuecomment-540103545
 }
 Note: this pattern also applies to the __syscall.Proc.Call__
@@ -926,11 +926,11 @@ func main() {
 }
 '''
 
-{ // not correct
+{ %% not correct
 Note, a `runtime.KeepAlive` call is needed in this example,
 otherwise, the slice might reference an invalid underlying byte sequence.
 
-%% (The `runtime.KeepAlive` call is not essential here.) %%
+// (The `runtime.KeepAlive` call is not essential here.) //
 https://groups.google.com/forum/#!topic/golang-nuts/MgIP2KvEAaU
 }
 
@@ -991,10 +991,10 @@ func main() {
 }
 '''
 
-{ //
-%% (The current article ever stated that the `runtime.KeepAlive` call in the above example is essential.
+{ %%
+// (The current article ever stated that the `runtime.KeepAlive` call in the above example is essential.
 I'm very sorry for that I spread the wrong information. In fact, this call is not essential here,
-at least for the official standard compiler.) %%
+at least for the official standard compiler.) //
 }
 
 Note, when using the just introduced unsafe way to convert a string to a byte slice,

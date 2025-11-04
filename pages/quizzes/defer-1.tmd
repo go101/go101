@@ -1,0 +1,95 @@
+
+##### defer 1
+
+@@@ #question
+{
+What does the following program print?
+
+@@@ .line-numbers
+''' go
+package main
+
+type Foo struct {
+	v int
+}
+
+func MakeFoo(n *int) Foo {
+	print(*n)
+	return Foo{}
+}
+
+func (Foo) Bar(n *int) {
+	print(*n)
+}
+
+func main() {
+	var x = 1
+	var p = &x
+	defer MakeFoo(p).Bar(p) // line 19
+	x = 2
+	p = new(int) // line 21
+	MakeFoo(p)
+}
+'''
+}
+
+
+Choices:
+
+""" go101-quiz
+100
+102
+022
+011
+"""
+
+
+@@@ #answer
+{
+Answer: 102
+
+Run it on __ Go play`` https://go.dev/play/p/WfuL8NQ4HKA __.
+
+Key points:
+* 
+	When a function call is pushed into the deferred call queue,
+	the called function value and all the arguments are evaluated.
+	The evaluated values will be used when the call is executed later
+	in the existing phase of its caller function.
+* 
+	So, at line 19, when the deferred call `Bar` is pushed into the deferred call queue,
+	its arguments `MakeFoo(p)` (as the receiver argument) and `p` are evaluated.
+	In evaluating `MakeFoo(p)`, `1` is printed.
+* 
+	The later modification at line 21 doesn't affect the evaluation results at line 19,
+	which means the argument passed to the `Bar` function call is still a pointer to the variable `x`.
+
+
+
+A similar quiz:
+
+
+@@@ .line-numbers
+''' go
+package main
+
+type T int
+
+func (t T) M(n int) T {
+	print(n)
+	return t
+}
+
+func main() {
+	var t T
+	defer t.M(1).M(2)
+	t.M(3).M(4)
+}
+'''
+
+
+The above quiz program prints `1342`.
+
+
+}
+

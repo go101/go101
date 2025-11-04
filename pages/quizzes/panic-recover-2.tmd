@@ -1,0 +1,71 @@
+
+##### panic/recover 2
+
+@@@ #question
+{
+
+What does the following program print?
+
+@@@ .line-numbers
+''' go
+package main
+
+func main() {
+	defer func() {
+		println(recover().(int))
+	}()
+	defer func() {
+		defer func() {
+			recover()
+		}()
+		defer recover()
+		panic(3)
+	}()
+	defer func() {
+		defer func() {
+			defer func() {
+				recover()
+			}()
+		}()
+		defer recover()
+		panic(2)
+	}()
+	panic(1)
+}
+'''
+}
+
+Choices:
+
+""" go101-quiz
+1
+2
+3
+<nil>
+"""
+
+
+@@@ #answer
+{
+Answer: 2
+
+Run it on __ Go play`` https://go.dev/play/p/xawck_2YOWz __.
+
+Key points:
+* 
+	Except the two `recover` calls at line 9 and 5, the other ones are all no-op.
+* 
+	The `recover` calls at line 9 recovers the panic `3`.
+* 
+	The `recover` calls at line 5 recovers the panic `2`.
+* 
+	The the panic `1` is never recovered, but it is suppressed by the panic `2`.
+
+
+
+Please read __ Explain Panic/Recover Mechanism in Detail`` https://go101.org/article/panic-and-recover-more.html __ for details.
+
+
+}
+
+
