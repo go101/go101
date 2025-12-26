@@ -133,7 +133,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, gr
 		article, err := retrieveArticleContent(group, file)
 		if err == nil {
 			article.Index = disableArticleLink(go101.pageGroups[group].indexContent, file)
-			pageParams := map[string]interface{}{
+			pageParams := map[string]any{
 				"Article": article,
 				"Title":   article.TitleWithoutTags,
 				"Theme":   go101.theme,
@@ -199,9 +199,9 @@ func retrieveArticleContent(group, file string) (Article, error) {
 		if j < 0 {
 			return -1, 0
 		}
-		if (toH1) {
+		if toH1 {
 			content[i-1] = '1'
-			content[i + j + len(endTag) - 2] = '1'
+			content[i+j+len(endTag)-2] = '1'
 		}
 		return i - len(startTag), i + j + len(endTag)
 	}

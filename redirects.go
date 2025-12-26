@@ -20,7 +20,7 @@ func (go101 *Go101) RedirectArticlePage(w http.ResponseWriter, r *http.Request, 
 	if ok {
 		page, isLocal := go101.articlePages.Get(group, file), go101.IsLocalServer()
 		if page == nil {
-			pageParams := map[string]interface{}{
+			pageParams := map[string]any{
 				"RedirectPage": "/" + redirectPage[0] + "/" + redirectPage[1],
 				//"IsLocalServer": isLocal,
 
