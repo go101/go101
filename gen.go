@@ -1,7 +1,8 @@
 package main
 
 import (
-	"io/ioutil"
+	"errors"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -26,7 +27,7 @@ func genStaticFiles(rootURL string) {
 
 	_, err = os.Stat(fullPath("web", "static", "go101"))
 	if err != nil {
-		if os.IsNotExist(err) { //errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, os.ErrNotExist) {
 			log.Fatal("File web/static/go101 not found. Not run in go101 folder?")
 		}
 		log.Fatal(err)
@@ -41,7 +42,7 @@ func genStaticFiles(rootURL string) {
 			log.Fatalf("Load file %s error: %s", uri, err)
 		}
 
-		content, err := ioutil.ReadAll(res.Body)
+		content, err := io.ReadAll(res.Body)
 
 		log.Println(len(content), fullURL)
 
@@ -55,7 +56,7 @@ func genStaticFiles(rootURL string) {
 
 	// read from OS file system
 	readFile := func(path string) []byte {
-		data, err := ioutil.ReadFile(path)
+		data, err := os.ReadFile(path)
 		if err != nil {
 			log.Fatalf("Read file %s error: %s", path, err)
 		}
@@ -63,7 +64,7 @@ func genStaticFiles(rootURL string) {
 	}
 
 	readFolder := func(path string) (filenames, subfolders []string) {
-		fds, err := ioutil.ReadDir(path)
+		fds, err := os.ReadDir(path)
 		if err != nil {
 			log.Fatalf("Read folder %s error: %s", path, err)
 		}
@@ -191,7 +192,7 @@ func genStaticFiles(rootURL string) {
 	}
 
 	{
-		infos, err := ioutil.ReadDir(fullPath("pages"))
+		infos, err := os.ReadDir(fullPath("pages"))
 		if err != nil {
 			panic("collect page groups error: " + err.Error())
 		}
@@ -235,7 +236,7 @@ func genStaticFiles(rootURL string) {
 			log.Fatalln("Mkdir error:", err)
 		}
 
-		if err := ioutil.WriteFile(fullFilename, data, 0644); err != nil {
+		if err := os.WriteFile(fullFilename, data, 0644); err != nil {
 			log.Fatalln("Write file error:", err)
 		}
 
