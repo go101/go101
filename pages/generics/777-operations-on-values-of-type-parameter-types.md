@@ -810,11 +810,13 @@ func dig[T ~chan int | ~chan bool | ~chan<- string](x T) {
 }
 ```
 
+<!--
 However, please note that Go specification says:
 
 > If the type of the argument to close is a type parameter, all types in its type set must be channels with the same element type.
 
 [The line might be removed](https://github.com/golang/go/issues/74034) from the specification later.
+-->
 
 
 ## Calls to predeclared `complex`, `real` and `imag` functions don't accept arguments of type parameter now
