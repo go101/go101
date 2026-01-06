@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -27,7 +28,7 @@ func genStaticFiles(rootURL string) {
 
 	_, err = os.Stat(fullPath("web", "static", "go101"))
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			log.Fatal("File web/static/go101 not found. Not run in go101 folder?")
 		}
 		log.Fatal(err)

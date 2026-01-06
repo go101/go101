@@ -2,7 +2,7 @@ package main
 
 import (
 	"embed"
-	//"errors"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -56,7 +56,7 @@ func collectPageGroups() map[string]*PageGroup {
 					urlGroup = "/" + group
 				}
 				handler = http.StripPrefix(urlGroup+"/res/", http.FileServer(http.FS(resFiles)))
-			} else if !os.IsNotExist(err) { // !errors.Is(err, os.ErrNotExist) {
+			} else if !errors.Is(err, fs.ErrNotExist) {
 				log.Println(err)
 			}
 

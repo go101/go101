@@ -3,11 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
-	//"errors"
+	"errors"
 	"go/build"
 	"html"
 	"html/template"
-	"io/ioutil"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -147,7 +147,7 @@ func (go101 *Go101) RenderArticlePage(w http.ResponseWriter, r *http.Request, gr
 			} else {
 				page = []byte(err.Error())
 			}
-		} else if os.IsNotExist(err) {
+		} else if errors.Is(err, fs.ErrNotExist) {
 			page = []byte{} // blank page means page not found.
 		}
 
@@ -234,7 +234,7 @@ func retrieveArticleContent(group, file string) (Article, error) {
 func retrieveIndexContent(group string) template.HTML {
 	page101, err := retrieveArticleContent(group, "101.html")
 	if err != nil {
-		if os.IsNotExist(err) { // errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return ""
 		}
 		panic(err)
@@ -368,7 +368,7 @@ var dummyHandler http.Handler = http.HandlerFunc(func(http.ResponseWriter, *http
 var staticFilesHandler_NonEmbedding = http.FileServer(http.Dir(filepath.Join(rootPath, "web", "static")))
 
 func collectPageGroups_NonEmbedding() map[string]*PageGroup {
-	infos, err := ioutil.ReadDir(filepath.Join(rootPath, "pages"))
+	infos, err := os.ReadDir(filepath.Join(rootPath, "pages"))
 	if err != nil {
 		panic("collect page groups error: " + err.Error())
 	}
@@ -388,7 +388,7 @@ func collectPageGroups_NonEmbedding() map[string]*PageGroup {
 					urlPrefix = "/" + group
 				}
 				handler = http.StripPrefix(urlPrefix+"/res/", http.FileServer(http.Dir(resPath)))
-			} else if !os.IsNotExist(err) { // !errors.Is(err, os.ErrNotExist) {
+			} else if !errors.Is(err, fs.ErrNotExist) {
 				log.Println(err)
 			}
 
@@ -400,7 +400,7 @@ func collectPageGroups_NonEmbedding() map[string]*PageGroup {
 }
 
 func loadArticleFile_NonEmbedding(group, file string) ([]byte, error) {
-	return ioutil.ReadFile(filepath.Join(rootPath, "pages", group, file))
+	return os.ReadFile(filepath.Join(rootPath, "pages", group, file))
 }
 
 func parseTemplate_NonEmbedding(commonPaths []string, files ...string) *template.Template {
