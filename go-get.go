@@ -72,6 +72,11 @@ var gogetInfos = map[string]GoGetInfo{
 		GoGetSourceRepo: "go101/godev",
 		GoDocWebsite:    "https://pkg.go.dev/",
 	},
+	"go101-quiz-tmd-addon": {
+		RootPackage:     "go101.org/go101-quiz-tmd-addon",
+		GoGetSourceRepo: "go101/go101-quiz-tmd-addon",
+		GoDocWebsite:    "https://pkg.go.dev/",
+	},
 }
 
 func (go101 *Go101) ServeGoGetPages(w http.ResponseWriter, r *http.Request, rootPkg, subPkg string) {
