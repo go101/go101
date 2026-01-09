@@ -1,6 +1,6 @@
 
 <b>[Go 101](https://go101.org)</b> is a series of books on Go programming.
-Currently, the following books are avaliable:
+Currently, the following books are available:
 
 * [Go (Fundamentals) 101](https://go101.org/article/101.html), which focuses on Go syntax/semantics (except custom generics related) and all kinds of runtime related things.
 * [Go Generics 101](https://go101.org/generics/101.html), which explains Go custom generics in detail.
