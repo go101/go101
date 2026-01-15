@@ -20,7 +20,7 @@ Thanks to the authors of the following open source software and libraries used i
 * GIMP, https://www.gimp.org
 
 Thanks the gophers who ever reported mistakes in this book or made corrections for this book:
-ivanburak, KnBrBz, Caio Leonhardt，
+ivanburak, KnBrBz, Caio Leonhardt, Oleksandr Redko,
 etc.
 
 
