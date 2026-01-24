@@ -1,0 +1,83 @@
+<div class="tmd-doc">
+<p></p>
+<h1 class="tmd-header-1">
+The <code class="tmd-code-span">go 1.mn</code> directive line in <code class="tmd-code-span">go.mod</code> file doesn't work with some Go toolchain versions for some Go source files which contain <code class="tmd-code-span">//line ...</code> comment directives
+</h1>
+<p></p>
+<div class="tmd-usual">
+Go 1.22 changed the semantics of <code class="tmd-code-span">for-range</code> and traditional <code class="tmd-code-span">for;;</code> loops. Because the semantic changes alter the behavior of existing code written according to the previous semantics, they break backward compatibility.
+</div>
+<p></p>
+<div class="tmd-usual">
+While the behaviors of old <code class="tmd-code-span">for-range</code> loops are almost unaffected, some old traditional <code class="tmd-code-span">for;;</code> loops <a href="https://go101.org/blog/2024-03-01-for-loop-semantic-changes-in-go-1.22.html">exhibit unexpected behaviors due to the breakage</a>.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+To prevent legacy code from malfunctioning, Go 1.22 and later requires that every Go source file must be specified with a Go version. There are two common ways to do this.
+</div>
+<p></p>
+<div class="tmd-usual">
+The first way is to add a <code class="tmd-code-span">//go:build go1.mn</code> comment at the very beginning of a Go source file. However, <a href="go-build-directive-not-work.html">certain versions of the Go toolchain are known to have bugs when handling this directive</a>.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+The other way is to add a <code class="tmd-code-span">go 1.mn</code> directive in the <code class="tmd-code-span">go.mod</code> file of the containing module of a Go source file. Unfortunately, some versions of the Go toolchain also contain bugs in how they process this.
+</div>
+<p></p>
+<div class="tmd-usual">
+For example, consider a module where the <code class="tmd-code-span">go.mod</code> file specifies version 1.21. If that module is compiled using Go toolchain 1.22.x or 1.23.y, the program will print 210 (the new behavior) instead of the expected 333 (the old behavior). This demonstrates that the toolchain is failing to respect the version specified in the go.mod file.
+</div>
+<p></p>
+<div class="tmd-raw">
+<div class="tmd-raw-header">
+go.mod
+</div>
+<pre class="tmd-code">
+module main
+
+go 1.21
+</pre>
+</div>
+<p></p>
+<div class="tmd-raw">
+<div class="tmd-raw-header">
+main.go
+</div>
+<pre class="tmd-code">
+<code class="language-zig">//line main.go:1
+package main
+
+func main() {
+	for i := 0; i &lt; 3; i++ {
+	    defer func() {
+	        print(i)
+	    }()
+	}
+}
+</code></pre>
+</div>
+<p></p>
+<div class="tmd-usual">
+The bug, tracked in <a href="https://github.com/golang/go/issues/77248">https://github.com/golang/go/issues/77248</a>, was identified as Go 1.26 approached release. Consequently, the following Go toolchain versions are permanently affected by this regression:
+</div>
+<ul class="tmd-list">
+<li class="tmd-list-item">
+<div class="tmd-usual">
+All versions of 1.22 and 1.23.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+All 1.24 versions prior to 1.24.13.
+</div>
+</li>
+<li class="tmd-list-item">
+<div class="tmd-usual">
+All 1.25 versions prior to 1.25.7.
+</div>
+</li>
+</ul>
+<p></p>
+</div>

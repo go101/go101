@@ -5,11 +5,11 @@ The <code class="tmd-code-span">//go:build go1.mn</code> comment directives don'
 </h1>
 <p></p>
 <div class="tmd-usual">
-Go 1.22 changed the semantics of <code class="tmd-code-span">for-range</code> and traditional <code class="tmd-code-span">for;;</code> loops. Since the semantic changes alter the behavior of existing code written according to the previous semantics, they break backward compatibility.
+Go 1.22 changed the semantics of <code class="tmd-code-span">for-range</code> and traditional <code class="tmd-code-span">for;;</code> loops. Because the semantic changes alter the behavior of existing code written according to the previous semantics, they break backward compatibility.
 </div>
 <p></p>
 <div class="tmd-usual">
-While <code class="tmd-code-span">for-range</code> loops are almost unaffected, traditional <code class="tmd-code-span">for;;</code> loops <a href="https://go101.org/blog/2024-03-01-for-loop-semantic-changes-in-go-1.22.html">exhibit unexpected behaviors due to the breakage</a>.
+While the behaviors of old <code class="tmd-code-span">for-range</code> loops are almost unaffected, some old traditional <code class="tmd-code-span">for;;</code> loops <a href="https://go101.org/blog/2024-03-01-for-loop-semantic-changes-in-go-1.22.html">exhibit unexpected behaviors due to the breakage</a>.
 </div>
 <p></p>
 <p></p>
@@ -30,6 +30,10 @@ Here, I simply describe this bug: for a Go source file which Go version is not s
 Here is an example:
 </div>
 <p></p>
+<div class="tmd-raw">
+<div class="tmd-raw-header">
+main.go
+</div>
 <pre class="tmd-code">
 <code class="language-Go">//go:build go1.21
 package main
@@ -61,25 +65,31 @@ func main() {
     fmt.Println(search(10, 36))
 }
 </code></pre>
+</div>
 <p></p>
 <div class="tmd-usual">
 When run the Go file as a script with the <code class="tmd-code-span">go run</code> command (without a <code class="tmd-code-span">go.mod</code> file involved), the example program prints <code class="tmd-code-span">[16 0]</code> with Go toolchain 1.22.x versions, due to Go 1.22+ semantics are used, which is wrongly. It should prints <code class="tmd-code-span">[32 16]</code>, as with older (1.21-) and newer (1.23+) toolchain versions. <sup><a id="fn:gotv:ref-1" href="#fn:gotv">[1]</a></sup>
 </div>
 <p></p>
 <pre class="tmd-code">
-$ gotv 1.21 run a.go
-[Run]: $HOME/.cache/gotv/tag_go1.21.13/bin/go run a.go
+$ gotv 1.21 run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.21.13/bin/go run main.go
 [32 16]
-$ gotv 1.22 run a.go
-[Run]: $HOME/.cache/gotv/tag_go1.22.12/bin/go run a.go
+$ gotv 1.22 run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.22.12/bin/go run main.go
 [16 0]
-$ gotv 1.23 run a.go
-[Run]: $HOME/.cache/gotv/tag_go1.23.9/bin/go run a.go
+$ gotv 1.23 run main.go
+[Run]: $HOME/.cache/gotv/tag_go1.23.9/bin/go run main.go
 [32 16]
 </pre>
 <p></p>
 <div class="tmd-usual">
 The Go core team deliberately <a href="https://github.com/golang/go/issues/66092#issuecomment-2192570381">refused to fix the bug for 1.22.x versions</a>. So you should be aware of the fact that the bug will be always in 1.22.x versions when you are using them to develop Go projects.
+</div>
+<p></p>
+<p></p>
+<div class="tmd-usual">
+There is another way to specify Go versions for Go source files. <a href="go-version-in-mod-file-not-work.html">That way also doesn't work with some Go toolchain versions</a>.
 </div>
 <p></p>
 <p></p>
