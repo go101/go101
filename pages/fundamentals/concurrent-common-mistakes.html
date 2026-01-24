@@ -223,10 +223,9 @@ In the <a href="channel-use-cases.html#first-response-wins">first-response-wins<
 <code class="language-go">func request() int {
 	c := make(chan int)
 	for i := 0; i &lt; 5; i++ {
-		i := i
-		go func() {
-			c &lt;- i // 4 goroutines will hang here.
-		}()
+		go func(n int) {
+			c &lt;- n // 4 goroutines will hang here.
+		}(i)
 	}
 	return &lt;-c
 }
@@ -245,13 +244,12 @@ In <a href="channel-use-cases.html#first-response-wins-2">the second way to impl
 <code class="language-go">func request() int {
 	c := make(chan int)
 	for i := 0; i &lt; 5; i++ {
-		i := i
-		go func() {
+		go func(n int) {
 			select {
-			case c &lt;- i:
+			case c &lt;- n:
 			default:
 			}
-		}()
+		}(i)
 	}
 	return &lt;-c // might hang here
 }

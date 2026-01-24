@@ -229,10 +229,9 @@ there will be 4 goroutines stay in blocking state for ever.
 func request() int {
 	c := make(chan int)
 	for i := 0; i < 5; i++ {
-		i := i
-		go func() {
-			c <- i // 4 goroutines will hang here.
-		}()
+		go func(n int) {
+			c <- n // 4 goroutines will hang here.
+		}(i)
 	}
 	return <-c
 }
@@ -253,13 +252,12 @@ it is possible that the channel receiver will miss all responses and hang.
 func request() int {
 	c := make(chan int)
 	for i := 0; i < 5; i++ {
-		i := i
-		go func() {
+		go func(n int) {
 			select {
-			case c <- i:
+			case c <- n:
 			default:
 			}
-		}()
+		}(i)
 	}
 	return <-c // might hang here
 }

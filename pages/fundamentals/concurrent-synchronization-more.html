@@ -91,12 +91,11 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(N)
 	for i := 0; i &lt; N; i++ {
-		i := i
-		go func() {
-			values[i] = 50 + rand.Int31n(50)
-			log.Println("Done:", i)
+		go func(n int) {
+			values[n] = 50 + rand.Int31n(50)
+			log.Println("Done:", n)
 			wg.Done() // &lt;=&gt; wg.Add(-1)
-		}()
+		}(i)
 	}
 
 	wg.Wait()
@@ -126,11 +125,10 @@ We can split the only <code class="tmd-code-span">Add</code> method call in the 
 	var wg sync.WaitGroup
 	for i := 0; i &lt; N; i++ {
 		wg.Add(1) // will be invoked N times
-		i := i
-		go func() {
-			values[i] = 50 + rand.Int31n(50)
+		go func(n int) {
+			values[n] = 50 + rand.Int31n(50)
 			wg.Done()
-		}()
+		}(i)
 	}
 ...
 </code></pre>
@@ -149,12 +147,11 @@ The <code class="tmd-code-span">Wait</code> method can be called in multiple gor
 	wgB.Add(1)
 
 	for i := 0; i &lt; N; i++ {
-		i := i
-		go func() {
+		go func(n int) {
 			wgB.Wait() // wait a notification
-			log.Printf("values[%v]=%v \n", i, values[i])
+			log.Printf("values[%v]=%v \n", n, values[n])
 			wgA.Done()
-		}()
+		}(i)
 	}
 
 	// The loop is guaranteed to finish before
