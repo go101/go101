@@ -49,7 +49,7 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 * type argument inferences still have some limitations
   * https://github.com/golang/go/issues/63750
 
-* type argument inference needs more detailed explainations.
+* type argument inference needs more detailed explanations.
  
 
 * example: how to define an expected constraint?
@@ -129,7 +129,7 @@ https://github.com/golang/proposal/blob/master/design/generics-implementation-di
 
  * https://x.com/zigo_101/status/1714885320599302598
 
-interace:
+interface:
 	
 		https://x.com/zigo_101/status/1714187265310957864
 		
@@ -167,7 +167,7 @@ channel
 		var d D
 
 		func main(){
-		  // T is infered as C
+		  // T is inferred as C
 		 fmt.Printf("%T ", g(a, b, c, d)) // type D of d does not match inferred type C for T
 		}
 

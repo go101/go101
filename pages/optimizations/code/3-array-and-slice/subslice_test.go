@@ -6,7 +6,7 @@ import "testing"
 import "math/rand"
 
 // Making benchmarks in Go is harder and harder.
-// Since Go 1.21, if N == 1 << 6, unxpected results will be got,
+// Since Go 1.21, if N == 1 << 6, unexpected results will be got,
 // Still not get the reason.
 
 const N = 1 << 10
