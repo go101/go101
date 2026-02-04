@@ -2,7 +2,7 @@ package allocations
 
 import "testing"
 
-func buildOrginalData() []int {
+func buildOriginalData() []int {
 	s := make([]int, 1024)
 	for i := range s {
 		s[i] = i
@@ -37,7 +37,7 @@ func FilterNoAllocations(data []int) []int {
 }
 
 func Benchmark_FilterOneAllocation(b *testing.B) {
-	data := buildOrginalData()
+	data := buildOriginalData()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = FilterOneAllocation(data)
@@ -45,7 +45,7 @@ func Benchmark_FilterOneAllocation(b *testing.B) {
 }
 
 func Benchmark_FilterNoAllocations(b *testing.B) {
-	data := buildOrginalData()
+	data := buildOriginalData()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = FilterNoAllocations(data)
@@ -57,9 +57,9 @@ func Benchmark_FilterNoAllocations(b *testing.B) {
 import "reflect"
 
 func init() {
-	s1 := FilterNoAllocations(buildOrginalData())
-	s2 := FilterOneAllocation(buildOrginalData())
-	s3 := FilterOneSmallerAllocation(buildOrginalData())
+	s1 := FilterNoAllocations(buildOriginalData())
+	s2 := FilterOneAllocation(buildOriginalData())
+	s3 := FilterOneSmallerAllocation(buildOriginalData())
 	if !reflect.DeepEqual(s1, s2) {
 		panic("s1 != s2")
 	}
@@ -86,7 +86,7 @@ func FilterOneSmallerAllocation(data []int) []int {
 }
 
 func Benchmark_FilterOneSmallerAllocation(b *testing.B) {
-	data := buildOrginalData()
+	data := buildOriginalData()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = FilterOneSmallerAllocation(data)

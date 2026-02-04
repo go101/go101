@@ -11,7 +11,7 @@ func Benchmark_concat(b *testing.B) {
 	}
 }
 
-func Benchmark_concat_splited(b *testing.B) {
+func Benchmark_concat_split(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		str = string(s37[:32]) +
 			string(s37[32:]) +
