@@ -30,17 +30,17 @@ Please note that the intention of this article is to show as many channel use ca
 </div>
 <p></p>
 <p></p>
-<h3 id="future-promise" class="tmd-header-3">
+<h2 id="future-promise" class="tmd-header-2">
 Use Channels as Futures/Promises
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Futures and promises are used in many other popular languages. They are often associated with requests and responses.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Return receive-only channels as results
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 In the following example, the values of two arguments of the <code class="tmd-code-span">sumSquares</code> function call are requested concurrently. Each of the two channel receive operations will block until a send operation performs on the corresponding channel. It takes about three seconds instead of six seconds to return the final result.
@@ -77,9 +77,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Pass send-only channels as arguments
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Same as the last example, in the following example, the values of two arguments of the <code class="tmd-code-span">sumSquares</code> function call are requested concurrently. Different to the last example, the <code class="tmd-code-span">longTimeRequest</code> function takes a send-only channel as parameter instead of returning a receive-only channel result.
@@ -133,9 +133,9 @@ In fact, for the above specified example, we don't need two channels to transfer
 This is kind of data aggregation which will be introduced specially below.
 </div>
 <p></p>
-<h4 id="first-response-wins" class="tmd-header-4">
+<h3 id="first-response-wins" class="tmd-header-3">
 The first response wins
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 This is the enhancement of the using-only-one-channel variant in the last example.
@@ -183,9 +183,9 @@ func main() {
 There are some other ways to implement the first-response-win use case, by using the select mechanism and a buffered channel whose capacity is one. Other ways will be introduced below.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 More request-response variants
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 The parameter and result channels can be buffered so that the response sides won't need to wait for the request sides to take out the transferred values.
@@ -203,17 +203,17 @@ Sometimes, for some reasons, the response may need a much longer time than the e
 Sometimes, a sequence of values may be returned from the response side, this is kind of the data flow mechanism mentioned later below.
 </div>
 <p></p>
-<h3 id="notification" class="tmd-header-3">
+<h2 id="notification" class="tmd-header-2">
 Use Channels for Notifications
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Notifications can be viewed as special requests/responses in which the responded values are not important. Generally, we use the blank struct type <code class="tmd-code-span">struct{}</code> as the element types of the notification channels, for the size of type <code class="tmd-code-span">struct{}</code> is zero, hence values of <code class="tmd-code-span">struct{}</code> doesn't consume memory.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 1-to-1 notification by sending a value to a channel
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 If there are no values to be received from a channel, then the next receive operation on the channel will block until another goroutine sends a value to the channel. So we can send a value to a channel to notify another goroutine which is waiting to receive a value from the same channel.
@@ -258,9 +258,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 1-to-1 notification by receiving a value from a channel
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 If the value buffer queue of a channel is full (the buffer queue of an unbuffered channel is always full), a send operation on the channel will block until another goroutine receives a value from the channel. So we can receive a value from a channel to notify another goroutine which is waiting to send a value to the same channel. Generally, the channel should be an unbuffered channel.
@@ -306,9 +306,9 @@ func main() {
 In fact, there are no fundamental differences between receiving or sending values to make notifications. They can both be summarized as the fasters are notified by the slowers.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 N-to-1 and 1-to-N notifications
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 By extending the above two use cases a little, it is easy to do N-to-1 and 1-to-N notifications.
@@ -353,9 +353,9 @@ func main() {
 In fact, the ways to do 1-to-N and N-to-1 notifications introduced in this sub-section are not used commonly in practice. In practice, we often use <code class="tmd-code-span">sync.WaitGroup</code> to do N-to-1 notifications, and we do 1-to-N notifications by close channels. Please read the next sub-section for details.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Broadcast (1-to-N) notifications by closing a channel
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 The way to do 1-to-N notifications shown in the last sub-section is seldom used in practice, for there is a better way. By making using of the feature that infinite values can be received from a closed channel, we can close a channel to broadcast notifications.
@@ -379,9 +379,9 @@ Surely, we can also close a channel to do a 1-to-1 notification. In fact, this i
 The feature that infinite values can be received from a closed channel will be utilized in many other use cases introduced below. In fact, the feature is used popularly in the standard packages. For example, the <code class="tmd-code-span">context</code> package uses this feature to confirm cancellations.
 </div>
 <p></p>
-<h4 id="timer" class="tmd-header-4">
+<h3 id="timer" class="tmd-header-3">
 Timer: scheduled notification
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 It is easy to use channels to implement one-time timers.
@@ -429,9 +429,9 @@ Please note, <code class="tmd-code-span">&lt;-time.After(aDuration)</code> will 
 The use of <code class="tmd-code-span">&lt;-time.After(aDuration)</code> is often used in the timeout mechanism which will be introduced below.
 </div>
 <p></p>
-<h3 id="mutex" class="tmd-header-3">
+<h2 id="mutex" class="tmd-header-2">
 Use Channels as Mutex Locks
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 One of the above examples has mentioned that one-capacity buffered channels can be used as one-time <a href="https://en.wikipedia.org/wiki/Semaphore_(programming)">binary semaphore</a>. In fact, such channels can also be used as multi-time binary semaphores, a.k.a., mutex locks, though such mutex locks are not efficient as the mutexes provided in the <code class="tmd-code-span">sync</code> standard package.
@@ -508,9 +508,9 @@ func main() {
 ...
 </code></pre>
 <p></p>
-<h3 id="semaphore" class="tmd-header-3">
+<h2 id="semaphore" class="tmd-header-2">
 Use Channels as Counting Semaphores
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Buffered channels can be used as <a href="https://en.wikipedia.org/wiki/Semaphore_(programming)">counting semaphores</a>. Counting semaphores can be viewed as multi-owner locks. If the capacity of a channel is <code class="tmd-code-span">N</code>, then it can be viewed as a lock which can have most <code class="tmd-code-span">N</code> owners at any time. Binary semaphores (mutexes) are special counting semaphores, each of binary semaphores can have at most one owner at any time.
@@ -726,9 +726,9 @@ func main() {
 </code></pre>
 <p></p>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Dialogue (Ping-Pong)
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Two goroutines can dialogue through a channel. The following is an example which will print a series of Fibonacci numbers.
@@ -768,9 +768,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Channel Encapsulated in Channel
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Sometimes, we can use a channel type as the element type of another channel type. In the following example, <code class="tmd-code-span">chan chan&lt;- int</code> is a channel type which element type is a send-only channel type <code class="tmd-code-span">chan&lt;- int</code>.
@@ -820,9 +820,9 @@ func main() {
 Although here the encapsulation implementation may be not the most efficient way for the above-specified example, the use case may be useful for some other scenarios.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Check Lengths and Capacities of Channels
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 We can use the built-in functions <code class="tmd-code-span">len</code> and <code class="tmd-code-span">cap</code> to check the length and capacity of a channel. However, we seldom do this in practice. The reason for we seldom use the <code class="tmd-code-span">len</code> function to check the length of a channel is the length of the channel may have changed after the <code class="tmd-code-span">len</code> function call returns. The reason for we seldom use the <code class="tmd-code-span">cap</code> function to check the capacity of a channel is the capacity of the channel is often known or not important.
@@ -860,9 +860,9 @@ Sometimes, a goroutine may want to write some values to a buffered channel <code
 Surely, we can also use the try-send mechanism introduced below to do the same job.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Block the Current Goroutine Forever
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 The select mechanism is a unique feature in Go. It brings many patterns and tricks for concurrent programming. About the code execution rules of the select mechanism, please read the article <a href="channel.html#select">channels in Go</a>.
@@ -905,9 +905,9 @@ By the way, there are <a href="summaries.html#block-forever">some other ways</a>
 </div>
 <p></p>
 <p></p>
-<h3 id="try-operation" class="tmd-header-3">
+<h2 id="try-operation" class="tmd-header-2">
 Try-Send and Try-Receive
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 A <code class="tmd-code-span">select</code> block with one <code class="tmd-code-span">default</code> branch and only one <code class="tmd-code-span">case</code> branch is called a try-send or try-receive channel operation, depending on whether the channel operation following the <code class="tmd-code-span">case</code> keyword is a channel send or receive operation.
@@ -990,9 +990,9 @@ failed to get book
 The following sub-sections will show more try-send and try-receive use cases.
 </div>
 <p></p>
-<h4 id="check-closed-status" class="tmd-header-4">
+<h3 id="check-closed-status" class="tmd-header-3">
 Check if a channel is closed without blocking the current goroutine
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Assume it is guaranteed that no values were ever (and will be) sent to a channel, we can use the following code to (concurrently and safely) check whether or not the channel is already closed without blocking the current goroutine, where <code class="tmd-code-span">T</code> the element type of the corresponding channel type.
@@ -1013,16 +1013,16 @@ Assume it is guaranteed that no values were ever (and will be) sent to a channel
 The way to check if a channel is closed is used popularly in Go concurrent programming to check whether or not a notification has arrived. The notification will be sent by closing the channel in another goroutine.
 </div>
 <p></p>
-<h4 id="peak-limiting" class="tmd-header-4">
+<h3 id="peak-limiting" class="tmd-header-3">
 Peak/burst limiting
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
-We can implement peak limiting by combining <span class="tmd-broken-link">use channels as counting semaphores</span> and try-send/try-receive. Peak-limit (or burst-limit) is often used to limit the number of concurrent requests without blocking any requests.
+We can implement peak limiting by combining <a href="#semaphore">use channels as counting semaphores</a> and try-send/try-receive. Peak-limit (or burst-limit) is often used to limit the number of concurrent requests without blocking any requests.
 </div>
 <p></p>
 <div class="tmd-usual">
-The following is a modified version of the last example in the <span class="tmd-broken-link">use channels as counting semaphores</span> section.
+The following is a modified version of the last example in the <a href="#semaphore">use channels as counting semaphores</a> section.
 </div>
 <p></p>
 <p></p>
@@ -1043,9 +1043,9 @@ The following is a modified version of the last example in the <span class="tmd-
 ...
 </code></pre>
 <p></p>
-<h4 id="first-response-wins-2" class="tmd-header-4">
+<h3 id="first-response-wins-2" class="tmd-header-3">
 Another way to implement the first-response-wins use case
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 As mentioned above, we can use the select mechanism (try-send) with a buffered channel which capacity is one (at least) to implement the first-response-wins use case. For example,
@@ -1085,9 +1085,9 @@ func main() {
 Please note, the capacity of the channel used in the above example must be at least one, so that the first send won't be missed if the receiver/request side has not gotten ready in time.
 </div>
 <p></p>
-<h4 id="first-response-wins-3" class="tmd-header-4">
+<h3 id="first-response-wins-3" class="tmd-header-3">
 The third way to implement the first-response-wins use case
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 For a first-response-wins use case, if the number of sources is small, for example, two or three, we can use a <code class="tmd-code-span">select</code> code block to receive the source responses at the same time. For example,
@@ -1134,9 +1134,9 @@ Note: if the channel used in the above example is an unbuffered channel, then th
 The two ways introduced in the current and the last sub-sections can also be used to do N-to-1 notifications.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Timeout
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 In some request-response scenarios, for all kinds of reasons, a request may need a long time to response, sometimes even will never response. For such cases, we should return an error message to the client side by using a timeout solution. Such a timeout solution can be implemented with the select mechanism.
@@ -1161,9 +1161,9 @@ The following code shows how to make a request with a timeout.
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Ticker
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 We can use the try-send mechanism to implement a ticker.
@@ -1202,12 +1202,12 @@ func main() {
 In fact, there is a <code class="tmd-code-span">Tick</code> function in the <code class="tmd-code-span">time</code> standard package provides the same functionality, with a much more efficient implementation. We should use that function instead to make code look clean and run efficiently.
 </div>
 <p></p>
-<h4 id="rate-limiting" class="tmd-header-4">
+<h3 id="rate-limiting" class="tmd-header-3">
 Rate Limiting
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
-One of above section has shown how to use try-send to do <span class="tmd-broken-link">peak limiting</span>. We can also use try-send to do rate limiting (with the help of a ticker). In practice, rate-limit is often to avoid quota exceeding and resource exhaustion.
+One of above section has shown how to use try-send to do <a href="#peak-limiting">peak limiting</a>. We can also use try-send to do rate limiting (with the help of a ticker). In practice, rate-limit is often to avoid quota exceeding and resource exhaustion.
 </div>
 <p></p>
 <div class="tmd-usual">
@@ -1259,9 +1259,9 @@ func main() {
 In practice, we often use rate-limit and peak/burst-limit together.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Switches
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 From the article <a href="channel.html">channels in Go</a>, we have learned that sending a value to or receiving a value from a nil channel are both blocking operations. By making use of this fact, we can change the involved channels in the <code class="tmd-code-span">case</code> operations of a <code class="tmd-code-span">select</code> code block to affect the branch selection in the <code class="tmd-code-span">select</code> code block.
@@ -1335,9 +1335,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Control code execution possibility weights
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 We can duplicate a <code class="tmd-code-span">case</code> branch in a <code class="tmd-code-span">select</code> code block to increase the execution possibility weigh of the corresponding code.
@@ -1372,9 +1372,9 @@ func main() {
 The possibility of the <code class="tmd-code-span">f</code> function being called is about the double of the <code class="tmd-code-span">g</code> function being called.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Select from dynamic number of cases
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Although the number of branches in a <code class="tmd-code-span">select</code> block is fixed, we can use the functionalities provided in the <code class="tmd-code-span">reflect</code> standard package to construct a select block at run time. The dynamically created select block can have an arbitrary number of case branches. But please note, the reflection way is less efficient than the fixed way.
@@ -1384,9 +1384,9 @@ Although the number of branches in a <code class="tmd-code-span">select</code> b
 The <code class="tmd-code-span">reflect</code> standard package also provides <code class="tmd-code-span">TrySend</code> and <code class="tmd-code-span">TryRecv</code> functions to implement one-case-plus-default select blocks.
 </div>
 <p></p>
-<h3 id="data-flow" class="tmd-header-3">
+<h2 id="data-flow" class="tmd-header-2">
 Data Flow Manipulations
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 This section will introduce some data flow manipulation use cases by using channels.
@@ -1445,9 +1445,9 @@ Many modules together form a data flow system.
 The following will show some data flow module worker implementations. These implementations are for explanation purpose, so they are very simple and they may be not efficient.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Data generation/collecting/loading
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 There are all kinds of producer-only modules. A producer-only module worker may produce a data stream
@@ -1510,9 +1510,9 @@ In fact, the random number generator is a multi-return future/promise.
 A data producer may close the output stream channel at any time to end data generating.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Data aggregation
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 A data aggregation module worker aggregates several data streams of the same data type into one stream. Assume the data type is <code class="tmd-code-span">int64</code>, then the following function will aggregate an arbitrary number of data streams into one.
@@ -1581,9 +1581,9 @@ If the number of aggregated data streams is very small (two or three), we can us
 ...
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Data division
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 A data division module worker does the opposite of a data aggregation module worker. It is easy to implement a division worker, but in practice, division workers are not very useful and seldom used.
@@ -1601,9 +1601,9 @@ A data division module worker does the opposite of a data aggregation module wor
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Data composition
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 A data composition worker merges several pieces of data from different input data streams into one piece of data.
@@ -1626,17 +1626,17 @@ The following is a composition worker example, in which two <code class="tmd-cod
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Data decomposition
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Data decomposition is the inverse process of data composition. A decomposition worker function implementation takes one input data stream parameter and returns several data stream results. No examples will be shown for data decomposition here.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Data duplication/proliferation
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Data duplication (proliferation) can be viewed as special data decompositions. One piece of data will be duplicated and each of the duplicated data will be sent to different output data streams.
@@ -1658,9 +1658,9 @@ An example:
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Data calculation/analysis
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 The functionalities of data calculation and analysis modules vary and each is very specific. Generally, a worker function of such modules transforms each piece of input data into another piece of output data.
@@ -1684,9 +1684,9 @@ For simple demo purpose, here shows a worker example which inverts every bit of 
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Data validation/filtering
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 A data validation or filtering module discards some transferred data in a stream. For example, the following worker function discards all non-prime numbers.
@@ -1720,9 +1720,9 @@ func Filter(input &lt;-chan uint64) &lt;-chan uint64 {
 Please note that each of the two implementations is used by one of the final two examples shown below.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Data serving/saving
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Generally, a data serving or saving module is the last or final output module in a data flow system. Here just provides a simple worker which prints each piece of data received from the input stream.
@@ -1738,9 +1738,9 @@ func Printer(input &lt;-chan uint64) {
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Data flow system assembling
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Now, let's use the above module worker functions to assemble several data flow systems. Assembling a data flow system is just to create some workers of different modules, and specify the input streams for every worker.

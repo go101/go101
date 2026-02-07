@@ -18,7 +18,7 @@ implementation details by the standard Go compiler/runtime are also simply descr
 The information in this article may be slightly challenging for new gophers.
 Some parts of this article may need to be read several times to be fully understood.
 
-###+++++++++++ Channel Introduction
+###========== Channel Introduction
 
 One suggestion (made by // Rob Pike //) for concurrent programming is
 **don't (let computations) communicate by sharing memory,
@@ -72,7 +72,7 @@ the scenarios which channels are not best for.
 
     === a wider ... :: channel-use-cases.tmd
 
-###+++++++++++ Channel Types and Values
+###========== Channel Types and Values
 
 Like array, slice and map, each channel type has an element type.
 A channel can only transfer values of the element type of the channel.
@@ -114,7 +114,7 @@ The second parameter is optional and its default value is zero.
 
 
 @@@ #assign-and-compare
-###+++++++++++ Channel Value Comparisons
+###========== Channel Value Comparisons
 
 All channel types are comparable types.
 
@@ -128,7 +128,7 @@ The result of comparing them is `true`.
     === value parts :: value-part.tmd
 
 @@@ #operations
-###+++++++++++ Channel Operations
+###========== Channel Operations
 
 There are five channel specified operations.
 Assume the channel is `ch`,
@@ -235,7 +235,7 @@ In fact, the two operations are seldom used in practice.
 Channel send, receive and close operations will be explained in detail in the next section.
 
 @@@ #channel-operation-explanations
-###+++++++++++ Detailed Explanations for Channel Operations
+###========== Detailed Explanations for Channel Operations
 
 To make the explanations for channel operations simple and clear,
 in the remaining of this article,
@@ -318,8 +318,8 @@ We can think of each channel consisting of three queues (all can be viewed as FI
 
 Each channel internally holds a mutex lock which is used to avoid data races in all kinds of operations.
 
-^__**Channel operation case A**:
-when a goroutine `R` tries to receive a value from a not-closed non-nil channel__,
+**Channel operation case A**:
+when a goroutine `R` tries to receive a value from a not-closed non-nil channel,
 the goroutine `R` will acquire the lock associated with the channel firstly,
 then do the following steps until one condition is satisfied.
 *.
@@ -357,8 +357,8 @@ then do the following steps until one condition is satisfied.
    For this scenario, the channel receive operation
    is called a **blocking operation**.
 
-^__**Channel rule case B**:
-when a goroutine `S` tries to send a value to a not-closed non-nil channel__,
+**Channel rule case B**:
+when a goroutine `S` tries to send a value to a not-closed non-nil channel,
 the goroutine `S` will acquire the lock associated with the channel firstly,
 then do the following steps until one step condition is satisfied.
 *.
@@ -394,8 +394,8 @@ Above has mentioned, once a non-nil channel is closed, sending a value to the ch
 produce a runtime panic in the current goroutine.
 Note, sending data to a closed channel is viewed as a **non-blocking operation**.
 
-^__**Channel operation case C**:
-when a goroutine tries to close a not-closed non-nil channel__,
+**Channel operation case C**:
+when a goroutine tries to close a not-closed non-nil channel,
 once the goroutine has acquired the lock of the channel,
 both of the following two steps will be performed by the following order.
 *.
@@ -419,9 +419,9 @@ Note: after a channel is closed, the values which have been already pushed into
 the value buffer of the channel are still there.
 Please read the closely following explanations for case D for details.
 
-^__**Channel operation case D**:
+**Channel operation case D**:
 after a non-nil channel is closed,
-channel receive operations on the channel will never block__.
+channel receive operations on the channel will never block.
 The values in the value buffer of the channel can still be received.
 The accompanying second optional bool return values are still `true`.
 Once all the values in the value buffer are taken out and received,
@@ -471,7 +471,7 @@ According to the explanations listed above, we can get some facts about the inte
    the two queues when executing a
    __`select` control flow code block__.
 
-###+++++++++++ Some Channel Use Examples
+###========== Some Channel Use Examples
 
 Now that you've read the above section, let's view some examples which use channels to enhance your understanding.
 
@@ -586,7 +586,7 @@ for more channel use examples.
 
     === channel use cases :: channel-use-cases.tmd
 
-###+++++++++++ Channel Element Values Are Transferred by Copy
+###========== Channel Element Values Are Transferred by Copy
 
 When a value is transferred from one goroutine to another goroutine,
 the value will be copied at least one time.
@@ -607,7 +607,7 @@ So if the passed value size is too large,
 it is best to use a pointer element type instead,
 to avoid a large value copy cost.
 
-###+++++++++++ About Channel and Goroutine Garbage Collections
+###========== About Channel and Goroutine Garbage Collections
 
 Note, a channel is referenced by all the goroutines in either
 the sending or the receiving goroutine queue of the channel,
@@ -619,7 +619,7 @@ then the goroutine also cannot be garbage collected,
 even if the channel is referenced only by this goroutine.
 In fact, a goroutine can only be garbage collected when it has already exited.
 
-###+++++++++++ Channel Send and Receive Operations Are Simple Statements
+###========== Channel Send and Receive Operations Are Simple Statements
 
 Channel send operations and receive operations are
 __simple statements__.
@@ -663,7 +663,7 @@ func main() {
 '''
 
 @@@ #range
-###+++++++++++ `for-range` on Channels
+###========== `for-range` on Channels
 
 The `for-range` control flow code block applies to channels.
 The loop will try to iteratively receive the values sent to a channel,
@@ -710,7 +710,7 @@ shown in the last section can be simplified to
 
 
 @@@ #select
-###+++++++++++ `select-case` Control Flow Code Blocks
+###========== `select-case` Control Flow Code Blocks
 
 There is a `select-case` code block syntax which is specially designed for channels.
 The syntax is much like the `switch-case` block syntax.
@@ -817,7 +817,7 @@ func main() {
 '''
 
 @@@ #select-implementation
-###+++++++++++ The Implementation of the Select Mechanism
+###========== The Implementation of the Select Mechanism
 
 The select mechanism in Go is an important and unique feature.
 Here the steps of __the select mechanism implementation
@@ -915,7 +915,7 @@ From the implementation, we know that
    involved in the channel operations following `case` keywords
    in the `select-case` code block.
 
-###+++++++++++ More
+###========== More
 
 We can find more channel use cases in __this article`` channel-use-cases.tmd__.
 

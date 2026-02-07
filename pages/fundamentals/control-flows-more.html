@@ -7,9 +7,9 @@ Goroutines, Deferred Function Calls and Panic/Recover
 This article will introduce goroutines and deferred function calls. Goroutine and deferred function call are two unique features in Go. This article also explains panic and recover mechanism. Not all knowledge relating to these features is covered in this article, more will be introduced in future articles.
 </div>
 <p></p>
-<h3 id="goroutine" class="tmd-header-3">
+<h2 id="goroutine" class="tmd-header-2">
 Goroutines
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Modern CPUs often have multiple cores, and some CPU cores support hyper-threading. In other words, modern CPUs can process multiple instruction pipelines simultaneously. To fully use the power of modern CPUs, we need to do concurrent programming in coding our programs.
@@ -92,9 +92,9 @@ When the main goroutine exits, the whole program also exits, even if there are s
 Unlike previous articles, this program uses the <code class="tmd-code-span">Println</code> function in the <code class="tmd-code-span">log</code> standard package instead of the corresponding function in the <code class="tmd-code-span">fmt</code> standard package. The reason is the print functions in the <code class="tmd-code-span">log</code> standard package are synchronized (the next section will explain what synchronizations are), so the texts printed by the two goroutines will not be messed up in one line (though the chance of the printed texts being messed up by using the print functions in the <code class="tmd-code-span">fmt</code> standard package is very small for this specific program).
 </div>
 <p></p>
-<h3 id="synchronization" class="tmd-header-3">
+<h2 id="synchronization" class="tmd-header-2">
 Concurrency Synchronization
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Concurrent computations may share resources, generally memory resource. The following are some circumstances that may occur during concurrent computing:
@@ -205,9 +205,9 @@ func main() {
 Run it, we can find that, before the program exits, each of the two new goroutines prints ten greetings.
 </div>
 <p></p>
-<h3 id="states-of-goroutine" class="tmd-header-3">
+<h2 id="states-of-goroutine" class="tmd-header-2">
 Goroutine States
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 The last example shows that a live goroutine may stay in (and switch between) two states, <span class="tmd-bold">running</span> and <span class="tmd-bold">blocking</span>. In that example, the main goroutine enters the blocking state when the <code class="tmd-code-span">wg.Wait</code> method is called, and enter running state again when the other two goroutines both finish their respective tasks.
@@ -271,9 +271,9 @@ fatal error: all goroutines are asleep - deadlock!
 Later, we will learn more operations which will make goroutines enter blocking state.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Goroutine Schedule
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Not all goroutines in running state are being executed at a given time. At any given time, the maximum number of goroutines being executed will not exceed the number of logical CPUs available for the current program. We can call the <a href="https://golang.org/pkg/runtime/#NumCPU"><code class="tmd-code-span">runtime.NumCPU</code></a> function to get the number of logical CPUs available for the current program. Each logical CPU can only execute one goroutine at any given time. Go runtime must frequently switch execution contexts between goroutines to let each running goroutine have a chance to execute. This is similar to how operating systems switch execution contexts between OS threads.
@@ -312,9 +312,9 @@ The default initial value of <code class="tmd-code-span">runtime.GOMAXPROCS</cod
 At any time, the number of goroutines in the executing sub-state is no more than the smaller one of <code class="tmd-code-span">runtime.NumCPU</code> and <code class="tmd-code-span">runtime.GOMAXPROCS</code>.
 </div>
 <p></p>
-<h3 id="defer" class="tmd-header-3">
+<h2 id="defer" class="tmd-header-2">
 Deferred Function Calls
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 A deferred function call is a function call which follows a <code class="tmd-code-span">defer</code> keyword. The <code class="tmd-code-span">defer</code> keyword and the deferred function call together form a defer statement. Like goroutine function calls, all the results of the function call (if the called function has return results) must be discarded in the function call statement.
@@ -381,9 +381,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h3 id="defer-modify-results" class="tmd-header-3">
+<h2 id="defer-modify-results" class="tmd-header-2">
 Deferred Function Calls Can Modify the Named Return Results of Nesting Functions
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 For example,
@@ -406,9 +406,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h3 id="argument-evaluation-moment" class="tmd-header-3">
+<h2 id="argument-evaluation-moment" class="tmd-header-2">
 The Evaluation Moment of the Arguments of Deferred Function Calls
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 The arguments of a deferred function call are all evaluated at the moment when the corresponding defer statement is executed (a.k.a. when the deferred call is pushed into the defer-call stack). The evaluation results are used when the deferred call is executed later during the existing phase of the surrounding call (the caller of the deferred call).
@@ -506,9 +506,9 @@ By the way, it is not a good idea to do synchronizations by using <code class="t
 </div>
 <p></p>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 The Necessity of the Deferred Function Feature
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 In the above examples, the deferred function calls are not absolutely necessary. However, the deferred function call feature is a necessary feature for the panic and recover mechanism which will be introduced below.
@@ -519,9 +519,9 @@ Deferred function calls can also help us write cleaner and more robust code. We 
 </div>
 <p></p>
 <p></p>
-<h3 id="panic-recover" class="tmd-header-3">
+<h2 id="panic-recover" class="tmd-header-2">
 Panic and Recover
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Go doesn't support exception throwing and catching, instead explicit error handling is preferred to use in Go programming. In fact, Go supports an exception throw/catch alike mechanism. The mechanism is called panic/recover.
@@ -668,9 +668,9 @@ We can learn <a href="panic-and-recover-use-cases.html">some panic/recover use c
 </div>
 <p></p>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Some Fatal Errors Are Not Panics and They Are Unrecoverable
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 For the standard Go compiler, some fatal errors, such as stack overflow and out of memory are not recoverable. Once they occur, program will crash.

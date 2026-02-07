@@ -15,9 +15,9 @@ Although knowing the underlying memory management implementation details is not 
 This article will explain some concepts and list some facts of the implementation of memory block allocation and garbage collection by the standard Go compiler and runtime. Other aspects, such as memory apply and memory release in memory management, will not be touched in this article.
 </div>
 <p></p>
-<h3 id="memory-block" class="tmd-header-3">
+<h2 id="memory-block" class="tmd-header-2">
 Memory Blocks
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 A memory block is a continuous memory segment to host <a href="value-part.html">value parts</a> at run time. Different memory blocks may have different sizes, to host different value parts. One memory block may host multiple value parts at the same time, but each value part can only be hosted within one memory block, no matter how large the size of that value part is. In other words, for any value part, it never crosses memory blocks.
@@ -45,17 +45,17 @@ the underlying element sequences of two slices may be hosted on the same memory 
 </li>
 </ul>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 A Value References the Memory Blocks Which Host Its Value Parts
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 We have known that a value part can reference another value part. Here, we extend the reference definition by saying a memory block is referenced by all the value parts it hosts. So if a value part <code class="tmd-code-span">v</code> is referenced by another value part, then the other value will also reference the memory block hosting <code class="tmd-code-span">v</code>, indirectly.
 </div>
 <p></p>
-<h3 id="when-to-allocate" class="tmd-header-3">
+<h2 id="when-to-allocate" class="tmd-header-2">
 When Will Memory Blocks Be Allocated?
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 In Go, memory blocks may be allocated but not limited at following situations:
@@ -109,9 +109,9 @@ add a new key-element entry pair into a map (when the underlying hash table need
 </ul>
 <p></p>
 <p></p>
-<h3 id="where-to-allocate" class="tmd-header-3">
+<h2 id="where-to-allocate" class="tmd-header-2">
 Where Will Memory Blocks Be Allocated On?
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 For every Go program compiled by the official standard Go compiler, at run time, each goroutine will maintain a stack, which is a memory segment. It acts as a memory pool for some memory blocks to be allocated from/on. Before Go Toolchain 1.19, the initial size of a stack is always 8KiB on Windows platform and 2KiB on other platforms. Since Go Toolchain 1.19, the initial size is <a href="https://docs.google.com/document/d/1YDlGIdVTPnmUiTAavlZxBI1d9pwGQgZT7IKFKlIXohQ">adaptive</a>. The stack of a goroutine will grow and shrink as needed in goroutine running. The minimum stack size is 8KiB on Windows platform and 2KiB on other platforms.
@@ -239,9 +239,9 @@ We will find that the two printed addresses are different (as of the standard Go
 </div>
 <p></p>
 <p></p>
-<h3 id="when-can-collect" class="tmd-header-3">
+<h2 id="when-can-collect" class="tmd-header-2">
 When Can a Memory Block Be Collected?
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Memory blocks allocated for direct parts of package-level variables will never be collected.
@@ -346,9 +346,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h3 id="how-to-detect" class="tmd-header-3">
+<h2 id="how-to-detect" class="tmd-header-2">
 How Are Unused Memory Blocks Detected?
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 The current standard Go compiler (v1.25.n) uses a concurrent, tri-color, mark-sweep garbage collector. Here this article will only make a simple explanation for the algorithm.
@@ -386,9 +386,9 @@ An unused memory block may not be released to OS immediately after it is collect
 The GC algorithm is a non-compacting one, so it will not move memory blocks to rearrange them.
 </div>
 <p></p>
-<h3 id="when-to-collect" class="tmd-header-3">
+<h2 id="when-to-collect" class="tmd-header-2">
 When Will a New Garbage Collection Process Start?
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Garbage collection processes will consume much CPU resources and some memory resources. So there is not always a garbage collection process in running. A new garbage collection process will be only triggered when some run-time metrics reach certain conditions. How the conditions are defined is a garbage collection pacer problem.

@@ -25,9 +25,9 @@ Another big risk of using unsafe pointers comes from the fact that the unsafe me
 If you really desire the code efficient improvements by using unsafe pointers for any reason, you should not only know the above mentioned risks, but also follow the instructions written in the official Go documentation and clearly understand the effect of each unsafe pointer use, so that you can write safe Go code with unsafe pointers.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 About the <code class="tmd-code-span">unsafe</code> Standard Package
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Go provides a special <a href="type-system-overview.html#type-kinds">kind of types</a> for unsafe pointers. We must import <a href="https://golang.org/pkg/unsafe/">the <code class="tmd-code-span">unsafe</code> standard package</a> to use unsafe pointers. The <code class="tmd-code-span">unsafe.Pointer</code> type is defined as
@@ -279,9 +279,9 @@ func ByteSlice2String(bs []byte) string {
 }
 </code></pre>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Unsafe Pointers Related Conversion Rules
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Currently (Go 1.25), Go compilers allow the following explicit conversions.
@@ -307,17 +307,17 @@ By using these conversions, we can convert a safe pointer value to an arbitrary 
 However, although these conversions are all legal at compile time, not all of them are valid (safe) at run time. These conversions defeat the memory safety the whole Go type system (except the unsafe part) tries to maintain. We must follow the instructions listed in a later section below to write valid Go code with unsafe pointers.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Some Facts in Go We Should Know
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Before introducing the valid unsafe pointer use patterns, we need to know some facts in Go.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Fact 1: unsafe pointers are pointers and uintptr values are integers
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Each of non-nil safe and unsafe pointers references another value. However uintptr values don't reference any values, they are just plain integers, though often each of them stores an integer which can be used to represent a memory address.
@@ -336,9 +336,9 @@ As uintptr values are integers, they can participate arithmetic operations.
 The example in the next subsection shows the differences between pointers and uintptr values.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Fact 2: unused memory blocks may be collected at any time
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 At run time, the garbage collector may run at an uncertain time, and each garbage collection process may last an uncertain duration. So when a memory block becomes unused, it may be <a href="memory-block.html#when-can-collect">collected at an uncertain time</a>.
@@ -385,18 +385,18 @@ In the above example, the fact that value <code class="tmd-code-span">p2</code> 
 </div>
 <p></p>
 <p></p>
-<h4 id="fact-value-address-might-change" class="tmd-header-4">
+<h3 id="fact-value-address-might-change" class="tmd-header-3">
 Fact 3: the addresses of some values might change at run time
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Please read the article <a href="memory-block.html#where-to-allocate">memory blocks</a> for details (see the end of the hyperlinked section). Here, we should just know that when the size of the stack of a goroutine changes, the memory blocks allocated on the stack will be moved. In other words, the addresses of the values hosted on these memory blocks will change.
 </div>
 <p></p>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Fact 4: the life range of a value at run time may be not as large as it looks in code
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 In the following example, the fact value <code class="tmd-code-span">t</code> is still in use can't guarantee that the values referenced by value <code class="tmd-code-span">t.y</code> are still in use.
@@ -426,9 +426,9 @@ func bar() {
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Fact 5: <code class="tmd-code-span">*unsafe.Pointer</code> is a general safe pointer type
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Yes, <code class="tmd-code-span">*unsafe.Pointer</code> is a safe pointer type. Its base type is <code class="tmd-code-span">unsafe.Pointer</code>. As it is a safe pointer, according the conversion rules listed above, it can be converted to <code class="tmd-code-span">unsafe.Pointer</code> type, and vice versa.
@@ -452,18 +452,18 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 How to Use Unsafe Pointers Correctly?
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 The <code class="tmd-code-span">unsafe</code> standard package documentation lists <a href="https://golang.org/pkg/unsafe/#Pointer">six unsafe pointer use patterns</a>. Following will introduce and explain them one by one.
 </div>
 <p></p>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Pattern 1: convert a <code class="tmd-code-span">*T1</code> value to unsafe Pointer, then convert the unsafe pointer value to <code class="tmd-code-span">*T2</code>.
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 As mentioned above, by using the unsafe pointer conversion rules above, we can convert a value of <code class="tmd-code-span">*T1</code> to type <code class="tmd-code-span">*T2</code>, where <code class="tmd-code-span">T1</code> and <code class="tmd-code-span">T2</code> are two arbitrary types. However, we should only do such conversions if the size of <code class="tmd-code-span">T1</code> is no smaller than <code class="tmd-code-span">T2</code>, and only if the conversions are meaningful.
@@ -567,9 +567,9 @@ In the pattern 6 section below, a valid implementation to do the same job is int
 Note: when using the just introduced unsafe way to convert a byte slice to a string, please make sure not to modify the bytes in the byte slice if the result string still survives.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Pattern 2: convert unsafe pointer to uintptr, then use the uintptr value.
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 This pattern is not very useful. Usually, we print the result uintptr values to check the memory addresses stored in them. However, there are other both safe and less verbose ways to this job. So this pattern is not much useful.
@@ -597,9 +597,9 @@ func main() {
 The outputted addresses might be different for each run.
 </div>
 <p></p>
-<h4 id="pattern-convert-to-uintptr-and-back" class="tmd-header-4">
+<h3 id="pattern-convert-to-uintptr-and-back" class="tmd-header-3">
 Pattern 3: convert unsafe pointer to uintptr, do arithmetic operations with the uintptr value, then convert it back
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 In this pattern, the result unsafe pointer must continue to point into the original allocated memory block. For example:
@@ -671,9 +671,9 @@ Another detail which should be also noted is that, it is not recommended to stor
 </div>
 <p></p>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Pattern 4: convert unsafe pointers to <code class="tmd-code-span">uintptr</code> values as arguments of <code class="tmd-code-span">syscall.Syscall</code> calls.
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 From the explanations for the last pattern, we know that the following function is dangerous.
@@ -744,9 +744,9 @@ Note: this pattern also applies to the <a href="https://golang.org/pkg/syscall/?
 Again, never use this pattern when calling other functions.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Pattern 5: convert the <code class="tmd-code-span">uintptr</code> result of <code class="tmd-code-span">reflect.Value.Pointer</code> or <code class="tmd-code-span">reflect.Value.UnsafeAddr</code> method call to unsafe pointer
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 The methods <code class="tmd-code-span">Pointer</code> and <code class="tmd-code-span">UnsafeAddr</code> of the <code class="tmd-code-span">Value</code> type in the <code class="tmd-code-span">reflect</code> standard package both return a result of type <code class="tmd-code-span">uintptr</code> instead of <code class="tmd-code-span">unsafe.Pointer</code>. This is a deliberate design, which is to avoid converting the results of calls (to the two methods) to any safe pointer types without importing the <code class="tmd-code-span">unsafe</code> standard package.
@@ -779,9 +779,9 @@ p := (*int)(unsafe.Pointer(u))
 Please note that, Go 1.19 introduces a new method, <code class="tmd-code-span">reflect.Value.UnsafePointer()</code>, which returns a <code class="tmd-code-span">unsafe.Pointer</code> value and is preferred over the two just mentioned functions. That means, the old deliberate design is thought as not good now.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 Pattern 6: convert a <code class="tmd-code-span">reflect.SliceHeader.Data</code> or <code class="tmd-code-span">reflect.StringHeader.Data</code> field to unsafe pointer, and the inverse.
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 For the same reason mentioned for the last subsection, the <code class="tmd-code-span">Data</code> fields of the struct type <code class="tmd-code-span">SliceHeader</code> and <code class="tmd-code-span">StringHeader</code> in the <code class="tmd-code-span">reflect</code> standard package are declared with type <code class="tmd-code-span">uintptr</code> instead of <code class="tmd-code-span">unsafe.Pointer</code>.
@@ -977,9 +977,9 @@ The Go core development team also realized that the two types are inconvenient a
 </div>
 <p></p>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Final Words
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 From the above contents, we know that, for some cases, the unsafe mechanism can help us write more efficient Go code. However, it is very easy to introduce some subtle bugs which have very low possibilities to produce when using the unsafe mechanism. A program with these bugs may run well for a long time, but suddenly behave abnormally and even crash at a later time. Such bugs are very hard to detect and debug.

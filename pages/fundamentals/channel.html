@@ -17,9 +17,9 @@ Channel mainly acts as a <a href="control-flows-more.html#synchronization">concu
 The information in this article may be slightly challenging for new gophers. Some parts of this article may need to be read several times to be fully understood.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Channel Introduction
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 One suggestion (made by <span class="tmd-italic">Rob Pike</span>) for concurrent programming is <span class="tmd-bold">don't (let computations) communicate by sharing memory, (let them) share memory by communicating (through channels)</span>. (We can view each computation as a goroutine in Go programming.)
@@ -54,9 +54,9 @@ Honestly, each concurrency synchronization technique has its own best use scenar
 </div>
 <p></p>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Channel Types and Values
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Like array, slice and map, each channel type has an element type. A channel can only transfer values of the element type of the channel.
@@ -99,9 +99,9 @@ Each channel value has a capacity, which will be explained in the section after 
 The zero values of channel types are represented with the predeclared identifier <code class="tmd-code-span">nil</code>. A non-nil channel value must be created by using the built-in <code class="tmd-code-span">make</code> function. For example, <code class="tmd-code-span">make(chan int, 10)</code> will create a channel whose element type is <code class="tmd-code-span">int</code>. The second argument of the <code class="tmd-code-span">make</code> function call specifies the capacity of the new created channel. The second parameter is optional and its default value is zero.
 </div>
 <p></p>
-<h3 id="assign-and-compare" class="tmd-header-3">
+<h2 id="assign-and-compare" class="tmd-header-2">
 Channel Value Comparisons
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 All channel types are comparable types.
@@ -112,9 +112,9 @@ From the article <a href="value-part.html">value parts</a>, we know that non-nil
 </div>
 <p></p>
 <p></p>
-<h3 id="operations" class="tmd-header-3">
+<h2 id="operations" class="tmd-header-2">
 Channel Operations
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 There are five channel specified operations. Assume the channel is <code class="tmd-code-span">ch</code>, their syntax and function calls of these operations are listed here.
@@ -206,9 +206,9 @@ If the queried channel is a nil channel, both of the built-in <code class="tmd-c
 Channel send, receive and close operations will be explained in detail in the next section.
 </div>
 <p></p>
-<h3 id="channel-operation-explanations" class="tmd-header-3">
+<h2 id="channel-operation-explanations" class="tmd-header-2">
 Detailed Explanations for Channel Operations
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 To make the explanations for channel operations simple and clear, in the remaining of this article, channels will be classified into three categories:
@@ -367,7 +367,7 @@ Each channel internally holds a mutex lock which is used to avoid data races in 
 </div>
 <p></p>
 <div class="tmd-usual">
-<span class="tmd-underlined"><span class="tmd-bold">Channel operation case A</span>: when a goroutine <code class="tmd-code-span">R</code> tries to receive a value from a not-closed non-nil channel</span>, the goroutine <code class="tmd-code-span">R</code> will acquire the lock associated with the channel firstly, then do the following steps until one condition is satisfied.
+<span class="tmd-bold">Channel operation case A</span>: when a goroutine <code class="tmd-code-span">R</code> tries to receive a value from a not-closed non-nil channel, the goroutine <code class="tmd-code-span">R</code> will acquire the lock associated with the channel firstly, then do the following steps until one condition is satisfied.
 </div>
 <ol class="tmd-list">
 <li class="tmd-list-item">
@@ -388,7 +388,7 @@ If value buffer queue and the sending goroutine queue of the channel are both em
 </ol>
 <p></p>
 <div class="tmd-usual">
-<span class="tmd-underlined"><span class="tmd-bold">Channel rule case B</span>: when a goroutine <code class="tmd-code-span">S</code> tries to send a value to a not-closed non-nil channel</span>, the goroutine <code class="tmd-code-span">S</code> will acquire the lock associated with the channel firstly, then do the following steps until one step condition is satisfied.
+<span class="tmd-bold">Channel rule case B</span>: when a goroutine <code class="tmd-code-span">S</code> tries to send a value to a not-closed non-nil channel, the goroutine <code class="tmd-code-span">S</code> will acquire the lock associated with the channel firstly, then do the following steps until one step condition is satisfied.
 </div>
 <ol class="tmd-list">
 <li class="tmd-list-item">
@@ -413,7 +413,7 @@ Above has mentioned, once a non-nil channel is closed, sending a value to the ch
 </div>
 <p></p>
 <div class="tmd-usual">
-<span class="tmd-underlined"><span class="tmd-bold">Channel operation case C</span>: when a goroutine tries to close a not-closed non-nil channel</span>, once the goroutine has acquired the lock of the channel, both of the following two steps will be performed by the following order.
+<span class="tmd-bold">Channel operation case C</span>: when a goroutine tries to close a not-closed non-nil channel, once the goroutine has acquired the lock of the channel, both of the following two steps will be performed by the following order.
 </div>
 <ol class="tmd-list">
 <li class="tmd-list-item">
@@ -434,7 +434,7 @@ Note: after a channel is closed, the values which have been already pushed into 
 </div>
 <p></p>
 <div class="tmd-usual">
-<span class="tmd-underlined"><span class="tmd-bold">Channel operation case D</span>: after a non-nil channel is closed, channel receive operations on the channel will never block</span>. The values in the value buffer of the channel can still be received. The accompanying second optional bool return values are still <code class="tmd-code-span">true</code>. Once all the values in the value buffer are taken out and received, infinite zero values of the element type of the channel will be received by any of the following receive operations on the channel. As mentioned above, the optional second return result of a channel receive operation is an untyped boolean value which indicates whether or not the first result (the received value) is sent before the channel is closed. If the second return result is <code class="tmd-code-span">false</code>, then the first return result (the received value) must be a zero value of the element type of the channel.
+<span class="tmd-bold">Channel operation case D</span>: after a non-nil channel is closed, channel receive operations on the channel will never block. The values in the value buffer of the channel can still be received. The accompanying second optional bool return values are still <code class="tmd-code-span">true</code>. Once all the values in the value buffer are taken out and received, infinite zero values of the element type of the channel will be received by any of the following receive operations on the channel. As mentioned above, the optional second return result of a channel receive operation is an untyped boolean value which indicates whether or not the first result (the received value) is sent before the channel is closed. If the second return result is <code class="tmd-code-span">false</code>, then the first return result (the received value) must be a zero value of the element type of the channel.
 </div>
 <p></p>
 <div class="tmd-usual">
@@ -442,7 +442,7 @@ Knowing what are blocking and non-blocking channel send or receive operations is
 </div>
 <p></p>
 <div class="tmd-usual">
-In the above explanations, if a goroutine is shifted out of a queue (either the sending or the receiving goroutine queue) of a channel, and the goroutine was blocked for being pushed into the queue at a <span class="tmd-broken-link"><code class="tmd-code-span">select</code> control flow code block</span>, then the goroutine will be resumed to running state at step <span class="tmd-italic">9</span> of the <span class="tmd-broken-link"><code class="tmd-code-span">select</code> control flow code block execution</span>. It may be dequeued from the corresponding goroutine queue of several channels involved in the <code class="tmd-code-span">select</code> control flow code block.
+In the above explanations, if a goroutine is shifted out of a queue (either the sending or the receiving goroutine queue) of a channel, and the goroutine was blocked for being pushed into the queue at a <a href="#select"><code class="tmd-code-span">select</code> control flow code block</a>, then the goroutine will be resumed to running state at step <span class="tmd-italic">9</span> of the <a href="#select-implementation"><code class="tmd-code-span">select</code> control flow code block execution</a>. It may be dequeued from the corresponding goroutine queue of several channels involved in the <code class="tmd-code-span">select</code> control flow code block.
 </div>
 <p></p>
 <p></p>
@@ -472,14 +472,14 @@ If the channel is buffered, then at any time, at least one of the channel's goro
 </li>
 <li class="tmd-list-item">
 <div class="tmd-usual">
-If the channel is unbuffered, most of the time one of its sending goroutine queue and the receiving goroutine queue must be empty, with one exception. The exception is that a goroutine may be pushed into both of the two queues when executing a <span class="tmd-broken-link"><code class="tmd-code-span">select</code> control flow code block</span>.
+If the channel is unbuffered, most of the time one of its sending goroutine queue and the receiving goroutine queue must be empty, with one exception. The exception is that a goroutine may be pushed into both of the two queues when executing a <a href="#select"><code class="tmd-code-span">select</code> control flow code block</a>.
 </div>
 </li>
 </ol>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Some Channel Use Examples
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Now that you've read the above section, let's view some examples which use channels to enhance your understanding.
@@ -597,9 +597,9 @@ Please read <a href="channel-use-cases.html">channel use cases</a> for more chan
 </div>
 <p></p>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Channel Element Values Are Transferred by Copy
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 When a value is transferred from one goroutine to another goroutine, the value will be copied at least one time. If the transferred value ever stayed in the value buffer of a channel, then two copies will happen in the transfer process. One copy happens when the value is copied from the sender goroutine into the value buffer, the other happens when the value is copied from the value buffer to the receiver goroutine. Like value assignments and function argument passing, when a value is transferred, <a href="value-part.html#about-value-copy">only its direct part is copied</a>.
@@ -610,17 +610,17 @@ When a value is transferred from one goroutine to another goroutine, the value w
 For the standard Go compiler, the size of channel element types must be smaller than <code class="tmd-code-span">65536</code>. However, generally, we shouldn't create channels with large-size element types, to avoid too large copy cost in the process of transferring values between goroutines. So if the passed value size is too large, it is best to use a pointer element type instead, to avoid a large value copy cost.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 About Channel and Goroutine Garbage Collections
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Note, a channel is referenced by all the goroutines in either the sending or the receiving goroutine queue of the channel, so if neither of the queues of the channel is empty, the channel cannot be garbage collected. On the other hand, if a goroutine is blocked and stays in either the sending or the receiving goroutine queue of a channel, then the goroutine also cannot be garbage collected, even if the channel is referenced only by this goroutine. In fact, a goroutine can only be garbage collected when it has already exited.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Channel Send and Receive Operations Are Simple Statements
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Channel send operations and receive operations are <a href="expressions-and-statements.html#simple-statements">simple statements</a>. A channel receive operation can be always used as a single-value expression. Simple statements and expressions can be used at certain portions of <a href="control-flows.html">basic control flow blocks</a>.
@@ -659,9 +659,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h3 id="range" class="tmd-header-3">
+<h2 id="range" class="tmd-header-2">
 <code class="tmd-code-span">for-range</code> on Channels
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 The <code class="tmd-code-span">for-range</code> control flow code block applies to channels. The loop will try to iteratively receive the values sent to a channel, until the channel is closed and its value buffer queue becomes blank. With <code class="tmd-code-span">for-range</code> syntax on arrays, slices and maps, multiple iteration variables are allowed. However, for <code class="tmd-code-span">for-range</code> blocks applied to channels, you can use at most one iteration variable, which is used to store the received values.
@@ -702,9 +702,9 @@ For example, the second <code class="tmd-code-span">for</code> loop block in the
 	}
 </code></pre>
 <p></p>
-<h3 id="select" class="tmd-header-3">
+<h2 id="select" class="tmd-header-2">
 <code class="tmd-code-span">select-case</code> Control Flow Code Blocks
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 There is a <code class="tmd-code-span">select-case</code> code block syntax which is specially designed for channels. The syntax is much like the <code class="tmd-code-span">switch-case</code> block syntax. For example, there can be multiple <code class="tmd-code-span">case</code> branches and at most one <code class="tmd-code-span">default</code> branch in the <code class="tmd-code-span">select-case</code> code block. But there are also some obvious differences between them.
@@ -814,9 +814,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h3 id="select-implementation" class="tmd-header-3">
+<h2 id="select-implementation" class="tmd-header-2">
 The Implementation of the Select Mechanism
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 The select mechanism in Go is an important and unique feature. Here the steps of <a href="https://github.com/golang/go/blob/master/src/runtime/select.go">the select mechanism implementation by the official Go runtime</a> are listed.
@@ -944,9 +944,9 @@ when a goroutine currently being blocked at a <code class="tmd-code-span">select
 </li>
 </ol>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 More
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 We can find more channel use cases in <a href="channel-use-cases.html">this article</a>.

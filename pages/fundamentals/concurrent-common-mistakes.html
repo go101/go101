@@ -12,9 +12,9 @@ Go is a language supporting built-in concurrent programming. By using the <code 
 On the other hand, Go doesn't prevent Go programmers from making some concurrent programming mistakes which are caused by either carelessness or lacking of experience. The remaining of the current article will show some common mistakes in Go concurrent programming, to help Go programmers avoid making such mistakes.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 No Synchronizations When Synchronizations Are Needed
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Code lines might be <a href="memory-model.html">not executed by their appearance order</a>.
@@ -90,9 +90,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h3 id="sleep" class="tmd-header-3">
+<h2 id="sleep" class="tmd-header-2">
 Use <code class="tmd-code-span">time.Sleep</code> Calls to Do Synchronizations
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Let's view a simple example.
@@ -175,9 +175,9 @@ For this specified example, we should store the value to be sent in a temporary 
 ...
 </code></pre>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Leave Goroutines Hanging
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Hanging goroutines are the goroutines staying in blocking state for ever. There are many reasons leading goroutines into hanging. For example,
@@ -263,9 +263,9 @@ The reason why the receiver goroutine might hang is that if the five try-send op
 Changing the channel <code class="tmd-code-span">c</code> as a buffered channel will guarantee at least one of the five try-send operations succeed so that the caller goroutine will never hang in the above function.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Copy Values of the Types in the <code class="tmd-code-span">sync</code> Standard Package
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 In practice, values of the types (except the <code class="tmd-code-span">Locker</code> interface values) in the <code class="tmd-code-span">sync</code> standard package should never be copied. We should only copy pointers of such values.
@@ -310,9 +310,9 @@ We should change the receiver type of the <code class="tmd-code-span">Value</cod
 The <code class="tmd-code-span">go vet</code> command provided in Go Toolchain will report potential bad value copies.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Call the <code class="tmd-code-span">sync.WaitGroup.Add</code> Method at Wrong Places
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Each <code class="tmd-code-span">sync.WaitGroup</code> value maintains a counter internally, The initial value of the counter is zero. If the counter of a <code class="tmd-code-span">WaitGroup</code> value is zero, a call to the <code class="tmd-code-span">Wait</code> method of the <code class="tmd-code-span">WaitGroup</code> value will not block, otherwise, the call blocks until the counter value becomes zero.
@@ -368,9 +368,9 @@ To make the program behave as expected, we should move the <code class="tmd-code
 ...
 </code></pre>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Use Channels as Futures/Promises Improperly
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 From the article <a href="channel-use-cases.html">channel use cases</a>, we know that some functions will return <a href="channel-use-cases.html#future-promise">channels as futures</a>. Assume <code class="tmd-code-span">fa</code> and <code class="tmd-code-span">fb</code> are two such functions, then the following call uses future arguments improperly.
@@ -394,9 +394,9 @@ We should modify it as the following to process them concurrently.
 doSomethingWithFutureArguments(&lt;-ca, &lt;-cb)
 </code></pre>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Close Channels Not From the Last Active Sender Goroutine
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 A common mistake made by Go programmers is closing a channel when there are still some other goroutines will potentially send values to the channel later. When such a potential send (to the closed channel) really happens, a panic might occur.
@@ -411,18 +411,18 @@ Please read <a href="channel-closing.html">this article</a> for explanations on 
 </div>
 <p></p>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Do 64-bit Atomic Operations on Values Which Are Not Guaranteed to Be 8-byte Aligned
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 The address of the value involved in a non-method 64-bit atomic operation is required to be 8-byte aligned. Failure to do so may make the current goroutine panic. For the standard Go compiler, such failure can only <a href="https://golang.org/pkg/sync/atomic/#pkg-note-BUG">happen on 32-bit architectures</a>. Since Go 1.19, we can use 64-bit method atomic operations to avoid the drawback. Please read <a href="memory-layout.html">memory layouts</a> to get how to guarantee the addresses of 64-bit word 8-byte aligned on 32-bit OSes.
 </div>
 <p></p>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Not Pay Attention to Too Many Resources Are Consumed by Calls to the <code class="tmd-code-span">time.After</code> Function
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 The <code class="tmd-code-span">After</code> function in the <code class="tmd-code-span">time</code> standard package returns <a href="channel-use-cases.html#timer">a channel for delay notification</a>. The function is convenient, however each of its calls will create a new value of the <code class="tmd-code-span">time.Timer</code> type. Before Go 1.23, the new created <code class="tmd-code-span">Timer</code> value will keep alive within the duration specified by the passed argument to the <code class="tmd-code-span">After</code> function. If the function is called many times in a certain period, there will be many alive <code class="tmd-code-span">Timer</code> values accumulated so that much memory and computation is consumed.
@@ -511,9 +511,9 @@ Note: since Go 1.23, the <code class="tmd-code-span">Timer.Reset</code> method w
 }
 </code></pre>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Use <code class="tmd-code-span">time.Timer</code> Values Incorrectly
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 <span class="tmd-italic">(Note: the problems described in the current section only existed before Go 1.23. Since Go 1.23, they have gone.)</span>

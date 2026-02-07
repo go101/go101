@@ -70,9 +70,9 @@ As above mentioned, this is not a universal way to check whether a channel is cl
 In fact, even if there is a simple built-in <code class="tmd-code-span">closed</code> function to check whether or not a channel has been closed, its usefulness would be very limited, just like the built-in <code class="tmd-code-span">len</code> function for checking the current number of values stored in the value buffer of a channel. The reason is that the status of the checked channel may have changed just after a call to such functions returns, so that the returned value has already not been able to reflect the latest status of the just checked channel. Although it is okay to stop sending values to a channel <code class="tmd-code-span">ch</code> if the call <code class="tmd-code-span">closed(ch)</code> returns <code class="tmd-code-span">true</code>, it is not safe to close the channel or continue sending values to the channel if the call <code class="tmd-code-span">closed(ch)</code> returns <code class="tmd-code-span">false</code>.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 The Channel Closing Principle
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 One general principle of using Go channels is <span class="tmd-bold">don't close a channel from the receiver side and don't close a channel if the channel has multiple concurrent senders</span>. In other words, we should only close a channel in a sender goroutine if the sender is the only sender of the channel.
@@ -86,9 +86,9 @@ One general principle of using Go channels is <span class="tmd-bold">don't close
 Surely, this is not a universal principle to close channels. The universal principle is <span class="tmd-bold">don't close (or send values to) closed channels</span>. If we can guarantee that no goroutines will close and send values to a non-closed non-nil channel any more, then a goroutine can close the channel safely. However, making such guarantees by a receiver or by one of many senders of a channel usually needs much effort, and often makes code complicated. On the contrary, it is much easy to hold the <span class="tmd-bold">channel closing principle</span> mentioned above.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Solutions Which Close Channels Rudely
-</h3>
+</h2>
 <p></p>
 <p></p>
 <div class="tmd-usual">
@@ -134,9 +134,9 @@ The same idea can be used for sending values to a potential closed channel.
 Not only does the rude solution break the <span class="tmd-bold">channel closing principle</span>, but data races might also happen in the process.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Solutions Which Close Channels Politely
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 Many people prefer using <code class="tmd-code-span">sync.Once</code> to close channels:
@@ -192,9 +192,9 @@ func (mc *MyChannel) IsClosed() bool {
 These ways may be polite, but they may not avoid data races. Currently, Go specification doesn't guarantee that there are no data races happening when a channel close and a channel send operations are executed concurrently. If a <code class="tmd-code-span">SafeClose</code> function is called concurrently with a channel send operation to the same channel, data races might happen (though such data races generally don't do any harm).
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Solutions Which Close Channels Gracefully
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 One drawback of the above <code class="tmd-code-span">SafeSend</code> function is that its calls can't be used as send operations that follow the <code class="tmd-code-span">case</code> keyword in <code class="tmd-code-span">select</code> blocks. The other drawback of the above <code class="tmd-code-span">SafeSend</code> and  <code class="tmd-code-span">SafeClose</code> functions is that many people, including me, would think the above solutions by using <code class="tmd-code-span">panic</code>/<code class="tmd-code-span">recover</code> and <code class="tmd-code-span">sync</code> package are not graceful. Following, some pure-channel solutions without using <code class="tmd-code-span">panic</code>/<code class="tmd-code-span">recover</code> and <code class="tmd-code-span">sync</code> package will be introduced, for all kinds of situations.
@@ -204,9 +204,9 @@ One drawback of the above <code class="tmd-code-span">SafeSend</code> function i
 <span class="tmd-italic">(In the following examples, <code class="tmd-code-span">sync.WaitGroup</code> is used to make the examples complete. It may be not always essential to use it in real practice.)</span>
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 1. M receivers, one sender, the sender says "no more sends" by closing the data channel
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 This is the simplest situation, just let the sender close the data channel when it doesn't want to send more.
@@ -265,9 +265,9 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 2. One receiver, N senders, the only receiver says "please stop sending more" by closing an additional signal channel
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 This is a situation a little more complicated than the above one. We can't let the receiver close the data channel to stop data transferring, since doing this will break the <span class="tmd-bold">channel closing principle</span>. But we can let the receiver close an additional signal channel to notify senders to stop sending values.
@@ -359,9 +359,9 @@ As mentioned in the comments, for the additional signal channel, its sender is t
 In this example, the channel <code class="tmd-code-span">dataCh</code> is never closed. Yes, channels don't have to be closed. A channel will be eventually garbage collected if no goroutines reference it any more, whether it is closed or not. So the gracefulness of closing a channel here is not to close the channel.
 </div>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 3. M receivers, N senders, any one of them says "let's end the game" by notifying a moderator to close an additional signal channel
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 This is the most complicated situation. We can't let any of the receivers and the senders close the data channel. And we can't let any of the receivers close an additional signal channel to notify all senders and receivers to exit the game. Doing either will break the <span class="tmd-bold">channel closing principle</span>. However, we can introduce a moderator role to close the additional signal channel. One trick in the following example is how to use a try-send operation to notify the moderator to close the additional signal channel.
@@ -534,9 +534,9 @@ toStop := make(chan string, NumReceivers + NumSenders)
 ...
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 4. A variant of the "M receivers, one sender" situation: the close request is made by a third-party goroutine
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 Sometimes, it is needed that the close signal must be made by a third-party goroutine. For such cases, we can use an extra signal channel to notify the sender to close the data channel. For example,
@@ -627,9 +627,9 @@ The idea used in the <code class="tmd-code-span">stop</code> function is learned
 </div>
 <p></p>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 5. A variant of the "N sender" situation: the data channel must be closed to tell receivers that data sending is over
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 In the solutions for the above N-sender situations, to hold the <span class="tmd-bold">channel closing principle</span>, we avoid closing the data channels. However, sometimes, it is required that the data channels must be closed in the end to let receivers know data sending is over. For such cases, we can translate a N-sender situation to a one-sender situation by using a middle channel. The middle channel has only one sender, so that we can close it instead of closing the original data channel.
@@ -753,17 +753,17 @@ func main() {
 }
 </code></pre>
 <p></p>
-<h4 class="tmd-header-4">
+<h3 class="tmd-header-3">
 More situations?
-</h4>
+</h3>
 <p></p>
 <div class="tmd-usual">
 There should be more situation variants, but the above shown ones are the most common and basic ones. By using channels (and other concurrent programming techniques) cleverly, I believe a solution holding the <span class="tmd-bold">channel closing principle</span> for each situation variant can always be found.
 </div>
 <p></p>
-<h3 class="tmd-header-3">
+<h2 class="tmd-header-2">
 Conclusion
-</h3>
+</h2>
 <p></p>
 <div class="tmd-usual">
 There are no situations which will force you to break the <span class="tmd-bold">channel closing principle</span>. If you encounter such a situation, please rethink your design and rewrite you code.
