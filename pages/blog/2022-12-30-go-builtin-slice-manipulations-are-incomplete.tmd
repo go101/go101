@@ -59,8 +59,8 @@ func merge[S ~[]E, E any](ss ...S) S {
 
 Generally, a `make` call will zero the elements allocated during its execution, which is unnecessarily for this particular use case.
 The implementation does its best to zero as few as possible elements within the `make` call,
-by using the mentioned optimization, it doesn't zero the elements in `r[:len(ss[0])]`,
-but it still fails to do so for the remaining elements (the ones in `r[len(ss[0]):]`).
+by using the mentioned optimization, it doesn't zero the elements in `r[:len(s)]`,
+but it still fails to do so for the remaining elements (the ones in `r[len(s):]`).
 
 If the `merge` function is built-in, then it is able to avoid all the unnecessary element zeroing operations.
 
@@ -97,7 +97,7 @@ We can use the `Clip` function in the `golang.org/x/exp/slices` package, but thi
 ''' Go
 import "golang.org/x/exp/slices"
 
-	... = append(slices.Clip((base), x, y, z)
+	... = append(slices.Clip(base), x, y, z)
 	
 	... = append(slices.Clip(aValue.Field.Slice), x, y, z)
 	
@@ -109,7 +109,7 @@ I do prefer __this proposal__, but it has been rejected:
 ''' Go
 aSlice[ : n : ]  // <=> aSlice[ : n : n]
 aSlice[m : n : ] // <=> aSlice[m : n : n]
-sSlice[ : : ]    // <=> aSlice[ : len(aSlice) : len(aSlice)]
+aSlice[ : : ]    // <=> aSlice[ : len(aSlice) : len(aSlice)]
 aSlice[m : : ]   // <=> aSlice[m : len(aSlice) : len(aSlice)]
 '''
 
