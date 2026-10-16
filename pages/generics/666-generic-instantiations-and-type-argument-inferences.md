@@ -118,7 +118,7 @@ func main() {
 
 In the above example, the generic function `Max` is instantiated twice.
 
-* The first instantiation `Max[[]Age, Age]` results in a `func([]Age] Age` function value.
+* The first instantiation `Max[[]Age, Age]` results in a `func([]Age) Age` function value.
 * The second one, `Max[[]string, string]`, results in a `func([]string) string` function value.
 
 {#type-argument-inferences}
@@ -288,7 +288,7 @@ func intsToBools(s []int) []bool {
 	// The following line only compiles since Go 1.21.
 	var conv func([]int, func(int) bool) []bool = Convert
 	// Before Go 1.21, to make the above line compile, its
-	// right side must be written as Convert[[]int, int bool]
+	// right side must be written as Convert[[]int, int, bool]
 	
 	return conv(s, isEven)
 }
