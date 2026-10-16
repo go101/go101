@@ -46,7 +46,7 @@ The reasons are simple:
   its type is a type parameter.
 * in the function `bar`, the types of `x[i]` and `x[y]` are both a type parameter, `E`.
 * in the function `win`, the types of `x[1]` and `x[y]` are both a specified ordinary type, `int`.
-* in the function `dot`, the types of `x[1]` and `x[y]` are might be `int` or `string` (two different ordinary types), though they are always identical.
+* in the function `dot`, the types of `x[1]` and `x[y]` might be `int` or `string` (two different ordinary types), though they are always identical.
 
 ```Go
 func foo[T int | string](x T) {
